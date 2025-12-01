@@ -458,6 +458,60 @@ export type Database = {
           },
         ]
       }
+      daily_activities: {
+        Row: {
+          activity_date: string
+          appraisals: number | null
+          calls: number | null
+          cch_calculated: number | null
+          created_at: string | null
+          id: string
+          open_homes: number | null
+          team_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_date: string
+          appraisals?: number | null
+          calls?: number | null
+          cch_calculated?: number | null
+          created_at?: string | null
+          id?: string
+          open_homes?: number | null
+          team_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_date?: string
+          appraisals?: number | null
+          calls?: number | null
+          cch_calculated?: number | null
+          created_at?: string | null
+          id?: string
+          open_homes?: number | null
+          team_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_activities_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feature_request_comments: {
         Row: {
           comment: string
@@ -586,6 +640,7 @@ export type Database = {
           created_at: string | null
           friend_id: string
           id: string
+          is_starred: boolean | null
           status: string | null
           user_id: string
         }
@@ -594,6 +649,7 @@ export type Database = {
           created_at?: string | null
           friend_id: string
           id?: string
+          is_starred?: boolean | null
           status?: string | null
           user_id: string
         }
@@ -602,6 +658,7 @@ export type Database = {
           created_at?: string | null
           friend_id?: string
           id?: string
+          is_starred?: boolean | null
           status?: string | null
           user_id?: string
         }
@@ -1042,8 +1099,10 @@ export type Database = {
           created_at: string | null
           estimated_value: number | null
           id: string
+          intent: string | null
           notes: string | null
           outcome: string | null
+          status: string | null
           updated_at: string | null
           user_id: string
         }
@@ -1053,8 +1112,10 @@ export type Database = {
           created_at?: string | null
           estimated_value?: number | null
           id?: string
+          intent?: string | null
           notes?: string | null
           outcome?: string | null
+          status?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -1064,8 +1125,10 @@ export type Database = {
           created_at?: string | null
           estimated_value?: number | null
           id?: string
+          intent?: string | null
           notes?: string | null
           outcome?: string | null
+          status?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -1244,6 +1307,7 @@ export type Database = {
           created_at: string | null
           id: string
           note_id: string
+          permission: string | null
           shared_by: string
           user_id: string
         }
@@ -1252,6 +1316,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           note_id: string
+          permission?: string | null
           shared_by: string
           user_id: string
         }
@@ -1260,6 +1325,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           note_id?: string
+          permission?: string | null
           shared_by?: string
           user_id?: string
         }
@@ -1291,6 +1357,7 @@ export type Database = {
         Row: {
           content: string
           content_plain: string | null
+          content_rich: string | null
           created_at: string | null
           id: string
           is_private: boolean | null
@@ -1302,6 +1369,7 @@ export type Database = {
         Insert: {
           content: string
           content_plain?: string | null
+          content_rich?: string | null
           created_at?: string | null
           id?: string
           is_private?: boolean | null
@@ -1313,6 +1381,7 @@ export type Database = {
         Update: {
           content?: string
           content_plain?: string | null
+          content_rich?: string | null
           created_at?: string | null
           id?: string
           is_private?: boolean | null
@@ -1503,6 +1572,7 @@ export type Database = {
           invite_code: string
           invited_by: string
           role: Database["public"]["Enums"]["app_role"]
+          status: string | null
           team_id: string | null
         }
         Insert: {
@@ -1516,6 +1586,7 @@ export type Database = {
           invite_code: string
           invited_by: string
           role: Database["public"]["Enums"]["app_role"]
+          status?: string | null
           team_id?: string | null
         }
         Update: {
@@ -1529,6 +1600,7 @@ export type Database = {
           invite_code?: string
           invited_by?: string
           role?: Database["public"]["Enums"]["app_role"]
+          status?: string | null
           team_id?: string | null
         }
         Relationships: [
@@ -1570,6 +1642,8 @@ export type Database = {
           last_role_switch_at: string | null
           mobile: string | null
           office_id: string | null
+          onboarding_completed: boolean | null
+          password_set: boolean | null
           primary_team_id: string | null
           status: string | null
           total_bug_points: number | null
@@ -1589,6 +1663,8 @@ export type Database = {
           last_role_switch_at?: string | null
           mobile?: string | null
           office_id?: string | null
+          onboarding_completed?: boolean | null
+          password_set?: boolean | null
           primary_team_id?: string | null
           status?: string | null
           total_bug_points?: number | null
@@ -1608,6 +1684,8 @@ export type Database = {
           last_role_switch_at?: string | null
           mobile?: string | null
           office_id?: string | null
+          onboarding_completed?: boolean | null
+          password_set?: boolean | null
           primary_team_id?: string | null
           status?: string | null
           total_bug_points?: number | null
@@ -1716,6 +1794,142 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quarterly_goals: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          current_value: number | null
+          goal_type: string
+          id: string
+          kpi_type: string | null
+          quarter: string
+          target_value: number
+          team_id: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          current_value?: number | null
+          goal_type: string
+          id?: string
+          kpi_type?: string | null
+          quarter: string
+          target_value: number
+          team_id: string
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          current_value?: number | null
+          goal_type?: string
+          id?: string
+          kpi_type?: string | null
+          quarter?: string
+          target_value?: number
+          team_id?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quarterly_goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarterly_goals_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quarterly_reviews: {
+        Row: {
+          achievements: string | null
+          action_items: string | null
+          areas_for_improvement: string | null
+          challenges: string | null
+          created_at: string | null
+          goals_for_next_quarter: string | null
+          id: string
+          lessons_learned: string | null
+          performance_notes: string | null
+          quarter: string
+          reviewed_by: string | null
+          team_id: string
+          updated_at: string | null
+          user_id: string | null
+          wins: string | null
+          year: number
+        }
+        Insert: {
+          achievements?: string | null
+          action_items?: string | null
+          areas_for_improvement?: string | null
+          challenges?: string | null
+          created_at?: string | null
+          goals_for_next_quarter?: string | null
+          id?: string
+          lessons_learned?: string | null
+          performance_notes?: string | null
+          quarter: string
+          reviewed_by?: string | null
+          team_id: string
+          updated_at?: string | null
+          user_id?: string | null
+          wins?: string | null
+          year: number
+        }
+        Update: {
+          achievements?: string | null
+          action_items?: string | null
+          areas_for_improvement?: string | null
+          challenges?: string | null
+          created_at?: string | null
+          goals_for_next_quarter?: string | null
+          id?: string
+          lessons_learned?: string | null
+          performance_notes?: string | null
+          quarter?: string
+          reviewed_by?: string | null
+          team_id?: string
+          updated_at?: string | null
+          user_id?: string | null
+          wins?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quarterly_reviews_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarterly_reviews_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quarterly_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2348,6 +2562,7 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string | null
+          completed: boolean | null
           completed_at: string | null
           created_at: string | null
           created_by: string
@@ -2367,6 +2582,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
           created_by: string
@@ -2386,6 +2602,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
           created_by?: string
@@ -2615,14 +2832,19 @@ export type Database = {
         Row: {
           address: string
           agent_id: string | null
+          auction_deadline_date: string | null
           commission: number | null
           contract_date: string | null
           created_at: string | null
           id: string
+          listing_expires_date: string | null
+          live_date: string | null
           notes: string | null
           sale_price: number | null
           settlement_date: string | null
+          stage: string | null
           status: string | null
+          suburb: string | null
           team_id: string
           transaction_type: string
           updated_at: string | null
@@ -2630,14 +2852,19 @@ export type Database = {
         Insert: {
           address: string
           agent_id?: string | null
+          auction_deadline_date?: string | null
           commission?: number | null
           contract_date?: string | null
           created_at?: string | null
           id?: string
+          listing_expires_date?: string | null
+          live_date?: string | null
           notes?: string | null
           sale_price?: number | null
           settlement_date?: string | null
+          stage?: string | null
           status?: string | null
+          suburb?: string | null
           team_id: string
           transaction_type: string
           updated_at?: string | null
@@ -2645,14 +2872,19 @@ export type Database = {
         Update: {
           address?: string
           agent_id?: string | null
+          auction_deadline_date?: string | null
           commission?: number | null
           contract_date?: string | null
           created_at?: string | null
           id?: string
+          listing_expires_date?: string | null
+          live_date?: string | null
           notes?: string | null
           sale_price?: number | null
           settlement_date?: string | null
+          stage?: string | null
           status?: string | null
+          suburb?: string | null
           team_id?: string
           transaction_type?: string
           updated_at?: string | null
@@ -2819,6 +3051,30 @@ export type Database = {
         Args: { channel_id: string; p_is_admin?: boolean; p_user_id: string }
         Returns: undefined
       }
+      auto_repair_team_assignments: {
+        Args: never
+        Returns: {
+          repaired_count: number
+        }[]
+      }
+      check_backend_health:
+        | {
+            Args: never
+            Returns: {
+              database_connected: boolean
+              status: string
+              tables_count: number
+            }[]
+          }
+        | {
+            Args: { p_office_id?: string }
+            Returns: {
+              database_connected: boolean
+              office_id: string
+              status: string
+              tables_count: number
+            }[]
+          }
       create_default_lists_for_team: {
         Args: { p_team_id: string }
         Returns: undefined
@@ -2841,7 +3097,7 @@ export type Database = {
       }
     }
     Enums: {
-      access_level: "admin" | "view"
+      access_level: "admin" | "view" | "edit"
       app_role:
         | "platform_admin"
         | "office_manager"
@@ -2979,7 +3235,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      access_level: ["admin", "view"],
+      access_level: ["admin", "view", "edit"],
       app_role: [
         "platform_admin",
         "office_manager",
