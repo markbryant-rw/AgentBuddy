@@ -1,0 +1,353 @@
+import { useState, useMemo } from 'react';
+import { LoggedAppraisal, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Eye, Calendar, Trash2, Edit } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, subMonths } from 'date-fns';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { useFinancialYear } from '@/hooks/useFinancialYear';
+import { getCurrentQuarter } from '@/utils/quarterCalculations';
+
+interface AppraisalsListProps {
+  appraisals: LoggedAppraisal[];
+  loading: boolean;
+  onAppraisalClick: (appraisal: LoggedAppraisal) => void;
+}
+
+type DateRange = 'all' | 'week' | 'month' | 'year' | 'currentQuarter' | 'lastQuarter' | 'custom';
+
+const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsListProps) => {
+  const { updateAppraisal, deleteAppraisal } = useLoggedAppraisals();
+  const { usesFinancialYear, fyStartMonth } = useFinancialYear();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [stageFilter, setStageFilter] = useState<string>('all');
+  const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
+  const [intentFilter, setIntentFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState<DateRange>('all');
+  const [selectedAppraisals, setSelectedAppraisals] = useState<Set<string>>(new Set());
+
+  const filteredAppraisals = useMemo(() => {
+    return appraisals.filter(appraisal => {
+      const matchesSearch = 
+        appraisal.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        appraisal.vendor_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        appraisal.suburb?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStage = stageFilter === 'all' || appraisal.stage === stageFilter;
+      const matchesOutcome = outcomeFilter === 'all' || appraisal.outcome === outcomeFilter;
+      const matchesIntent = intentFilter === 'all' || appraisal.intent === intentFilter;
+
+      // Date range filtering
+      let matchesDate = true;
+      if (dateRange !== 'all') {
+        const appraisalDate = parseISO(appraisal.appraisal_date);
+        const now = new Date();
+        
+        switch (dateRange) {
+          case 'week':
+            matchesDate = appraisalDate >= startOfWeek(now) && appraisalDate <= endOfWeek(now);
+            break;
+          case 'month':
+            matchesDate = appraisalDate >= startOfMonth(now) && appraisalDate <= endOfMonth(now);
+            break;
+          case 'year':
+            matchesDate = appraisalDate >= startOfYear(now) && appraisalDate <= endOfYear(now);
+            break;
+          case 'currentQuarter': {
+            const currentQuarter = getCurrentQuarter(usesFinancialYear, fyStartMonth, now);
+            matchesDate = appraisalDate >= currentQuarter.startDate && appraisalDate <= currentQuarter.endDate;
+            break;
+          }
+          case 'lastQuarter': {
+            const threeMonthsAgo = subMonths(now, 3);
+            const lastQuarter = getCurrentQuarter(usesFinancialYear, fyStartMonth, threeMonthsAgo);
+            matchesDate = appraisalDate >= lastQuarter.startDate && appraisalDate <= lastQuarter.endDate;
+            break;
+          }
+        }
+      }
+
+      return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate;
+    });
+  }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedAppraisals(new Set(filteredAppraisals.map(a => a.id)));
+    } else {
+      setSelectedAppraisals(new Set());
+    }
+  };
+
+  const handleSelectAppraisal = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedAppraisals);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedAppraisals(newSelected);
+  };
+
+  const handleBulkStageUpdate = async (newStage: 'MAP' | 'LAP') => {
+    const promises = Array.from(selectedAppraisals).map(id =>
+      updateAppraisal(id, { stage: newStage })
+    );
+    await Promise.all(promises);
+    setSelectedAppraisals(new Set());
+  };
+
+  const handleBulkOutcomeUpdate = async (newOutcome: 'In Progress' | 'WON' | 'LOST') => {
+    const promises = Array.from(selectedAppraisals).map(id =>
+      updateAppraisal(id, { outcome: newOutcome })
+    );
+    await Promise.all(promises);
+    setSelectedAppraisals(new Set());
+  };
+
+  const handleBulkIntentUpdate = async (newIntent: string) => {
+    const promises = Array.from(selectedAppraisals).map(id =>
+      updateAppraisal(id, { intent: newIntent as any })
+    );
+    await Promise.all(promises);
+    setSelectedAppraisals(new Set());
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Are you sure you want to delete ${selectedAppraisals.size} appraisals?`)) return;
+    const promises = Array.from(selectedAppraisals).map(id => deleteAppraisal(id));
+    await Promise.all(promises);
+    setSelectedAppraisals(new Set());
+  };
+
+  const getIntentColor = (intent: string) => {
+    switch (intent) {
+      case 'high': return 'bg-red-500/10 text-red-500 border-red-500/20';
+      case 'medium': return 'bg-orange-500/10 text-orange-500 border-orange-500/20';
+      case 'low': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+      default: return '';
+    }
+  };
+
+
+  if (loading) {
+    return <div className="flex items-center justify-center p-8">Loading appraisals...</div>;
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Bulk Actions Bar */}
+      {selectedAppraisals.size > 0 && (
+        <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            {selectedAppraisals.size} appraisal{selectedAppraisals.size > 1 ? 's' : ''} selected
+          </span>
+          <div className="flex gap-2">
+            <Select onValueChange={(value) => handleBulkStageUpdate(value as 'MAP' | 'LAP')}>
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue placeholder="Set Stage" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MAP">MAP</SelectItem>
+                <SelectItem value="LAP">LAP</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select onValueChange={(value) => handleBulkOutcomeUpdate(value as 'In Progress' | 'WON' | 'LOST')}>
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue placeholder="Set Outcome" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="In Progress">In Progress</SelectItem>
+                <SelectItem value="WON">WON</SelectItem>
+                <SelectItem value="LOST">LOST</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select onValueChange={handleBulkIntentUpdate}>
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue placeholder="Set Intent" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search by address, vendor, or suburb..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRange)}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Time Period" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Time</SelectItem>
+            <SelectItem value="week">This Week</SelectItem>
+            <SelectItem value="month">This Month</SelectItem>
+            <SelectItem value="currentQuarter">Current Quarter</SelectItem>
+            <SelectItem value="lastQuarter">Last Quarter</SelectItem>
+            <SelectItem value="year">This Year</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={stageFilter} onValueChange={setStageFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stages</SelectItem>
+            <SelectItem value="MAP">MAP</SelectItem>
+            <SelectItem value="LAP">LAP</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Outcome" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Outcomes</SelectItem>
+            <SelectItem value="In Progress">In Progress</SelectItem>
+            <SelectItem value="WON">WON</SelectItem>
+            <SelectItem value="LOST">LOST</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={intentFilter} onValueChange={setIntentFilter}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Intent" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Intent</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Results count */}
+      <div className="text-sm text-muted-foreground">
+        Showing {filteredAppraisals.length} of {appraisals.length} appraisals
+      </div>
+
+      {/* Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Address</TableHead>
+              <TableHead>Vendor</TableHead>
+              <TableHead>Intent</TableHead>
+              <TableHead>Value</TableHead>
+              <TableHead>Last Contact</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredAppraisals.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  No appraisals found
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredAppraisals.map((appraisal) => (
+                <TableRow key={appraisal.id} className="cursor-pointer hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      {format(new Date(appraisal.appraisal_date), 'dd MMM yyyy')}
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    <div>
+                      <div>{appraisal.address}</div>
+                      {appraisal.suburb && (
+                        <div className="text-sm text-muted-foreground">{appraisal.suburb}</div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>{appraisal.vendor_name}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={getIntentColor(appraisal.intent)}>
+                      {appraisal.intent}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {appraisal.estimated_value ? (
+                        <div className="text-sm font-medium">
+                          ${appraisal.estimated_value.toLocaleString()}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                      {appraisal.lead_source && (
+                        <div className="text-xs text-muted-foreground capitalize">
+                          {appraisal.lead_source.replace(/_/g, ' ')}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {appraisal.last_contact ? (
+                      format(new Date(appraisal.last_contact), 'dd MMM yyyy')
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <StatusBadge stage={appraisal.stage} outcome={appraisal.outcome} />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onAppraisalClick(appraisal)}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
+export default AppraisalsList;

@@ -2,70 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+html {
+  scroll-behavior: smooth;
+}
+
+/* Apple Notes Premium Design System - Warm, Inviting, Professional */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* Warm background tones */
+    --background: 42 15% 98%;
     --foreground: 222.2 84% 4.9%;
 
-    --card: 0 0% 100%;
+    /* Card with subtle warmth */
+    --card: 40 20% 99%;
     --card-foreground: 222.2 84% 4.9%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    /* Warmer primary (soft blue-gray) */
+    --primary: 220 30% 45%;
     --primary-foreground: 210 40% 98%;
 
-    --secondary: 210 40% 96.1%;
+    /* Soft secondary */
+    --secondary: 35 30% 94%;
     --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 210 40% 96.1%;
+    --muted: 35 20% 95%;
     --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 210 40% 96.1%;
+    /* Warm accent */
+    --accent: 35 40% 92%;
     --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Softer borders */
+    --border: 35 15% 88%;
+    --input: 35 15% 88%;
+    --ring: 220 30% 45%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Notes-specific design tokens */
+    --note-gradient-start: 40 25% 99%;
+    --note-gradient-end: 35 20% 96%;
+    --note-shadow: 220 30% 45%;
+    --note-hover-lift: -4px;
+    
+    /* Warm color palette for note borders */
+    --note-blue: 215 80% 60%;
+    --note-purple: 270 70% 65%;
+    --note-pink: 340 75% 70%;
+    --note-orange: 25 90% 65%;
+    --note-green: 150 60% 55%;
+    --note-yellow: 45 95% 65%;
 
+    --chart-1: 0 84% 60%;
+    --chart-2: 142 76% 36%;
+    --chart-3: 45 93% 47%;
+    --chart-4: 25 95% 53%;
+    --chart-5: 217 91% 60%;
+
+    --sidebar-background: 35 15% 97%;
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
+    --sidebar-accent: 35 20% 92%;
     --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
+    --sidebar-border: 35 15% 88%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 222.2 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 222.2 47% 13%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 222.2 47% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
+    --primary: 217 91% 60%;
     --primary-foreground: 222.2 47.4% 11.2%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -83,6 +104,17 @@ All colors MUST be HSL.
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+
+    --note-gradient-start: 222.2 47% 13%;
+    --note-gradient-end: 222.2 47% 16%;
+    --note-shadow: 217 91% 60%;
+
+    --chart-1: 0 72% 51%;
+    --chart-2: 142 69% 58%;
+    --chart-3: 45 93% 58%;
+    --chart-4: 25 95% 63%;
+    --chart-5: 217 91% 60%;
+
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -91,6 +123,19 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Message theme colors */
+    --message-personal: 270 70% 65%;
+    --message-personal-light: 270 60% 95%;
+    --message-personal-dark: 270 70% 25%;
+    
+    --message-channel: 215 80% 60%;
+    --message-channel-light: 215 80% 95%;
+    --message-channel-dark: 215 80% 25%;
+    
+    --message-announcement: 25 90% 65%;
+    --message-announcement-light: 25 90% 95%;
+    --message-announcement-dark: 25 90% 25%;
   }
 }
 
@@ -98,8 +143,259 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground text-[14px] leading-relaxed;
+  }
+  
+  h1, h2, h3 {
+    @apply font-semibold;
+  }
+  
+  h2 {
+    @apply text-xl md:text-2xl;
+  }
+  
+  h3 {
+    @apply text-lg md:text-xl;
+  }
+}
+
+@layer components {
+  /* Enhanced card gradients */
+  .card-gradient-primary {
+    @apply bg-gradient-to-br from-primary/5 via-background to-background border-primary/20;
+  }
+
+  .card-gradient-success {
+    @apply bg-gradient-to-br from-green-500/5 via-background to-background border-green-500/20;
+  }
+
+  .card-gradient-warning {
+    @apply bg-gradient-to-br from-orange-500/5 via-background to-background border-orange-500/20;
+  }
+
+  .card-gradient-danger {
+    @apply bg-gradient-to-br from-red-500/5 via-background to-background border-red-500/20;
+  }
+
+  /* Progress bar variants */
+  .progress-success .bg-primary {
+    @apply bg-green-500;
+  }
+
+  .progress-warning .bg-primary {
+    @apply bg-orange-500;
+  }
+
+  .progress-danger .bg-primary {
+    @apply bg-red-500;
+  }
+
+  /* Note card with Apple Notes premium styling */
+  .note-card {
+    background: linear-gradient(135deg, hsl(var(--note-gradient-start)), hsl(var(--note-gradient-end)));
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px 0 hsl(var(--note-shadow) / 0.08),
+                0 1px 2px -1px hsl(var(--note-shadow) / 0.06);
+  }
+
+  .note-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px -5px hsl(var(--note-shadow) / 0.15),
+                0 8px 10px -6px hsl(var(--note-shadow) / 0.08);
+  }
+
+  /* Floating Action Button */
+  .fab {
+    @apply fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl;
+    @apply flex items-center justify-center;
+    @apply bg-primary text-primary-foreground;
+    @apply hover:scale-110 active:scale-95;
+    @apply transition-all duration-200;
+    box-shadow: 0 10px 30px -5px hsl(var(--note-shadow) / 0.3),
+                0 5px 15px -5px hsl(var(--note-shadow) / 0.2);
+  }
+
+  /* Paper texture effect */
+  .paper-texture {
+    background-image: 
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 1px,
+        hsl(var(--border) / 0.3) 1px,
+        hsl(var(--border) / 0.3) 2px
+      );
+    background-size: 100% 32px;
+  }
+
+  /* Smooth focus ring */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2;
+    @apply focus-visible:ring-primary/40 focus-visible:ring-offset-2;
+    @apply focus-visible:ring-offset-background;
+  }
+
+  /* TipTap editor styling */
+  .ProseMirror {
+    @apply focus:outline-none min-h-[500px] px-0;
+    @apply text-base leading-relaxed;
+  }
+
+  .ProseMirror p {
+    @apply mb-4;
+  }
+
+  .ProseMirror h1 {
+    @apply text-3xl font-bold mb-4 mt-6;
+  }
+
+  .ProseMirror h2 {
+    @apply text-2xl font-semibold mb-3 mt-5;
+  }
+
+  .ProseMirror h3 {
+    @apply text-xl font-semibold mb-2 mt-4;
+  }
+
+  .ProseMirror ul,
+  .ProseMirror ol {
+    @apply pl-6 mb-4;
+  }
+
+  .ProseMirror ul li {
+    @apply list-disc;
+  }
+
+  .ProseMirror ol li {
+    @apply list-decimal;
+  }
+
+  .ProseMirror code {
+    @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  .ProseMirror pre {
+    @apply bg-muted p-4 rounded-lg mb-4 overflow-x-auto;
+  }
+
+  .ProseMirror blockquote {
+    @apply border-l-4 border-primary/30 pl-4 italic my-4 text-muted-foreground;
+  }
+
+  .ProseMirror img {
+    @apply max-w-full h-auto rounded-lg my-4;
+  }
+
+  .ProseMirror a {
+    @apply text-primary underline cursor-pointer hover:text-primary/80;
+  }
+
+  /* Task list styling */
+  .ProseMirror ul[data-type="taskList"] {
+    @apply list-none pl-0;
+  }
+
+  .ProseMirror ul[data-type="taskList"] li {
+    @apply flex items-start gap-2 mb-2;
+  }
+
+  .ProseMirror ul[data-type="taskList"] li input[type="checkbox"] {
+    @apply mt-1 cursor-pointer;
+  }
+
+  /* Mention styling */
+  .ProseMirror .mention {
+    @apply bg-primary/10 text-primary px-1 py-0.5 rounded font-medium;
+    @apply border border-primary/20;
+  }
+
+  /* Placeholder styling */
+  .ProseMirror p.is-editor-empty:first-child::before {
+    @apply text-muted-foreground;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* Smooth animations */
+  .animate-lift {
+    animation: lift 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes lift {
+    0% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-2px);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Enhanced Progress Bars */
+  .progress-animated {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .progress-animated > div {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .progress-success > div {
+    background: linear-gradient(90deg, hsl(142, 76%, 36%) 0%, hsl(142, 69%, 28%) 100%);
+    box-shadow: 0 0 20px hsla(142, 76%, 36%, 0.3);
+  }
+
+  .progress-warning > div {
+    background: linear-gradient(90deg, hsl(45, 93%, 47%) 0%, hsl(25, 95%, 53%) 100%);
+    box-shadow: 0 0 20px hsla(45, 93%, 47%, 0.3);
+  }
+
+  .progress-danger > div {
+    background: linear-gradient(90deg, hsl(0, 84%, 60%) 0%, hsl(0, 72%, 51%) 100%);
+    box-shadow: 0 0 20px hsla(0, 84%, 60%, 0.3);
+    animation: pulse-danger 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-danger {
+    0%, 100% { 
+      opacity: 1;
+      box-shadow: 0 0 20px hsla(0, 84%, 60%, 0.3);
+    }
+    50% { 
+      opacity: 0.8;
+      box-shadow: 0 0 30px hsla(0, 84%, 60%, 0.5);
+    }
+  }
+
+  /* Ensure all Radix dropdown/popover portals render above dialogs and overlays */
+  [data-radix-popper-content-wrapper] {
+    z-index: 10000 !important;
+    pointer-events: auto;
+  }
+
+  /* Visual highlight class used by the debug panel */
+  .debug-radix-highlight {
+    outline: 2px solid rgba(59, 130, 246, 0.9);
+    outline-offset: 4px;
   }
 }

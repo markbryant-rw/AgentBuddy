@@ -1,0 +1,29 @@
+-- Fix search_path for all database functions to prevent schema manipulation attacks
+
+-- Get list of all functions and add SET search_path = public
+ALTER FUNCTION public.get_team_quarter SET search_path = public;
+ALTER FUNCTION public.needs_quarterly_review SET search_path = public;
+ALTER FUNCTION public.remap_quarterly_data SET search_path = public;
+ALTER FUNCTION public.update_conversation_timestamp SET search_path = public;
+ALTER FUNCTION public.update_note_search_vector SET search_path = public;
+ALTER FUNCTION public.update_project_updated_at SET search_path = public;
+ALTER FUNCTION public.calculate_price_alignment SET search_path = public;
+ALTER FUNCTION public.update_provider_review_counts SET search_path = public;
+ALTER FUNCTION public.refresh_user_effective_access SET search_path = public;
+ALTER FUNCTION public.sync_user_office_from_team SET search_path = public;
+ALTER FUNCTION public.update_appraisal_on_opportunity_won SET search_path = public;
+ALTER FUNCTION public.update_transaction_task_counts SET search_path = public;
+ALTER FUNCTION public.update_social_posts_updated_at SET search_path = public;
+ALTER FUNCTION public.auto_friend_team_members SET search_path = public;
+ALTER FUNCTION public.update_provider_search_vector SET search_path = public;
+ALTER FUNCTION public.update_provider_last_used SET search_path = public;
+ALTER FUNCTION public.update_provider_rating SET search_path = public;
+ALTER FUNCTION public.notify_on_transaction_stage_change SET search_path = public;
+ALTER FUNCTION public.notify_friends_on_checkin SET search_path = public;
+ALTER FUNCTION public.notify_team_admins_on_new_member SET search_path = public;
+ALTER FUNCTION public.check_task_assignment SET search_path = public;
+ALTER FUNCTION public.update_daily_activities_updated_at SET search_path = public;
+ALTER FUNCTION public.update_help_requests_updated_at SET search_path = public;
+ALTER FUNCTION public.sync_appraisal_opportunity_fields SET search_path = public;
+ALTER FUNCTION public.update_ai_usage_updated_at SET search_path = public;
+ALTER FUNCTION public.update_updated_at_column SET search_path = public;

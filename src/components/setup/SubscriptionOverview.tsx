@@ -1,0 +1,156 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CreditCard, Calendar, TrendingUp, Shield } from 'lucide-react';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+
+interface SubscriptionOverviewProps {
+  canManage: boolean;
+}
+
+export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) => {
+  const { subscription, isLoading } = useUserSubscription();
+  const navigate = useNavigate();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-muted rounded w-1/3"></div>
+            <div className="h-8 bg-muted rounded w-1/2"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!subscription) return null;
+
+  const getPlanBadge = () => {
+    const badges = {
+      free: { label: 'Free Plan', variant: 'secondary' as const, icon: Shield },
+      individual: { label: 'Individual', variant: 'default' as const, icon: CreditCard },
+      team: { label: 'Team', variant: 'default' as const, icon: TrendingUp },
+      agency: { label: 'Agency', variant: 'default' as const, icon: Shield },
+    };
+    return badges[subscription.plan];
+  };
+
+  const badge = getPlanBadge();
+  const BadgeIcon = badge.icon;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <BadgeIcon className="h-5 w-5" />
+              Current Subscription
+            </CardTitle>
+            <CardDescription>Your billing plan and details</CardDescription>
+          </div>
+          <Badge variant={badge.variant} className="gap-1">
+            {badge.label}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Plan Details */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-bold">
+            ${subscription.amount}
+          </span>
+          <span className="text-muted-foreground">
+            /{subscription.billingCycle === 'monthly' ? 'month' : 'year'}
+          </span>
+        </div>
+
+        {/* Next Billing Date */}
+        {subscription.nextBillingDate && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4" />
+            <span>
+              Next billing date: {format(new Date(subscription.nextBillingDate), 'MMM dd, yyyy')}
+            </span>
+          </div>
+        )}
+
+        {/* Discount Code Badge */}
+        {subscription.discountCode && (
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">🎉</span>
+              <div>
+                <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                  Active Discount Code
+                </p>
+                <p className="text-xs text-green-700 dark:text-green-300">
+                  Code: {subscription.discountCode}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Managed By Badge */}
+        {subscription.managedBy && (
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">💼</span>
+              <div>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Managed by {subscription.managedBy}
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Your subscription is handled by your team administrator
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        {canManage && (
+          <div className="flex gap-2 pt-2">
+            {subscription.plan === 'free' && (
+              <Button 
+                className="flex-1"
+                onClick={() => navigate('/pricing')}
+              >
+                Upgrade Plan
+              </Button>
+            )}
+            {subscription.plan !== 'free' && subscription.plan !== 'agency' && (
+              <>
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => navigate('/pricing')}
+                >
+                  Change Plan
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="flex-1"
+                  disabled
+                >
+                  Cancel Subscription
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+
+        {!canManage && (
+          <p className="text-xs text-muted-foreground text-center pt-2">
+            Contact your administrator to make changes to your subscription
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};

@@ -1,0 +1,325 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+
+export interface VendorDetails {
+  primary?: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+    children?: string[];
+    pets?: string[];
+    moved_to?: string;
+    moved_date?: string;
+    relationship_notes?: string;
+    is_referral_partner?: boolean;
+    referral_value?: number;
+    referral_notes?: string;
+    referral_potential?: string;
+    last_contacted_date?: string;
+    next_followup_date?: string;
+  };
+  secondary?: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+    children?: string[];
+    pets?: string[];
+    relationship_notes?: string;
+  };
+}
+
+export interface BuyerDetails {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  children?: string[];
+  pets?: string[];
+  moving_from?: string;
+  relationship_notes?: string;
+  is_referral_partner?: boolean;
+  referral_value?: number;
+  referral_notes?: string;
+  referral_potential?: string;
+  last_contacted_date?: string;
+  next_followup_date?: string;
+}
+
+export interface PastSale {
+  id: string;
+  team_id: string;
+  address: string;
+  suburb?: string;
+  region?: string;
+  latitude?: number;
+  longitude?: number;
+  geocoded_at?: string;
+  geocode_error?: string;
+  cabinet_number?: string;
+  listing_type?: string;
+  status: string;
+  lost_reason?: string;
+  won_date?: string;
+  lost_date?: string;
+  appraisal_low?: number;
+  appraisal_high?: number;
+  vendor_expected_price?: number;
+  team_recommended_price?: number;
+  listing_price?: number;
+  sale_price?: number;
+  commission_rate?: number;
+  commission_amount?: number;
+  settlement_date?: string;
+  first_contact_date?: string;
+  appraisal_date?: string;
+  listing_signed_date?: string;
+  listing_live_date?: string;
+  unconditional_date?: string;
+  days_to_convert?: number;
+  days_on_market?: number;
+  lead_source?: string;
+  lead_source_detail?: string;
+  marketing_spend?: number;
+  matterport_url?: string;
+  video_tour_url?: string;
+  listing_url?: string;
+  vendor_details?: VendorDetails;
+  buyer_details?: BuyerDetails;
+  referral_potential?: string;
+  last_contacted_date?: string;
+  next_followup_date?: string;
+  referral_tags?: string[];
+  relationship_notes?: string;
+  attachments?: any[];
+  photos?: string[];
+  lead_salesperson?: string;
+  secondary_salesperson?: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export const usePastSales = (teamId?: string) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Fetch all past sales for the specified team (or user's teams if no teamId specified)
+  const { data: pastSales = [], isLoading, refetch } = useQuery({
+    queryKey: ["pastSales", teamId || user?.id],
+    queryFn: async () => {
+      let query = supabase
+        .from("past_sales")
+        .select("*");
+      
+      // Filter by team_id if provided
+      if (teamId) {
+        query = query.eq('team_id', teamId);
+      }
+      
+      const { data, error } = await query
+        .order("settlement_date", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data as PastSale[];
+    },
+    enabled: !!user,
+  });
+
+  // Add past sale
+  const addPastSale = useMutation({
+    mutationFn: async (newPastSale: Partial<PastSale>) => {
+      const insertData = {
+        ...newPastSale,
+        vendor_details: newPastSale.vendor_details || {},
+        buyer_details: newPastSale.buyer_details || {},
+      };
+      
+      const { data, error } = await supabase
+        .from("past_sales")
+        .insert([insertData as any])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Trigger geocoding if address provided
+      if (data.address) {
+        try {
+          await supabase.functions.invoke("geocode-past-sale", {
+            body: { pastSaleId: data.id },
+          });
+        } catch (geocodeError) {
+          console.error("Geocoding error:", geocodeError);
+        }
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pastSales"] });
+      toast({
+        title: "Success",
+        description: "Past sale added successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update past sale
+  const updatePastSale = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<PastSale> }) => {
+      const updateData = {
+        ...updates,
+        vendor_details: updates.vendor_details || undefined,
+        buyer_details: updates.buyer_details || undefined,
+      };
+      
+      const { data, error } = await supabase
+        .from("past_sales")
+        .update(updateData as any)
+        .eq("id", id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Trigger geocoding if address or suburb changed
+      if (updates.address || updates.suburb) {
+        try {
+          await supabase.functions.invoke("geocode-past-sale", {
+            body: { pastSaleId: id },
+          });
+        } catch (geocodeError) {
+          console.error("Geocoding error:", geocodeError);
+        }
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pastSales"] });
+      toast({
+        title: "Success",
+        description: "Past sale updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete past sale
+  const deletePastSale = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("past_sales")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pastSales"] });
+      toast({
+        title: "Success",
+        description: "Past sale deleted successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Geocode single past sale
+  const geocodePastSale = useMutation({
+    mutationFn: async (pastSaleId: string) => {
+      const { data, error } = await supabase.functions.invoke("geocode-past-sale", {
+        body: { pastSaleId },
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["pastSales"] });
+      toast({
+        title: "Success",
+        description: "Geocoding completed",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Geocoding Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Geocode all past sales without coordinates
+  const geocodeAllPastSales = useMutation({
+    mutationFn: async () => {
+      const ungeocodedSales = pastSales.filter(
+        (sale) => sale.address && !sale.latitude && !sale.longitude
+      );
+
+      const results = await Promise.allSettled(
+        ungeocodedSales.map((sale) =>
+          supabase.functions.invoke("geocode-past-sale", {
+            body: { pastSaleId: sale.id },
+          })
+        )
+      );
+
+      const successful = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.filter((r) => r.status === "rejected").length;
+
+      return { successful, failed, total: ungeocodedSales.length };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["pastSales"] });
+      toast({
+        title: "Geocoding Complete",
+        description: `${result.successful} of ${result.total} past sales geocoded successfully`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  return {
+    pastSales,
+    isLoading,
+    refetch,
+    addPastSale: addPastSale.mutateAsync,
+    updatePastSale: updatePastSale.mutateAsync,
+    deletePastSale: deletePastSale.mutateAsync,
+    geocodePastSale: geocodePastSale.mutateAsync,
+    geocodeAllPastSales: geocodeAllPastSales.mutateAsync,
+  };
+};
