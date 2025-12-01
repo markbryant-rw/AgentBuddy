@@ -125,6 +125,7 @@ const KnowledgeBasePlaybook = lazy(() => import("./pages/KnowledgeBasePlaybook")
 const KnowledgeBaseEditor = lazy(() => import("./pages/KnowledgeBaseEditor"));
 const KnowledgeBaseAnalytics = lazy(() => import("./pages/KnowledgeBaseAnalytics"));
 const LibraryManagement = lazy(() => import("./pages/LibraryManagement"));
+const CreateAdminUser = lazy(() => import("./pages/CreateAdminUser"));
 
 const AppContent = () => {
   useEffect(() => {
@@ -154,6 +155,7 @@ const AppContent = () => {
                 <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
                 <Route path="/access-denied" element={<AccessDenied />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/create-admin" element={<CreateAdminUser />} />
                 {/* Salesperson/Workspace Routes */}
                 <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
                   <Route path="/dashboard" element={<Home />} />
