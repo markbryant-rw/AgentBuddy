@@ -13,12 +13,12 @@ export default function CreateAdminUser() {
     setLoading(true);
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-admin-user`,
+        'https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1/create-admin-user',
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14c2VmbnB4cm5hbXVwYXRncmxiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ0MDE3ODQsImV4cCI6MjA3OTk3Nzc4NH0.VNageWt6qo_XR2G37f_tcyCisQZ4wJ24bBGj3QCtTYs',
           },
           body: JSON.stringify({
             email: 'mark.bryant@raywhite.com',
