@@ -2566,6 +2566,7 @@ export type Database = {
           completed_at: string | null
           created_at: string | null
           created_by: string
+          daily_position: number | null
           description: string | null
           due_date: string | null
           id: string
@@ -2586,6 +2587,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by: string
+          daily_position?: number | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -2606,6 +2608,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string | null
           created_by?: string
+          daily_position?: number | null
           description?: string | null
           due_date?: string | null
           id?: string
