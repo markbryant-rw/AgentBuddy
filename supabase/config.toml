@@ -12,6 +12,9 @@ verify_jwt = true
 [functions.notify-bug-status-change]
 verify_jwt = false
 
+[functions.notify-feature-status-change]
+verify_jwt = false
+
 [functions.accept-invitation]
 verify_jwt = false
 
@@ -65,3 +68,102 @@ verify_jwt = true
 
 [functions.create-admin-user]
 verify_jwt = false
+
+[functions.geocode-appraisal]
+verify_jwt = true
+
+[functions.geocode-listing]
+verify_jwt = true
+
+[functions.geocode-past-sale]
+verify_jwt = true
+
+[functions.geocode-transaction]
+verify_jwt = true
+
+[functions.get-weather]
+verify_jwt = true
+
+[functions.giphy-search]
+verify_jwt = true
+
+[functions.switch-role]
+verify_jwt = true
+
+[functions.switch-office]
+verify_jwt = true
+
+[functions.send-notification]
+verify_jwt = true
+
+[functions.send-announcement]
+verify_jwt = true
+
+[functions.fix-orphan-profiles]
+verify_jwt = true
+
+[functions.fix-orphan-team-members]
+verify_jwt = true
+
+[functions.fix-profile-team-links]
+verify_jwt = true
+
+[functions.merge-duplicate-profiles]
+verify_jwt = true
+
+[functions.sync-profile-teams]
+verify_jwt = true
+
+[functions.reassign-orphan-records]
+verify_jwt = true
+
+[functions.get-invitation-details]
+verify_jwt = false
+
+[functions.birthday-scheduler]
+verify_jwt = false
+
+[functions.weekly-reflection-scheduler]
+verify_jwt = false
+
+[functions.send-birthday-notification]
+verify_jwt = true
+
+[functions.send-reflection-reminder]
+verify_jwt = true
+
+[functions.generate-task-summary]
+verify_jwt = true
+
+[functions.analyze-kpi-trends]
+verify_jwt = true
+
+[functions.suggest-next-actions]
+verify_jwt = true
+
+[functions.generate-team-report]
+verify_jwt = true
+
+[functions.bulk-import-users]
+verify_jwt = true
+
+[functions.export-team-data]
+verify_jwt = true
+
+[functions.validate-import-data]
+verify_jwt = true
+
+[functions.process-csv-import]
+verify_jwt = true
+
+[functions.archive-old-records]
+verify_jwt = true
+
+[functions.cleanup-orphan-data]
+verify_jwt = true
+
+[functions.recalculate-kpi-totals]
+verify_jwt = true
+
+[functions.sync-transaction-status]
+verify_jwt = true
