@@ -55,37 +55,11 @@ export const TransactionVendorReportsTab = ({ transactionId }: TransactionVendor
     },
   });
 
+  // Vendor reports table doesn't exist in DB yet - show placeholder
   const { data: reports, isLoading } = useQuery<VendorReportWithCreator[]>({
     queryKey: ['vendor-reports', transactionId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('vendor_reports')
-        .select('*')
-        .eq('transaction_id', transactionId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      // Fetch creator profiles separately
-      if (data && data.length > 0) {
-        const creatorIds = [...new Set(data.map(r => r.created_by).filter(Boolean))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', creatorIds);
-
-        return data.map(report => {
-          const generatedReport = report.generated_report as any;
-          return {
-            ...report,
-            creator_name: profiles?.find(p => p.id === report.created_by)?.full_name || null,
-            vendor_report: generatedReport?.vendorReport || '',
-            action_points: generatedReport?.actionPoints || '',
-            whatsapp_summary: generatedReport?.whatsappSummary || '',
-          };
-        });
-      }
-
+      // Return empty array until vendor_reports table is created
       return [];
     },
   });

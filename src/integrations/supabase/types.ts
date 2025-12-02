@@ -233,24 +233,36 @@ export type Database = {
       }
       bug_reports: {
         Row: {
+          admin_comments: string | null
           ai_analysis: string | null
+          ai_analyzed_at: string | null
           ai_confidence: number | null
           ai_impact: string | null
+          archived_at: string | null
+          archived_reason: string | null
           attachments: Json | null
           category_id: string | null
           created_at: string | null
           description: string
           environment: string | null
           expected_behaviour: string | null
+          external_system: string | null
+          external_ticket_id: string | null
+          external_ticket_url: string | null
           fixed_at: string | null
+          fixed_by: string | null
           id: string
           module: string | null
+          position: number | null
+          satisfaction_feedback: string | null
           satisfaction_rating: number | null
           satisfaction_recorded_at: string | null
+          satisfaction_requested_at: string | null
           severity: string | null
           status: string | null
           steps_to_reproduce: string | null
           summary: string | null
+          team_id: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -258,24 +270,36 @@ export type Database = {
           workspace_module: string | null
         }
         Insert: {
+          admin_comments?: string | null
           ai_analysis?: string | null
+          ai_analyzed_at?: string | null
           ai_confidence?: number | null
           ai_impact?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           attachments?: Json | null
           category_id?: string | null
           created_at?: string | null
           description: string
           environment?: string | null
           expected_behaviour?: string | null
+          external_system?: string | null
+          external_ticket_id?: string | null
+          external_ticket_url?: string | null
           fixed_at?: string | null
+          fixed_by?: string | null
           id?: string
           module?: string | null
+          position?: number | null
+          satisfaction_feedback?: string | null
           satisfaction_rating?: number | null
           satisfaction_recorded_at?: string | null
+          satisfaction_requested_at?: string | null
           severity?: string | null
           status?: string | null
           steps_to_reproduce?: string | null
           summary?: string | null
+          team_id?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -283,24 +307,36 @@ export type Database = {
           workspace_module?: string | null
         }
         Update: {
+          admin_comments?: string | null
           ai_analysis?: string | null
+          ai_analyzed_at?: string | null
           ai_confidence?: number | null
           ai_impact?: string | null
+          archived_at?: string | null
+          archived_reason?: string | null
           attachments?: Json | null
           category_id?: string | null
           created_at?: string | null
           description?: string
           environment?: string | null
           expected_behaviour?: string | null
+          external_system?: string | null
+          external_ticket_id?: string | null
+          external_ticket_url?: string | null
           fixed_at?: string | null
+          fixed_by?: string | null
           id?: string
           module?: string | null
+          position?: number | null
+          satisfaction_feedback?: string | null
           satisfaction_rating?: number | null
           satisfaction_recorded_at?: string | null
+          satisfaction_requested_at?: string | null
           severity?: string | null
           status?: string | null
           steps_to_reproduce?: string | null
           summary?: string | null
+          team_id?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
@@ -733,11 +769,21 @@ export type Database = {
       feature_requests: {
         Row: {
           admin_notes: string | null
+          ai_analysis: Json | null
+          ai_analyzed_at: string | null
+          ai_estimated_effort: string | null
+          ai_priority_score: number | null
+          archived_at: string | null
+          archived_reason: string | null
+          attachments: string[] | null
           created_at: string | null
           description: string
           id: string
+          module: string | null
+          position: number | null
           priority: string | null
           status: string | null
+          team_id: string | null
           title: string
           updated_at: string | null
           user_id: string
@@ -745,11 +791,21 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          ai_analysis?: Json | null
+          ai_analyzed_at?: string | null
+          ai_estimated_effort?: string | null
+          ai_priority_score?: number | null
+          archived_at?: string | null
+          archived_reason?: string | null
+          attachments?: string[] | null
           created_at?: string | null
           description: string
           id?: string
+          module?: string | null
+          position?: number | null
           priority?: string | null
           status?: string | null
+          team_id?: string | null
           title: string
           updated_at?: string | null
           user_id: string
@@ -757,11 +813,21 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          ai_analysis?: Json | null
+          ai_analyzed_at?: string | null
+          ai_estimated_effort?: string | null
+          ai_priority_score?: number | null
+          archived_at?: string | null
+          archived_reason?: string | null
+          attachments?: string[] | null
           created_at?: string | null
           description?: string
           id?: string
+          module?: string | null
+          position?: number | null
           priority?: string | null
           status?: string | null
+          team_id?: string | null
           title?: string
           updated_at?: string | null
           user_id?: string
