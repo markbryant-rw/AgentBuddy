@@ -56,15 +56,23 @@ const ReportForm = ({ onGenerate, isGenerating, initialData }: ReportFormProps) 
   useEffect(() => {
     const loadTransactions = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('transactions')
-          .select('id, address, suburb, vendor_names, client_name, live_date, stage')
+          .select('id, address, suburb, client_name, created_at, stage')
           .in('stage', ['live', 'contract'])
           .eq('archived', false)
-          .order('live_date', { ascending: false });
+          .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setLiveTransactions((data || []) as LiveTransaction[]);
+        setLiveTransactions((data || []).map((t: any) => ({
+          id: t.id,
+          address: t.address || '',
+          suburb: t.suburb || '',
+          vendor_names: [],
+          client_name: t.client_name,
+          live_date: t.created_at,
+          stage: t.stage,
+        })) as LiveTransaction[]);
       } catch (error: any) {
         console.error('Error loading transactions:', error);
         toast.error('Failed to load properties');

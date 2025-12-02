@@ -76,10 +76,6 @@ interface ProspectNavigationCardsProps {
     total: number;
     active: number;
     converted: number;
-    high: number;
-    medium: number;
-    low: number;
-    conversionRate: string;
   };
   pipelineStats: {
     total: number;
@@ -120,7 +116,7 @@ const ProspectNavigationCards = ({
         primaryLabel="Total Appraisals"
         secondaryStats={[
           { label: 'Active', value: appraisalStats.active },
-          { label: 'Conversion', value: `${appraisalStats.conversionRate}%` }
+          { label: 'Converted', value: appraisalStats.converted }
         ]}
         gradient="bg-purple-100 dark:bg-purple-900/30"
       />

@@ -59,7 +59,7 @@ export default function OfficeStockBoard() {
       if (error) throw error;
 
       // Enrich with team names
-      return (data || []).map(t => ({
+      return (data || []).map((t: any) => ({
         ...t,
         team_name: teams.find(team => team.id === t.team_id)?.name || 'Unknown Team'
       })) as any[];

@@ -5,32 +5,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Activity, AlertTriangle, CheckCircle2, Clock, TrendingUp, Users, Zap } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Activity, AlertTriangle, CheckCircle2, Clock, TrendingUp, Users } from 'lucide-react';
 
 export const SystemHealth = () => {
   const [timeRange, setTimeRange] = useState<'1h' | '24h' | '7d'>('24h');
 
-  // Fetch system health metrics
+  // Stub system health metrics - table doesn't exist yet
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['system-health', timeRange],
     queryFn: async () => {
-      const timeRangeMap = {
-        '1h': '1 hour',
-        '24h': '24 hours',
-        '7d': '7 days'
-      };
-
-      const { data, error } = await supabase
-        .from('system_health_metrics')
-        .select('recorded_at, metric_name, metric_value, status')
-        .gte('recorded_at', new Date(Date.now() - (timeRange === '1h' ? 3600000 : timeRange === '24h' ? 86400000 : 604800000)).toISOString())
-        .order('recorded_at', { ascending: true });
-
-      if (error) throw error;
-      return data || [];
+      // system_health_metrics table not implemented - return empty array
+      console.log('SystemHealth: metrics table not implemented');
+      return [];
     },
-    refetchInterval: 30000 // Refresh every 30 seconds
+    refetchInterval: 30000
   });
 
   // Fetch recent invitation stats

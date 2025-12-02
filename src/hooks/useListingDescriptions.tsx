@@ -2,10 +2,31 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
+export interface GenerateParams {
+  address: string;
+  bedrooms: number;
+  bathrooms: number;
+  listingType: string;
+  targetAudience: string;
+  additionalFeatures?: string;
+}
+
 export interface GeneratedDescriptions {
   short: string;
   medium: string;
   long: string;
+}
+
+export interface ListingDescription {
+  id: string;
+  address: string;
+  bedrooms: number;
+  bathrooms: number;
+  listing_type: string;
+  target_audience: string;
+  additional_features?: string;
+  generated_descriptions: GeneratedDescriptions;
+  created_at: string;
 }
 
 export const useListingDescriptions = () => {
@@ -14,7 +35,7 @@ export const useListingDescriptions = () => {
 
   const { data: descriptions = [], isLoading: loading } = useQuery({
     queryKey: ['listing-descriptions', user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<ListingDescription[]> => {
       console.log('useListingDescriptions: Stubbed - returning empty array');
       return [];
     },
@@ -22,7 +43,7 @@ export const useListingDescriptions = () => {
   });
 
   const generateDescription = useMutation({
-    mutationFn: async (params: any) => {
+    mutationFn: async (params: GenerateParams): Promise<GeneratedDescriptions | null> => {
       console.log('generateDescription: Stubbed', params);
       return null;
     },

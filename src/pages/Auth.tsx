@@ -341,10 +341,10 @@ const Auth = () => {
       } else {
         // Mark invitation as accepted if joining via invite
         if (inviteData && searchParams.get('invite_code')) {
-          await supabase
+          await (supabase as any)
             .from('pending_invitations')
             .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-            .eq('token', searchParams.get('invite_code'));
+            .eq('invite_code', searchParams.get('invite_code'));
         }
 
         // Send team member invitations if creating team and has members
