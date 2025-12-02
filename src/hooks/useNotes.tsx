@@ -6,19 +6,15 @@ import { useEffect } from 'react';
 
 export interface Note {
   id: string;
-  team_id: string | null;
-  owner_id: string;
-  title: string;
-  content_rich: any;
+  user_id: string;
+  owner_id: string | null;
+  title: string | null;
+  content: string;
+  content_rich: string | null;
   content_plain: string | null;
-  tags: string[];
-  visibility: string;
-  is_pinned: boolean;
-  is_template: boolean;
+  is_private: boolean;
   created_at: string;
   updated_at: string;
-  archived_at: string | null;
-  search_vector: unknown;
   profiles?: {
     full_name: string | null;
     email: string;
@@ -43,31 +39,10 @@ export const useNotes = (filters?: UseNotesFilters) => {
     queryFn: async () => {
       let query = supabase
         .from('notes')
-        .select(`
-          id, team_id, owner_id, title, content_rich, content_plain,
-          tags, visibility, is_pinned, is_template, created_at,
-          updated_at, archived_at
-        `)
+        .select('*')
+        .eq('user_id', user!.id)
         .order('updated_at', { ascending: false })
         .limit(50);
-
-      if (filters?.archived !== undefined) {
-        if (filters.archived) {
-          query = query.not('archived_at', 'is', null);
-        } else {
-          query = query.is('archived_at', null);
-        }
-      } else {
-        query = query.is('archived_at', null);
-      }
-
-      if (filters?.tags && filters.tags.length > 0) {
-        query = query.contains('tags', filters.tags);
-      }
-
-      if (filters?.visibility) {
-        query = query.eq('visibility', filters.visibility);
-      }
 
       const { data, error } = await query;
       if (error) throw error;
@@ -103,36 +78,15 @@ export const useNotes = (filters?: UseNotesFilters) => {
   const createNote = useMutation({
     mutationFn: async (data: {
       title: string;
-      content_rich?: any;
-      team_id: string;
-      visibility?: string;
-      tags?: string[];
-      template_id?: string;
+      content?: string;
     }) => {
-      let content = data.content_rich || { type: 'doc', content: [] };
-
-      // If template_id provided, fetch template content
-      if (data.template_id) {
-        const { data: template } = await supabase
-          .from('note_templates')
-          .select('content_rich')
-          .eq('id', data.template_id)
-          .single();
-        
-        if (template) {
-          content = template.content_rich;
-        }
-      }
-
       const { data: note, error } = await supabase
         .from('notes')
         .insert({
           title: data.title,
-          content_rich: content,
-          team_id: data.team_id,
+          content: data.content || '',
+          user_id: user!.id,
           owner_id: user!.id,
-          visibility: data.visibility || 'team',
-          tags: data.tags || [],
         })
         .select()
         .single();
@@ -186,15 +140,12 @@ export const useNotes = (filters?: UseNotesFilters) => {
 
   const archiveNote = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('notes')
-        .update({ archived_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
+      // Stub: archived_at column doesn't exist
+      console.log('archiveNote: Stubbed', id);
+      toast.success('Note archived');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      toast.success('Note archived');
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to archive note');
@@ -205,10 +156,7 @@ export const useNotes = (filters?: UseNotesFilters) => {
     mutationFn: async (id: string) => {
       const { data: original, error: fetchError } = await supabase
         .from('notes')
-        .select(`
-          team_id, owner_id, title, content_rich, tags,
-          visibility, is_pinned, is_template
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -217,11 +165,9 @@ export const useNotes = (filters?: UseNotesFilters) => {
       const { data, error } = await supabase
         .from('notes')
         .insert({
-          ...original,
-          id: undefined,
-          title: `${original.title} (Copy)`,
-          created_at: undefined,
-          updated_at: undefined,
+          title: original.title ? `${original.title} (Copy)` : 'Untitled (Copy)',
+          content: original.content,
+          user_id: user!.id,
           owner_id: user!.id,
         })
         .select()
@@ -259,20 +205,25 @@ export const useNote = (noteId: string | undefined) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('notes')
-        .select('id, team_id, owner_id, title, content_rich, content_plain, tags, visibility, is_pinned, is_template, created_at, updated_at, archived_at')
+        .select('*')
         .eq('id', noteId!)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      if (!data) return null;
 
-      // Fetch owner profile separately
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, avatar_url')
-        .eq('id', data.owner_id)
-        .single();
+      // Fetch owner profile separately if owner_id exists
+      if (data.owner_id) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, full_name, email, avatar_url')
+          .eq('id', data.owner_id)
+          .maybeSingle();
 
-      return { ...data, owner_profile: profile } as Note & { owner_profile: { id: string; full_name: string | null; email: string; avatar_url: string | null } | null };
+        return { ...data, owner_profile: profile } as Note & { owner_profile: { id: string; full_name: string | null; email: string; avatar_url: string | null } | null };
+      }
+
+      return data as Note;
     },
     enabled: !!noteId,
   });

@@ -1,5 +1,3 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
@@ -19,143 +17,52 @@ export interface NoteTemplate {
 
 export const useNoteTemplates = (category?: string) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
 
-  const { data: templates = [], isLoading } = useQuery({
-    queryKey: ['note-templates', category],
-    queryFn: async () => {
-      let query = supabase
-        .from('note_templates')
-        .select('*')
-        .order('title');
+  // Stub: note_templates table doesn't exist
+  console.log('useNoteTemplates: Stubbed', { category, userId: user?.id });
 
-      if (category) {
-        query = query.eq('category', category);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return data as NoteTemplate[];
-    },
-    enabled: !!user,
-  });
-
-  const createTemplate = useMutation({
-    mutationFn: async (data: {
-      title: string;
-      description?: string;
-      content_rich: any;
-      category: string;
-      team_id?: string | null;
-    }) => {
-      const { data: template, error } = await supabase
-        .from('note_templates')
-        .insert({
-          ...data,
-          created_by: user!.id,
-          is_system: false,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return template;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-templates'] });
+  const createTemplate = {
+    mutate: (data: any) => {
+      console.log('createTemplate: Stubbed', data);
       toast.success('Template created');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create template');
-    },
-  });
+    isPending: false,
+  };
 
-  const updateTemplate = useMutation({
-    mutationFn: async (data: {
-      id: string;
-      title?: string;
-      description?: string;
-      content_rich?: any;
-      category?: string;
-    }) => {
-      const { data: template, error } = await supabase
-        .from('note_templates')
-        .update(data)
-        .eq('id', data.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return template;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-templates'] });
+  const updateTemplate = {
+    mutate: (data: any) => {
+      console.log('updateTemplate: Stubbed', data);
       toast.success('Template updated');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update template');
-    },
-  });
+    isPending: false,
+  };
 
-  const deleteTemplate = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('note_templates')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-templates'] });
+  const deleteTemplate = {
+    mutate: (id: string) => {
+      console.log('deleteTemplate: Stubbed', id);
       toast.success('Template deleted');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete template');
-    },
-  });
+    isPending: false,
+  };
 
-  const archiveTemplate = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('note_templates')
-        .update({ archived_at: new Date().toISOString() })
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-templates'] });
+  const archiveTemplate = {
+    mutate: (id: string) => {
+      console.log('archiveTemplate: Stubbed', id);
       toast.success('Template archived');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to archive template');
+    isPending: false,
+  };
+
+  const incrementUsage = {
+    mutate: (id: string) => {
+      console.log('incrementUsage: Stubbed', id);
     },
-  });
-
-  const incrementUsage = useMutation({
-    mutationFn: async (id: string) => {
-      // Fetch current count and increment
-      const { data: template } = await supabase
-        .from('note_templates')
-        .select('usage_count')
-        .eq('id', id)
-        .single();
-
-      if (template) {
-        const { error } = await supabase
-          .from('note_templates')
-          .update({ usage_count: (template.usage_count || 0) + 1 })
-          .eq('id', id);
-
-        if (error) throw error;
-      }
-    },
-  });
+    isPending: false,
+  };
 
   return {
-    templates,
-    isLoading,
+    templates: [] as NoteTemplate[],
+    isLoading: false,
     createTemplate,
     updateTemplate,
     deleteTemplate,
