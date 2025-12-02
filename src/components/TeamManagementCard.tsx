@@ -64,15 +64,16 @@ export function TeamManagementCard() {
   const handleMessage = async (memberId: string) => {
     setMessagingUserId(memberId);
     try {
-      const { data: conversation, error } = await supabase
+      const { data: conversationId, error } = await supabase
         .rpc('get_or_create_conversation', {
-          other_user_id: memberId
+          user1_id: user?.id || '',
+          user2_id: memberId
         });
       
       if (error) throw error;
       
-      if (conversation && conversation.length > 0) {
-        navigate(`/messages?conversation=${conversation[0].id}`);
+      if (conversationId) {
+        navigate(`/messages?conversation=${conversationId}`);
       }
     } catch (error) {
       console.error('Failed to start conversation:', error);

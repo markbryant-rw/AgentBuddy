@@ -103,8 +103,9 @@ export function MultiNoteSummaryDialog({
         .insert([{
           owner_id: user.id,
           title: `Consolidated Summary - ${new Date().toLocaleDateString()}`,
+          content: summary,
           content_plain: summary,
-          content_rich: {
+          content_rich: JSON.stringify({
             type: 'doc',
             content: [
               {
@@ -112,7 +113,8 @@ export function MultiNoteSummaryDialog({
                 content: [{ type: 'text', text: summary }],
               },
             ],
-          },
+          }),
+          user_id: user.id,
         }])
         .select()
         .single();

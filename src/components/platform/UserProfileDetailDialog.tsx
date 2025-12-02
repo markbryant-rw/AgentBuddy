@@ -122,16 +122,16 @@ export const UserProfileDetailDialog = ({ open, onOpenChange, user }: UserProfil
                   <p className="text-sm text-muted-foreground">No activity recorded</p>
                 ) : (
                   <div className="space-y-2">
-                    {activity.map((item) => (
+                    {activity.map((item: any) => (
                       <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg border">
                         <div className="flex-1">
-                          <p className="text-sm font-medium">{item.activity_type}</p>
+                          <p className="text-sm font-medium">{item.activity_type || 'Activity'}</p>
                           {item.module_name && (
                             <p className="text-xs text-muted-foreground">{item.module_name}</p>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                          {item.created_at ? formatDistanceToNow(new Date(item.created_at), { addSuffix: true }) : 'Unknown'}
                         </p>
                       </div>
                     ))}
