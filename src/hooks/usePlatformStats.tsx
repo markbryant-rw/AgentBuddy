@@ -38,24 +38,18 @@ export const usePlatformStats = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
-      // Get active subscriptions
-      const { count: activeSubscriptions } = await supabase
-        .from('agency_subscriptions')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true);
-
-      // Get pending actions (pending feature requests + new sales inquiries)
+      // Get pending actions (pending feature requests + open bug reports)
       const { count: pendingFeatureRequests } = await supabase
         .from('feature_requests')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('status', 'open');
 
-      const { count: newSalesInquiries } = await supabase
-        .from('sales_inquiries')
+      const { count: pendingBugReports } = await supabase
+        .from('bug_reports')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'new');
+        .eq('status', 'open');
 
-      const pendingActions = (pendingFeatureRequests || 0) + (newSalesInquiries || 0);
+      const pendingActions = (pendingFeatureRequests || 0) + (pendingBugReports || 0);
 
       // Calculate growth (last 30 days vs previous 30 days)
       const thirtyDaysAgo = new Date();
@@ -96,11 +90,11 @@ export const usePlatformStats = () => {
         totalUsers: totalUsers || 0,
         totalTeams: totalTeams || 0,
         activeUsers: activeUsers || 0,
-        activeSubscriptions: activeSubscriptions || 0,
+        activeSubscriptions: 0, // Subscriptions table not yet implemented
         pendingActions,
         agencyGrowth: Math.round(agencyGrowth),
         userGrowth: Math.round(userGrowth),
-        subscriptionGrowth: 0, // Calculate when we have historical data
+        subscriptionGrowth: 0,
       };
     },
   });

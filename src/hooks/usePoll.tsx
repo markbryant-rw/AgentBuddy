@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 import { toast } from "sonner";
 
+// Stub implementation - polls feature not yet implemented
 interface PollOption {
   id: string;
   text: string;
@@ -32,70 +31,25 @@ export const usePoll = (pollId: string | null) => {
 
   const { data: poll } = useQuery({
     queryKey: ["poll", pollId],
-    queryFn: async () => {
-      if (!pollId) return null;
-
-      const { data, error } = await supabase
-        .from("message_polls")
-        .select("*")
-        .eq("id", pollId)
-        .single();
-
-      if (error) throw error;
-      return data as unknown as Poll;
+    queryFn: async (): Promise<Poll | null> => {
+      // Polls feature not yet implemented
+      return null;
     },
     enabled: !!pollId,
   });
 
   const { data: votes = [] } = useQuery({
     queryKey: ["poll-votes", pollId],
-    queryFn: async () => {
-      if (!pollId) return [];
-
-      const { data, error } = await supabase
-        .from("poll_votes")
-        .select("*")
-        .eq("poll_id", pollId);
-
-      if (error) throw error;
-      return data as PollVote[];
+    queryFn: async (): Promise<PollVote[]> => {
+      // Polls feature not yet implemented
+      return [];
     },
     enabled: !!pollId,
   });
 
-  // Real-time subscription for votes
-  useEffect(() => {
-    if (!pollId) return;
-
-    const channel = supabase
-      .channel(`poll-votes:${pollId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "poll_votes",
-          filter: `poll_id=eq.${pollId}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["poll-votes", pollId] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [pollId, queryClient]);
-
   const voteMutation = useMutation({
     mutationFn: async (optionId: string) => {
-      const { error } = await supabase.rpc("vote_on_poll", {
-        p_poll_id: pollId,
-        p_option_id: optionId,
-      });
-
-      if (error) throw error;
+      toast.info("Polls feature coming soon");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["poll-votes", pollId] });
@@ -115,8 +69,6 @@ export const usePoll = (pollId: string | null) => {
 };
 
 export const useCreatePoll = () => {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async ({
       messageId,
@@ -131,28 +83,8 @@ export const useCreatePoll = () => {
       allowMultiple: boolean;
       expiresAt?: Date;
     }) => {
-      const pollOptions = options.map((text, index) => ({
-        id: `option-${index}`,
-        text,
-      }));
-
-      const { data, error } = await supabase
-        .from("message_polls")
-        .insert({
-          message_id: messageId,
-          question,
-          options: pollOptions,
-          allow_multiple: allowMultiple,
-          expires_at: expiresAt?.toISOString(),
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      toast.success("Poll created");
+      toast.info("Polls feature coming soon");
+      return null;
     },
     onError: (error) => {
       toast.error("Failed to create poll");

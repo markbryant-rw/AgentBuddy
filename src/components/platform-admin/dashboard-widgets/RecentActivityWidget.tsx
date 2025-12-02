@@ -7,17 +7,23 @@ import { formatDistanceToNow } from 'date-fns';
 export const RecentActivityWidget = () => {
   const { data: activities, isLoading } = usePlatformActivity();
 
-  const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'user_signup':
-        return <UserPlus className="h-4 w-4 text-blue-600" />;
-      case 'office_created':
-        return <Building2 className="h-4 w-4 text-purple-600" />;
-      case 'help_escalated':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
-      default:
-        return <Clock className="h-4 w-4 text-muted-foreground" />;
+  const getActivityIcon = (action: string) => {
+    if (action.includes('user') || action.includes('signup')) {
+      return <UserPlus className="h-4 w-4 text-blue-600" />;
     }
+    if (action.includes('office') || action.includes('agency')) {
+      return <Building2 className="h-4 w-4 text-purple-600" />;
+    }
+    if (action.includes('help') || action.includes('escalat')) {
+      return <AlertCircle className="h-4 w-4 text-red-600" />;
+    }
+    return <Clock className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  const formatAction = (action: string) => {
+    return action
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, l => l.toUpperCase());
   };
 
   if (isLoading) {
@@ -50,9 +56,9 @@ export const RecentActivityWidget = () => {
           <div className="space-y-3">
             {activities.slice(0, 5).map((activity) => (
               <div key={activity.id} className="flex items-start gap-3 pb-3 border-b last:border-0">
-                <div className="mt-0.5">{getActivityIcon(activity.activity_type)}</div>
+                <div className="mt-0.5">{getActivityIcon(activity.action)}</div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{activity.description}</p>
+                  <p className="text-sm font-medium">{formatAction(activity.action)}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                   </p>

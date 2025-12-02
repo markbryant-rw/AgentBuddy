@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
+// Stub implementation - project_templates table not yet implemented
 export interface ProjectTemplate {
   id: string;
   name: string;
@@ -32,18 +32,9 @@ export const useProjectTemplates = () => {
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['project-templates', user?.id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('project_templates')
-        .select('*')
-        .eq('is_archived', false)
-        .order('lifecycle_stage');
-
-      if (error) throw error;
-      return (data || []).map(template => ({
-        ...template,
-        tasks: Array.isArray(template.tasks) ? template.tasks : []
-      })) as ProjectTemplate[];
+    queryFn: async (): Promise<ProjectTemplate[]> => {
+      // Project templates feature not yet implemented
+      return [];
     },
     enabled: !!user,
   });
@@ -54,99 +45,40 @@ export const useProjectTemplates = () => {
 
   const createTemplate = useMutation({
     mutationFn: async (newTemplate: Omit<ProjectTemplate, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
-      const { data: teamData } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', user!.id)
-        .single();
-
-      const { data, error } = await supabase
-        .from('project_templates')
-        .insert({
-          ...newTemplate,
-          team_id: teamData!.team_id,
-          created_by: user!.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      toast.info('Project templates feature coming soon');
+      return null;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-templates'] });
-      toast.success('Template created');
+    onError: (error) => {
+      toast.error('Failed to create template');
     },
   });
 
   const updateTemplate = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<ProjectTemplate> }) => {
-      const { data, error } = await supabase
-        .from('project_templates')
-        .update({
-          ...updates,
-          template_version: (updates.template_version || 1) + 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      toast.info('Project templates feature coming soon');
+      return null;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-templates'] });
-      toast.success('Template updated');
+    onError: (error) => {
+      toast.error('Failed to update template');
     },
   });
 
   const deleteTemplate = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('project_templates')
-        .update({ is_archived: true })
-        .eq('id', id);
-
-      if (error) throw error;
+      toast.info('Project templates feature coming soon');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-templates'] });
-      toast.success('Template archived');
+    onError: (error) => {
+      toast.error('Failed to delete template');
     },
   });
 
   const duplicateTemplate = useMutation({
     mutationFn: async (templateId: string) => {
-      const template = templates.find(t => t.id === templateId);
-      if (!template) throw new Error('Template not found');
-
-      const { data: teamData } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', user!.id)
-        .single();
-
-      const { data, error } = await supabase
-        .from('project_templates')
-        .insert({
-          name: `${template.name} (Copy)`,
-          description: template.description,
-          lifecycle_stage: template.lifecycle_stage,
-          tasks: template.tasks,
-          team_id: teamData!.team_id,
-          created_by: user!.id,
-          is_system_default: false,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      toast.info('Project templates feature coming soon');
+      return null;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['project-templates'] });
-      toast.success('Template duplicated');
+    onError: (error) => {
+      toast.error('Failed to duplicate template');
     },
   });
 

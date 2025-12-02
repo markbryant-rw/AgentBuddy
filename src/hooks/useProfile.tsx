@@ -10,17 +10,12 @@ export interface UserProfile {
   email: string;
   full_name: string | null;
   avatar_url: string | null;
-  user_type: 'agent' | 'associate' | 'va' | 'admin_staff';
   primary_team_id: string | null;
   office_id: string | null;
   active_role?: string | null;
-  employs: string[] | null;
-  reports_to: string | null;
-  uses_financial_year: boolean;
-  fy_start_month: number;
   birthday: string | null;
-  birthday_visibility: 'team_only' | 'friends_only' | 'public' | 'private' | null;
-  mobile_number: string | null;
+  birthday_visibility: string | null;
+  mobile: string | null;
   total_bug_points?: number;
   created_at: string;
   updated_at: string;
@@ -44,10 +39,10 @@ export const useProfile = () => {
       const { data, error } = await supabase
         .from('profiles')
         .select(`
-          id, email, full_name, avatar_url, user_type,
-          primary_team_id, office_id, employs, reports_to,
-          uses_financial_year, fy_start_month, birthday, birthday_visibility,
-          mobile_number, created_at, updated_at, invite_code, presence_status, last_active_at
+          id, email, full_name, avatar_url,
+          primary_team_id, office_id, active_role,
+          birthday, birthday_visibility,
+          mobile, created_at, updated_at, total_bug_points
         `)
         .eq('id', user.id)
         .single();

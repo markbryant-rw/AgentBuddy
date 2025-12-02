@@ -4,18 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface Card {
   id: string;
-  card_number: number;
   title: string;
-  content_type: string;
-  content_rich: any;
-  video_url: string | null;
-  video_provider: string | null;
-  video_transcript: string | null;
-  video_key_moments: any;
-  steps: any;
-  checklist_items: any;
-  attachments: any;
-  estimated_minutes: number | null;
+  content: string;
+  category_id: string | null;
+  tags: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,8 +15,6 @@ interface Card {
 interface CardProgress {
   viewed_at: string;
   completed: boolean;
-  completed_at: string | null;
-  time_spent_seconds: number;
 }
 
 export function usePlaybookCards(playbookId: string | undefined) {
@@ -35,26 +25,30 @@ export function usePlaybookCards(playbookId: string | undefined) {
     queryFn: async () => {
       if (!playbookId) return [];
 
+      // For now, return cards from knowledge_base_cards filtered by category
       const { data, error } = await supabase
         .from('knowledge_base_cards')
-        .select('*')
-        .eq('playbook_id', playbookId)
-        .order('card_number');
+        .select('id, title, content, category_id, tags, created_at, updated_at')
+        .eq('category_id', playbookId)
+        .order('created_at');
 
       if (error) throw error;
 
       // Get progress for all cards
-      if (user) {
+      if (user && data && data.length > 0) {
         const cardIds = data.map(card => card.id);
         const { data: progressData } = await supabase
           .from('kb_card_views')
-          .select('card_id, viewed_at, completed, completed_at, time_spent_seconds')
+          .select('card_id, viewed_at, completed')
           .eq('user_id', user.id)
           .in('card_id', cardIds);
 
         const progressMap = new Map<string, CardProgress>();
         progressData?.forEach(p => {
-          progressMap.set(p.card_id, p);
+          progressMap.set(p.card_id, {
+            viewed_at: p.viewed_at || new Date().toISOString(),
+            completed: p.completed || false,
+          });
         });
 
         return data.map(card => ({
@@ -63,7 +57,7 @@ export function usePlaybookCards(playbookId: string | undefined) {
         }));
       }
 
-      return data;
+      return data || [];
     },
     enabled: !!playbookId,
   });
