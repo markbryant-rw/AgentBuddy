@@ -40,7 +40,7 @@ export const SaveTemplateDialog = ({
   const [visibility, setVisibility] = useState<'personal' | 'team'>('personal');
 
   const handleSave = async () => {
-    await createTemplate.mutateAsync({
+    createTemplate.mutate({
       title,
       description: description || undefined,
       content_rich: noteContent,

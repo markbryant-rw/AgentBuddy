@@ -29,7 +29,7 @@ export const TemplateGallery = ({ onSelect }: TemplateGalleryProps) => {
   };
 
   const handleSelectTemplate = async (template: NoteTemplate) => {
-    await incrementUsage.mutateAsync(template.id);
+    incrementUsage.mutate(template.id);
     onSelect(template);
   };
 

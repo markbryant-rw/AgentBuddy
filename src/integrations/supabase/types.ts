@@ -897,6 +897,7 @@ export type Database = {
           goal_type: Database["public"]["Enums"]["goal_type"]
           id: string
           is_achieved: boolean | null
+          kpi_type: string | null
           start_date: string
           target_value: number
           team_id: string | null
@@ -912,6 +913,7 @@ export type Database = {
           goal_type: Database["public"]["Enums"]["goal_type"]
           id?: string
           is_achieved?: boolean | null
+          kpi_type?: string | null
           start_date: string
           target_value: number
           team_id?: string | null
@@ -927,6 +929,7 @@ export type Database = {
           goal_type?: Database["public"]["Enums"]["goal_type"]
           id?: string
           is_achieved?: boolean | null
+          kpi_type?: string | null
           start_date?: string
           target_value?: number
           team_id?: string | null
@@ -1305,43 +1308,99 @@ export type Database = {
         Row: {
           address: string
           appraisal_date: string
+          appraisal_method: string | null
+          appraisal_range_high: number | null
+          appraisal_range_low: number | null
+          converted_date: string | null
           created_at: string | null
+          created_by: string | null
           estimated_value: number | null
           id: string
           intent: string | null
+          last_contact: string | null
+          latitude: number | null
+          lead_source: string | null
+          longitude: number | null
+          next_follow_up: string | null
           notes: string | null
           outcome: string | null
+          stage: string | null
           status: string | null
+          suburb: string | null
+          team_id: string | null
           updated_at: string | null
           user_id: string
+          vendor_name: string | null
         }
         Insert: {
           address: string
           appraisal_date: string
+          appraisal_method?: string | null
+          appraisal_range_high?: number | null
+          appraisal_range_low?: number | null
+          converted_date?: string | null
           created_at?: string | null
+          created_by?: string | null
           estimated_value?: number | null
           id?: string
           intent?: string | null
+          last_contact?: string | null
+          latitude?: number | null
+          lead_source?: string | null
+          longitude?: number | null
+          next_follow_up?: string | null
           notes?: string | null
           outcome?: string | null
+          stage?: string | null
           status?: string | null
+          suburb?: string | null
+          team_id?: string | null
           updated_at?: string | null
           user_id: string
+          vendor_name?: string | null
         }
         Update: {
           address?: string
           appraisal_date?: string
+          appraisal_method?: string | null
+          appraisal_range_high?: number | null
+          appraisal_range_low?: number | null
+          converted_date?: string | null
           created_at?: string | null
+          created_by?: string | null
           estimated_value?: number | null
           id?: string
           intent?: string | null
+          last_contact?: string | null
+          latitude?: number | null
+          lead_source?: string | null
+          longitude?: number | null
+          next_follow_up?: string | null
           notes?: string | null
           outcome?: string | null
+          stage?: string | null
           status?: string | null
+          suburb?: string | null
+          team_id?: string | null
           updated_at?: string | null
           user_id?: string
+          vendor_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "logged_appraisals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logged_appraisals_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "logged_appraisals_user_id_fkey"
             columns: ["user_id"]
@@ -1712,12 +1771,15 @@ export type Database = {
           buyer_details: Json | null
           commission: number | null
           created_at: string | null
+          created_by: string | null
           id: string
           notes: string | null
           property_type: string | null
           sale_date: string
           sale_price: number
+          status: string | null
           team_id: string
+          updated_at: string | null
           vendor_details: Json | null
         }
         Insert: {
@@ -1728,12 +1790,15 @@ export type Database = {
           buyer_details?: Json | null
           commission?: number | null
           created_at?: string | null
+          created_by?: string | null
           id?: string
           notes?: string | null
           property_type?: string | null
           sale_date: string
           sale_price: number
+          status?: string | null
           team_id: string
+          updated_at?: string | null
           vendor_details?: Json | null
         }
         Update: {
@@ -1744,18 +1809,28 @@ export type Database = {
           buyer_details?: Json | null
           commission?: number | null
           created_at?: string | null
+          created_by?: string | null
           id?: string
           notes?: string | null
           property_type?: string | null
           sale_date?: string
           sale_price?: number
+          status?: string | null
           team_id?: string
+          updated_at?: string | null
           vendor_details?: Json | null
         }
         Relationships: [
           {
             foreignKeyName: "past_sales_agent_id_fkey"
             columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "past_sales_created_by_fkey"
+            columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1848,11 +1923,13 @@ export type Database = {
           full_name: string | null
           id: string
           invite_code: string | null
+          last_active_at: string | null
           last_role_switch_at: string | null
           mobile: string | null
           office_id: string | null
           onboarding_completed: boolean | null
           password_set: boolean | null
+          presence_status: string | null
           primary_team_id: string | null
           status: string | null
           total_bug_points: number | null
@@ -1869,11 +1946,13 @@ export type Database = {
           full_name?: string | null
           id: string
           invite_code?: string | null
+          last_active_at?: string | null
           last_role_switch_at?: string | null
           mobile?: string | null
           office_id?: string | null
           onboarding_completed?: boolean | null
           password_set?: boolean | null
+          presence_status?: string | null
           primary_team_id?: string | null
           status?: string | null
           total_bug_points?: number | null
@@ -1890,11 +1969,13 @@ export type Database = {
           full_name?: string | null
           id?: string
           invite_code?: string | null
+          last_active_at?: string | null
           last_role_switch_at?: string | null
           mobile?: string | null
           office_id?: string | null
           onboarding_completed?: boolean | null
           password_set?: boolean | null
+          presence_status?: string | null
           primary_team_id?: string | null
           status?: string | null
           total_bug_points?: number | null
@@ -2987,8 +3068,10 @@ export type Database = {
           id: string
           is_archived: boolean | null
           is_personal_team: boolean | null
+          logo_url: string | null
           name: string
           team_code: string | null
+          team_type: string | null
           updated_at: string | null
           uses_financial_year: boolean | null
         }
@@ -3000,8 +3083,10 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           is_personal_team?: boolean | null
+          logo_url?: string | null
           name: string
           team_code?: string | null
+          team_type?: string | null
           updated_at?: string | null
           uses_financial_year?: boolean | null
         }
@@ -3013,8 +3098,10 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           is_personal_team?: boolean | null
+          logo_url?: string | null
           name?: string
           team_code?: string | null
+          team_type?: string | null
           updated_at?: string | null
           uses_financial_year?: boolean | null
         }

@@ -64,7 +64,7 @@ export const EditTemplateDialog = ({
   const handleSave = async () => {
     if (!template) return;
 
-    await updateTemplate.mutateAsync({
+    updateTemplate.mutate({
       id: template.id,
       title,
       description: description || undefined,

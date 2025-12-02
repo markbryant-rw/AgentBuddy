@@ -122,11 +122,16 @@ export const usePastSales = (teamId?: string) => {
       }
       
       const { data, error } = await query
-        .order("settlement_date", { ascending: false, nullsFirst: false })
+        .order("sale_date", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as PastSale[];
+      return (data || []).map(d => ({
+        ...d,
+        status: d.status || 'settled',
+        created_by: d.created_by || '',
+        updated_at: d.updated_at || d.created_at,
+      })) as PastSale[];
     },
     enabled: !!user,
   });
