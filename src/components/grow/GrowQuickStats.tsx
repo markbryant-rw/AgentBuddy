@@ -21,33 +21,29 @@ export function GrowQuickStats() {
         };
       }
 
-      // Active coaching conversations
-      const { data: conversations } = await supabase
-        .from("coaching_conversations")
-        .select("id", { count: "exact" })
-        .eq("user_id", user.id);
+      const { data: conversations } = await (supabase as any)
+        .from('coaching_conversations')
+        .select('id')
+        .eq('user_id', user.id);
 
-      // Published playbooks in team
-      const { data: playbooks } = await supabase
-        .from("knowledge_base_playbooks")
-        .select("id", { count: "exact" })
-        .eq("team_id", team.id)
-        .eq("is_published", true);
+      const { data: playbooks } = await (supabase as any)
+        .from('knowledge_base_playbooks')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('is_published', true);
 
-      // User's completed cards
-      const { data: completedCards } = await supabase
-        .from("kb_card_views")
-        .select("card_id", { count: "exact" })
-        .eq("user_id", user.id)
-        .eq("completed", true);
+      const { data: completedCards } = await (supabase as any)
+        .from('kb_card_views')
+        .select('card_id')
+        .eq('user_id', user.id)
+        .eq('completed', true);
 
-      // Total cards in published playbooks
-      const { data: totalCards } = await supabase
-        .from("knowledge_base_cards")
-        .select("id", { count: "exact" })
+      const { data: totalCards } = await (supabase as any)
+        .from('knowledge_base_cards')
+        .select('id')
         .in(
-          "playbook_id",
-          (playbooks || []).map((p) => p.id)
+          'playbook_id',
+          (playbooks || []).map((p: any) => p.id)
         );
 
       const completed = completedCards?.length || 0;

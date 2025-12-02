@@ -55,10 +55,10 @@ export const InvitationSignup = ({ inviteCode }: InvitationSignupProps) => {
       setLoading(true);
 
       // Fetch invitation details from pending_invitations
-      const { data: inviteData, error: inviteError } = await supabase
+      const { data: inviteData, error: inviteError } = await (supabase as any)
         .from('pending_invitations')
         .select('email, full_name, team_id, role')
-        .eq('token', inviteCode)
+        .eq('invite_code', inviteCode)
         .single();
 
       if (inviteError || !inviteData) {
@@ -79,7 +79,7 @@ export const InvitationSignup = ({ inviteCode }: InvitationSignupProps) => {
       });
 
       // Fetch team details
-      const { data: team, error: teamError } = await supabase
+      const { data: team, error: teamError } = await (supabase as any)
         .from('teams')
         .select(`
           name,
@@ -249,10 +249,10 @@ export const InvitationSignup = ({ inviteCode }: InvitationSignupProps) => {
       if (profileError) throw profileError;
 
       // 6. Mark invitation as accepted
-      await supabase
+      await (supabase as any)
         .from('pending_invitations')
         .update({ status: 'accepted', accepted_at: new Date().toISOString() })
-        .eq('token', inviteCode);
+        .eq('invite_code', inviteCode);
 
       // 7. Create default lists for the team if needed
       await supabase.rpc('create_default_lists_for_team', {

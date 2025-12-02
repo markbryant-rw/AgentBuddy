@@ -37,7 +37,7 @@ export function AIActionsMenu({ noteId, onContentUpdate, asDropdownItems = false
     queryFn: async () => {
       if (!user) return null;
       const today = new Date().toISOString().split('T')[0];
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('ai_usage_tracking')
         .select('action_count')
         .eq('user_id', user.id)

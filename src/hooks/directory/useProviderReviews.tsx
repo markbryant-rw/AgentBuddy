@@ -19,19 +19,35 @@ export interface ProviderReview {
   };
 }
 
+const mapRatingToSentiment = (rating: number | null): 'positive' | 'neutral' | 'negative' => {
+  if (rating === null || rating === undefined) return 'neutral';
+  if (rating >= 4) return 'positive';
+  if (rating <= 2) return 'negative';
+  return 'neutral';
+};
+
+const mapSentimentToRating = (sentiment: 'positive' | 'neutral' | 'negative'): number => {
+  if (sentiment === 'positive') return 5;
+  if (sentiment === 'negative') return 1;
+  return 3;
+};
+
 export const useProviderReviews = (providerId: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: reviews = [], isLoading, refetch, error } = useQuery({
+  const { data: reviews = [], isLoading, refetch, error } = useQuery<ProviderReview[]>({
     queryKey: ['provider-reviews', providerId],
     queryFn: async () => {
-      console.log('[DEBUG] Fetching reviews for provider:', providerId);
-      
-      const { data, error } = await supabase
-        .from('provider_reviews')
+      const { data, error } = await (supabase as any)
+        .from('service_provider_reviews')
         .select(`
-          *,
+          id,
+          provider_id,
+          user_id,
+          review,
+          rating,
+          created_at,
           profiles (
             full_name,
             avatar_url
@@ -40,17 +56,23 @@ export const useProviderReviews = (providerId: string) => {
         .eq('provider_id', providerId)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('[DEBUG] Review fetch error:', error);
-        throw error;
-      }
-      
-      console.log('[DEBUG] Reviews fetched successfully:', data?.length || 0);
-      
-      return (data || []) as any as ProviderReview[];
+      if (error) throw error;
+
+      return (data || []).map((row: any) => ({
+        id: row.id,
+        provider_id: row.provider_id,
+        user_id: row.user_id,
+        parent_review_id: null,
+        content: row.review || '',
+        sentiment: mapRatingToSentiment(row.rating ?? null),
+        is_usage_note: false,
+        created_at: row.created_at,
+        updated_at: row.created_at,
+        profiles: row.profiles,
+      }));
     },
     enabled: !!providerId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: 1,
     retryDelay: 500,
   });
@@ -60,7 +82,7 @@ export const useProviderReviews = (providerId: string) => {
       content, 
       sentiment, 
       isUsageNote = false, 
-      parentReviewId 
+      parentReviewId, 
     }: { 
       content: string; 
       sentiment: 'positive' | 'neutral' | 'negative';
@@ -69,15 +91,13 @@ export const useProviderReviews = (providerId: string) => {
     }) => {
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
-        .from('provider_reviews')
+      const { data, error } = await (supabase as any)
+        .from('service_provider_reviews')
         .insert({
           provider_id: providerId,
           user_id: user.id,
-          content,
-          sentiment,
-          is_usage_note: isUsageNote,
-          parent_review_id: parentReviewId || null,
+          review: content,
+          rating: mapSentimentToRating(sentiment),
         })
         .select()
         .single();
@@ -88,11 +108,11 @@ export const useProviderReviews = (providerId: string) => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ 
         queryKey: ['provider-reviews', providerId],
-        refetchType: 'active'
+        refetchType: 'active',
       });
       await queryClient.invalidateQueries({ 
         queryKey: ['service-providers'],
-        refetchType: 'active'
+        refetchType: 'active',
       });
       toast.success('Review added successfully');
     },
@@ -105,17 +125,17 @@ export const useProviderReviews = (providerId: string) => {
     mutationFn: async ({ 
       reviewId, 
       content, 
-      sentiment 
+      sentiment, 
     }: { 
       reviewId: string; 
       content: string; 
       sentiment: 'positive' | 'neutral' | 'negative';
     }) => {
-      const { data, error } = await supabase
-        .from('provider_reviews')
+      const { data, error } = await (supabase as any)
+        .from('service_provider_reviews')
         .update({ 
-          content,
-          sentiment,
+          review: content,
+          rating: mapSentimentToRating(sentiment),
         })
         .eq('id', reviewId)
         .select()
@@ -127,11 +147,11 @@ export const useProviderReviews = (providerId: string) => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ 
         queryKey: ['provider-reviews', providerId],
-        refetchType: 'active'
+        refetchType: 'active',
       });
       await queryClient.invalidateQueries({ 
         queryKey: ['service-providers'],
-        refetchType: 'active'
+        refetchType: 'active',
       });
       toast.success('Review updated successfully');
     },
@@ -142,8 +162,8 @@ export const useProviderReviews = (providerId: string) => {
 
   const deleteReview = useMutation({
     mutationFn: async (reviewId: string) => {
-      const { error } = await supabase
-        .from('provider_reviews')
+      const { error } = await (supabase as any)
+        .from('service_provider_reviews')
         .delete()
         .eq('id', reviewId);
 
@@ -152,11 +172,11 @@ export const useProviderReviews = (providerId: string) => {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ 
         queryKey: ['provider-reviews', providerId],
-        refetchType: 'active'
+        refetchType: 'active',
       });
       await queryClient.invalidateQueries({ 
         queryKey: ['service-providers'],
-        refetchType: 'active'
+        refetchType: 'active',
       });
       toast.success('Review deleted successfully');
     },

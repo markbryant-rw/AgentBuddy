@@ -240,7 +240,7 @@ export type Database = {
           ai_impact: string | null
           archived_at: string | null
           archived_reason: string | null
-          attachments: Json | null
+          attachments: string[] | null
           category_id: string | null
           created_at: string | null
           description: string
@@ -277,7 +277,7 @@ export type Database = {
           ai_impact?: string | null
           archived_at?: string | null
           archived_reason?: string | null
-          attachments?: Json | null
+          attachments?: string[] | null
           category_id?: string | null
           created_at?: string | null
           description: string
@@ -314,7 +314,7 @@ export type Database = {
           ai_impact?: string | null
           archived_at?: string | null
           archived_reason?: string | null
-          attachments?: Json | null
+          attachments?: string[] | null
           category_id?: string | null
           created_at?: string | null
           description?: string

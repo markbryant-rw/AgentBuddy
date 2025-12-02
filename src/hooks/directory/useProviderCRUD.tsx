@@ -7,7 +7,6 @@ import { createServiceProviderNotification, createOfficeManagerReviewTask } from
 
 interface CreateProviderData {
   category_id?: string;
-  team_category_id?: string;
   full_name: string;
   company_name?: string;
   phone?: string;
@@ -15,16 +14,12 @@ interface CreateProviderData {
   website?: string;
   notes?: string;
   visibility_level?: 'office' | 'team' | 'private';
-  avatar_url?: string;
-  logo_url?: string;
   needs_review?: boolean;
   duplicate_of?: string;
 }
 
 interface UpdateProviderData extends Partial<CreateProviderData> {
   id: string;
-  avatar_url?: string | null;
-  logo_url?: string | null;
 }
 
 export const useProviderCRUD = () => {
@@ -38,58 +33,60 @@ export const useProviderCRUD = () => {
 
       // Fetch agency_id and user's full name
       const [{ data: teamData }, { data: profile }] = await Promise.all([
-        supabase.from('teams').select('agency_id').eq('id', team.id).single(),
-        supabase.from('profiles').select('full_name').eq('id', user.id).single(),
+        (supabase as any).from('teams').select('agency_id').eq('id', team.id).single(),
+        (supabase as any).from('profiles').select('full_name').eq('id', user.id).single(),
       ]);
 
       if (!teamData?.agency_id) {
         throw new Error('Office not found for team');
       }
 
-      const { data: provider, error } = await supabase
+      const insertPayload: any = {
+        name: data.full_name,
+        company: data.company_name || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        website: data.website || null,
+        notes: data.notes || null,
+        category_id: data.category_id || null,
+        agency_id: teamData.agency_id,
+        created_by: user.id,
+      };
+
+      const { data: provider, error } = await (supabase as any)
         .from('service_providers')
-        .insert({
-          ...data,
-          team_id: team.id,
-          created_by: user.id,
-        })
+        .insert(insertPayload)
         .select(`
           *,
-          provider_categories (name),
-          team_provider_categories (name)
+          provider_categories (name)
         `)
         .single();
 
       if (error) throw error;
 
-      // Trigger notification to office members
-      const categoryName = 
-        provider.provider_categories?.name || 
-        provider.team_provider_categories?.name || 
-        null;
+      const categoryName = provider.provider_categories?.name || null;
 
       await createServiceProviderNotification(
         provider.id,
-        provider.full_name,
+        provider.name,
         categoryName,
         profile?.full_name || 'A team member',
         user.id,
         teamData.agency_id
       );
 
-      // If flagged for review, create office manager task
       if (data.needs_review && data.duplicate_of) {
-        const { data: existingProvider } = await supabase
+        const { data: existingProvider } = await (supabase as any)
           .from('service_providers')
-          .select('full_name')
+          .select('name')
           .eq('id', data.duplicate_of)
           .single();
 
         if (existingProvider) {
           await createOfficeManagerReviewTask(
-            provider.full_name,
+            provider.name,
             provider.id,
-            existingProvider.full_name,
+            existingProvider.name,
             data.duplicate_of,
             'High similarity detected',
             teamData.agency_id
@@ -110,9 +107,19 @@ export const useProviderCRUD = () => {
 
   const updateProvider = useMutation({
     mutationFn: async ({ id, ...data }: UpdateProviderData) => {
-      const { data: provider, error } = await supabase
+      const updatePayload: any = {
+        name: data.full_name,
+        company: data.company_name,
+        phone: data.phone,
+        email: data.email,
+        website: data.website,
+        notes: data.notes,
+        category_id: data.category_id,
+      };
+
+      const { data: provider, error } = await (supabase as any)
         .from('service_providers')
-        .update(data)
+        .update(updatePayload)
         .eq('id', id)
         .select()
         .single();
@@ -131,7 +138,7 @@ export const useProviderCRUD = () => {
 
   const deleteProvider = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('service_providers')
         .delete()
         .eq('id', id);

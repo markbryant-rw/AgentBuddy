@@ -42,7 +42,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['transaction-tasks', transaction.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tasks')
         .select(`
           *,
@@ -85,13 +85,13 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
       const maxOrder = Math.max(0, ...tasks.map(t => t.daily_position || 0));
       
       // Get user's team_id
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('primary_team_id')
         .eq('id', user?.id)
         .single();
       
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('tasks')
         .insert({
           transaction_id: transaction.id,
@@ -127,7 +127,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
         assigned_to?: string | null;
       }
     }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('tasks')
         .update(updates)
         .eq('id', taskId);
@@ -144,7 +144,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
 
   const deleteTask = useMutation({
     mutationFn: async (taskId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('tasks')
         .delete()
         .eq('id', taskId);
