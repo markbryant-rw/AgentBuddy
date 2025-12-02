@@ -46,17 +46,11 @@ export const useAgencyOverview = () => {
             userCount = count || 0;
           }
 
-          const { count: subscriptionCount } = await supabase
-            .from('agency_subscriptions')
-            .select('*', { count: 'exact', head: true })
-            .eq('agency_id', agency.id)
-            .eq('is_active', true);
-
           return {
             ...agency,
             teamCount: teamCount || 0,
             userCount,
-            hasActiveSubscription: (subscriptionCount || 0) > 0,
+            hasActiveSubscription: false, // Stubbed - agency_subscriptions not implemented
           };
         })
       );

@@ -44,6 +44,8 @@ export const useBugReportComments = (bugReportId: string) => {
 
         return data.map(comment => ({
           ...comment,
+          content: comment.comment, // Map DB field to interface field
+          updated_at: comment.created_at, // Fallback since updated_at might not be in schema
           author: profileMap.get(comment.user_id)
         })) as BugReportComment[];
       }
@@ -57,12 +59,12 @@ export const useBugReportComments = (bugReportId: string) => {
     mutationFn: async (content: string) => {
       if (!user) throw new Error('Not authenticated');
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('bug_report_comments')
         .insert({
           bug_report_id: bugReportId,
           user_id: user.id,
-          content,
+          comment: content, // DB field is 'comment', not 'content'
         });
 
       if (error) throw error;
@@ -78,9 +80,9 @@ export const useBugReportComments = (bugReportId: string) => {
 
   const editCommentMutation = useMutation({
     mutationFn: async ({ commentId, content }: { commentId: string; content: string }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('bug_report_comments')
-        .update({ content, updated_at: new Date().toISOString() })
+        .update({ comment: content, updated_at: new Date().toISOString() })
         .eq('id', commentId);
 
       if (error) throw error;

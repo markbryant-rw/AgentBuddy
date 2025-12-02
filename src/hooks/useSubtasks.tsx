@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { useMemo } from 'react';
 
 interface SubtaskProgress {
   completed: number;
@@ -37,18 +38,18 @@ export const useSubtasks = (parentTaskId: string) => {
     enabled: !!user && !!parentTaskId,
   });
 
-  // Calculate progress for parent task
-  const { data: progress } = useQuery<SubtaskProgress>({
-    queryKey: ['subtask-progress', parentTaskId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc('calculate_subtask_progress', { p_parent_task_id: parentTaskId });
-
-      if (error) throw error;
-      return data[0] || { completed: 0, total: 0, percentage: 0 };
-    },
-    enabled: !!user && !!parentTaskId,
-  });
+  // Calculate progress from fetched subtasks
+  const progress: SubtaskProgress = useMemo(() => {
+    if (!subtasks || subtasks.length === 0) {
+      return { completed: 0, total: 0, percentage: 0 };
+    }
+    
+    const completed = subtasks.filter((t: any) => t.completed).length;
+    const total = subtasks.length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    return { completed, total, percentage };
+  }, [subtasks]);
 
   // Create subtask
   const createSubtask = useMutation({
@@ -92,7 +93,6 @@ export const useSubtasks = (parentTaskId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', parentTaskId] });
-      queryClient.invalidateQueries({ queryKey: ['subtask-progress', parentTaskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Subtask created');
     },
@@ -120,7 +120,6 @@ export const useSubtasks = (parentTaskId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', parentTaskId] });
-      queryClient.invalidateQueries({ queryKey: ['subtask-progress', parentTaskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
     onError: (error) => {
@@ -141,7 +140,6 @@ export const useSubtasks = (parentTaskId: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', parentTaskId] });
-      queryClient.invalidateQueries({ queryKey: ['subtask-progress', parentTaskId] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Subtask deleted');
     },

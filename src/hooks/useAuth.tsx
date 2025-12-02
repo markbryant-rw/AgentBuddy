@@ -305,55 +305,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const stopViewingAs = async () => {
     if (!actualAdmin) return;
     
-    // Log the end of impersonation and create notification
-    const viewAsUserId = localStorage.getItem('viewAsUserId');
-    if (viewAsUserId) {
-      const { data: logData } = await supabase
-        .from('admin_impersonation_log')
-        .update({ ended_at: new Date().toISOString() })
-        .eq('admin_id', actualAdmin.id)
-        .eq('impersonated_user_id', viewAsUserId)
-        .is('ended_at', null)
-        .select('*, admin:profiles!admin_id(full_name)')
-        .single();
-
-      // Create post-session notification for the impersonated user
-      if (logData) {
-        const startTime = new Date(logData.started_at).getTime();
-        const endTime = new Date(logData.ended_at).getTime();
-        const durationMinutes = Math.floor((endTime - startTime) / 60000);
-        const adminName = (logData.admin as any)?.full_name || 'Platform Admin';
-
-        // Check user preferences before creating notification
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('notify_on_impersonation')
-          .eq('id', viewAsUserId)
-          .single();
-
-        if (profile?.notify_on_impersonation !== false) {
-          await supabase
-            .from('notifications')
-            .insert({
-              user_id: viewAsUserId,
-              type: 'system',
-              title: 'Account Access by Platform Admin',
-              message: `${adminName} accessed your account for: ${logData.reason}`,
-              metadata: {
-                admin_id: actualAdmin.id,
-                admin_name: adminName,
-                reason: logData.reason,
-                started_at: logData.started_at,
-                ended_at: logData.ended_at,
-                duration_minutes: durationMinutes,
-                action_url: '/settings'
-              },
-              expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
-            });
-        }
-      }
-    }
-    
     setViewAsUser(null);
     setUser(actualAdmin);
     localStorage.removeItem('viewAsUserId');
