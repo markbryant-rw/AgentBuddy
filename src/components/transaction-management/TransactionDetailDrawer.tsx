@@ -192,36 +192,11 @@ export const TransactionDetailDrawer = ({
         .from('past_sales')
         .insert({
           address: transaction.address,
-          suburb: transaction.suburb,
-          status: 'withdrawn',
-          lost_reason: withdrawalReason,
-          lost_date: new Date().toISOString().split('T')[0],
+          sale_price: 0,
+          sale_date: new Date().toISOString().split('T')[0],
           team_id: transaction.team_id,
-          created_by: user?.id || transaction.created_by,
-          
-          // Transfer dates
-          listing_signed_date: transaction.listing_signed_date,
-          listing_live_date: transaction.live_date,
-          
-          // Transfer pricing
-          team_recommended_price: transaction.team_price,
-          vendor_expected_price: transaction.vendor_price,
-          
-          // Calculate days on market
-          days_on_market: transaction.live_date 
-            ? Math.ceil((new Date().getTime() - new Date(transaction.live_date).getTime()) / (1000 * 60 * 60 * 24))
-            : null,
-          
-          // Transfer lead source
-          lead_source: transaction.lead_source,
-          
-          // Transfer vendor and buyer details
-          vendor_details: mapVendorDetails(transaction.vendor_names),
-          buyer_details: transaction.buyer_names ? mapBuyerDetails(transaction.buyer_names) : null,
-          
-          // Transfer geographic data
-          latitude: transaction.latitude,
-          longitude: transaction.longitude,
+          agent_id: user?.id || transaction.created_by,
+          notes: `Withdrawn: ${withdrawalReason}`,
         });
         
       if (pastSalesError) {
@@ -326,18 +301,13 @@ export const TransactionDetailDrawer = ({
         .from('past_sales')
         .insert({
           address: transaction.address,
-          suburb: transaction.suburb,
-          sale_price: transaction.team_price || transaction.vendor_price,
-          settlement_date: transaction.settlement_date,
-          listing_signed_date: transaction.contract_date,
-          unconditional_date: transaction.unconditional_date,
-          listing_live_date: transaction.live_date,
-          status: 'sold',
+          sale_price: transaction.team_price || transaction.vendor_price || 0,
+          sale_date: transaction.settlement_date || new Date().toISOString().split('T')[0],
           team_id: transaction.team_id,
-          created_by: user?.id || transaction.created_by,
-          team_recommended_price: transaction.team_price,
-          vendor_expected_price: transaction.vendor_price,
-          lead_source: transaction.lead_source,
+          agent_id: user?.id || transaction.created_by,
+          commission: transaction.team_price ? (transaction.team_price * 0.02) : undefined,
+          notes: `Lead source: ${transaction.lead_source || 'Unknown'}`,
+        });
           days_on_market: calculateDaysOnMarket(transaction.live_date, transaction.settlement_date),
           vendor_details: mapVendorDetails(transaction.vendor_names),
           buyer_details: mapBuyerDetails(transaction.buyer_names),

@@ -51,7 +51,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
         .eq('transaction_id', transaction.id)
         .is('list_id', null)
         .is('project_id', null)
-        .order('order_position', { ascending: true });
+        .order('daily_position', { ascending: true });
       
       if (error) throw error;
       return data || [];
@@ -82,7 +82,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
 
   const createTask = useMutation({
     mutationFn: async (newTask: any) => {
-      const maxOrder = Math.max(0, ...tasks.map(t => t.order_position || 0));
+      const maxOrder = Math.max(0, ...tasks.map(t => t.daily_position || 0));
       
       // Get user's team_id
       const { data: profile } = await supabase
@@ -97,14 +97,13 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
           transaction_id: transaction.id,
           title: newTask.title,
           description: newTask.description,
-          section: newTask.section || 'General',
           transaction_stage: transaction.stage,
           due_date: newTask.due_date,
           priority: newTask.priority,
           assigned_to: newTask.assigned_to || user?.id,
           created_by: user?.id,
           team_id: profile?.primary_team_id || '',
-          order_position: maxOrder + 1,
+          daily_position: maxOrder + 1,
         });
       
       if (error) throw error;
@@ -123,7 +122,6 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
       updates: {
         title: string;
         description?: string;
-        section: string;
         due_date?: string | null;
         priority?: string;
         assigned_to?: string | null;
@@ -181,11 +179,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     const sections: Record<string, typeof tasks> = { 'General': [] };
     
     visibleTasks.forEach(task => {
-      const section = task.section || 'General';
-      
-      if (!sections[section]) {
-        sections[section] = [];
-      }
+      const section = 'General'; // All tasks in General since 'section' column doesn't exist
       sections[section].push(task);
     });
     

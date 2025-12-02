@@ -114,9 +114,10 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
       setStatusValue(data.status);
       
       // Initialize loading states for images
-      if (data.attachments && data.attachments.length > 0) {
+      const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+      if (attachments.length > 0) {
         const loadingStates: Record<number, boolean> = {};
-        data.attachments.forEach((_: string, idx: number) => {
+        attachments.forEach((_: string, idx: number) => {
           loadingStates[idx] = true;
         });
         setImageLoading(loadingStates);
@@ -584,55 +585,58 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
           )}
 
           {/* Screenshots */}
-          {bug.attachments && bug.attachments.length > 0 && (
-            <div className="space-y-2">
-              <Label>Screenshots ({bug.attachments.length})</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {bug.attachments.map((url: string, idx: number) => (
-                  <div
-                    key={idx}
-                    className="group relative block rounded-lg overflow-hidden border hover:border-primary transition-colors"
-                  >
-                    {imageLoading[idx] && !imageErrors[idx] && (
-                      <div className="w-full h-40 flex items-center justify-center bg-muted">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                      </div>
-                    )}
-                    {imageErrors[idx] ? (
-                      <div className="w-full h-40 flex flex-col items-center justify-center bg-muted text-muted-foreground">
-                        <ImageOff className="h-8 w-8 mb-2" />
-                        <p className="text-xs">Failed to load image</p>
+          {(() => {
+            const attachments = Array.isArray(bug.attachments) ? bug.attachments : [];
+            return attachments.length > 0 && (
+              <div className="space-y-2">
+                <Label>Screenshots ({attachments.length})</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {attachments.map((url: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="group relative block rounded-lg overflow-hidden border hover:border-primary transition-colors"
+                    >
+                      {imageLoading[idx] && !imageErrors[idx] && (
+                        <div className="w-full h-40 flex items-center justify-center bg-muted">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                      {imageErrors[idx] ? (
+                        <div className="w-full h-40 flex flex-col items-center justify-center bg-muted space-y-2">
+                          <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Failed to load</p>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline mt-1"
+                          >
+                            Open in new tab
+                          </a>
+                        </div>
+                      ) : (
                         <a
                           href={url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline mt-1"
                         >
-                          Open in new tab
+                          <img
+                            src={url}
+                            alt={`Screenshot ${idx + 1}`}
+                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform"
+                            onLoad={() => handleImageLoad(idx)}
+                            onError={() => handleImageError(idx)}
+                            style={{ display: imageLoading[idx] ? 'none' : 'block' }}
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                         </a>
-                      </div>
-                    ) : (
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <img
-                          src={url}
-                          alt={`Screenshot ${idx + 1}`}
-                          className="w-full h-40 object-cover group-hover:scale-105 transition-transform"
-                          onLoad={() => handleImageLoad(idx)}
-                          onError={() => handleImageError(idx)}
-                          style={{ display: imageLoading[idx] ? 'none' : 'block' }}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                      </a>
-                    )}
-                  </div>
-                ))}
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* AI Analysis Panel - Always Visible, Collapsible */}
           <AIBugAnalysisPanel
