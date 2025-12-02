@@ -166,9 +166,9 @@ export const PastSalesImportDialog = ({
       'lead_source'
     ].join(',');
 
-    // Example for SOLD property
+    // Example for SOLD property - quote addresses containing commas
     const soldExample = [
-      '26 Milan Drive, Glen Eden',
+      '"26 Milan Drive, Glen Eden"',
       'Glen Eden',
       'sold',
       '1100000',
@@ -195,9 +195,9 @@ export const PastSalesImportDialog = ({
       'referral'
     ].join(',');
 
-    // Example for LOST/WITHDRAWN property
+    // Example for LOST/WITHDRAWN property - quote addresses containing commas
     const lostExample = [
-      '42 Beach Road, Piha',
+      '"42 Beach Road, Piha"',
       'Piha',
       'withdrawn',
       '900000',
