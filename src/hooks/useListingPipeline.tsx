@@ -77,7 +77,7 @@ export const useListingPipeline = () => {
       if (error) throw error;
       setListings((data || []).map(d => ({
         ...d,
-        last_edited_by: d.created_by,
+        last_edited_by: d.created_by || '',
         vendor_name: '',
         likelihood: 50,
         expected_month: '',
@@ -105,14 +105,20 @@ export const useListingPipeline = () => {
           ...listing,
           team_id: team.id,
           created_by: user.id,
-          last_edited_by: user.id,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      const newListing = data as Listing;
+      const newListing = {
+        ...data,
+        last_edited_by: user.id,
+        vendor_name: listing.vendor_name || '',
+        likelihood: listing.likelihood || 50,
+        expected_month: listing.expected_month || '',
+        last_contact: listing.last_contact || '',
+      } as Listing;
       setListings(prev => [...prev, newListing]);
       toast.success('Listing added');
       
@@ -160,7 +166,16 @@ export const useListingPipeline = () => {
       
       logger.info('Update successful:', data);
 
-      setListings(prev => prev.map(l => l.id === id ? data as Listing : l));
+      const updatedListing = {
+        ...data,
+        last_edited_by: data.created_by || user.id,
+        vendor_name: (updates.vendor_name !== undefined ? updates.vendor_name : '') || '',
+        likelihood: (updates.likelihood !== undefined ? updates.likelihood : 50) || 50,
+        expected_month: (updates.expected_month !== undefined ? updates.expected_month : '') || '',
+        last_contact: (updates.last_contact !== undefined ? updates.last_contact : '') || '',
+      } as Listing;
+
+      setListings(prev => prev.map(l => l.id === id ? updatedListing : l));
       toast.success('Listing updated');
 
       // Auto-geocode if address or suburb changed

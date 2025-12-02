@@ -7,13 +7,9 @@ import { toast } from "sonner";
 interface Message {
   id: string;
   conversation_id: string;
-  author_id: string | null;
+  sender_id: string | null;
   content: string;
   created_at: string;
-  updated_at: string;
-  edited: boolean;
-  deleted: boolean;
-  message_type: string;
   author?: {
     id: string;
     full_name: string | null;
@@ -36,11 +32,9 @@ export const useMessages = (conversationId: string | null) => {
       const { data: messagesData, error } = await supabase
         .from("messages")
         .select(`
-          id, conversation_id, author_id, content, created_at, updated_at,
-          edited, deleted, message_type, reply_to_id
+          id, conversation_id, sender_id, content, created_at
         `)
         .eq("conversation_id", conversationId)
-        .eq("deleted", false)
         .order("created_at", { ascending: false }) // Newest first for pagination
         .range(pageParam, pageParam + 49); // 50 messages per page
 
@@ -49,7 +43,7 @@ export const useMessages = (conversationId: string | null) => {
       // Fetch author profiles
       const authorIds = [...new Set(
         messagesData
-          .map((m) => m.author_id)
+          .map((m) => m.sender_id)
           .filter((id): id is string => typeof id === 'string' && id !== null)
       )];
       let authorsMap: Record<string, any> = {};
@@ -68,8 +62,8 @@ export const useMessages = (conversationId: string | null) => {
 
       return messagesData.map((msg) => ({
         ...msg,
-        author: msg.author_id && authorsMap[msg.author_id]
-          ? authorsMap[msg.author_id]
+        author: msg.sender_id && authorsMap[msg.sender_id]
+          ? authorsMap[msg.sender_id]
           : undefined,
       })) as Message[];
     },
@@ -84,22 +78,7 @@ export const useMessages = (conversationId: string | null) => {
   // Flatten pages and reverse for chronological order (oldest to newest)
   const messages = data?.pages.flat().reverse() ?? [];
 
-  // Mark messages as read when viewing
-  useEffect(() => {
-    if (!conversationId || !user) return;
-
-    const markAsRead = async () => {
-      await supabase
-        .from("conversation_participants")
-        .update({ last_read_at: new Date().toISOString() })
-        .eq("conversation_id", conversationId)
-        .eq("user_id", user.id);
-
-      queryClient.invalidateQueries({ queryKey: ["conversations"] });
-    };
-
-    markAsRead();
-  }, [conversationId, user, queryClient]);
+  // Note: last_read_at tracking is stubbed as the column doesn't exist
 
   const sendMessage = useMutation({
     mutationFn: async ({ content, messageType = "text" }: { content: string; messageType?: string }) => {
@@ -116,9 +95,8 @@ export const useMessages = (conversationId: string | null) => {
         .from("messages")
         .insert({
           conversation_id: conversationId,
-          author_id: user.id,
+          sender_id: user.id,
           content,
-          message_type: messageType,
         })
         .select()
         .single();
@@ -148,7 +126,7 @@ export const useMessages = (conversationId: string | null) => {
     mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
       const { error } = await supabase
         .from("messages")
-        .update({ content, edited: true, updated_at: new Date().toISOString() })
+        .update({ content })
         .eq("id", messageId);
 
       if (error) throw error;
@@ -167,7 +145,7 @@ export const useMessages = (conversationId: string | null) => {
     mutationFn: async (messageId: string) => {
       const { error } = await supabase
         .from("messages")
-        .update({ deleted: true })
+        .update({ content: '[deleted]' })
         .eq("id", messageId);
 
       if (error) throw error;
