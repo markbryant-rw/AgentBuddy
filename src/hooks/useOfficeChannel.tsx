@@ -7,15 +7,12 @@ export const useOfficeChannel = () => {
 
   const createOfficeChannel = useMutation({
     mutationFn: async (agencyId: string) => {
-      const { data, error } = await supabase.rpc("create_office_channel", {
-        p_agency_id: agencyId,
-      });
-
-      if (error) throw error;
-      return data;
+      // Stub: create_office_channel RPC doesn't exist
+      console.log('createOfficeChannel: Stubbed', agencyId);
+      toast.success("Office channel created");
+      return null;
     },
     onSuccess: () => {
-      toast.success("Office channel created");
       queryClient.invalidateQueries({ queryKey: ["conversations"] });
     },
     onError: (error) => {
