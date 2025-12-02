@@ -64,12 +64,8 @@ export const CreateProjectDialog = ({ open, onOpenChange }: CreateProjectDialogP
     try {
       const project = await createProject({
         title: formData.title,
-        description: formData.description || null,
-        team_id: '',
+        description: formData.description || undefined,
         status: 'active',
-        priority: formData.priority,
-        due_date: formData.due_date || null,
-        listing_id: null,
       });
       
       for (const task of selectedTasks) {
@@ -95,12 +91,8 @@ export const CreateProjectDialog = ({ open, onOpenChange }: CreateProjectDialogP
     try {
       await createProject({
         title: formData.title,
-        description: formData.description || null,
-        team_id: '',
+        description: formData.description || undefined,
         status: 'active',
-        priority: formData.priority,
-        due_date: formData.due_date || null,
-        listing_id: null,
       });
       setFormData({ title: '', description: '', priority: 'medium', due_date: '' });
       setShowAI(false);

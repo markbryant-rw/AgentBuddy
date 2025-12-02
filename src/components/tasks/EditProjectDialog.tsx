@@ -51,8 +51,6 @@ export const EditProjectDialog = ({ open, onOpenChange, project }: EditProjectDi
         title: formData.title,
         description: formData.description || null,
         status: formData.status as 'active' | 'on_hold' | 'completed' | 'archived',
-        priority: formData.priority as 'high' | 'medium' | 'low' | null,
-        due_date: formData.due_date || null,
       },
     });
     onOpenChange(false);

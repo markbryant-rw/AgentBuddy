@@ -48,11 +48,18 @@ export const useTaskBoards = () => {
         .maybeSingle();
 
       if (!personalBoard) {
-        // Create default personal board using the database function
-        await supabase.rpc('create_default_personal_board', {
-          _user_id: user.id,
-          _team_id: teamMemberData.team_id,
-        });
+        // Create default personal board manually since RPC doesn't exist
+        await supabase
+          .from('task_boards' as any)
+          .insert({
+            title: 'My Tasks',
+            team_id: teamMemberData.team_id,
+            created_by: user.id,
+            is_shared: false,
+            icon: 'user',
+            color: '#3b82f6',
+            order_position: 0,
+          });
       }
 
       const { data, error } = await supabase

@@ -83,8 +83,7 @@ export const useSubtasks = (parentTaskId: string) => {
           assigned_to: subtask.assignee_id || subtask.created_by,
           completed: false,
           last_updated_by: user?.id,
-          order_position: 0,
-        })
+        } as any)
         .select()
         .single();
 
@@ -157,14 +156,14 @@ export const useSubtasks = (parentTaskId: string) => {
         order_position: index,
       }));
 
-      for (const update of updates) {
-        const { error } = await supabase
-          .from('tasks')
-          .update({ order_position: update.order_position })
-          .eq('id', update.id);
+        for (const update of updates) {
+          const { error } = await (supabase as any)
+            .from('tasks')
+            .update({ order_position: update.order_position })
+            .eq('id', update.id);
 
-        if (error) throw error;
-      }
+          if (error) throw error;
+        }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', parentTaskId] });

@@ -63,14 +63,7 @@ export const useTaskAttachments = (taskId: string) => {
 
       if (error) throw error;
 
-      // Log activity
-      await supabase.from("task_activity").insert({
-        task_id: taskId,
-        user_id: user.id,
-        activity_type: "attachment_added",
-        metadata: { file_name: file.name },
-      });
-
+      // Activity logging skipped - table not implemented
       return data;
     },
     onSuccess: () => {
