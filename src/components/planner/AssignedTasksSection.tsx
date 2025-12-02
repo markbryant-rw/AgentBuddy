@@ -68,10 +68,12 @@ export const AssignedTasksSection = ({ selectedDate }: AssignedTasksSectionProps
       const { error } = await supabase.from("daily_planner_items").insert({
         title: task.title,
         notes: task.description || undefined,
+        date: format(selectedDate, "yyyy-MM-dd"),
         scheduled_date: format(selectedDate, "yyyy-MM-dd"),
         team_id: profile.primary_team_id,
         created_by: user.id,
         size_category: "medium",
+        user_id: user.id,
       });
 
       if (error) throw error;

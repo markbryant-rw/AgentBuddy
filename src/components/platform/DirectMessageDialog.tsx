@@ -42,9 +42,8 @@ export const DirectMessageDialog = ({ open, onOpenChange, userId, userName }: Di
         .from('messages')
         .insert({
           conversation_id: conversationId,
-          author_id: user.id,
+          sender_id: user.id,
           content: message,
-          message_type: 'text',
         });
 
       if (msgError) throw msgError;

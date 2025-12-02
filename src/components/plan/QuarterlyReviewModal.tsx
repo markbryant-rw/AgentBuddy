@@ -41,7 +41,7 @@ export const QuarterlyReviewModal = ({ open, onOpenChange, year, quarter }: Quar
         .select('*')
         .eq('team_id', team.id)
         .eq('year', year)
-        .eq('quarter', quarter)
+        .eq('quarter', `Q${quarter}`)
         .eq('goal_type', 'team');
       
       if (error) throw error;
@@ -59,7 +59,7 @@ export const QuarterlyReviewModal = ({ open, onOpenChange, year, quarter }: Quar
         .select('*')
         .eq('team_id', team.id)
         .eq('year', year)
-        .eq('quarter', quarter)
+        .eq('quarter', `Q${quarter}`)
         .eq('review_type', 'team')
         .maybeSingle();
 
@@ -85,7 +85,7 @@ export const QuarterlyReviewModal = ({ open, onOpenChange, year, quarter }: Quar
           team_id: team.id,
           user_id: user.id,
           year,
-          quarter,
+          quarter: `Q${quarter}`,
           review_type: 'team',
           wins,
           challenges,

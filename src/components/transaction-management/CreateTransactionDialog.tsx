@@ -115,6 +115,7 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
 
       const { error } = await supabase.from('transactions').insert({
         team_id: teamId,
+        transaction_type: 'sale',
         created_by: user.id,
         last_edited_by: user.id,
         address: formData.address,
