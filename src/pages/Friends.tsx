@@ -149,18 +149,21 @@ const Friends = () => {
     if (!user || !friendInviteCode.trim()) return;
     setLoading(true);
     try {
-      // Use RPC function to lookup profile by invite code (bypasses RLS)
+      // Look up profile by invite code directly
       const {
         data: friendProfile,
         error: profileError
-      } = await supabase.rpc('lookup_profile_by_invite_code', {
-        code: friendInviteCode.trim().toUpperCase()
-      }).single();
+      } = await supabase
+        .from('profiles')
+        .select('id, invite_code')
+        .eq('invite_code', friendInviteCode.trim().toUpperCase())
+        .single();
+        
       if (profileError || !friendProfile) {
         toast.error('Invalid invite code');
         return;
       }
-      if (friendProfile.user_id === user.id) {
+      if (friendProfile.id === user.id) {
         toast.error('You cannot add yourself as a friend');
         return;
       }
@@ -168,7 +171,7 @@ const Friends = () => {
       // Check if already friends or request pending
       const {
         data: existingConnection
-      } = await supabase.from('friend_connections').select('accepted').or(`and(user_id.eq.${user.id},friend_id.eq.${friendProfile.user_id}),and(user_id.eq.${friendProfile.user_id},friend_id.eq.${user.id})`).maybeSingle();
+      } = await supabase.from('friend_connections').select('accepted').or(`and(user_id.eq.${user.id},friend_id.eq.${friendProfile.id}),and(user_id.eq.${friendProfile.id},friend_id.eq.${user.id})`).maybeSingle();
       if (existingConnection) {
         if (existingConnection.accepted) {
           toast.error('You are already friends with this person');
@@ -183,7 +186,7 @@ const Friends = () => {
         error: insertError
       } = await supabase.from('friend_connections').insert({
         user_id: user.id,
-        friend_id: friendProfile.user_id,
+        friend_id: friendProfile.id,
         invite_code: friendInviteCode.trim().toUpperCase(),
         accepted: false
       });

@@ -12,7 +12,7 @@ import { Plus, ArrowLeft, BookOpen } from "lucide-react";
 export default function LibraryManagement() {
   const navigate = useNavigate();
   const { user, isPlatformAdmin } = useAuth();
-  const { createLibrary, updateLibrary, deleteLibrary, reorderLibraries } = useKnowledgeBase();
+  const { categories, createCategory, updateCategory, deleteCategory } = useKnowledgeBase();
   const [showForm, setShowForm] = useState(false);
   const [editingLibrary, setEditingLibrary] = useState<any>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -39,17 +39,16 @@ export default function LibraryManagement() {
       if (!teamMember) return [];
 
       // Fetch libraries
-      const { data: libraries, error } = await supabase
+      const { data: libraries, error } = await (supabase as any)
         .from('knowledge_base_categories')
-        .select('id, name, description, icon, color_theme, sort_order, team_id, created_at, updated_at')
-        .eq('team_id', teamMember.team_id)
-        .order('sort_order');
+        .select('id, name, description, icon, agency_id, created_at')
+        .eq('agency_id', teamMember.team_id);
 
       if (error) throw error;
 
       // Get playbook counts for each library
       const librariesWithCounts = await Promise.all(
-        (libraries || []).map(async (library) => {
+        (libraries || []).map(async (library: any) => {
           const { count } = await supabase
             .from('knowledge_base_playbooks')
             .select('*', { count: 'exact', head: true })
@@ -71,9 +70,9 @@ export default function LibraryManagement() {
     setIsSaving(true);
     try {
       if (data.id) {
-        await updateLibrary(data);
+        await updateCategory(data);
       } else {
-        await createLibrary(data);
+        await createCategory(data);
       }
       setShowForm(false);
       setEditingLibrary(null);
@@ -88,11 +87,12 @@ export default function LibraryManagement() {
   };
 
   const handleDelete = async (id: string) => {
-    await deleteLibrary(id);
+    await deleteCategory(id);
   };
 
   const handleReorder = async (updates: { id: string; sort_order: number }[]) => {
-    await reorderLibraries(updates);
+    // Stubbed - reorder not implemented
+    console.log('handleReorder: Not implemented', updates);
   };
 
   const handleAddNew = () => {

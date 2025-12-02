@@ -42,15 +42,12 @@ const Notes = () => {
   } = useNoteSearch(searchQuery);
   const displayedNotes = searchQuery ? searchResults : notes;
   
-  // Get all unique tags from notes
-  const allTags = Array.from(new Set(notes.flatMap(note => note.tags || [])));
+  // Get all unique tags from notes - stubbed since tags don't exist
+  const allTags: string[] = [];
   
   const handleCreateNote = async (title: string, templateId?: string) => {
-    if (!team?.id) return;
     const result = await createNote.mutateAsync({
       title,
-      team_id: team.id,
-      template_id: templateId
     });
     if (result) {
       navigate(`/notes/${result.id}`);

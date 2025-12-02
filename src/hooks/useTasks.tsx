@@ -122,9 +122,9 @@ export const useTasks = (boardId?: string | null) => {
       const taskIds = allTasks.map((t: any) => t.id) as string[];
       const userIds = [...new Set(
         tasksData
-          .map((t) => t.created_by)
+          .map((t: any) => t.created_by)
           .filter((id): id is string => typeof id === 'string' && id !== null)
-      )];
+      )] as string[];
 
       // Fetch all data in parallel
       const assigneesPromise = supabase

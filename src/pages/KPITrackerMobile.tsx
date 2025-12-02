@@ -14,7 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
 const KPITrackerMobile = () => {
-  const { context, personal, loading } = useKPITrackerData();
+  const { personalKPIs, personalCCH, loading } = useKPITrackerData();
   const [quickLogOpen, setQuickLogOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -52,8 +52,8 @@ const KPITrackerMobile = () => {
       {/* Hero CCH Ring */}
       <Card className="p-6 flex justify-center">
         <AnimatedCCHRing
-          current={personal.cch.daily}
-          target={personal.cch.dailyTarget}
+          current={personalCCH.daily}
+          target={personalCCH.dailyTarget}
           size={180}
         />
       </Card>
@@ -90,19 +90,19 @@ const KPITrackerMobile = () => {
 
       {/* Metrics Overview - Swipeable cards */}
       <div className="space-y-3">
-        {Object.entries(personal.kpis).map(([key, kpi]) => (
+        {Object.entries(personalKPIs).map(([key, kpi]) => (
           <Card key={key} className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm text-muted-foreground capitalize">{key}</div>
-                <div className="text-2xl font-bold">{kpi.today}</div>
+                <div className="text-2xl font-bold">{(kpi as any).today}</div>
                 <div className="text-xs text-muted-foreground">
-                  Week: {kpi.week} / {kpi.goal}
+                  Week: {(kpi as any).week} / {(kpi as any).goal}
                 </div>
               </div>
               <div className="text-right">
                 <div className="text-sm font-semibold">
-                  {kpi.goal > 0 ? ((kpi.week / kpi.goal) * 100).toFixed(0) : 0}%
+                  {(kpi as any).goal > 0 ? (((kpi as any).week / (kpi as any).goal) * 100).toFixed(0) : 0}%
                 </div>
               </div>
             </div>

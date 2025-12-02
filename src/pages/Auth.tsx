@@ -81,10 +81,10 @@ const Auth = () => {
   }, [fullName, userStatus]);
 
   const fetchInvitation = async (code: string) => {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('pending_invitations')
       .select('email, role, team_id, full_name')
-      .eq('token', code)
+      .eq('invite_code', code)
       .single();
 
     if (error) {

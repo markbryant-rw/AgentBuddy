@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import KPITrackerMobile from './KPITrackerMobile';
 
 const KPITracker = () => {
-  const { context, personal, team, loading } = useKPITrackerData();
+  const { personalKPIs, personalCCH, teamKPIs, loading } = useKPITrackerData();
   const { hasLoggedToday } = useLoggingWindow();
   const [weekOffset, setWeekOffset] = useState(0);
   const selectedWeekDate = addWeeks(new Date(), weekOffset);
@@ -60,8 +60,8 @@ const KPITracker = () => {
         {/* Hero Section - Animated CCH Ring */}
         <Card className="p-8 flex flex-col items-center bg-gradient-to-br from-purple-50/30 to-white dark:from-purple-900/5 dark:to-background">
           <AnimatedCCHRing
-            current={personal.cch.daily}
-            target={personal.cch.dailyTarget}
+            current={personalCCH.daily}
+            target={personalCCH.dailyTarget}
             size={220}
           />
         </Card>
@@ -88,15 +88,15 @@ const KPITracker = () => {
         </Card>
 
         {/* Personal Performance */}
-        <PersonalKPISection kpis={personal.kpis} />
+        <PersonalKPISection kpis={personalKPIs} />
 
         {/* CCH Section with red accent */}
         <div className="bg-gradient-to-br from-white to-red-50/20 dark:from-background dark:to-red-900/5 p-6 rounded-xl">
-          <CCHExpandedCard cch={personal.cch} />
+          <CCHExpandedCard cch={personalCCH} />
         </div>
 
         {/* Team Performance - Only shown if user is on a team */}
-        {team && <TeamPerformanceSection teamData={team} />}
+        {teamKPIs.members.length > 0 && <TeamPerformanceSection teamData={teamKPIs} />}
 
         {/* Historical Trends */}
         <HistoricalTrendsSection />

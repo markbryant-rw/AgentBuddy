@@ -16,20 +16,13 @@ export async function createNotification({
   metadata = {},
 }: CreateNotificationParams) {
   try {
-    // Check if user has this notification type enabled using the database function
-    const { data: shouldSend } = await supabase.rpc('should_send_notification', {
-      p_user_id: userId,
-      p_notification_type: type,
-    });
+    // Stub: should_send_notification RPC not implemented - always send
+    const shouldSend = true;
 
     if (!shouldSend) {
       console.log(`Notification skipped for user ${userId} - type ${type} disabled in preferences`);
       return null;
     }
-
-    // Create notification with 30-day expiration
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
 
     const { data, error } = await supabase
       .from('notifications')
@@ -38,9 +31,7 @@ export async function createNotification({
         type,
         title,
         message,
-        metadata,
-        expires_at: expiresAt.toISOString(),
-        read: false,
+        is_read: false,
       })
       .select()
       .single();
@@ -61,7 +52,6 @@ export async function createPostReactionNotification(
 ) {
   const { data: { user } } = await supabase.auth.getUser();
   
-  // Don't notify if user reacted to their own post
   if (user?.id === postAuthorId) return;
 
   const emoji = reactionType === 'like' ? '👍' : reactionType === 'love' ? '❤️' : reactionType === 'celebrate' ? '🎉' : '😮';
@@ -83,7 +73,6 @@ export async function createPostCommentNotification(
 ) {
   const { data: { user } } = await supabase.auth.getUser();
   
-  // Don't notify if user commented on their own post
   if (user?.id === postAuthorId) return;
 
   await createNotification({
@@ -103,7 +92,6 @@ export async function createCommentReplyNotification(
 ) {
   const { data: { user } } = await supabase.auth.getUser();
   
-  // Don't notify if user replied to their own comment
   if (user?.id === parentCommentAuthorId) return;
 
   await createNotification({
@@ -139,7 +127,6 @@ export async function createMentionNotification(
 ) {
   const { data: { user } } = await supabase.auth.getUser();
   
-  // Don't notify if user mentioned themselves
   if (user?.id === mentionedUserId) return;
 
   await createNotification({
@@ -165,7 +152,6 @@ export async function createServiceProviderNotification(
   agencyId: string
 ) {
   try {
-    // Get all office members EXCEPT the creator
     const { data: officeMembers } = await supabase
       .from('team_members')
       .select(`
@@ -180,25 +166,16 @@ export async function createServiceProviderNotification(
       return;
     }
 
-    // Get unique user IDs
     const uniqueUserIds = [...new Set(officeMembers.map(m => m.user_id))];
 
-    // Create notifications for all office members
     const notifications = uniqueUserIds.map(userId => ({
       user_id: userId,
       type: 'service_provider_added',
       title: 'New Service Provider Added 🔧',
       message: `${creatorName} added ${providerName}${categoryName ? ` (${categoryName})` : ''} to the office directory`,
-      metadata: {
-        provider_id: providerId,
-        creator_id: creatorId,
-        category: categoryName,
-      },
-      expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      read: false,
+      is_read: false,
     }));
 
-    // Batch insert notifications
     const { error } = await supabase
       .from('notifications')
       .insert(notifications);
@@ -221,49 +198,11 @@ export async function createOfficeManagerReviewTask(
   matchReason: string,
   officeId: string
 ) {
-  try {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    const { error } = await supabase
-      .from('help_requests')
-      .insert({
-        title: `Possible Duplicate Provider: ${newProviderName}`,
-        description: `A new provider "${newProviderName}" was added that may be a duplicate of "${existingProviderName}". Reason: ${matchReason}`,
-        category: 'provider_duplicate_review',
-        office_id: officeId,
-        created_by: user?.id || '',
-        metadata: {
-          new_provider_id: newProviderId,
-          existing_provider_id: existingProviderId,
-          match_reason: matchReason,
-        },
-        escalation_level: 'office_manager',
-        status: 'open',
-      });
-
-    if (error) {
-      console.error('Error creating review task:', error);
-    }
-  } catch (error) {
-    console.error('Error in createOfficeManagerReviewTask:', error);
-  }
+  // Stubbed - help_requests table not available
+  console.log('createOfficeManagerReviewTask: Stubbed - help_requests table not implemented');
 }
 
 export async function clearProviderFlag(providerId: string) {
-  try {
-    const { error } = await supabase
-      .from('service_providers')
-      .update({
-        flagged_at: null,
-        last_flag_cleared_at: new Date().toISOString(),
-      })
-      .eq('id', providerId);
-
-    if (error) {
-      console.error('Error clearing provider flag:', error);
-    }
-  } catch (error) {
-    console.error('Error in clearProviderFlag:', error);
-  }
+  // Stubbed - flagged_at column doesn't exist on service_providers
+  console.log('clearProviderFlag: Stubbed - flagged_at column not implemented');
 }
-

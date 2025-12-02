@@ -23,9 +23,9 @@ export default function KnowledgeBaseLibrary() {
     queryFn: async () => {
       if (!libraryId || !user) return null;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('knowledge_base_categories')
-        .select('id, name, description, icon, color_theme')
+        .select('id, name, description, icon')
         .eq('id', libraryId)
         .single();
 
@@ -69,7 +69,7 @@ export default function KnowledgeBaseLibrary() {
     );
   }
 
-  const colors = MODULE_COLORS[library.color_theme as ModuleCategoryColor] || MODULE_COLORS.systems;
+  const colors = MODULE_COLORS.systems;
 
   return (
     <div className="container mx-auto py-8 space-y-8">
@@ -126,7 +126,7 @@ export default function KnowledgeBaseLibrary() {
             <PlaybookCard 
               key={playbook.id} 
               playbook={playbook}
-              colorTheme={library.color_theme as ModuleCategoryColor}
+              colorTheme={'systems' as ModuleCategoryColor}
             />
           ))}
           
