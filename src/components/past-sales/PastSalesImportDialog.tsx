@@ -141,52 +141,90 @@ export const PastSalesImportDialog = ({
     const headers = [
       'listing_address',
       'suburb',
+      'status',
       'appraisal_value_low',
       'appraisal_value_high',
+      'listing_price',
       'sale_value',
+      'first_contact_date',
+      'appraisal_date',
+      'listing_signed_date',
       'listing_live_date',
       'unconditional_date',
       'settlement_date',
+      'lost_date',
+      'lost_reason',
       'vendor_name',
       'vendor_email',
       'vendor_phone',
       'vendor_moved_to',
       'vendor_referral_partner',
-      'lead_source',
-      'first_contact_date',
       'buyer_name',
       'buyer_email',
       'buyer_phone',
       'buyer_referral_partner',
-      'cabinet_number',
-      'status'
+      'lead_source'
     ].join(',');
 
-    const example = [
+    // Example for SOLD property
+    const soldExample = [
       '26 Milan Drive, Glen Eden',
       'Glen Eden',
+      'sold',
       '1100000',
       '1250000',
+      '1200000',
       '1180000',
+      '2023-11-20',
+      '2023-12-01',
+      '2024-01-10',
       '2024-01-15',
       '2024-02-10',
       '2024-03-01',
+      '',
+      '',
       'John Smith',
       'john@email.com',
       '021 123 4567',
       'Moved to Titirangi',
       'Yes',
-      'referral',
-      '2023-11-20',
       'Sarah Johnson',
       'sarah@email.com',
       '021 987 6543',
       'No',
-      'CAB-001',
-      'sold'
+      'referral'
     ].join(',');
 
-    const csv = `${headers}\n${example}\nStatus should be either 'sold' or 'withdrawn'`;
+    // Example for LOST/WITHDRAWN property
+    const lostExample = [
+      '42 Beach Road, Piha',
+      'Piha',
+      'withdrawn',
+      '900000',
+      '1000000',
+      '',
+      '',
+      '2023-10-15',
+      '2023-10-25',
+      '',
+      '',
+      '',
+      '',
+      '2023-11-15',
+      'Changed mind - decided to stay',
+      'Jane Doe',
+      'jane@email.com',
+      '021 555 1234',
+      '',
+      'No',
+      '',
+      '',
+      '',
+      '',
+      'open home'
+    ].join(',');
+
+    const csv = `${headers}\n${soldExample}\n${lostExample}\n\n# Status: 'sold' or 'withdrawn'\n# For SOLD: sale_value, listing_live_date, unconditional_date, settlement_date are required\n# For WITHDRAWN/LOST: only address and status are required`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -145,14 +145,15 @@ export const usePastSalesImport = () => {
     const commissionRate = parseNumber(findColumn(row, ['commission_rate', 'commission_%']) || '');
     const commissionAmount = parseNumber(findColumn(row, ['commission_amount', 'commission', 'commission_$']) || '');
 
-    // Map status - only accept sold or withdrawn
+    // Map status - accept sold, withdrawn, or lost
     let status = 'won_and_sold';
     const statusRaw = findColumn(row, ['status']);
+    const lostReason = findColumn(row, ['lost_reason', 'reason_lost', 'withdraw_reason']);
     if (statusRaw) {
       const normalized = statusRaw.toLowerCase().trim();
-      if (normalized === 'withdrawn' || normalized === 'withdraw') {
+      if (normalized === 'withdrawn' || normalized === 'withdraw' || normalized === 'lost' || normalized === 'lost_listing') {
         status = 'withdrawn';
-      } else if (normalized === 'sold' || normalized === 'won_and_sold' || normalized === 'won and sold') {
+      } else if (normalized === 'sold' || normalized === 'won_and_sold' || normalized === 'won and sold' || normalized === 'won') {
         status = 'won_and_sold';
       }
     }
@@ -272,9 +273,8 @@ export const usePastSalesImport = () => {
       status,
       lead_source: leadSource,
       lead_source_detail: referralPartner || '',
-      cabinet_number: cabinetNumber,
+      lost_reason: lostReason || '',
       days_on_market: daysOnMarket,
-      days_to_convert: daysToConvert,
       vendor_details: vendorDetails,
       buyer_details: buyerDetails
     };
@@ -284,7 +284,9 @@ export const usePastSalesImport = () => {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Required fields
+    const isLostOrWithdrawn = data.status === 'withdrawn' || data.status === 'lost' || data.status === 'lost_listing';
+
+    // Required fields for ALL records
     if (!data.address) {
       errors.push(`Row ${index + 1}: Address is required`);
     }
@@ -294,20 +296,34 @@ export const usePastSalesImport = () => {
       warnings.push(`Row ${index + 1}: Address should include suburb after comma (e.g., "123 Smith St, Glen Eden")`);
     }
 
-    if (!data.settlement_date && !data.lost_date) {
-      warnings.push(`Row ${index + 1}: Missing settlement or lost date`);
+    // Status-aware validation: WON/SOLD properties need more fields
+    if (!isLostOrWithdrawn) {
+      // For WON/SOLD: require key dates and sale price
+      if (!data.sale_price) {
+        errors.push(`Row ${index + 1}: Sale price is required for sold properties`);
+      }
+      if (!data.listing_live_date) {
+        warnings.push(`Row ${index + 1}: Missing listing live date (needed for Days on Market calculation)`);
+      }
+      if (!data.unconditional_date) {
+        warnings.push(`Row ${index + 1}: Missing unconditional date (needed for Days on Market calculation)`);
+      }
+      if (!data.settlement_date) {
+        warnings.push(`Row ${index + 1}: Missing settlement date (needed for follow-up scheduling)`);
+      }
+    } else {
+      // For LOST/WITHDRAWN: only address is required, rest is optional
+      if (!data.lost_date && !data.listing_live_date) {
+        warnings.push(`Row ${index + 1}: Consider adding lost date or listing live date for timeline tracking`);
+      }
     }
 
-    // Warnings
+    // Warnings for all records
     if (!data.suburb) {
       warnings.push(`Row ${index + 1}: Missing suburb (may affect geocoding)`);
     }
 
-    if (data.status !== 'lost_listing' && !data.sale_price) {
-      warnings.push(`Row ${index + 1}: Missing sale price for won sale`);
-    }
-
-    // Date sequence validation
+    // Date sequence validation (only if dates are provided)
     if (data.first_contact_date && data.listing_signed_date) {
       if (new Date(data.first_contact_date) > new Date(data.listing_signed_date)) {
         warnings.push(`Row ${index + 1}: First contact date is after listing signed date`);
