@@ -890,6 +890,7 @@ export type Database = {
       }
       goals: {
         Row: {
+          admin_notes: string | null
           created_at: string | null
           current_value: number | null
           description: string | null
@@ -898,6 +899,8 @@ export type Database = {
           id: string
           is_achieved: boolean | null
           kpi_type: string | null
+          period: string | null
+          set_by_admin: boolean | null
           start_date: string
           target_value: number
           team_id: string | null
@@ -906,6 +909,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string | null
           current_value?: number | null
           description?: string | null
@@ -914,6 +918,8 @@ export type Database = {
           id?: string
           is_achieved?: boolean | null
           kpi_type?: string | null
+          period?: string | null
+          set_by_admin?: boolean | null
           start_date: string
           target_value: number
           team_id?: string | null
@@ -922,6 +928,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string | null
           current_value?: number | null
           description?: string | null
@@ -930,6 +937,8 @@ export type Database = {
           id?: string
           is_achieved?: boolean | null
           kpi_type?: string | null
+          period?: string | null
+          set_by_admin?: boolean | null
           start_date?: string
           target_value?: number
           team_id?: string | null
@@ -3023,6 +3032,7 @@ export type Database = {
       team_members: {
         Row: {
           access_level: Database["public"]["Enums"]["access_level"]
+          contributes_to_kpis: boolean | null
           id: string
           joined_at: string | null
           team_id: string
@@ -3030,6 +3040,7 @@ export type Database = {
         }
         Insert: {
           access_level?: Database["public"]["Enums"]["access_level"]
+          contributes_to_kpis?: boolean | null
           id?: string
           joined_at?: string | null
           team_id: string
@@ -3037,6 +3048,7 @@ export type Database = {
         }
         Update: {
           access_level?: Database["public"]["Enums"]["access_level"]
+          contributes_to_kpis?: boolean | null
           id?: string
           joined_at?: string | null
           team_id?: string
@@ -3063,6 +3075,7 @@ export type Database = {
         Row: {
           agency_id: string
           created_at: string | null
+          created_by: string | null
           description: string | null
           financial_year_start_month: number | null
           id: string
@@ -3078,6 +3091,7 @@ export type Database = {
         Insert: {
           agency_id: string
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           financial_year_start_month?: number | null
           id?: string
@@ -3093,6 +3107,7 @@ export type Database = {
         Update: {
           agency_id?: string
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           financial_year_start_month?: number | null
           id?: string

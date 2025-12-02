@@ -8,13 +8,13 @@ import { toast } from 'sonner';
 export interface QuarterlyGoal {
   id: string;
   team_id: string;
-  user_id: string | null;
-  goal_type: 'individual' | 'team';
-  quarter: number;
+  goal_type: string;
+  quarter: string;
   year: number;
-  kpi_type: string;
+  kpi_type: string | null;
   target_value: number;
-  created_by: string;
+  current_value: number;
+  created_by: string | null;
   created_at: string;
 }
 
@@ -28,6 +28,7 @@ export const useQuarterlyGoals = (quarter?: number, year?: number) => {
   
   const targetQuarter = quarter || currentQuarter.quarter;
   const targetYear = year || currentQuarter.year;
+  const quarterString = `Q${targetQuarter}`;
 
   const fetchGoals = useCallback(async () => {
     if (!team) return;
@@ -35,20 +36,20 @@ export const useQuarterlyGoals = (quarter?: number, year?: number) => {
     setLoading(true);
     const { data, error } = await supabase
       .from('quarterly_goals')
-      .select('id, team_id, user_id, goal_type, quarter, year, kpi_type, target_value, created_by, created_at')
+      .select('id, team_id, goal_type, quarter, year, kpi_type, target_value, current_value, created_by, created_at')
       .eq('team_id', team.id)
-      .eq('quarter', targetQuarter)
+      .eq('quarter', quarterString)
       .eq('year', targetYear);
 
     if (error) {
       console.error('Error fetching quarterly goals:', error);
       toast.error('Failed to load quarterly goals');
     } else {
-      setGoals((data as QuarterlyGoal[]) || []);
+      setGoals((data || []) as QuarterlyGoal[]);
     }
 
     setLoading(false);
-  }, [team, targetQuarter, targetYear]);
+  }, [team, quarterString, targetYear]);
 
   useEffect(() => {
     if (team) {
@@ -56,7 +57,7 @@ export const useQuarterlyGoals = (quarter?: number, year?: number) => {
     }
   }, [team, fetchGoals]);
   
-  const createGoal = async (goalData: Omit<QuarterlyGoal, 'id' | 'created_at' | 'created_by' | 'team_id'>) => {
+  const createGoal = async (goalData: Omit<QuarterlyGoal, 'id' | 'created_at' | 'created_by' | 'team_id' | 'current_value'>) => {
     if (!user || !team) return;
     
     const { data, error } = await supabase
@@ -65,8 +66,9 @@ export const useQuarterlyGoals = (quarter?: number, year?: number) => {
         ...goalData,
         team_id: team.id,
         created_by: user.id,
-        quarter: targetQuarter,
-        year: targetYear
+        quarter: quarterString,
+        year: targetYear,
+        current_value: 0,
       })
       .select()
       .single();
@@ -82,9 +84,15 @@ export const useQuarterlyGoals = (quarter?: number, year?: number) => {
   };
   
   const updateGoal = async (goalId: string, updates: Partial<QuarterlyGoal>) => {
+    // Convert quarter number to string if provided
+    const processedUpdates = { ...updates };
+    if (typeof processedUpdates.quarter === 'number') {
+      processedUpdates.quarter = `Q${processedUpdates.quarter}`;
+    }
+    
     const { error } = await supabase
       .from('quarterly_goals')
-      .update(updates)
+      .update(processedUpdates)
       .eq('id', goalId);
     
     if (error) {
@@ -120,8 +128,8 @@ export const useQuarterlyGoals = (quarter?: number, year?: number) => {
       .from('kpi_entries')
       .select('kpi_type, value')
       .eq('user_id', user.id)
-      .gte('entry_date', startDate.toISOString().split('T')[0])
-      .lte('entry_date', endDate.toISOString().split('T')[0]);
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0]);
     
     if (error) {
       console.error('Error calculating performance:', error);

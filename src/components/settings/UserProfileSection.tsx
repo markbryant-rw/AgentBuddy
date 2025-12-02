@@ -35,7 +35,7 @@ export const UserProfileSection = () => {
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || "",
     email: profile?.email || "",
-    mobile_number: profile?.mobile_number || "",
+    mobile: profile?.mobile || "",
     birthday_day: "",
     birthday_month: "",
     birthday_year: "",
@@ -67,7 +67,7 @@ export const UserProfileSection = () => {
         ...prev,
         full_name: profile.full_name || "",
         email: profile.email || "",
-        mobile_number: profile.mobile_number || "",
+        mobile: profile.mobile || "",
       }));
     }
   }, [profile]);
@@ -103,8 +103,8 @@ export const UserProfileSection = () => {
     setIsSaving(true);
     try {
       // Validate mobile number if provided
-      if (formData.mobile_number) {
-        const mobileValidation = mobileSchema.safeParse(formData.mobile_number);
+      if (formData.mobile) {
+        const mobileValidation = mobileSchema.safeParse(formData.mobile);
         if (!mobileValidation.success) {
           toast.error(mobileValidation.error.errors[0].message);
           setIsSaving(false);
@@ -131,7 +131,7 @@ export const UserProfileSection = () => {
       }
 
       // Normalize mobile number (remove spaces, add +64 prefix if needed)
-      let normalizedMobile = formData.mobile_number.replace(/[\s-]/g, '');
+      let normalizedMobile = formData.mobile.replace(/[\s-]/g, '');
       if (normalizedMobile && !normalizedMobile.startsWith('+')) {
         if (normalizedMobile.startsWith('0')) {
           normalizedMobile = '+64' + normalizedMobile.substring(1);
@@ -144,7 +144,7 @@ export const UserProfileSection = () => {
 
       await updateProfile({
         full_name: formData.full_name.trim(),
-        mobile_number: normalizedMobile || null,
+        mobile: normalizedMobile || null,
         birthday: birthday,
       });
       toast.success("Profile updated successfully");
@@ -297,10 +297,10 @@ export const UserProfileSection = () => {
               Mobile Number
             </Label>
             <Input
-              id="mobile_number"
+              id="mobile"
               type="tel"
-              value={formData.mobile_number}
-              onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
+              value={formData.mobile}
+              onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
               placeholder="027 321 3749"
               maxLength={20}
             />

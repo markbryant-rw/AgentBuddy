@@ -1,9 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
-import { startOfDay, endOfDay } from 'date-fns';
 
+// Stub implementation - pomodoro feature not yet implemented
 export interface PomodoroSession {
   id: string;
   user_id: string;
@@ -23,25 +22,9 @@ export const usePomodoroSessions = (date?: Date) => {
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ['pomodoro-sessions', date?.toISOString()],
-    queryFn: async () => {
-      if (!user) return [];
-
-      let query = supabase
-        .from('pomodoro_sessions')
-        .select('id, user_id, session_title, session_type, duration_minutes, notes, completed, started_at, completed_at, created_at')
-        .eq('user_id', user.id)
-        .order('started_at', { ascending: false });
-
-      if (date) {
-        const start = startOfDay(date).toISOString();
-        const end = endOfDay(date).toISOString();
-        query = query.gte('started_at', start).lte('started_at', end);
-      }
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-      return data as PomodoroSession[];
+    queryFn: async (): Promise<PomodoroSession[]> => {
+      // Pomodoro feature not yet implemented
+      return [];
     },
     enabled: !!user,
   });
@@ -52,25 +35,8 @@ export const usePomodoroSessions = (date?: Date) => {
       session_type?: string;
       duration_minutes?: number;
     }) => {
-      if (!user) throw new Error('Not authenticated');
-
-      const { data, error } = await supabase
-        .from('pomodoro_sessions')
-        .insert({
-          user_id: user.id,
-          session_title: session.session_title,
-          session_type: session.session_type || 'Focus Session',
-          duration_minutes: session.duration_minutes || 25,
-          completed: false,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pomodoro-sessions'] });
+      toast.info('Pomodoro feature coming soon');
+      return null;
     },
     onError: (error) => {
       toast.error('Failed to create session');
@@ -86,18 +52,8 @@ export const usePomodoroSessions = (date?: Date) => {
       id: string;
       updates: Partial<PomodoroSession>;
     }) => {
-      const { data, error } = await supabase
-        .from('pomodoro_sessions')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pomodoro-sessions'] });
+      toast.info('Pomodoro feature coming soon');
+      return null;
     },
     onError: (error) => {
       toast.error('Failed to update session');
@@ -115,24 +71,8 @@ export const usePomodoroSessions = (date?: Date) => {
       notes?: string;
       duration_minutes?: number;
     }) => {
-      const { data, error } = await supabase
-        .from('pomodoro_sessions')
-        .update({
-          completed: true,
-          completed_at: new Date().toISOString(),
-          notes,
-          duration_minutes,
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pomodoro-sessions'] });
-      toast.success('🍅 Pomodoro completed!');
+      toast.info('Pomodoro feature coming soon');
+      return null;
     },
     onError: (error) => {
       toast.error('Failed to complete session');
@@ -142,16 +82,7 @@ export const usePomodoroSessions = (date?: Date) => {
 
   const deleteSession = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('pomodoro_sessions')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pomodoro-sessions'] });
-      toast.success('Session deleted');
+      toast.info('Pomodoro feature coming soon');
     },
     onError: (error) => {
       toast.error('Failed to delete session');

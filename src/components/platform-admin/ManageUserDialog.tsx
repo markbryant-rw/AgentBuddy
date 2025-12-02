@@ -149,7 +149,7 @@ export const ManageUserDialog = ({ open, onOpenChange, userId }: ManageUserDialo
 
   const handleSaveMobile = async () => {
     if (!userId) return;
-    updateUserProfile.mutate({ userId, updates: { mobile_number: editedMobile.trim() || null } }, {
+    updateUserProfile.mutate({ userId, updates: { mobile: editedMobile.trim() || null } }, {
       onSuccess: () => setIsEditingMobile(false)
     });
   };
@@ -299,13 +299,13 @@ export const ManageUserDialog = ({ open, onOpenChange, userId }: ManageUserDialo
                         ) : (
                           <div className="flex items-center gap-2">
                             <p className="text-sm text-muted-foreground">
-                              Mobile: {user.mobile_number || 'Not set'}
+                              Mobile: {user.mobile || 'Not set'}
                             </p>
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => {
-                                setEditedMobile(user.mobile_number || '');
+                                setEditedMobile(user.mobile || '');
                                 setIsEditingMobile(true);
                               }}
                             >

@@ -11,11 +11,10 @@ export const usePlatformUserManagement = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from('audit_logs').insert({
+        await supabase.from('admin_activity_log').insert({
           user_id: user.id,
           action,
-          target_user_id: userId,
-          details,
+          details: { target_user_id: userId, ...details },
         });
       }
     } catch (error) {
@@ -29,7 +28,7 @@ export const usePlatformUserManagement = () => {
       updates 
     }: { 
       userId: string; 
-      updates: Partial<{ full_name: string; mobile_number: string; birthday: string }> 
+      updates: Partial<{ full_name: string; mobile: string; birthday: string }> 
     }) => {
       const { error } = await supabase
         .from('profiles')
@@ -57,7 +56,7 @@ export const usePlatformUserManagement = () => {
       if (!session) throw new Error('Not authenticated');
 
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`,
+        `https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1/delete-user`,
         {
           method: 'POST',
           headers: {
@@ -171,7 +170,7 @@ export const usePlatformUserManagement = () => {
       // Fetch current team memberships
       const { data: currentMemberships } = await supabase
         .from('team_members')
-        .select('team_id, teams:team_id(agency_id)')
+        .select('team_id')
         .eq('user_id', userId);
 
       // Remove from all teams in old office

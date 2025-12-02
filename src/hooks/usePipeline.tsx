@@ -180,8 +180,7 @@ export const usePipeline = (period: Period = 'week') => {
         .from('goals')
         .select('kpi_type, target_value')
         .eq('user_id', user.id)
-        .gte('start_date', weekStartStr)
-        .lte('end_date', format(weekEnd, 'yyyy-MM-dd'));
+        .eq('period', 'weekly');
 
       if (goalsError) throw goalsError;
 

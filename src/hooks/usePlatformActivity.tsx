@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface Activity {
   id: string;
-  activity_type: string;
-  description: string;
+  action: string;
+  details: any;
   created_at: string;
+  user_id: string;
 }
 
 export const usePlatformActivity = () => {
@@ -14,7 +15,7 @@ export const usePlatformActivity = () => {
     queryFn: async (): Promise<Activity[]> => {
       const { data, error } = await supabase
         .from('admin_activity_log')
-        .select('id, activity_type, description, created_at')
+        .select('id, action, details, created_at, user_id')
         .order('created_at', { ascending: false })
         .limit(10);
 

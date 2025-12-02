@@ -10,7 +10,7 @@ export interface UserDetail {
   office_id: string | null;
   primary_team_id: string | null;
   created_at: string;
-  mobile_number: string | null;
+  mobile: string | null;
   birthday: string | null;
   is_orphaned: boolean;
   office?: {
@@ -23,9 +23,8 @@ export interface UserDetail {
   } | null;
   roles: Array<{
     role: string;
-    assigned_at: string | null;
+    created_at: string | null;
     revoked_at: string | null;
-    assigned_by: string | null;
   }>;
   team_memberships: Array<{
     team_id: string;
@@ -52,7 +51,7 @@ export const usePlatformUserDetail = (userId: string | undefined) => {
           office_id,
           primary_team_id,
           created_at,
-          mobile_number,
+          mobile,
           birthday
         `)
         .eq('id', userId)
@@ -86,9 +85,9 @@ export const usePlatformUserDetail = (userId: string | undefined) => {
       // Fetch roles
       const { data: roles } = await supabase
         .from('user_roles')
-        .select('role, assigned_at, revoked_at, assigned_by')
+        .select('role, created_at, revoked_at')
         .eq('user_id', userId)
-        .order('assigned_at', { ascending: false });
+        .order('created_at', { ascending: false });
 
       // Fetch team memberships
       const { data: teamMemberships } = await supabase
@@ -107,21 +106,25 @@ export const usePlatformUserDetail = (userId: string | undefined) => {
         email: profile.email,
         full_name: profile.full_name,
         avatar_url: profile.avatar_url,
-        status: profile.status,
+        status: profile.status || 'active',
         office_id: profile.office_id,
         primary_team_id: profile.primary_team_id,
-        created_at: profile.created_at,
-        mobile_number: profile.mobile_number,
+        created_at: profile.created_at || new Date().toISOString(),
+        mobile: profile.mobile,
         birthday: profile.birthday,
         is_orphaned: !profile.office_id || !profile.primary_team_id,
         office: officeData,
         primary_team: primaryTeamData,
-        roles: roles || [],
-        team_memberships: teamMemberships?.map((tm: any) => ({
+        roles: (roles || []).map(r => ({
+          role: r.role,
+          created_at: r.created_at,
+          revoked_at: r.revoked_at,
+        })),
+        team_memberships: (teamMemberships || []).map((tm: any) => ({
           team_id: tm.team_id,
           team_name: tm.teams?.name || 'Unknown Team',
           access_level: tm.access_level,
-        })) || [],
+        })),
       };
     },
     enabled: !!userId,
