@@ -7,9 +7,7 @@ interface FeatureRequestComment {
   feature_request_id: string;
   user_id: string;
   comment: string;
-  is_admin: boolean;
   created_at: string;
-  updated_at: string;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -61,7 +59,6 @@ export const useFeatureRequestComments = (featureRequestId: string) => {
           feature_request_id: featureRequestId,
           user_id: user.id,
           comment,
-          is_admin: true,
         });
 
       if (error) throw error;

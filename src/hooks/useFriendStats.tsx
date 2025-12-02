@@ -115,108 +115,31 @@ export const useFriendStats = () => {
     try {
       setLoading(true);
 
-      // Get friend IDs
-      const { data: friendConnections } = await supabase
-        .from('friend_connections')
-        .select('user_id, friend_id, is_starred')
-        .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
-        .eq('accepted', true);
-
-      const friendIds = Array.from(
-        new Set(
-          friendConnections?.map(fc =>
-            fc.user_id === user.id ? fc.friend_id : fc.user_id
-          ) || []
-        )
-      );
-
-      // Create a starred map for quick lookup
-      const starredMap = new Map<string, boolean>();
-      friendConnections?.forEach(fc => {
-        const friendId = fc.user_id === user.id ? fc.friend_id : fc.user_id;
-        starredMap.set(friendId, fc.is_starred || false);
+      // Stub: user_preferences and daily_log_tracker tables do not exist
+      console.log('useFriendStats: Stubbed - returning default empty stats');
+      
+      setMyStats({
+        user_id: user.id,
+        full_name: user.email || '',
+        email: user.email || '',
+        avatar_url: null,
+        invite_code: '',
+        today_calls: 0,
+        today_appraisals: 0,
+        today_open_homes: 0,
+        today_cch: 0,
+        week_calls: 0,
+        week_appraisals: 0,
+        week_open_homes: 0,
+        week_cch: 0,
+        current_streak: 0,
+        longest_streak: 0,
+        is_friend: true,
+        is_starred: false,
       });
-
-      // Fetch all user profiles (for leaderboard)
-      const { data: allProfiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, avatar_url, invite_code');
-
-      // Fetch user preferences to respect privacy settings
-      const { data: userPreferences } = await supabase
-        .from('user_preferences')
-        .select('user_id, leaderboard_participation');
-
-      // Fetch KPI entries for user, friends, and all users (for leaderboard)
-      const relevantUserIds = [user.id, ...friendIds];
-      const { data: kpiEntries } = await supabase
-        .from('kpi_entries')
-        .select('user_id, kpi_type, value, entry_date')
-        .gte('entry_date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
-
-      // Fetch streak data for all users
-      const { data: logEntries } = await supabase
-        .from('daily_log_tracker')
-        .select('user_id, log_date');
-
-      // Create a map of privacy preferences
-      const privacyMap = new Map<string, boolean>();
-      userPreferences?.forEach(pref => {
-        privacyMap.set(pref.user_id, pref.leaderboard_participation ?? true);
-      });
-
-      // Calculate stats for each user
-      const userStatsMap = new Map<string, FriendStats>();
-
-      allProfiles?.forEach(profile => {
-        const userKpis = kpiEntries?.filter(e => e.user_id === profile.id) || [];
-        const userLogs = logEntries?.filter(e => e.user_id === profile.id) || [];
-        const stats = calculateStats(userKpis);
-        const streakStats = getStreakStats(userLogs);
-
-        userStatsMap.set(profile.id, {
-          user_id: profile.id,
-          full_name: profile.full_name || profile.email,
-          email: profile.email,
-          avatar_url: profile.avatar_url,
-          invite_code: profile.invite_code || '',
-          ...stats,
-          ...streakStats,
-          is_friend: friendIds.includes(profile.id) || profile.id === user.id,
-          is_starred: starredMap.get(profile.id) || false,
-        } as FriendStats);
-      });
-
-      // Set my stats
-      const myUserStats = userStatsMap.get(user.id);
-      if (myUserStats) {
-        setMyStats(myUserStats);
-      }
-
-      // Set friends stats with additional deduplication by user_id
-      const uniqueFriendIds = Array.from(new Set(friendIds));
-      const friendsStatsData = uniqueFriendIds
-        .map(id => userStatsMap.get(id))
-        .filter((s): s is FriendStats => s !== undefined)
-        .sort((a, b) => b.week_cch - a.week_cch);
-      setFriendsStats(friendsStatsData);
-
-      // Create leaderboard with all users, respecting privacy settings
-      const leaderboardData = Array.from(userStatsMap.values())
-        .filter(stats => {
-          // Always include current user and friends
-          if (stats.user_id === user.id || stats.is_friend) return true;
-          // For others, check leaderboard participation (default true)
-          return privacyMap.get(stats.user_id) !== false;
-        })
-        .sort((a, b) => b.week_cch - a.week_cch)
-        .slice(0, 50)
-        .map((stats, index) => ({
-          ...stats,
-          rank: index + 1,
-          display_name: stats.is_friend ? stats.full_name : obfuscateName(stats.full_name),
-        }));
-      setLeaderboard(leaderboardData);
+      
+      setFriendsStats([]);
+      setLeaderboard([]);
 
     } catch (error) {
       console.error('Error fetching friend stats:', error);

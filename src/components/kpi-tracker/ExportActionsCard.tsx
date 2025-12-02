@@ -6,20 +6,20 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 
 export const ExportActionsCard = () => {
-  const { personal, team } = useKPITrackerData();
+  const { personalKPIs, personalCCH } = useKPITrackerData();
   const { toast } = useToast();
 
   const handleExportCSV = () => {
     try {
       const headers = ['Metric', 'Today', 'This Week', 'Weekly Goal'];
       const rows = [
-        ['Calls', personal.kpis.calls.today, personal.kpis.calls.week, personal.kpis.calls.goal],
-        ['SMS', personal.kpis.sms.today, personal.kpis.sms.week, personal.kpis.sms.goal],
-        ['Appraisals', personal.kpis.appraisals.today, personal.kpis.appraisals.week, personal.kpis.appraisals.goal],
-        ['Open Homes', personal.kpis.openHomes.today, personal.kpis.openHomes.week, personal.kpis.openHomes.goal],
+        ['Calls', personalKPIs.calls.today, personalKPIs.calls.week, personalKPIs.calls.goal],
+        ['SMS', personalKPIs.sms.today, personalKPIs.sms.week, personalKPIs.sms.goal],
+        ['Appraisals', personalKPIs.appraisals.today, personalKPIs.appraisals.week, personalKPIs.appraisals.goal],
+        ['Open Homes', personalKPIs.openHomes.today, personalKPIs.openHomes.week, personalKPIs.openHomes.goal],
         ['', '', '', ''],
-        ['CCH (Daily)', personal.cch.daily.toFixed(2), '', personal.cch.dailyTarget.toFixed(2)],
-        ['CCH (Weekly)', '', personal.cch.weekly.toFixed(2), personal.cch.weeklyTarget.toFixed(2)],
+        ['CCH (Daily)', personalCCH.daily.toFixed(2), '', personalCCH.dailyTarget.toFixed(2)],
+        ['CCH (Weekly)', '', personalCCH.weekly.toFixed(2), personalCCH.weeklyTarget.toFixed(2)],
       ];
 
       const csvContent = [
