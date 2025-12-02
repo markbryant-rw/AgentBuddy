@@ -78,7 +78,7 @@ export const useConversationRealtime = (conversationId: string | null) => {
         async (payload) => {
           const { data: messageData, error: messageError } = await supabase
             .from("messages")
-            .select("id, conversation_id, author_id, content, created_at, updated_at, edited, deleted, message_type, reply_to_id")
+            .select("id, conversation_id, sender_id, content, created_at, reactions")
             .eq("id", payload.new.id)
             .single();
 
@@ -92,32 +92,39 @@ export const useConversationRealtime = (conversationId: string | null) => {
             return;
           }
 
-          if (messageData.author_id) {
+          // Fetch sender profile if exists
+          let author = undefined;
+          if (messageData.sender_id) {
             const { data: profile, error: profileError } = await supabase
               .from("profiles")
               .select("id, full_name, avatar_url, email")
-              .eq("id", messageData.author_id)
+              .eq("id", messageData.sender_id)
               .single();
 
-            if (profileError) {
-              console.error('Error fetching profile:', profileError);
+            if (!profileError && profile) {
+              author = profile;
             }
-
-            const newMessage = {
-              ...messageData,
-              author: profile || undefined,
-            } as Message;
-
-            queryClient.setQueryData(
-              ["messages", conversationId],
-              (old: any) => {
-                if (!old) return { pages: [[newMessage]], pageParams: [0] };
-                const newPages = [...old.pages];
-                newPages[newPages.length - 1] = [...newPages[newPages.length - 1], newMessage];
-                return { ...old, pages: newPages };
-              }
-            );
           }
+
+          const newMessage = {
+            ...messageData,
+            author_id: messageData.sender_id,
+            author,
+            updated_at: messageData.created_at,
+            edited: false,
+            deleted: false,
+            message_type: 'standard',
+          } as Message;
+
+          queryClient.setQueryData(
+            ["messages", conversationId],
+            (old: any) => {
+              if (!old) return { pages: [[newMessage]], pageParams: [0] };
+              const newPages = [...old.pages];
+              newPages[newPages.length - 1] = [...newPages[newPages.length - 1], newMessage];
+              return { ...old, pages: newPages };
+            }
+          );
         }
       )
       .on(

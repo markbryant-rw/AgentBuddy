@@ -24,11 +24,11 @@ export function useDailyTasks() {
 
       if (!teamMemberData) return [];
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tasks')
         .select('*')
         .eq('team_id', teamMemberData.team_id)
-        .eq('scheduled_date', today);
+        .eq('due_date', today);
 
       if (error) throw error;
       

@@ -23,27 +23,11 @@ export const useConversationMessages = (conversationId: string | null) => {
 
       if (error) throw error;
 
-      // Fetch author profiles in a single query for better performance
-      const authorIds = [...new Set(messagesData.map(m => m.author_id).filter(Boolean))];
-      let authorsMap: Record<string, any> = {};
-
-      if (authorIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url, email")
-          .in("id", authorIds);
-
-        authorsMap = profiles?.reduce((acc, profile) => {
-          acc[profile.id] = profile;
-          return acc;
-        }, {} as Record<string, any>) || {};
-      }
-
+      // coaching_conversation_messages only has role, not author_id
+      // Messages are just stored with role (user/assistant)
       return messagesData.map((msg) => ({
         ...msg,
-        author: msg.author_id && authorsMap[msg.author_id]
-          ? authorsMap[msg.author_id]
-          : undefined,
+        author: undefined, // No author tracking for coaching messages
       })) as ConversationMessage[];
     },
     enabled: !!conversationId,
@@ -72,20 +56,10 @@ export const useConversationMessages = (conversationId: string | null) => {
             .single();
 
           if (messageData) {
-            // Fetch author profile if exists
-            let author = undefined;
-            if (messageData.author_id) {
-              const { data: profile } = await supabase
-                .from("profiles")
-                .select("id, full_name, avatar_url, email")
-                .eq("id", messageData.author_id)
-                .single();
-              author = profile || undefined;
-            }
-
+            // coaching_conversation_messages only has role, no author
             const newMessage = {
               ...messageData,
-              author,
+              author: undefined,
             } as ConversationMessage;
 
             queryClient.setQueryData(
@@ -118,7 +92,7 @@ export const useConversationMessages = (conversationId: string | null) => {
           conversation_id: conversationId,
           role,
           content,
-          author_id: user.id,
+          // No author_id field in coaching_conversation_messages
         })
         .select()
         .single();

@@ -42,29 +42,18 @@ export function useDailyPlanner(date: Date = new Date()) {
 
       const { data, error } = await supabase
         .from('daily_planner_items')
-        .select(`
-          *,
-          daily_planner_assignments (
-            id,
-            user_id,
-            profiles (
-              id,
-              full_name,
-              avatar_url
-            )
-          )
-        `)
+        .select('*')
         .eq('team_id', team.id)
-        .eq('scheduled_date', dateStr)
-        .order('order_within_category', { ascending: true });
+        .eq('date', dateStr)
+        .order('position', { ascending: true });
 
       if (error) throw error;
 
       return (data || []).map((item: any) => ({
         ...item,
-        assigned_users: item.daily_planner_assignments
-          ?.map((assignment: any) => assignment.profiles)
-          .filter(Boolean) || [],
+        scheduled_date: item.date,
+        order_within_category: item.position,
+        assigned_users: [], // No assignments table, stub empty array
       }));
     },
     enabled: !!team?.id && !!user,
@@ -96,13 +85,13 @@ export function useDailyPlanner(date: Date = new Date()) {
       const { data: item, error: itemError } = await supabase
         .from('daily_planner_items')
         .insert({
+          user_id: user.id,
           team_id: team.id,
           title,
-          scheduled_date: dateStr,
+          date: dateStr,
           created_by: user.id,
           position: maxPosition + 1,
           size_category: sizeCategory,
-          order_within_category: maxCategoryOrder + 1,
           estimated_minutes: estimatedMinutes,
         })
         .select()
@@ -110,19 +99,7 @@ export function useDailyPlanner(date: Date = new Date()) {
 
       if (itemError) throw itemError;
 
-      // Add assignments
-      if (assignedUserIds.length > 0) {
-        const { error: assignError } = await supabase
-          .from('daily_planner_assignments')
-          .insert(
-            assignedUserIds.map(userId => ({
-              planner_item_id: item.id,
-              user_id: userId,
-            }))
-          );
-
-        if (assignError) throw assignError;
-      }
+      // No assignments table, just single user ownership
 
       return item;
     },
@@ -183,11 +160,11 @@ export function useDailyPlanner(date: Date = new Date()) {
       const [removed] = reordered.splice(oldIndex, 1);
       reordered.splice(newPosition, 0, removed);
 
-      // Update order_within_category for all items in this category
+      // Update position for all items in this category
       for (let i = 0; i < reordered.length; i++) {
         await supabase
           .from('daily_planner_items')
-          .update({ order_within_category: i })
+          .update({ position: i })
           .eq('id', reordered[i].id);
       }
     },
@@ -333,25 +310,8 @@ export function useDailyPlanner(date: Date = new Date()) {
       itemId: string; 
       userIds: string[];
     }) => {
-      // Delete all existing assignments
-      await supabase
-        .from('daily_planner_assignments')
-        .delete()
-        .eq('planner_item_id', itemId);
-
-      // Add new assignments
-      if (userIds.length > 0) {
-        const { error } = await supabase
-          .from('daily_planner_assignments')
-          .insert(
-            userIds.map(userId => ({
-              planner_item_id: itemId,
-              user_id: userId,
-            }))
-          );
-
-        if (error) throw error;
-      }
+      // No assignments table, stub this out
+      console.log("Assignments not implemented - daily_planner_assignments table doesn't exist");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['daily-planner'] });
@@ -385,13 +345,13 @@ export function useDailyPlanner(date: Date = new Date()) {
       const littleItems = uncompletedItems.filter(i => i.size_category === 'little');
 
       // Update each category with sequential ordering
-      const updateCategory = async (categoryItems: any[]) => {
+      const updateCategoryPositions = async (categoryItems: any[]) => {
         for (let i = 0; i < categoryItems.length; i++) {
           await supabase
             .from('daily_planner_items')
             .update({
-              scheduled_date: targetDateStr,
-              order_within_category: i,
+              date: targetDateStr,
+              position: i,
             })
             .eq('id', categoryItems[i].id);
         }
@@ -399,9 +359,9 @@ export function useDailyPlanner(date: Date = new Date()) {
 
       // Update all categories in parallel
       await Promise.all([
-        updateCategory(bigItems),
-        updateCategory(mediumItems),
-        updateCategory(littleItems),
+        updateCategoryPositions(bigItems),
+        updateCategoryPositions(mediumItems),
+        updateCategoryPositions(littleItems),
       ]);
 
       return {
@@ -442,7 +402,7 @@ export function useDailyPlanner(date: Date = new Date()) {
       const { error } = await supabase
         .from('daily_planner_items')
         .update({ 
-          scheduled_date: format(newDate, 'yyyy-MM-dd'),
+          date: format(newDate, 'yyyy-MM-dd'),
           updated_at: new Date().toISOString()
         })
         .eq('id', itemId);
