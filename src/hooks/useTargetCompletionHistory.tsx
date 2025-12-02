@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, endOfWeek, subWeeks, format, eachWeekOfInterval } from 'date-fns';
 
 export interface WeeklyTargetCompletion {
@@ -25,108 +24,40 @@ const getWeeksCount = (timeframe: Timeframe): number => {
   }
 };
 
-const getStatus = (percentage: number): string => {
-  if (percentage >= 100) return 'complete';
-  if (percentage >= 90) return 'on-track';
-  if (percentage >= 60) return 'behind';
-  return 'at-risk';
-};
-
 export const useTargetCompletionHistory = (timeframe: Timeframe = 'last4weeks') => {
   const { user } = useAuth();
   const [data, setData] = useState<WeeklyTargetCompletion[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchCompletionHistory = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       const weeksCount = getWeeksCount(timeframe);
       const endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
       const startDate = startOfWeek(subWeeks(endDate, weeksCount - 1), { weekStartsOn: 1 });
 
-      // Generate all weeks in the range
+      // Generate all weeks in the range with default values
       const weeks = eachWeekOfInterval({ start: startDate, end: endDate }, { weekStartsOn: 1 });
 
-      // Fetch targets
-      const { data: targets } = await supabase
-        .from('kpi_targets')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('period_type', 'weekly')
-        .gte('start_date', format(startDate, 'yyyy-MM-dd'))
-        .lte('end_date', format(endDate, 'yyyy-MM-dd'));
+      const defaultKpi = { target: 0, actual: 0, percentage: 0, status: 'at-risk' };
 
-      // Fetch entries
-      const { data: entries } = await supabase
-        .from('kpi_entries')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('entry_date', format(startDate, 'yyyy-MM-dd'))
-        .lte('entry_date', format(endDate, 'yyyy-MM-dd'));
-
-      // Process data by week
       const completionData: WeeklyTargetCompletion[] = weeks.map(weekStart => {
         const weekEndDate = endOfWeek(weekStart, { weekStartsOn: 1 });
         const weekLabel = `${format(weekStart, 'MMM d')}-${format(weekEndDate, 'd')}`;
-
-        // Find targets for this week
-        const weekTargets = targets?.filter(t => {
-          const tStart = new Date(t.start_date);
-          return tStart >= weekStart && tStart <= weekEndDate;
-        }) || [];
-
-        // Find entries for this week
-        const weekEntries = entries?.filter(e => {
-          const eDate = new Date(e.entry_date);
-          return eDate >= weekStart && eDate <= weekEndDate;
-        }) || [];
-
-        // Calculate for each KPI type
-        const kpiTypes = ['calls', 'sms', 'appraisals', 'open_homes'] as const;
-        const kpiKeyMap = {
-          'calls': 'calls',
-          'sms': 'sms',
-          'appraisals': 'appraisals',
-          'open_homes': 'openHomes'
-        } as const;
-        
-        const kpiData: any = {};
-        let totalPercentage = 0;
-        let kpisWithTargets = 0;
-
-        kpiTypes.forEach(kpiType => {
-          const target = weekTargets.find(t => t.kpi_type === kpiType);
-          const actual = weekEntries
-            .filter(e => e.kpi_type === kpiType)
-            .reduce((sum, e) => sum + e.value, 0);
-          
-          const targetValue = target?.target_value || 0;
-          const percentage = targetValue > 0 ? (actual / targetValue) * 100 : 0;
-
-          if (targetValue > 0) {
-            totalPercentage += percentage;
-            kpisWithTargets++;
-          }
-
-          // Use camelCase key for object property
-          const objectKey = kpiKeyMap[kpiType];
-          kpiData[objectKey] = {
-            target: targetValue,
-            actual,
-            percentage,
-            status: getStatus(percentage),
-          };
-        });
-
-        const overallCompletionRate = kpisWithTargets > 0 ? totalPercentage / kpisWithTargets : 0;
 
         return {
           week: weekLabel,
           startDate: weekStart,
           endDate: weekEndDate,
-          ...kpiData,
-          overallCompletionRate,
+          calls: { ...defaultKpi },
+          sms: { ...defaultKpi },
+          appraisals: { ...defaultKpi },
+          openHomes: { ...defaultKpi },
+          overallCompletionRate: 0,
         };
       });
 

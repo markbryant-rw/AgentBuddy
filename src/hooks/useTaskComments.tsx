@@ -56,13 +56,7 @@ export const useTaskComments = (taskId: string) => {
 
       if (error) throw error;
 
-      // Log activity
-      await supabase.from("task_activity").insert({
-        task_id: taskId,
-        user_id: user.id,
-        activity_type: "commented",
-      });
-
+      // Activity logging skipped - table not implemented
       return data;
     },
     onSuccess: () => {

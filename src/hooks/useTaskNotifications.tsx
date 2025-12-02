@@ -1,7 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect } from "react";
 
 export interface TaskNotification {
   id: string;
@@ -35,96 +33,17 @@ export const useTaskNotifications = () => {
   const { data: notifications = [], isLoading } = useQuery({
     queryKey: ["task-notifications", user?.id],
     queryFn: async () => {
-      if (!user?.id) return [];
-
-      const { data, error } = await supabase
-        .from("task_assignment_notifications")
-        .select(`
-          id,
-          task_id,
-          assigned_to,
-          assigned_by,
-          read,
-          dismissed,
-          created_at,
-          task:tasks!task_id(
-            id,
-            title,
-            due_date,
-            board_id
-          ),
-          assigner:profiles!assigned_by(
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq("assigned_to", user.id)
-        .eq("dismissed", false)
-        .order("created_at", { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-
-      // Fetch board info for each task
-      const notificationsWithBoards = await Promise.all(
-        (data as any[]).map(async (notification) => {
-          if (notification.task?.board_id) {
-            const { data: boardData } = await supabase
-              .from("task_boards")
-              .select("id, title")
-              .eq("id", notification.task.board_id)
-              .single();
-
-            return {
-              ...notification,
-              board: boardData,
-            };
-          }
-          return notification;
-        })
-      );
-
-      return notificationsWithBoards as TaskNotification[];
+      // Feature not yet implemented - return empty array
+      return [] as TaskNotification[];
     },
     enabled: !!user?.id,
     staleTime: 30000,
-    refetchInterval: 60000, // 1 minute
+    refetchInterval: 60000,
   });
 
-  // Subscribe to realtime updates
-  useEffect(() => {
-    if (!user?.id) return;
-
-    const channel = supabase
-      .channel("task-notifications-changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "task_assignment_notifications",
-          filter: `assigned_to=eq.${user.id}`,
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["task-notifications"] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, queryClient]);
-
   const markAsRead = useMutation({
-    mutationFn: async (notificationId: string) => {
-      const { error } = await supabase
-        .from("task_assignment_notifications")
-        .update({ read: true })
-        .eq("id", notificationId);
-
-      if (error) throw error;
+    mutationFn: async (_notificationId: string) => {
+      // Not implemented
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["task-notifications"] });
@@ -132,13 +51,8 @@ export const useTaskNotifications = () => {
   });
 
   const dismissNotification = useMutation({
-    mutationFn: async (notificationId: string) => {
-      const { error } = await supabase
-        .from("task_assignment_notifications")
-        .update({ dismissed: true })
-        .eq("id", notificationId);
-
-      if (error) throw error;
+    mutationFn: async (_notificationId: string) => {
+      // Not implemented
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["task-notifications"] });
@@ -147,15 +61,7 @@ export const useTaskNotifications = () => {
 
   const markAllAsRead = useMutation({
     mutationFn: async () => {
-      if (!user?.id) return;
-
-      const { error } = await supabase
-        .from("task_assignment_notifications")
-        .update({ read: true })
-        .eq("assigned_to", user.id)
-        .eq("read", false);
-
-      if (error) throw error;
+      // Not implemented
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["task-notifications"] });

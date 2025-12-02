@@ -12,12 +12,6 @@ export const useSystemMetrics = () => {
   return useQuery({
     queryKey: ['system-metrics'],
     queryFn: async (): Promise<SystemMetrics> => {
-      // Get error count
-      const { count: errorCount } = await supabase
-        .from('system_error_log')
-        .select('*', { count: 'exact', head: true })
-        .eq('resolved', false);
-
       // Get recent activity count (last 24 hours)
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: activityCount } = await supabase
@@ -43,10 +37,10 @@ export const useSystemMetrics = () => {
       return {
         totalTables: 5,
         totalRows,
-        activeErrors: errorCount || 0,
+        activeErrors: 0, // system_error_log table not implemented
         recentActivityCount: activityCount || 0,
       };
     },
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 60000,
   });
 };

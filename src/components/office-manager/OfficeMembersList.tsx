@@ -73,7 +73,7 @@ export function OfficeMembersList({ officeId }: OfficeMembersListProps) {
       const { data, error } = await supabase
         .from('pending_invitations')
         .select('id, full_name, email, created_at, expires_at')
-        .eq('office_id', officeId)
+        .eq('agency_id', officeId)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
