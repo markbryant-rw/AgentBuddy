@@ -28,6 +28,7 @@ import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserRoles } from '@/hooks/useUserRoles';
 
 interface EditTransactionTemplateDialogProps {
   open: boolean;
@@ -55,6 +56,7 @@ export function EditTransactionTemplateDialog({
   initialStage = 'signed',
 }: EditTransactionTemplateDialogProps) {
   const { profile } = useProfile();
+  const { hasRole } = useUserRoles();
   const { createTemplate, updateTemplate, setTemplateAsDefault } = useTransactionTemplates();
   
   const [name, setName] = useState('');
@@ -65,7 +67,7 @@ export function EditTransactionTemplateDialog({
   const [isDefault, setIsDefault] = useState(false);
 
   const isSystemTemplate = template?.is_system_template || false;
-  const isPlatformAdmin = profile?.user_type === 'admin_staff';
+  const isPlatformAdmin = hasRole('platform_admin');
   const canEdit = mode === 'create' || !isSystemTemplate || isPlatformAdmin;
 
   // Fetch team members for assignee dropdown

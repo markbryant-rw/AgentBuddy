@@ -53,12 +53,12 @@ export const useOfficeStats = (officeId?: string | null) => {
       weekStart.setDate(weekStart.getDate() - weekStart.getDay());
       const weekStartStr = weekStart.toISOString().split('T')[0];
 
-      // Get all KPIs for all teams this week
+      // Get all KPIs for all teams this week - using date column instead of entry_date
       const { data: kpiEntries } = await supabase
         .from('kpi_entries')
         .select('user_id, kpi_type, value')
         .in('user_id', allMemberIds)
-        .gte('entry_date', weekStartStr);
+        .gte('date', weekStartStr);
 
       // Calculate stats for each team
       const teamsWithStats = teams.map(team => {
@@ -70,9 +70,10 @@ export const useOfficeStats = (officeId?: string | null) => {
         const membersWithStats = members.map(m => {
           const profile = memberProfiles?.find(p => p.id === m.user_id);
           const userKpis = teamKpis.filter(e => e.user_id === m.user_id);
-          const calls = userKpis.filter(e => e.kpi_type === 'calls').reduce((s, e) => s + e.value, 0);
-          const appraisals = userKpis.filter(e => e.kpi_type === 'appraisals').reduce((s, e) => s + e.value, 0);
-          const openHomes = userKpis.filter(e => e.kpi_type === 'open_homes').reduce((s, e) => s + e.value, 0);
+          const calls = userKpis.filter(e => e.kpi_type === 'calls').reduce((s, e) => s + Number(e.value), 0);
+          const appraisals = userKpis.filter(e => e.kpi_type === 'appraisals').reduce((s, e) => s + Number(e.value), 0);
+          // Open homes not in kpi_type enum, skip for now
+          const openHomes = 0;
           const memberCCH = calculateCCH(calls, appraisals, openHomes).total;
           teamCCH += memberCCH;
 

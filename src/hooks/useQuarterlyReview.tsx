@@ -9,14 +9,17 @@ export interface QuarterlyReview {
   id: string;
   team_id: string;
   user_id: string | null;
-  quarter: number;
+  quarter: string;
   year: number;
   review_type: 'team' | 'individual';
   wins: string | null;
   challenges: string | null;
   lessons_learned: string | null;
   action_items: string | null;
-  performance_data: any;
+  achievements: string | null;
+  areas_for_improvement: string | null;
+  goals_for_next_quarter: string | null;
+  performance_notes: string | null;
   completed: boolean;
   created_by: string;
   created_at: string;
@@ -33,12 +36,12 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
   
   const targetQuarter = quarter || currentQuarter.quarter;
   const targetYear = year || currentQuarter.year;
+  const quarterString = `Q${targetQuarter}`;
   
   const ensureReviewTask = async () => {
     if (!user || !team || !needsReview) return;
     
     try {
-      // Check if ANY task already exists (completed or not) for this quarter
       const { data: existingTasks } = await supabase
         .from('tasks')
         .select('id, completed')
@@ -46,20 +49,15 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
         .ilike('title', 'Complete Quarterly Review%')
         .order('created_at', { ascending: false });
       
-      // If there are any incomplete quarterly review tasks, don't create a new one
       const incompleteTask = existingTasks?.find(task => !task.completed);
       if (incompleteTask) return;
       
-      // If there's a completed task, we can create a new one for the new quarter
-      // But only if we confirmed needsReview is true (meaning it's a new quarter)
-      
-      // Create task with quarter info in description
       await supabase
         .from('tasks')
         .insert({
           team_id: team.id,
           title: 'Complete Quarterly Review',
-          description: `Complete your Q${targetQuarter} ${targetYear} quarterly review and set goals for the upcoming quarter.`,
+          description: `Complete your ${quarterString} ${targetYear} quarterly review and set goals for the upcoming quarter.`,
           created_by: user.id,
           priority: 'high',
           status: 'todo',
@@ -80,26 +78,11 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
   }, [user, team, targetQuarter, targetYear]);
   
   useEffect(() => {
-    // Only attempt to create task once per mount
     if (needsReview && user && team && !taskCreationRef.current) {
       taskCreationRef.current = true;
       ensureReviewTask();
-      
-      // Auto-create quarterly review notification
-      const createNotification = async () => {
-        try {
-          await supabase.rpc('create_quarterly_review_notification', {
-            _user_id: user.id,
-            _team_id: team.id,
-          });
-        } catch (error) {
-          console.error('Failed to create quarterly review notification:', error);
-        }
-      };
-      createNotification();
     }
     
-    // Reset when needsReview becomes false
     if (!needsReview) {
       taskCreationRef.current = false;
     }
@@ -109,12 +92,12 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
     if (!user || !team) return;
     
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('quarterly_reviews')
       .select('*')
       .eq('user_id', user.id)
       .eq('team_id', team.id)
-      .eq('quarter', targetQuarter)
+      .eq('quarter', quarterString)
       .eq('year', targetYear)
       .eq('review_type', 'individual')
       .maybeSingle();
@@ -131,14 +114,18 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
   const checkNeedsReview = async () => {
     if (!user || !team) return;
     
-    const { data, error } = await supabase.rpc('needs_quarterly_review', {
-      _user_id: user.id,
-      _team_id: team.id
-    });
+    // Simple check: does a completed review exist for this quarter?
+    const { data } = await (supabase as any)
+      .from('quarterly_reviews')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('team_id', team.id)
+      .eq('quarter', quarterString)
+      .eq('year', targetYear)
+      .eq('completed', true)
+      .maybeSingle();
     
-    if (!error) {
-      setNeedsReview(data);
-    }
+    setNeedsReview(!data);
   };
   
   const saveReview = async (reviewData: Partial<QuarterlyReview>) => {
@@ -148,14 +135,14 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
       ...reviewData,
       team_id: team.id,
       user_id: user.id,
-      quarter: targetQuarter,
+      quarter: quarterString,
       year: targetYear,
       review_type: 'individual' as const,
       created_by: user.id
     };
     
     if (review) {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('quarterly_reviews')
         .update(dataToSave)
         .eq('id', review.id);
@@ -165,7 +152,7 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
         throw error;
       }
     } else {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('quarterly_reviews')
         .insert(dataToSave);
       
@@ -185,21 +172,19 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
     
     try {
       if (review) {
-        // Update existing review
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('quarterly_reviews')
           .update({ completed: true })
           .eq('id', review.id);
         
         if (error) throw error;
       } else {
-        // Create new review marked as complete
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('quarterly_reviews')
           .insert({
             team_id: team.id,
             user_id: user.id,
-            quarter: targetQuarter,
+            quarter: quarterString,
             year: targetYear,
             review_type: 'individual',
             completed: true,
@@ -232,10 +217,10 @@ export const useQuarterlyReview = (quarter?: number, year?: number) => {
       // Mark associated notification as read
       await supabase
         .from('notifications')
-        .update({ read: true })
+        .update({ is_read: true })
         .eq('user_id', user.id)
         .eq('type', 'quarterly_review')
-        .eq('read', false);
+        .eq('is_read', false);
       
       toast.success('Quarterly review completed!');
       await fetchReview();

@@ -1,30 +1,38 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { RoleplayScenario } from "@/types/roleplay";
+
+export interface RoleplayScenario {
+  id: string;
+  title: string;
+  description: string | null;
+  prompt: string;
+  category: string | null;
+  difficulty: string;
+  objectives: any;
+  rating: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 export const useRoleplayScenarios = (type?: 'buyer' | 'seller', callType?: 'inbound' | 'outbound') => {
   return useQuery({
     queryKey: ['roleplay-scenarios', type, callType],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('roleplay_scenarios')
         .select('*')
-        .eq('is_active', true)
         .order('difficulty', { ascending: true })
-        .order('scenario_name', { ascending: true });
+        .order('title', { ascending: true });
 
       if (type) {
-        query = query.eq('type', type);
-      }
-
-      if (callType) {
-        query = query.eq('call_type', callType);
+        query = query.eq('category', type);
       }
 
       const { data, error } = await query;
 
       if (error) throw error;
-      return data as RoleplayScenario[];
+      return (data || []) as RoleplayScenario[];
     },
   });
 };

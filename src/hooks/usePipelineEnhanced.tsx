@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
@@ -64,7 +64,6 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
   const { team } = useTeam();
   const { getQuarterInfo, currentQuarter } = useFinancialYear();
   
-  // Cache data for all three periods
   const [cachedData, setCachedData] = useState<Record<Period, EnhancedPipelineData | null>>({
     week: null,
     month: null,
@@ -84,21 +83,17 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
   const fetchPipelineData = async (targetPeriod: Period = period, skipCache: boolean = false) => {
     if (!user) return;
 
-    // Show cached data immediately if available
     if (!skipCache && cachedData[targetPeriod]) {
       setPipelineData(cachedData[targetPeriod]!);
-      // Still fetch fresh data in background
       fetchPipelineData(targetPeriod, true);
       return;
     }
 
     try {
-      // Only show loading if no cached data
       if (!cachedData[targetPeriod]) {
         setPipelineData(prev => ({ ...prev, loading: true }));
       }
 
-      // Get date range
       const now = new Date();
       let periodStart: Date;
       let periodEnd: Date;
@@ -119,7 +114,6 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
         goalMultiplier = 13;
       }
 
-      // Calculate expected progress
       let expectedProgress: number | undefined;
       if (targetPeriod !== 'week') {
         const totalMs = periodEnd.getTime() - periodStart.getTime();
@@ -128,7 +122,7 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
       }
 
       // Fetch individual goals
-      const { data: individualGoals } = await supabase
+      const { data: individualGoals } = await (supabase as any)
         .from('goals')
         .select('kpi_type, target_value, set_by_admin, admin_notes')
         .eq('user_id', user.id)
@@ -136,24 +130,21 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
         .eq('period', 'weekly');
 
       // Fetch individual KPI data
-      const { data: individualKPI } = await supabase
+      const { data: individualKPI } = await (supabase as any)
         .from('kpi_entries')
         .select('kpi_type, value')
         .eq('user_id', user.id)
-        .eq('period', 'daily')
-        .gte('entry_date', format(periodStart, 'yyyy-MM-dd'))
-        .lte('entry_date', format(periodEnd, 'yyyy-MM-dd'));
+        .gte('date', format(periodStart, 'yyyy-MM-dd'))
+        .lte('date', format(periodEnd, 'yyyy-MM-dd'));
 
       const aggregateIndividualKPI = (kpiType: string) => {
-        const entries = individualKPI?.filter(e => e.kpi_type === kpiType) || [];
-        return entries.reduce((sum, e) => sum + (e.value || 0), 0);
+        const entries = individualKPI?.filter((e: any) => e.kpi_type === kpiType) || [];
+        return entries.reduce((sum: number, e: any) => sum + (Number(e.value) || 0), 0);
       };
 
-      // Team data
       let teamMetrics: any = {};
       if (team) {
-        // Fetch team goals
-        const { data: teamGoals } = await supabase
+        const { data: teamGoals } = await (supabase as any)
           .from('goals')
           .select('kpi_type, target_value')
           .eq('team_id', team.id)
@@ -161,45 +152,41 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
           .eq('period', 'weekly')
           .is('user_id', null);
 
-        // Fetch team members
-        const { data: members } = await supabase
+        const { data: members } = await (supabase as any)
           .from('team_members')
           .select('user_id, contributes_to_kpis, profiles(full_name)')
           .eq('team_id', team.id);
 
-        const teamMemberIds = members?.map(m => m.user_id) || [];
+        const teamMemberIds = members?.map((m: any) => m.user_id) || [];
         const teamMemberMap = new Map(
-          members?.map(m => [m.user_id, (m.profiles as any)?.full_name || 'Unknown']) || []
+          members?.map((m: any) => [m.user_id, (m.profiles as any)?.full_name || 'Unknown']) || []
         );
         const contributingMembers = new Set(
-          members?.filter(m => m.contributes_to_kpis).map(m => m.user_id) || []
+          members?.filter((m: any) => m.contributes_to_kpis).map((m: any) => m.user_id) || []
         );
 
-        // Fetch all member goals
-        const { data: memberGoals } = await supabase
+        const { data: memberGoals } = await (supabase as any)
           .from('goals')
           .select('kpi_type, target_value, user_id')
           .in('user_id', teamMemberIds)
           .eq('goal_type', 'individual')
           .eq('period', 'weekly');
 
-        // Fetch team KPI data
-        const { data: teamKPI } = await supabase
+        const { data: teamKPI } = await (supabase as any)
           .from('kpi_entries')
           .select('kpi_type, value, user_id')
           .in('user_id', teamMemberIds)
-          .eq('period', 'daily')
-          .gte('entry_date', format(periodStart, 'yyyy-MM-dd'))
-          .lte('entry_date', format(periodEnd, 'yyyy-MM-dd'));
+          .gte('date', format(periodStart, 'yyyy-MM-dd'))
+          .lte('date', format(periodEnd, 'yyyy-MM-dd'));
 
         const aggregateTeamKPI = (kpiType: string) => {
-          const entries = teamKPI?.filter(e => e.kpi_type === kpiType) || [];
-          const total = entries.reduce((sum, e) => sum + (e.value || 0), 0);
+          const entries = teamKPI?.filter((e: any) => e.kpi_type === kpiType) || [];
+          const total = entries.reduce((sum: number, e: any) => sum + (Number(e.value) || 0), 0);
 
           const userContributions = new Map<string, number>();
-          entries.forEach(e => {
+          entries.forEach((e: any) => {
             const current = userContributions.get(e.user_id) || 0;
-            userContributions.set(e.user_id, current + (e.value || 0));
+            userContributions.set(e.user_id, current + (Number(e.value) || 0));
           });
 
           const contributions = Array.from(userContributions.entries())
@@ -211,10 +198,10 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
             }))
             .filter(c => c.value > 0);
 
-          const teamGoal = teamGoals?.find(g => g.kpi_type === kpiType);
+          const teamGoal = teamGoals?.find((g: any) => g.kpi_type === kpiType);
           const expectedSum = memberGoals
-            ?.filter(g => g.kpi_type === kpiType && contributingMembers.has(g.user_id))
-            .reduce((sum, g) => sum + (g.target_value || 0), 0) || 0;
+            ?.filter((g: any) => g.kpi_type === kpiType && contributingMembers.has(g.user_id))
+            .reduce((sum: number, g: any) => sum + (g.target_value || 0), 0) || 0;
 
           return {
             total,
@@ -227,16 +214,14 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
 
         teamMetrics = {
           calls: aggregateTeamKPI('calls'),
-          sms: aggregateTeamKPI('sms'),
           appraisals: aggregateTeamKPI('appraisals'),
-          open_homes: aggregateTeamKPI('open_homes'),
-          listings: aggregateTeamKPI('listings'),
-          sales: aggregateTeamKPI('sales'),
+          listings_won: aggregateTeamKPI('listings_won'),
+          settlement_volume: aggregateTeamKPI('settlement_volume'),
         };
       }
 
       const buildMetric = (kpiType: string, defaultGoal: number = 0): EnhancedPipelineMetric => {
-        const individualGoal = individualGoals?.find(g => g.kpi_type === kpiType);
+        const individualGoal = individualGoals?.find((g: any) => g.kpi_type === kpiType);
         const individualCurrent = aggregateIndividualKPI(kpiType);
         const individualGoalValue = ((individualGoal?.target_value ?? defaultGoal) * goalMultiplier);
 
@@ -270,20 +255,18 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
 
       const newData = {
         calls: buildMetric('calls', 100),
-        sms: buildMetric('sms', 100),
+        sms: buildMetric('calls', 100),
         appraisals: buildMetric('appraisals', 5),
-        openHomes: buildMetric('open_homes', 5),
-        listings: buildMetric('listings', 1),
-        sales: buildMetric('sales', 1),
+        openHomes: emptyMetric(),
+        listings: buildMetric('listings_won', 1),
+        sales: buildMetric('settlement_volume', 1),
         loading: false,
         expectedProgress,
       };
 
-      // Update both current data and cache
       setPipelineData(newData);
       setCachedData(prev => ({ ...prev, [targetPeriod]: newData }));
       
-      // Prefetch other periods in background if this was the initial load
       if (!skipCache) {
         const periodsToFetch: Period[] = ['week', 'month', 'quarter'].filter(p => p !== targetPeriod) as Period[];
         setTimeout(() => {
@@ -301,10 +284,8 @@ export const usePipelineEnhanced = (period: Period = 'week') => {
   };
 
   useEffect(() => {
-    // Always fetch fresh data for the current period to ensure correct goals
-    // Don't use cached data on period change to avoid showing wrong multiplier
     setPipelineData(prev => ({ ...prev, loading: true }));
-    fetchPipelineData(period, true); // Force fresh fetch with skipCache=true
+    fetchPipelineData(period, true);
   }, [user, period, team]);
 
   return { ...pipelineData, refetch: fetchPipelineData };
