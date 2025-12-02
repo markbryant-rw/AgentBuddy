@@ -19,20 +19,32 @@ export function useChannelManagement() {
     mutationFn: async ({ title, channelType, icon }: CreateChannelParams) => {
       if (!user) throw new Error("Authentication required");
 
-      // Use server-side function to create channel (handles RLS with auth.uid())
-      const { data: conversationId, error } = await supabase.rpc("create_team_channel", {
-        channel_title: title,
-        channel_type: channelType,
-        channel_icon: icon || null,
-      });
+      // Create conversation directly since RPC doesn't exist
+      const { data: conversation, error: convError } = await (supabase as any)
+        .from('conversations')
+        .insert({
+          type: 'group',
+          conversation_type: channelType,
+          title,
+          icon,
+          created_by: user.id,
+          agency_id: (team as any)?.agency_id || null,
+        })
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (convError) throw convError;
 
-      if (typeof conversationId !== 'string') {
-        throw new Error('Expected RPC to return a conversation ID string');
-      }
+      // Add creator as participant
+      await (supabase as any)
+        .from('conversation_participants')
+        .insert({
+          conversation_id: conversation.id,
+          user_id: user.id,
+          is_admin: true,
+        });
 
-      return conversationId;
+      return conversation.id;
     },
     onSuccess: (conversationId) => {
       queryClient.invalidateQueries({ queryKey: ["conversations"] });

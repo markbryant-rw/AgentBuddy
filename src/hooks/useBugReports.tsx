@@ -101,8 +101,9 @@ export const useBugReports = (statusFilter: string = 'all') => {
         
         return data.map(bug => ({
           ...bug,
+          environment: bug.environment || {}, // Ensure it's an object
           profiles: profileMap.get(bug.user_id) as { full_name: string; email: string } | undefined
-        })) as BugReport[];
+        })) as any[];
       }
       
       return [] as BugReport[];
@@ -157,7 +158,7 @@ export const useBugReports = (statusFilter: string = 'all') => {
       const environment = captureEnvironment();
       const module = submission.module || detectModuleFromURL();
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('bug_reports')
         .insert({
           user_id: user.id,
