@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2, Sheet, Link, HelpCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2, Sheet, Link, HelpCircle, ExternalLink, Download } from 'lucide-react';
 import { usePastSalesImport } from '@/hooks/usePastSalesImport';
 import { useGoogleSheetsImport } from '@/hooks/useGoogleSheetsImport';
 import { FileUploadArea } from '@/components/feedback/FileUploadArea';
@@ -195,6 +195,15 @@ export const PastSalesImportDialog = ({
     a.click();
   };
 
+  const openInGoogleSheets = () => {
+    downloadTemplate();
+    window.open('https://docs.google.com/spreadsheets/create', '_blank');
+    toast({
+      title: "Template Downloaded",
+      description: "In Google Sheets, go to File → Import → Upload to import your template",
+    });
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
@@ -246,14 +255,21 @@ export const PastSalesImportDialog = ({
 
                     <Alert>
                       <FileText className="h-4 w-4" />
-                      <AlertDescription>
-                        Need a template?{' '}
-                        <button
-                          onClick={downloadTemplate}
-                          className="text-primary underline hover:no-underline"
-                        >
-                          Download CSV template
-                        </button>
+                      <AlertDescription className="space-y-3">
+                        <p>Need a template?</p>
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2">
+                            <Download className="h-4 w-4" />
+                            Download CSV
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={openInGoogleSheets} className="gap-2">
+                            <ExternalLink className="h-4 w-4" />
+                            Open in Google Sheets
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Tip: Download template, then import it into a new Google Sheet for collaborative editing.
+                        </p>
                       </AlertDescription>
                     </Alert>
                   </TabsContent>
@@ -292,18 +308,22 @@ export const PastSalesImportDialog = ({
 
                       <Alert>
                         <Sheet className="h-4 w-4" />
-                        <AlertDescription className="space-y-2">
+                        <AlertDescription className="space-y-3">
                           <p>Your Google Sheet should have:</p>
                           <ul className="list-disc list-inside text-sm space-y-1 ml-2">
                             <li>Headers in the first row (same as CSV template)</li>
                             <li>Public sharing enabled ("Anyone with the link")</li>
                           </ul>
-                          <button
-                            onClick={downloadTemplate}
-                            className="text-primary underline hover:no-underline text-sm"
-                          >
-                            Download template for column reference
-                          </button>
+                          <div className="flex flex-wrap gap-2 pt-1">
+                            <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2">
+                              <Download className="h-4 w-4" />
+                              Download CSV
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={openInGoogleSheets} className="gap-2">
+                              <ExternalLink className="h-4 w-4" />
+                              Open in Google Sheets
+                            </Button>
+                          </div>
                         </AlertDescription>
                       </Alert>
                     </div>
