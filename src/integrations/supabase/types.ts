@@ -553,13 +553,21 @@ export type Database = {
       daily_planner_items: {
         Row: {
           completed: boolean | null
+          completed_at: string | null
+          completed_by: string | null
           created_at: string | null
+          created_by: string | null
           date: string
           description: string | null
           duration_minutes: number | null
+          estimated_minutes: number | null
           id: string
+          notes: string | null
           position: number | null
+          scheduled_date: string | null
+          size_category: string | null
           task_id: string | null
+          team_id: string | null
           time: string | null
           title: string
           updated_at: string | null
@@ -567,13 +575,21 @@ export type Database = {
         }
         Insert: {
           completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string | null
+          created_by?: string | null
           date: string
           description?: string | null
           duration_minutes?: number | null
+          estimated_minutes?: number | null
           id?: string
+          notes?: string | null
           position?: number | null
+          scheduled_date?: string | null
+          size_category?: string | null
           task_id?: string | null
+          team_id?: string | null
           time?: string | null
           title: string
           updated_at?: string | null
@@ -581,13 +597,21 @@ export type Database = {
         }
         Update: {
           completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
           created_at?: string | null
+          created_by?: string | null
           date?: string
           description?: string | null
           duration_minutes?: number | null
+          estimated_minutes?: number | null
           id?: string
+          notes?: string | null
           position?: number | null
+          scheduled_date?: string | null
+          size_category?: string | null
           task_id?: string | null
+          team_id?: string | null
           time?: string | null
           title?: string
           updated_at?: string | null
@@ -595,10 +619,31 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "daily_planner_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_planner_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "daily_planner_items_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_planner_items_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
           {
@@ -1404,27 +1449,27 @@ export type Database = {
           can_edit: boolean | null
           created_at: string | null
           id: string
+          invited_by: string
           note_id: string
           permission: string | null
-          shared_by: string
           user_id: string
         }
         Insert: {
           can_edit?: boolean | null
           created_at?: string | null
           id?: string
+          invited_by: string
           note_id: string
           permission?: string | null
-          shared_by: string
           user_id: string
         }
         Update: {
           can_edit?: boolean | null
           created_at?: string | null
           id?: string
+          invited_by?: string
           note_id?: string
           permission?: string | null
-          shared_by?: string
           user_id?: string
         }
         Relationships: [
@@ -1437,7 +1482,7 @@ export type Database = {
           },
           {
             foreignKeyName: "note_shares_shared_by_fkey"
-            columns: ["shared_by"]
+            columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1959,12 +2004,15 @@ export type Database = {
           action_items: string | null
           areas_for_improvement: string | null
           challenges: string | null
+          completed: boolean | null
           created_at: string | null
+          created_by: string | null
           goals_for_next_quarter: string | null
           id: string
           lessons_learned: string | null
           performance_notes: string | null
           quarter: string
+          review_type: string | null
           reviewed_by: string | null
           team_id: string
           updated_at: string | null
@@ -1977,12 +2025,15 @@ export type Database = {
           action_items?: string | null
           areas_for_improvement?: string | null
           challenges?: string | null
+          completed?: boolean | null
           created_at?: string | null
+          created_by?: string | null
           goals_for_next_quarter?: string | null
           id?: string
           lessons_learned?: string | null
           performance_notes?: string | null
           quarter: string
+          review_type?: string | null
           reviewed_by?: string | null
           team_id: string
           updated_at?: string | null
@@ -1995,12 +2046,15 @@ export type Database = {
           action_items?: string | null
           areas_for_improvement?: string | null
           challenges?: string | null
+          completed?: boolean | null
           created_at?: string | null
+          created_by?: string | null
           goals_for_next_quarter?: string | null
           id?: string
           lessons_learned?: string | null
           performance_notes?: string | null
           quarter?: string
+          review_type?: string | null
           reviewed_by?: string | null
           team_id?: string
           updated_at?: string | null
@@ -2009,6 +2063,13 @@ export type Database = {
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "quarterly_reviews_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quarterly_reviews_reviewed_by_fkey"
             columns: ["reviewed_by"]
@@ -2489,32 +2550,32 @@ export type Database = {
         Row: {
           created_at: string | null
           file_name: string
+          file_path: string
           file_size: number | null
           file_type: string | null
-          file_url: string
           id: string
           task_id: string
-          user_id: string
+          uploaded_by: string
         }
         Insert: {
           created_at?: string | null
           file_name: string
+          file_path: string
           file_size?: number | null
           file_type?: string | null
-          file_url: string
           id?: string
           task_id: string
-          user_id: string
+          uploaded_by: string
         }
         Update: {
           created_at?: string | null
           file_name?: string
+          file_path?: string
           file_size?: number | null
           file_type?: string | null
-          file_url?: string
           id?: string
           task_id?: string
-          user_id?: string
+          uploaded_by?: string
         }
         Relationships: [
           {
@@ -2526,7 +2587,7 @@ export type Database = {
           },
           {
             foreignKeyName: "task_attachments_user_id_fkey"
-            columns: ["user_id"]
+            columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -2979,14 +3040,21 @@ export type Database = {
         Row: {
           address: string
           agent_id: string | null
+          archived: boolean | null
+          assignees: Json | null
           auction_deadline_date: string | null
+          client_name: string | null
           commission: number | null
           contract_date: string | null
           created_at: string | null
+          created_by: string | null
+          expected_settlement: string | null
           id: string
+          last_edited_by: string | null
           listing_expires_date: string | null
           live_date: string | null
           notes: string | null
+          on_hold: boolean | null
           sale_price: number | null
           settlement_date: string | null
           stage: string | null
@@ -2995,18 +3063,26 @@ export type Database = {
           team_id: string
           transaction_type: string
           updated_at: string | null
+          warmth: string | null
         }
         Insert: {
           address: string
           agent_id?: string | null
+          archived?: boolean | null
+          assignees?: Json | null
           auction_deadline_date?: string | null
+          client_name?: string | null
           commission?: number | null
           contract_date?: string | null
           created_at?: string | null
+          created_by?: string | null
+          expected_settlement?: string | null
           id?: string
+          last_edited_by?: string | null
           listing_expires_date?: string | null
           live_date?: string | null
           notes?: string | null
+          on_hold?: boolean | null
           sale_price?: number | null
           settlement_date?: string | null
           stage?: string | null
@@ -3015,18 +3091,26 @@ export type Database = {
           team_id: string
           transaction_type: string
           updated_at?: string | null
+          warmth?: string | null
         }
         Update: {
           address?: string
           agent_id?: string | null
+          archived?: boolean | null
+          assignees?: Json | null
           auction_deadline_date?: string | null
+          client_name?: string | null
           commission?: number | null
           contract_date?: string | null
           created_at?: string | null
+          created_by?: string | null
+          expected_settlement?: string | null
           id?: string
+          last_edited_by?: string | null
           listing_expires_date?: string | null
           live_date?: string | null
           notes?: string | null
+          on_hold?: boolean | null
           sale_price?: number | null
           settlement_date?: string | null
           stage?: string | null
@@ -3035,11 +3119,26 @@ export type Database = {
           team_id?: string
           transaction_type?: string
           updated_at?: string | null
+          warmth?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "transactions_agent_id_fkey"
             columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_last_edited_by_fkey"
+            columns: ["last_edited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -3195,7 +3294,11 @@ export type Database = {
     }
     Functions: {
       add_channel_participant: {
-        Args: { channel_id: string; p_is_admin?: boolean; p_user_id: string }
+        Args: {
+          allow_posting?: boolean
+          channel_id: string
+          new_user_id: string
+        }
         Returns: undefined
       }
       auto_repair_team_assignments: {

@@ -38,7 +38,7 @@ export const SetTeamGoalsModal = ({ open, onOpenChange, year, quarter }: SetTeam
         .select('*')
         .eq('team_id', team.id)
         .eq('year', year)
-        .eq('quarter', quarter)
+        .eq('quarter', `Q${quarter}`)
         .eq('goal_type', 'team');
       
       if (error) throw error;
@@ -72,7 +72,7 @@ export const SetTeamGoalsModal = ({ open, onOpenChange, year, quarter }: SetTeam
         .delete()
         .eq('team_id', team.id)
         .eq('year', year)
-        .eq('quarter', quarter)
+        .eq('quarter', `Q${quarter}`)
         .eq('goal_type', 'team');
 
       // Insert new goals
@@ -83,9 +83,8 @@ export const SetTeamGoalsModal = ({ open, onOpenChange, year, quarter }: SetTeam
         { kpi_type: 'sales', target_value: sales },
       ].map(goal => ({
         team_id: team.id,
-        user_id: null,
         goal_type: 'team' as const,
-        quarter,
+        quarter: `Q${quarter}`,
         year,
         kpi_type: goal.kpi_type,
         target_value: goal.target_value,

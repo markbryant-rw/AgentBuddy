@@ -44,13 +44,13 @@ export const TransactionVendorReportsTab = ({ transactionId }: TransactionVendor
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transactions')
-        .select('address, suburb, vendor_names, live_date, client_name')
+        .select('address, suburb, live_date, client_name')
         .eq('id', transactionId)
         .single();
       if (error) throw error;
       return {
         ...data,
-        vendor_names: (data.vendor_names as any[]) || []
+        vendor_names: []
       };
     },
   });
