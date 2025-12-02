@@ -94,7 +94,7 @@ export const SmartRemoveTeamMemberDialog = ({
     queryFn: async () => {
       if (!user?.team_id) return [];
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('team_members')
         .select(`
           profiles:user_id (
@@ -121,7 +121,7 @@ export const SmartRemoveTeamMemberDialog = ({
       if (!user) return null;
 
       // Fetch other team memberships
-      const { data: otherTeams, error: otherTeamsError } = await supabase
+      const { data: otherTeams, error: otherTeamsError } = await (supabase as any)
         .from('team_members')
         .select(`
           team_id,
@@ -139,29 +139,25 @@ export const SmartRemoveTeamMemberDialog = ({
         error: otherTeamsError
       });
 
-      // Fetch tasks
-      const { data: tasks } = await supabase
+      const { data: tasks } = await (supabase as any)
         .from('tasks')
         .select('id, completed')
         .eq('assigned_to', user.id)
         .eq('team_id', user.team_id);
 
-      // Fetch listings
-      const { data: listings } = await supabase
+      const { data: listings } = await (supabase as any)
         .from('transactions')
         .select('id, stage')
         .or(`assignees->lead_salesperson.eq.${user.id},assignees->secondary_salesperson.eq.${user.id}`)
         .eq('team_id', user.team_id);
 
-      // Fetch appraisals
-      const { data: appraisals } = await supabase
+      const { data: appraisals } = await (supabase as any)
         .from('logged_appraisals')
         .select('id, outcome')
         .eq('created_by', user.id)
         .eq('team_id', user.team_id);
 
-      // Fetch conversation participations
-      const { data: conversations } = await supabase
+      const { data: conversations } = await (supabase as any)
         .from('conversation_participants')
         .select('conversation_id, conversations!inner(type, channel_type)')
         .eq('user_id', user.id);
@@ -170,8 +166,7 @@ export const SmartRemoveTeamMemberDialog = ({
         (c: any) => c.conversations.type === 'group' && c.conversations.channel_type === 'team'
       ) || [];
 
-      // Fetch notes (simplified query to avoid type issues)
-      const { count: notesCount } = await supabase
+      const { count: notesCount } = await (supabase as any)
         .from('notes')
         .select('*', { count: 'exact', head: true })
         .eq('owner_id', user.id)

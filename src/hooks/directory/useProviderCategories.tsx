@@ -6,8 +6,8 @@ import { useTeam } from '@/hooks/useTeam';
 export interface ProviderCategory {
   id: string;
   name: string;
-  icon: string;
-  color: string;
+  icon: string | null;
+  color?: string;
   is_team_category?: boolean;
 }
 
@@ -15,41 +15,22 @@ export const useProviderCategories = () => {
   const { user } = useAuth();
   const { team } = useTeam();
 
-  return useQuery({
+  return useQuery<ProviderCategory[]>({
     queryKey: ['provider-categories', team?.id],
     queryFn: async () => {
       if (!user) return [];
 
-      // Fetch default categories
-      const { data: defaultCategories, error: defaultError } = await supabase
+      const { data, error } = await (supabase as any)
         .from('provider_categories')
-        .select('id, name, icon, color')
-        .eq('is_active', true)
-        .order('sort_order');
+        .select('id, name, icon')
+        .order('name');
 
-      if (defaultError) throw defaultError;
+      if (error) throw error;
 
-      // Fetch team-specific categories if team exists
-      let teamCategories: any[] = [];
-      if (team) {
-        const { data: teamCats, error: teamError } = await supabase
-          .from('team_provider_categories')
-          .select('id, name, icon, color')
-          .eq('team_id', team.id)
-          .eq('is_active', true)
-          .order('name');
-
-        if (teamError) throw teamError;
-        teamCategories = (teamCats || []).map(cat => ({ ...cat, is_team_category: true }));
-      }
-
-      // Merge both lists
-      const allCategories: ProviderCategory[] = [
-        ...(defaultCategories || []).map(cat => ({ ...cat, is_team_category: false })),
-        ...teamCategories,
-      ];
-
-      return allCategories;
+      return (data || []).map((cat: any) => ({
+        ...cat,
+        is_team_category: false,
+      }));
     },
     enabled: !!user,
   });

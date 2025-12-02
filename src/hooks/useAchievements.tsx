@@ -84,31 +84,7 @@ export function useAchievements() {
       const { useCreatePost } = await import('./useSocialPosts');
       
       // Get user preferences for default visibility
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('social_preferences')
-        .eq('id', user?.id || '')
-        .single();
-
-      const defaultVisibility = (profile?.social_preferences &&
-        typeof profile.social_preferences === 'object' &&
-        'defaultPostVisibility' in profile.social_preferences)
-        ? profile.social_preferences.defaultPostVisibility || 'public'
-        : 'public';
-
-      // Create the achievement post
-      const achievementMessages: Record<AchievementType, string> = {
-        '5-day-streak': '🔥 5 days of consistency! Just hit my 5-day logging streak!',
-        '10-day-streak': '🔥🔥 Double digits! 10 consecutive business days logged and going strong!',
-        '30-day-streak': '🔥🔥🔥 30 days of consistency! A full month of daily logging - this is becoming a habit!',
-        '100-day-streak': '💎 Legendary 100-day streak! This is what dedication looks like. 100 consecutive business days!',
-        'target-master': '🎯 Target Master unlocked! Hit my weekly targets 4 weeks in a row!',
-        'improver': '📈 Improver badge earned! 20% increase in CCH month-over-month. Growth mindset in action!',
-        'consistent': '⭐ Consistency is key! No missed logging days this entire month!',
-        'top-performer': '👑 Top Performer! #1 on the team this week. Hard work pays off!',
-        'personal-best': '💪 New personal record! Just set my highest daily CCH ever!',
-        'overachiever': '🚀 Overachiever status unlocked! Hit 150% of my weekly target!',
-      };
+      const defaultVisibility = 'public';
 
       await supabase
         .from('social_posts' as any)

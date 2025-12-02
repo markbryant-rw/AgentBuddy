@@ -65,7 +65,7 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
     const fetchAdditionalData = async () => {
       try {
         // Hot leads (warmth = hot)
-        const { count: hotCount } = await supabase
+        const { count: hotCount } = await (supabase as any)
           .from('logged_appraisals')
           .select('*', { count: 'exact', head: true })
           .eq('created_by', user.id)
@@ -75,7 +75,7 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
         setHotLeads(hotCount || 0);
 
         // Get team ID
-        const { data: teamMember } = await supabase
+        const { data: teamMember } = await (supabase as any)
           .from('team_members')
           .select('team_id')
           .eq('user_id', user.id)
@@ -86,7 +86,7 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
           const today = new Date();
           const nextWeek = addDays(today, 7);
 
-          const { count: settlementsCount } = await supabase
+          const { count: settlementsCount } = await (supabase as any)
             .from('transactions')
             .select('*', { count: 'exact', head: true })
             .eq('team_id', teamMember.team_id)
@@ -99,7 +99,7 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
           // Expiring listings (within 30 days)
           const thirtyDaysLater = addDays(today, 30);
 
-          const { count: expiringCount } = await supabase
+          const { count: expiringCount } = await (supabase as any)
             .from('transactions')
             .select('*', { count: 'exact', head: true })
             .eq('team_id', teamMember.team_id)
@@ -110,7 +110,7 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
 
           // Under contract yesterday (for celebration)
           const yesterday = addDays(today, -1);
-          const { count: underContractYesterday } = await supabase
+          const { count: underContractYesterday } = await (supabase as any)
             .from('transactions')
             .select('*', { count: 'exact', head: true })
             .eq('team_id', teamMember.team_id)

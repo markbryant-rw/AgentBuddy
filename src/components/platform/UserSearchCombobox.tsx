@@ -40,7 +40,7 @@ export function UserSearchCombobox({ value, onValueChange, disabled }: UserSearc
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['user-search-all', searchTerm],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from('profiles')
         .select(`
           id,
@@ -61,7 +61,7 @@ export function UserSearchCombobox({ value, onValueChange, disabled }: UserSearc
       // Get team for each user (only one team per user now)
       const usersWithTeams = await Promise.all(
         (profilesData || []).map(async (profile) => {
-          const { data: teamData } = await supabase
+          const { data: teamData } = await (supabase as any)
             .from('team_members')
             .select('team_id')
             .eq('user_id', profile.id)
@@ -69,7 +69,7 @@ export function UserSearchCombobox({ value, onValueChange, disabled }: UserSearc
 
           let teamName: string | undefined;
           if (teamData?.team_id) {
-            const { data: team } = await supabase
+            const { data: team } = await (supabase as any)
               .from('teams')
               .select('name')
               .eq('id', teamData.team_id)

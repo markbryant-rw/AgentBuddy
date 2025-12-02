@@ -9,9 +9,9 @@ export const PlatformActivityWidget = () => {
     queryKey: ['platform-activity-widget'],
     queryFn: async () => {
       const [users, messages, logins] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('messages').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-        supabase.from('admin_activity_log').select('id', { count: 'exact', head: true }).eq('activity_type', 'login').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        (supabase as any).from('profiles').select('id', { count: 'exact', head: true }),
+        (supabase as any).from('messages').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+        (supabase as any).from('admin_activity_log').select('id', { count: 'exact', head: true }).eq('action', 'login').gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
       ]);
 
       return {

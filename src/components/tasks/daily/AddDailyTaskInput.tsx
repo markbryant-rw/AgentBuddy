@@ -26,8 +26,7 @@ export function AddDailyTaskInput({ defaultCategory = 'little' }: AddDailyTaskIn
   const handleCreate = async () => {
     if (!title.trim()) return;
 
-    // Get user's team_id
-    const { data: teamMemberData } = await supabase
+    const { data: teamMemberData } = await (supabase as any)
       .from('team_members')
       .select('team_id')
       .eq('user_id', user?.id)
@@ -35,9 +34,8 @@ export function AddDailyTaskInput({ defaultCategory = 'little' }: AddDailyTaskIn
 
     if (!teamMemberData) return;
 
-    // Calculate next position for little tasks
     const today = new Date().toISOString().split('T')[0];
-    const { data: existingLittleTasks } = await supabase
+    const { data: existingLittleTasks } = await (supabase as any)
       .from('tasks')
       .select('daily_position')
       .eq('size_category', 'little')

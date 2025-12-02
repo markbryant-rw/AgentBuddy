@@ -39,7 +39,7 @@ export default function FeedTab() {
       startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
       startOfWeek.setHours(0, 0, 0, 0);
 
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('social_posts')
         .select('id')
         .eq('user_id', user.id)

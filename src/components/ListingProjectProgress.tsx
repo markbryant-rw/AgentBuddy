@@ -17,7 +17,7 @@ export const ListingProjectProgress = ({ listingId }: ListingProjectProgressProp
   const { data: projects, isLoading } = useQuery({
     queryKey: ['listing-projects', listingId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('projects')
         .select(`
           *,

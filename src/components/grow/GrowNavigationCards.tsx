@@ -19,10 +19,10 @@ export function GrowNavigationCards() {
     queryFn: async () => {
       if (!user?.id) return { totalConversations: 0, starredConversations: 0 };
 
-      const { data, error } = await supabase
-        .from("coaching_conversations")
-        .select("id, is_starred", { count: "exact" })
-        .eq("user_id", user.id);
+      const { data, error } = await (supabase as any)
+        .from('coaching_conversations')
+        .select('id, is_starred')
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -41,28 +41,26 @@ export function GrowNavigationCards() {
       if (!team?.id || !user?.id) return { totalCategories: 0, totalPlaybooks: 0, completedCards: 0 };
 
       // Get total categories
-      const { data: categories, error: catError } = await supabase
-        .from("knowledge_base_categories")
-        .select("id", { count: "exact" })
-        .eq("team_id", team.id);
+      const { data: categories, error: catError } = await (supabase as any)
+        .from('knowledge_base_categories')
+        .select('id')
+        .eq('team_id', team.id);
 
       if (catError) throw catError;
 
-      // Get total published playbooks
-      const { data: playbooks, error: pbError } = await supabase
-        .from("knowledge_base_playbooks")
-        .select("id", { count: "exact" })
-        .eq("team_id", team.id)
-        .eq("is_published", true);
+      const { data: playbooks, error: pbError } = await (supabase as any)
+        .from('knowledge_base_playbooks')
+        .select('id')
+        .eq('team_id', team.id)
+        .eq('is_published', true);
 
       if (pbError) throw pbError;
 
-      // Get user's completed cards
-      const { data: completedCards, error: ccError } = await supabase
-        .from("kb_card_views")
-        .select("id", { count: "exact" })
-        .eq("user_id", user.id)
-        .eq("completed", true);
+      const { data: completedCards, error: ccError } = await (supabase as any)
+        .from('kb_card_views')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('completed', true);
 
       if (ccError) throw ccError;
 
@@ -82,16 +80,16 @@ export function GrowNavigationCards() {
       if (!user?.id) return { totalScenarios: 0, completedSessions: 0, avgRating: 0 };
 
       const [scenarios, sessions] = await Promise.all([
-        supabase.from("roleplay_scenarios").select("*", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("roleplay_sessions").select("rating").eq("user_id", user.id).eq("completed", true),
+        (supabase as any).from('roleplay_scenarios').select('id').eq('is_active', true),
+        (supabase as any).from('roleplay_sessions').select('rating').eq('user_id', user.id).eq('completed', true),
       ]);
 
       const avgRating = sessions.data && sessions.data.length > 0
-        ? sessions.data.reduce((acc, s) => acc + (s.rating || 0), 0) / sessions.data.length
+        ? sessions.data.reduce((acc: number, s: any) => acc + (s.rating || 0), 0) / sessions.data.length
         : 0;
 
       return {
-        totalScenarios: scenarios.count || 0,
+        totalScenarios: scenarios.data?.length || 0,
         completedSessions: sessions.data?.length || 0,
         avgRating,
       };
@@ -106,14 +104,14 @@ export function GrowNavigationCards() {
       if (!user?.id) return { bugReports: 0, featureRequests: 0, points: 0 };
       
       const [bugCount, featureCount, profile] = await Promise.all([
-        supabase.from("bug_reports").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("feature_requests").select("*", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("profiles").select("total_bug_points").eq("id", user.id).single(),
+        (supabase as any).from('bug_reports').select('id').eq('user_id', user.id),
+        (supabase as any).from('feature_requests').select('id').eq('user_id', user.id),
+        (supabase as any).from('profiles').select('total_bug_points').eq('id', user.id).single(),
       ]);
-      
+
       return {
-        bugReports: bugCount.count || 0,
-        featureRequests: featureCount.count || 0,
+        bugReports: bugCount.data?.length || 0,
+        featureRequests: featureCount.data?.length || 0,
         points: profile.data?.total_bug_points || 0,
       };
     },

@@ -41,7 +41,7 @@ export const DailyCheckIn = ({ open, onOpenChange, userId, onSuccess, selectedDa
       try {
         const dateToLoad = selectedDate || new Date();
         const today = format(dateToLoad, 'yyyy-MM-dd');
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from('daily_activities')
           .select('*')
           .eq('user_id', userId)
@@ -74,8 +74,7 @@ export const DailyCheckIn = ({ open, onOpenChange, userId, onSuccess, selectedDa
       const dateToSave = selectedDate || new Date();
       const today = format(dateToSave, 'yyyy-MM-dd');
 
-      // Fetch pipeline appraisals for accurate CCH calculation
-      const { count: todayAppraisals } = await supabase
+      const { count: todayAppraisals } = await (supabase as any)
         .from('logged_appraisals')
         .select('*', { count: 'exact', head: true })
         .eq('created_by', userId)
@@ -83,7 +82,7 @@ export const DailyCheckIn = ({ open, onOpenChange, userId, onSuccess, selectedDa
 
       const accurateCCH = (calls / 20) + (todayAppraisals || 0) + (openHomes / 2);
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('daily_activities')
         .upsert({
           user_id: userId,

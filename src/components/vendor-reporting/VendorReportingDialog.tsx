@@ -209,68 +209,15 @@ export const VendorReportingDialog = ({
   };
 
   const handleSave = async (editedReport: GeneratedReport) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+    // Saving vendor reports to the database is not yet implemented.
+    // For now, let the user know and close the dialog so they can copy the content.
+    toast({
+      title: "Save coming soon",
+      description: "You can copy this report for now. Saving reports will be enabled in a future update.",
+    });
 
-      const { data: teamMember } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!teamMember?.team_id) throw new Error('Team ID not found');
-
-      const reportData = {
-        transaction_id: transactionId,
-        team_id: teamMember.team_id,
-        created_by: user.id,
-        property_address: formData.propertyAddress,
-        vendor_name: formData.vendorName,
-        campaign_week: formData.campaignWeek,
-        buyer_feedback: formData.buyerFeedback,
-        desired_outcome: formData.desiredOutcome,
-        generated_report: editedReport as any,
-      };
-
-      if (currentReportId) {
-        const { error } = await supabase
-          .from('vendor_reports')
-          .update(reportData)
-          .eq('id', currentReportId);
-
-        if (error) throw error;
-
-        toast({
-          title: "Report Updated",
-          description: "Your vendor report has been updated successfully.",
-        });
-      } else {
-        const { data, error } = await supabase
-          .from('vendor_reports')
-          .insert(reportData)
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        setCurrentReportId(data.id);
-        toast({
-          title: "Report Saved",
-          description: "Your vendor report has been saved successfully.",
-        });
-      }
-
-      onReportSaved?.();
-      onClose();
-    } catch (error: any) {
-      console.error('Error saving report:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save report",
-        variant: "destructive",
-      });
-    }
+    onReportSaved?.();
+    onClose();
   };
 
   return (

@@ -77,10 +77,10 @@ export const useDuplicateDetection = (checkData: DuplicateCheckData | null) => {
         
         // Same name + company
         if (
-          checkData.full_name.toLowerCase().trim() === provider.full_name?.toLowerCase().trim() &&
+          checkData.full_name.toLowerCase().trim() === (provider.name || '').toLowerCase().trim() &&
           checkData.company_name &&
-          provider.company_name &&
-          checkData.company_name.toLowerCase().trim() === provider.company_name.toLowerCase().trim()
+          provider.company &&
+          checkData.company_name.toLowerCase().trim() === provider.company.toLowerCase().trim()
         ) {
           matches.push({
             provider,
@@ -119,7 +119,7 @@ export const useDuplicateDetection = (checkData: DuplicateCheckData | null) => {
         }
 
         // HIGH SIMILARITY
-        const nameSimilarity = calculateSimilarity(checkData.full_name, provider.full_name || '');
+        const nameSimilarity = calculateSimilarity(checkData.full_name, provider.name || '');
         
         if (nameSimilarity >= 85) {
           matches.push({
