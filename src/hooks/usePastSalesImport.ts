@@ -439,8 +439,20 @@ export const usePastSalesImport = () => {
     return summary;
   };
 
+  /**
+   * Parse Google Sheets data (already fetched as JSON array)
+   * Uses the same mapping and validation as CSV
+   */
+  const parseGoogleSheetData = (data: Record<string, string>[]): ValidationResult[] => {
+    return data.map((row, index) => {
+      const mappedData = mapRowToPastSale(row);
+      return validateRow(mappedData, index);
+    });
+  };
+
   return {
     parseCSV,
+    parseGoogleSheetData,
     importPastSales,
     isImporting,
     progress
