@@ -7,11 +7,11 @@ import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 export function AddLibraryCard() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { createLibrary } = useKnowledgeBase();
+  const { createCategory } = useKnowledgeBase();
 
   const handleSave = (data: any) => {
     setIsSaving(true);
-    createLibrary(data, {
+    createCategory(data, {
       onSuccess: () => {
         setIsDialogOpen(false);
         setIsSaving(false);

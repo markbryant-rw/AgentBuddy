@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
@@ -7,33 +7,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 export interface LoggedAppraisal {
   id: string;
-  team_id: string;
-  created_by: string;
-  last_edited_by: string;
+  user_id: string;
   address: string;
-  vendor_name: string;
-  suburb?: string;
-  region?: string;
   appraisal_date: string;
-  appraisal_range_low?: number;
-  appraisal_range_high?: number;
   estimated_value?: number;
-  appraisal_method?: 'in_person' | 'virtual' | 'desktop';
-  intent: 'low' | 'medium' | 'high';
-  last_contact?: string;
-  next_follow_up?: string;
-  stage: 'MAP' | 'LAP';
-  outcome: 'In Progress' | 'WON' | 'LOST';
-  opportunity_id?: string;
-  converted_date?: string;
-  loss_reason?: string;
-  lead_source?: string;
-  latitude?: number;
-  longitude?: number;
-  geocoded_at?: string;
-  geocode_error?: string;
+  status?: string;
+  intent?: string;
+  outcome?: string;
   notes?: string;
-  attachments?: any[];
   created_at: string;
   updated_at: string;
 }
@@ -64,7 +45,6 @@ export const useLoggedAppraisals = () => {
           event: '*',
           schema: 'public',
           table: 'logged_appraisals',
-          filter: `team_id=eq.${team?.id}`,
         },
         (payload) => {
           console.log('Appraisal change:', payload);
@@ -79,49 +59,26 @@ export const useLoggedAppraisals = () => {
   }, [user, team]);
 
   const addAppraisal = async (
-    appraisal: Omit<LoggedAppraisal, 'id' | 'created_at' | 'updated_at' | 'team_id' | 'created_by' | 'last_edited_by'>
+    appraisal: Omit<LoggedAppraisal, 'id' | 'created_at' | 'updated_at' | 'user_id'>
   ) => {
-    if (!user || !team) return;
+    if (!user) return;
 
     try {
-      // Sanitize date fields - convert empty strings to null
-      const sanitizedAppraisal = {
-        ...appraisal,
-        next_follow_up: appraisal.next_follow_up || null,
-        last_contact: appraisal.last_contact || null,
-        converted_date: appraisal.converted_date || null,
-      };
-
       const { data, error } = await supabase
         .from('logged_appraisals')
-        .insert({
-          ...sanitizedAppraisal,
-          team_id: team.id,
-          created_by: user.id,
-          last_edited_by: user.id,
-        })
+        .insert([{
+          ...appraisal,
+          user_id: user.id,
+        }])
         .select()
         .single();
 
       if (error) throw error;
       
-      const newAppraisal = data as LoggedAppraisal;
-      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
+      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
       toast.success('Appraisal logged');
       
-      // Auto-geocode the new appraisal if it has an address
-      if (newAppraisal.address) {
-        try {
-          await supabase.functions.invoke('geocode-appraisal', {
-            body: { appraisalId: newAppraisal.id },
-          });
-        } catch (geocodeError) {
-          console.error('Auto-geocoding failed:', geocodeError);
-          // Don't show error to user, geocoding is a background task
-        }
-      }
-      
-      return newAppraisal;
+      return data as LoggedAppraisal;
     } catch (error) {
       console.error('Error adding appraisal:', error);
       toast.error('Failed to log appraisal');
@@ -135,37 +92,17 @@ export const useLoggedAppraisals = () => {
     }
 
     try {
-      // Sanitize date fields - convert empty strings to null
-      const sanitizedUpdates = {
-        ...updates,
-        next_follow_up: updates.next_follow_up || null,
-        last_contact: updates.last_contact || null,
-        converted_date: updates.converted_date || null,
-      };
-
       const { data, error } = await supabase
         .from('logged_appraisals')
-        .update({ ...sanitizedUpdates, last_edited_by: user.id })
+        .update(updates)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
       
-      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
+      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
       toast.success('Appraisal updated');
-
-      // Auto-geocode if address or suburb changed
-      if (updates.address || updates.suburb) {
-        try {
-          await supabase.functions.invoke('geocode-appraisal', {
-            body: { appraisalId: id },
-          });
-        } catch (geocodeError) {
-          console.error('Auto-geocoding failed:', geocodeError);
-          // Don't show error to user, geocoding is a background task
-        }
-      }
     } catch (error: any) {
       console.error('Error updating appraisal:', error);
       toast.error(error?.message || 'Failed to update appraisal');
@@ -181,7 +118,7 @@ export const useLoggedAppraisals = () => {
         .eq('id', id);
 
       if (error) throw error;
-      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
+      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
       toast.success('Appraisal deleted');
     } catch (error) {
       console.error('Error deleting appraisal:', error);
@@ -189,85 +126,51 @@ export const useLoggedAppraisals = () => {
     }
   };
 
-  const convertToOpportunity = async (appraisalId: string, opportunityData: any) => {
+  const convertToListing = async (appraisalId: string, listingData: any) => {
     if (!user || !team) return;
 
     try {
-      // Convert expected_month from YYYY-MM to YYYY-MM-01 for valid date format
-      const processedData = {
-        ...opportunityData,
-        expected_month: opportunityData.expected_month 
-          ? `${opportunityData.expected_month}-01` 
-          : opportunityData.expected_month,
-      };
-
-      // Create opportunity
-      const { data: opportunity, error: oppError } = await supabase
+      // Create listing from appraisal
+      const { data: listing, error: listingError } = await supabase
         .from('listings_pipeline')
         .insert({
-          ...processedData,
+          address: listingData.address,
           team_id: team.id,
           created_by: user.id,
-          last_edited_by: user.id,
-          appraisal_id: appraisalId,
+          stage: listingData.stage || 'prospecting',
+          estimated_value: listingData.estimated_value,
+          warmth: listingData.warmth || 'cold',
+          notes: listingData.notes,
         })
         .select()
         .single();
 
-      if (oppError) throw oppError;
+      if (listingError) throw listingError;
 
-      // Update appraisal with opportunity link
-      const { error: updateError } = await supabase
+      // Insert the logged appraisal
+      const { data: appraisalData, error: appraisalError } = await supabase
         .from('logged_appraisals')
-        .update({
-          opportunity_id: opportunity.id,
-          status: 'converted',
-          converted_date: new Date().toISOString(),
-          last_edited_by: user.id,
-        })
-        .eq('id', appraisalId);
+        .insert([{
+          address: listingData.address,
+          appraisal_date: new Date().toISOString().split('T')[0],
+          estimated_value: listingData.estimated_value,
+          status: 'completed',
+          outcome: 'listed',
+          user_id: user.id,
+        }])
+        .select()
+        .single();
 
-      if (updateError) throw updateError;
+      if (appraisalError) throw appraisalError;
 
       queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
       queryClient.invalidateQueries({ queryKey: ['listings_pipeline'] });
-      toast.success('Converted to opportunity');
-      return opportunity;
+      toast.success('Converted to listing');
+      return listing;
     } catch (error) {
-      console.error('Error converting to opportunity:', error);
-      toast.error('Failed to convert to opportunity');
+      console.error('Error converting to listing:', error);
+      toast.error('Failed to convert to listing');
       throw error;
-    }
-  };
-
-  const linkToOpportunity = async (appraisalId: string, opportunityId: string) => {
-    if (!user) return;
-
-    try {
-      // Update appraisal
-      await supabase
-        .from('logged_appraisals')
-        .update({
-          opportunity_id: opportunityId,
-          last_edited_by: user.id,
-        })
-        .eq('id', appraisalId);
-
-      // Update opportunity
-      await supabase
-        .from('listings_pipeline')
-        .update({
-          appraisal_id: appraisalId,
-          last_edited_by: user.id,
-        })
-        .eq('id', opportunityId);
-
-      toast.success('Linked to opportunity');
-      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
-      queryClient.invalidateQueries({ queryKey: ['listings_pipeline'] });
-    } catch (error) {
-      console.error('Error linking to opportunity:', error);
-      toast.error('Failed to link to opportunity');
     }
   };
 
@@ -275,12 +178,6 @@ export const useLoggedAppraisals = () => {
     total: appraisals.length,
     active: appraisals.filter(a => a.outcome === 'In Progress').length,
     converted: appraisals.filter(a => a.outcome === 'WON').length,
-    high: appraisals.filter(a => a.intent === 'high' && a.outcome === 'In Progress').length,
-    medium: appraisals.filter(a => a.intent === 'medium' && a.outcome === 'In Progress').length,
-    low: appraisals.filter(a => a.intent === 'low' && a.outcome === 'In Progress').length,
-    conversionRate: appraisals.length > 0 
-      ? ((appraisals.filter(a => a.outcome === 'WON').length / appraisals.length) * 100).toFixed(1)
-      : '0',
   };
 
   return {
@@ -289,8 +186,7 @@ export const useLoggedAppraisals = () => {
     addAppraisal,
     updateAppraisal,
     deleteAppraisal,
-    convertToOpportunity,
-    linkToOpportunity,
+    convertToListing,
     stats,
     refreshAppraisals: () => queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] }),
   };
