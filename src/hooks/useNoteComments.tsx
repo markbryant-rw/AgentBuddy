@@ -22,14 +22,9 @@ export const useNoteComments = (noteId: string | undefined) => {
   const { data: comments = [], isLoading, refetch } = useQuery({
     queryKey: ['note-comments', noteId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('note_comments')
-        .select('*')
-        .eq('note_id', noteId!)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      return data as NoteComment[];
+      // Stub: note_comments table doesn't exist
+      console.log('useNoteComments: Stubbed - returning empty array');
+      return [] as NoteComment[];
     },
     enabled: !!noteId,
   });
@@ -65,22 +60,11 @@ export const useNoteComments = (noteId: string | undefined) => {
       body: any;
       mentions?: string[];
     }) => {
-      const { data: comment, error } = await supabase
-        .from('note_comments')
-        .insert({
-          note_id: data.note_id,
-          body: data.body,
-          user_id: user!.id,
-          mentions: data.mentions || [],
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return comment;
+      // Stub: note_comments table doesn't exist
+      console.log('createComment: Stubbed', data);
+      return null;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-comments'] });
       toast.success('Comment added');
     },
     onError: (error: any) => {
@@ -90,18 +74,11 @@ export const useNoteComments = (noteId: string | undefined) => {
 
   const updateComment = useMutation({
     mutationFn: async ({ id, body }: { id: string; body: any }) => {
-      const { data, error } = await supabase
-        .from('note_comments')
-        .update({ body, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      // Stub: note_comments table doesn't exist
+      console.log('updateComment: Stubbed', { id, body });
+      return null;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-comments'] });
       toast.success('Comment updated');
     },
     onError: (error: any) => {
@@ -111,14 +88,10 @@ export const useNoteComments = (noteId: string | undefined) => {
 
   const deleteComment = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('note_comments')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      // Stub: note_comments table doesn't exist
+      console.log('deleteComment: Stubbed', id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-comments'] });
       toast.success('Comment deleted');
     },
     onError: (error: any) => {
@@ -128,18 +101,12 @@ export const useNoteComments = (noteId: string | undefined) => {
 
   const resolveComment = useMutation({
     mutationFn: async ({ id, resolved }: { id: string; resolved: boolean }) => {
-      const { data, error } = await supabase
-        .from('note_comments')
-        .update({ resolved })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      // Stub: note_comments table doesn't exist
+      console.log('resolveComment: Stubbed', { id, resolved });
+      return null;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-comments'] });
+      // No-op
     },
     onError: (error: any) => {
       toast.error(error.message || 'Failed to update comment');

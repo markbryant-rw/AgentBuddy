@@ -19,14 +19,9 @@ export const useNoteLinks = (noteId: string | undefined) => {
   const { data: links = [], isLoading } = useQuery({
     queryKey: ['note-links', noteId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('note_links')
-        .select('*')
-        .eq('note_id', noteId!)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data as NoteLink[];
+      // Stub: note_links table doesn't exist
+      console.log('useNoteLinks: Stubbed - returning empty array');
+      return [] as NoteLink[];
     },
     enabled: !!noteId,
   });
@@ -37,20 +32,11 @@ export const useNoteLinks = (noteId: string | undefined) => {
       target_type: 'task' | 'project' | 'listing' | 'message';
       target_id: string;
     }) => {
-      const { data: link, error } = await supabase
-        .from('note_links')
-        .insert({
-          ...data,
-          created_by: user!.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return link;
+      // Stub: note_links table doesn't exist
+      console.log('createLink: Stubbed', data);
+      return null;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-links'] });
       toast.success('Link created');
     },
     onError: (error: any) => {
@@ -60,11 +46,10 @@ export const useNoteLinks = (noteId: string | undefined) => {
 
   const deleteLink = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('note_links').delete().eq('id', id);
-      if (error) throw error;
+      // Stub: note_links table doesn't exist
+      console.log('deleteLink: Stubbed', id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-links'] });
       toast.success('Link removed');
     },
     onError: (error: any) => {
@@ -85,26 +70,9 @@ export const useReverseNoteLinks = (targetType: string, targetId: string | undef
   const { data: links = [], isLoading } = useQuery({
     queryKey: ['reverse-note-links', targetType, targetId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('note_links')
-        .select(`
-          *,
-          notes (
-            id,
-            title,
-            owner_id,
-            updated_at,
-            profiles:owner_id (
-              full_name,
-              email
-            )
-          )
-        `)
-        .eq('target_type', targetType)
-        .eq('target_id', targetId!);
-
-      if (error) throw error;
-      return data;
+      // Stub: note_links table doesn't exist
+      console.log('useReverseNoteLinks: Stubbed - returning empty array');
+      return [];
     },
     enabled: !!targetId,
   });

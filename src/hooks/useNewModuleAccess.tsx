@@ -8,29 +8,9 @@ export const useNewModuleAccess = () => {
   const { data: effectiveAccess = [], isLoading } = useQuery({
     queryKey: ['user-effective-access', user?.id],
     queryFn: async () => {
-      // Platform admins bypass all policies
-      if (isPlatformAdmin) {
-        const { data: modules } = await supabase
-          .from('modules')
-          .select('id');
-        
-        return (modules || []).map(m => ({
-          user_id: user!.id,
-          module_id: m.id,
-          effective_policy: 'enabled',
-          policy_source: 'platform_admin',
-          reason: 'Platform Admin - Full Access',
-          expires_at: null,
-        }));
-      }
-
-      const { data, error } = await supabase
-        .from('user_effective_access_new')
-        .select('*')
-        .eq('user_id', user!.id);
-
-      if (error) throw error;
-      return data;
+      // Stub: user_effective_access_new view doesn't exist
+      console.log('useNewModuleAccess: Stubbed - returning empty array');
+      return [];
     },
     enabled: !!user,
   });

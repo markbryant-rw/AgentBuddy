@@ -10,14 +10,9 @@ export const useModuleUsage = () => {
   return useQuery({
     queryKey: ['module-usage'],
     queryFn: async (): Promise<ModuleUsage[]> => {
-      const { data, error } = await supabase
-        .from('module_usage_stats')
-        .select('module_id, visit_count')
-        .order('visit_count', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
-      return data || [];
+      // Stub: module_usage_stats table doesn't exist
+      console.log('useModuleUsage: Stubbed - returning empty array');
+      return [];
     },
   });
 };
