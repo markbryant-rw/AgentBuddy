@@ -20,7 +20,7 @@ serve(async (req) => {
       throw new Error('Latitude and longitude are required');
     }
 
-    const apiKey = Deno.env.get('VITE_WEATHER_API_KEY');
+    const apiKey = Deno.env.get('WEATHER_API_KEY');
     
     if (!apiKey) {
       console.error('VITE_WEATHER_API_KEY not configured');
