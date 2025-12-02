@@ -108,10 +108,7 @@ export const EditProviderDialog = ({ open, onOpenChange, provider }: EditProvide
         website: provider.website || null,
         notes: provider.notes || null,
         category_id: provider.category_id || null,
-        team_category_id: provider.team_category_id || null,
         visibility_level: provider.visibility_level as 'office' | 'team' | 'private',
-        avatar_url: publicUrl,
-        logo_url: provider.logo_url || null,
       });
 
       toast({
@@ -195,10 +192,7 @@ export const EditProviderDialog = ({ open, onOpenChange, provider }: EditProvide
         website: formData.website || null,
         notes: formData.notes || null,
         category_id: formData.category_id || null,
-        team_category_id: formData.team_category_id || null,
         visibility_level: 'office',
-        avatar_url: formData.avatar_url || null,
-        logo_url: formData.logo_url || null,
       });
 
       onOpenChange(false);
