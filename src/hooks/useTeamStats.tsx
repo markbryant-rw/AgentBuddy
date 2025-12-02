@@ -71,37 +71,38 @@ export const useTeamStats = () => {
         .from('kpi_entries')
         .select('user_id, kpi_type, value')
         .in('user_id', memberUserIds)
-        .gte('entry_date', weekStartStr);
+        .gte('date', weekStartStr);
 
-      // Get team goal (if exists)
+      // Get team goal from goals table (using the standard goals table)
       const { data: goal } = await supabase
-        .from('team_goals')
-        .select('target_cch, week_start_date')
+        .from('goals')
+        .select('target_value, kpi_type')
         .eq('team_id', teamId)
-        .eq('week_start_date', weekStartStr)
+        .eq('goal_type', 'team')
+        .eq('period', 'weekly')
         .maybeSingle();
 
       // Calculate team CCH
       let teamCCH = 0;
       const memberStats = memberUserIds.map(userId => {
         const userKpis = kpiEntries?.filter(e => e.user_id === userId) || [];
-        const calls = userKpis.filter(e => e.kpi_type === 'calls').reduce((s, e) => s + e.value, 0);
-        const appraisals = userKpis.filter(e => e.kpi_type === 'appraisals').reduce((s, e) => s + e.value, 0);
-        const openHomes = userKpis.filter(e => e.kpi_type === 'open_homes').reduce((s, e) => s + e.value, 0);
-        const cch = calculateCCH(calls, appraisals, openHomes).total;
+        const calls = userKpis.filter(e => e.kpi_type === 'calls').reduce((s, e) => s + Number(e.value), 0);
+        const appraisals = userKpis.filter(e => e.kpi_type === 'appraisals').reduce((s, e) => s + Number(e.value), 0);
+        // Note: open_homes not in kpi_type enum, use 0
+        const cch = calculateCCH(calls, appraisals, 0).total;
         teamCCH += cch;
         return { userId, cch };
       });
 
-      // Check who logged activity today
+      // Active today tracking - using kpi_entries as proxy (daily_log_tracker not implemented)
       const today = new Date().toISOString().split('T')[0];
-      const { data: todayLogs } = await supabase
-        .from('daily_log_tracker')
+      const { data: todayKpis } = await supabase
+        .from('kpi_entries')
         .select('user_id')
-        .eq('log_date', today)
+        .eq('date', today)
         .in('user_id', memberUserIds);
 
-      const activeToday = todayLogs?.map(l => l.user_id) || [];
+      const activeToday = [...new Set(todayKpis?.map(l => l.user_id) || [])];
 
       return {
         team: {
@@ -118,7 +119,7 @@ export const useTeamStats = () => {
           week_cch: memberStats.find(s => s.userId === m.user_id)?.cch || 0,
         })),
         teamCCH,
-        goal: goal?.target_cch || null,
+        goal: goal?.target_value || null,
         activeCount: activeToday.length,
         totalCount: members?.length || 0,
       };

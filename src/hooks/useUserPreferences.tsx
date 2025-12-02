@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { toast } from 'sonner';
 
 interface UserPreferences {
   user_id: string;
@@ -54,89 +52,46 @@ const DEFAULT_PREFERENCES: Omit<UserPreferences, 'user_id' | 'created_at' | 'upd
   default_transaction_role_admin: null,
 };
 
+// Stubbed hook - user_preferences table not yet implemented
 export const useUserPreferences = () => {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchPreferences = useCallback(async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        // Create default preferences
-        const { data: newPrefs, error: insertError } = await supabase
-          .from('user_preferences')
-          .insert({
-            user_id: user.id,
-            ...DEFAULT_PREFERENCES,
-          })
-          .select()
-          .single();
-
-        if (insertError) throw insertError;
-        if (!newPrefs) throw new Error('Failed to create preferences - no data returned');
-        setPreferences(newPrefs as UserPreferences);
-      } else {
-        setPreferences(data as UserPreferences);
-      }
-    } catch (error) {
-      console.error('Error fetching preferences:', error);
-      toast.error('Failed to load preferences');
-    } finally {
+    if (!user) {
+      setPreferences(null);
       setLoading(false);
+      return;
     }
+
+    // Return default preferences since table doesn't exist
+    setPreferences({
+      ...DEFAULT_PREFERENCES,
+      user_id: user.id,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+    setLoading(false);
   }, [user]);
 
   useEffect(() => {
-    if (user) {
-      fetchPreferences();
-    } else {
-      setPreferences(null);
-      setLoading(false);
-    }
-  }, [user, fetchPreferences]);
+    fetchPreferences();
+  }, [fetchPreferences]);
 
   const updatePreferences = async (updates: Partial<Omit<UserPreferences, 'user_id' | 'created_at' | 'updated_at'>>) => {
-    if (!user || !preferences || loading) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('user_preferences')
-        .update(updates)
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      if (!data) throw new Error('Failed to update preferences - no data returned');
-
-      setPreferences(data as UserPreferences);
-      // Silent update - no toast notification
-    } catch (error) {
-      console.error('Error updating preferences:', error);
-      toast.error('Failed to update preferences');
-      throw error;
-    }
+    if (!preferences) return;
+    // Just update local state since table doesn't exist
+    setPreferences({ ...preferences, ...updates, updated_at: new Date().toISOString() });
   };
 
   const toggleModuleVisibility = async (moduleId: string) => {
     if (!preferences) return;
-    
     const currentVisibility = preferences.module_visibility || {};
     const newVisibility = {
       ...currentVisibility,
       [moduleId]: !currentVisibility[moduleId],
     };
-    
     await updatePreferences({ module_visibility: newVisibility });
   };
 

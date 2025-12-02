@@ -30,7 +30,7 @@ export const useUserCCHTarget = (userId: string) => {
       if (error) throw error;
 
       // Convert calls target to CCH (20 calls = 1 CCH)
-      return data ? data.target_value / 20 : DEFAULT_WEEKLY_CCH;
+      return data ? Number(data.target_value) / 20 : DEFAULT_WEEKLY_CCH;
     },
     enabled: !!userId,
   });
@@ -43,20 +43,43 @@ export const useUserCCHTarget = (userId: string) => {
       // Convert CCH to calls (1 CCH = 20 calls)
       const callsTarget = newTarget * 20;
 
-      const { error } = await supabase
+      // First check if a goal exists
+      const { data: existingGoal } = await supabase
         .from('goals')
-        .upsert({
-          user_id: userId,
-          goal_type: 'individual',
-          kpi_type: 'calls',
-          period: 'weekly',
-          target_value: callsTarget,
-          start_date: weekStart,
-          end_date: weekEnd,
-          created_by: userId,
-        });
+        .select('id')
+        .eq('user_id', userId)
+        .eq('goal_type', 'individual')
+        .eq('kpi_type', 'calls')
+        .eq('period', 'weekly')
+        .gte('start_date', weekStart)
+        .lte('end_date', weekEnd)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingGoal) {
+        // Update existing
+        const { error } = await supabase
+          .from('goals')
+          .update({ target_value: callsTarget })
+          .eq('id', existingGoal.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new
+        const { error } = await supabase
+          .from('goals')
+          .insert({
+            user_id: userId,
+            goal_type: 'individual',
+            kpi_type: 'calls',
+            period: 'weekly',
+            target_value: callsTarget,
+            title: 'Weekly Calls Target',
+            start_date: weekStart,
+            end_date: weekEnd,
+          });
+
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['user-cch-target'] });

@@ -18,7 +18,7 @@ export const useSubtasks = (parentTaskId: string) => {
   const { data: subtasks = [], isLoading } = useQuery({
     queryKey: ['subtasks', parentTaskId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tasks')
         .select(`
           *,
@@ -30,7 +30,7 @@ export const useSubtasks = (parentTaskId: string) => {
 
       if (error) throw error;
       
-      return data.map((task: any) => ({
+      return (data || []).map((task: any) => ({
         ...task,
         assignees: task.assignee ? [task.assignee] : [],
       }));
@@ -72,7 +72,7 @@ export const useSubtasks = (parentTaskId: string) => {
 
       if (!parentTask) throw new Error('Parent task not found');
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('tasks')
         .insert({
           team_id: teamMemberData.team_id,
@@ -83,7 +83,7 @@ export const useSubtasks = (parentTaskId: string) => {
           assigned_to: subtask.assignee_id || subtask.created_by,
           completed: false,
           last_updated_by: user?.id,
-        } as any)
+        })
         .select()
         .single();
 
@@ -156,14 +156,14 @@ export const useSubtasks = (parentTaskId: string) => {
         order_position: index,
       }));
 
-        for (const update of updates) {
-          const { error } = await (supabase as any)
-            .from('tasks')
-            .update({ order_position: update.order_position })
-            .eq('id', update.id);
+      for (const update of updates) {
+        const { error } = await (supabase as any)
+          .from('tasks')
+          .update({ order_position: update.order_position })
+          .eq('id', update.id);
 
-          if (error) throw error;
-        }
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subtasks', parentTaskId] });
