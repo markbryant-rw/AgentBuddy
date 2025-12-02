@@ -27,7 +27,7 @@ export const useLoggingWindow = () => {
     // Update every minute to check for new logs
     const interval = setInterval(checkLoggingStatus, 60000);
     return () => clearInterval(interval);
-  }, [user, checkLoggingWindow]);
+  }, [user, checkLoggingStatus]);
 
   return { ...state, refetch: checkLoggingStatus };
 };

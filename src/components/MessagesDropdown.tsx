@@ -336,8 +336,8 @@ export const MessagesDropdown = () => {
                   {messages.map((message) => (
                     <MessageBubble
                       key={message.id}
-                      message={message}
-                      isOwn={message.author_id === user?.id}
+                      message={{ ...message, edited: message.edited || false }}
+                      isOwn={message.sender_id === user?.id}
                     />
                   ))}
                 </div>

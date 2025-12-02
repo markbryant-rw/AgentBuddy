@@ -10,6 +10,7 @@ interface Message {
   sender_id: string | null;
   content: string;
   created_at: string;
+  edited?: boolean;
   author?: {
     id: string;
     full_name: string | null;
