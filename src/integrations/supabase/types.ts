@@ -892,6 +892,7 @@ export type Database = {
         Row: {
           admin_notes: string | null
           created_at: string | null
+          created_by: string | null
           current_value: number | null
           description: string | null
           end_date: string
@@ -911,6 +912,7 @@ export type Database = {
         Insert: {
           admin_notes?: string | null
           created_at?: string | null
+          created_by?: string | null
           current_value?: number | null
           description?: string | null
           end_date: string
@@ -930,6 +932,7 @@ export type Database = {
         Update: {
           admin_notes?: string | null
           created_at?: string | null
+          created_by?: string | null
           current_value?: number | null
           description?: string | null
           end_date?: string
@@ -947,6 +950,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "goals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "goals_team_id_fkey"
             columns: ["team_id"]
@@ -2923,6 +2933,7 @@ export type Database = {
       tasks: {
         Row: {
           assigned_to: string | null
+          board_position: number | null
           completed: boolean | null
           completed_at: string | null
           created_at: string | null
@@ -2932,7 +2943,13 @@ export type Database = {
           due_date: string | null
           id: string
           is_daily_task: boolean | null
+          is_important: boolean | null
+          is_urgent: boolean | null
+          last_updated_by: string | null
           list_id: string | null
+          listing_id: string | null
+          order_position: number | null
+          parent_task_id: string | null
           position: number
           priority: string | null
           project_id: string | null
@@ -2940,10 +2957,12 @@ export type Database = {
           status: string | null
           team_id: string | null
           title: string
+          transaction_id: string | null
           updated_at: string | null
         }
         Insert: {
           assigned_to?: string | null
+          board_position?: number | null
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
@@ -2953,7 +2972,13 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_daily_task?: boolean | null
+          is_important?: boolean | null
+          is_urgent?: boolean | null
+          last_updated_by?: string | null
           list_id?: string | null
+          listing_id?: string | null
+          order_position?: number | null
+          parent_task_id?: string | null
           position?: number
           priority?: string | null
           project_id?: string | null
@@ -2961,10 +2986,12 @@ export type Database = {
           status?: string | null
           team_id?: string | null
           title: string
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Update: {
           assigned_to?: string | null
+          board_position?: number | null
           completed?: boolean | null
           completed_at?: string | null
           created_at?: string | null
@@ -2974,7 +3001,13 @@ export type Database = {
           due_date?: string | null
           id?: string
           is_daily_task?: boolean | null
+          is_important?: boolean | null
+          is_urgent?: boolean | null
+          last_updated_by?: string | null
           list_id?: string | null
+          listing_id?: string | null
+          order_position?: number | null
+          parent_task_id?: string | null
           position?: number
           priority?: string | null
           project_id?: string | null
@@ -2982,6 +3015,7 @@ export type Database = {
           status?: string | null
           team_id?: string | null
           title?: string
+          transaction_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -3000,10 +3034,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_last_updated_by_fkey"
+            columns: ["last_updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_list_id_fkey"
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "task_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
           {
@@ -3025,6 +3080,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -3074,6 +3136,7 @@ export type Database = {
       teams: {
         Row: {
           agency_id: string
+          bio: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -3090,6 +3153,7 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          bio?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -3106,6 +3170,7 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          bio?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null

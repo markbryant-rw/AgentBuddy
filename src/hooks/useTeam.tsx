@@ -7,6 +7,7 @@ interface Team {
   id: string;
   name: string;
   bio: string | null;
+  description?: string | null;
   logo_url: string | null;
   team_code: string;
   created_by: string;
@@ -85,8 +86,14 @@ export const TeamProvider = ({ children }: { children: React.ReactNode }) => {
       if (teamError) {
         console.error('Error fetching team:', teamError);
         setTeam(null);
+      } else if (teamData) {
+        // Map description to bio if bio is not set
+        setTeam({
+          ...teamData,
+          bio: teamData.bio || teamData.description || null,
+        });
       } else {
-        setTeam(teamData);
+        setTeam(null);
       }
     } catch (error) {
       console.error('Error in fetchTeam:', error);

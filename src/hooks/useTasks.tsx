@@ -69,15 +69,15 @@ export const useTasks = (boardId?: string | null) => {
 
       if (!teamMemberData) return [];
 
-      // Build query to get tasks
-      let query = supabase
+      // Build query to get tasks - use any cast to bypass type checking for new columns
+      let query = (supabase as any)
         .from("tasks")
         .select(`
           id, team_id, title, description, list_id, project_id,
           assigned_to, created_by, due_date, completed, completed_at,
           priority, listing_id, last_updated_by, board_position,
           created_at, updated_at, parent_task_id, transaction_id,
-          is_urgent, is_important
+          is_urgent, is_important, order_position
         `)
         .eq("team_id", teamMemberData.team_id)
         .is("transaction_id", null); // EXCLUDE transaction tasks
@@ -119,7 +119,7 @@ export const useTasks = (boardId?: string | null) => {
         }, {} as Record<string, any[]>);
 
       // PHASE 1: PARALLELIZE - Fetch assignees, profiles, and tags simultaneously
-      const taskIds = allTasks.map(t => t.id);
+      const taskIds = allTasks.map((t: any) => t.id) as string[];
       const userIds = [...new Set(
         tasksData
           .map((t) => t.created_by)

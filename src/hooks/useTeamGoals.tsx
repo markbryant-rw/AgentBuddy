@@ -121,9 +121,9 @@ export const useTeamGoals = () => {
           target_value: targetValue,
           period: 'weekly',
           goal_type: 'team',
+          title: `Team ${kpiType} Goal`, // Required field
           start_date: format(weekStart, 'yyyy-MM-dd'),
           end_date: format(weekEnd, 'yyyy-MM-dd'),
-          created_by: user.id,
         }]);
     }
 
@@ -161,12 +161,6 @@ export const useTeamGoals = () => {
         type: 'goal_adjusted',
         title: 'Your targets were adjusted',
         message: `Admin updated your ${kpiType} target to ${targetValue}`,
-        metadata: {
-          kpi_type: kpiType,
-          new_value: targetValue,
-          admin_notes: adminNotes,
-          adjusted_by: user.id,
-        },
       });
     } else {
       await supabase
@@ -178,9 +172,9 @@ export const useTeamGoals = () => {
           target_value: targetValue,
           period: 'weekly',
           goal_type: 'individual',
+          title: `${kpiType} Goal`, // Required field
           start_date: format(weekStart, 'yyyy-MM-dd'),
           end_date: format(weekEnd, 'yyyy-MM-dd'),
-          created_by: user.id,
           set_by_admin: true,
           admin_notes: adminNotes,
         }]);

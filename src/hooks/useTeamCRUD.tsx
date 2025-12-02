@@ -14,6 +14,7 @@ export const useTeamCRUD = () => {
       financial_year_start_month?: number;
     }) => {
       const teamCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const userId = (await supabase.auth.getUser()).data.user?.id!;
       
       const { data: team, error } = await supabase
         .from('teams')
@@ -24,19 +25,18 @@ export const useTeamCRUD = () => {
           bio: data.bio,
           uses_financial_year: data.uses_financial_year || false,
           financial_year_start_month: data.financial_year_start_month || 7,
-          created_by: (await supabase.auth.getUser()).data.user?.id!,
+          created_by: userId,
         })
         .select()
         .single();
 
       if (error) throw error;
 
-      // Log activity
+      // Log activity with correct column names
       await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        activity_type: 'team_created',
-        description: `Created team: ${data.name}`,
-        metadata: { team_id: team.id },
+        user_id: userId,
+        action: 'team_created',
+        details: { team_id: team.id, team_name: data.name },
       });
 
       return team;
@@ -74,12 +74,13 @@ export const useTeamCRUD = () => {
 
       if (error) throw error;
 
-      // Log activity
+      const userId = (await supabase.auth.getUser()).data.user?.id!;
+
+      // Log activity with correct column names
       await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        activity_type: 'team_updated',
-        description: `Updated team: ${data.name || data.id}`,
-        metadata: { team_id: data.id },
+        user_id: userId,
+        action: 'team_updated',
+        details: { team_id: data.id, team_name: data.name },
       });
     },
     onSuccess: () => {
@@ -100,12 +101,13 @@ export const useTeamCRUD = () => {
 
       if (error) throw error;
 
-      // Log activity
+      const userId = (await supabase.auth.getUser()).data.user?.id!;
+
+      // Log activity with correct column names
       await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        activity_type: 'team_archived',
-        description: `Archived team ${id}`,
-        metadata: { team_id: id },
+        user_id: userId,
+        action: 'team_archived',
+        details: { team_id: id },
       });
     },
     onSuccess: () => {
@@ -119,11 +121,16 @@ export const useTeamCRUD = () => {
 
   const regenerateTeamCode = useMutation({
     mutationFn: async (teamId: string) => {
-      const { data, error } = await supabase
-        .rpc('regenerate_team_code', { p_team_id: teamId });
+      // Generate new team code manually since RPC doesn't exist
+      const newCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      
+      const { error } = await supabase
+        .from('teams')
+        .update({ team_code: newCode })
+        .eq('id', teamId);
 
       if (error) throw error;
-      return data;
+      return newCode;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['team-hierarchy'] });
