@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, startOfQuarter, endOfQuarter, format } from 'date-fns';
+import { calculateCCH } from '@/lib/cchCalculations';
 
 export type TimeframeType = '7days' | '30days' | '90days' | 'quarter';
 
@@ -43,19 +44,20 @@ export const useKPIHistory = (timeframe: TimeframeType = '7days') => {
           startDate = subDays(today, 7);
       }
 
-      const { data: entries } = await supabase
+      // Use 'date' instead of 'entry_date'
+      const { data: entries } = await (supabase as any)
         .from('kpi_entries')
-        .select('entry_date, kpi_type, value')
+        .select('date, kpi_type, value')
         .eq('user_id', user.id)
-        .gte('entry_date', format(startDate, 'yyyy-MM-dd'))
-        .lte('entry_date', format(today, 'yyyy-MM-dd'))
-        .order('entry_date', { ascending: true });
+        .gte('date', format(startDate, 'yyyy-MM-dd'))
+        .lte('date', format(today, 'yyyy-MM-dd'))
+        .order('date', { ascending: true });
 
       // Group by date
-      const groupedByDate = (entries || []).reduce((acc, entry) => {
-        if (!acc[entry.entry_date]) {
-          acc[entry.entry_date] = {
-            date: entry.entry_date,
+      const groupedByDate = (entries || []).reduce((acc: any, entry: any) => {
+        if (!acc[entry.date]) {
+          acc[entry.date] = {
+            date: entry.date,
             calls: 0,
             sms: 0,
             appraisals: 0,
@@ -67,16 +69,16 @@ export const useKPIHistory = (timeframe: TimeframeType = '7days') => {
         const val = entry.value || 0;
         switch (entry.kpi_type) {
           case 'calls':
-            acc[entry.entry_date].calls += val;
+            acc[entry.date].calls += val;
             break;
           case 'sms':
-            acc[entry.entry_date].sms += val;
+            acc[entry.date].sms += val;
             break;
           case 'appraisals':
-            acc[entry.entry_date].appraisals += val;
+            acc[entry.date].appraisals += val;
             break;
           case 'open_homes':
-            acc[entry.entry_date].openHomes += val;
+            acc[entry.date].openHomes += val;
             break;
         }
 
@@ -84,9 +86,9 @@ export const useKPIHistory = (timeframe: TimeframeType = '7days') => {
       }, {} as Record<string, HistoricalDataPoint>);
 
       // Calculate CCH for each date
-      const historyData = Object.values(groupedByDate).map(day => ({
+      const historyData = Object.values(groupedByDate).map((day: any) => ({
         ...day,
-        cch: (day.calls / 20) + (day.appraisals * 1) + (day.openHomes / 2),
+        cch: calculateCCH(day.calls, day.appraisals, day.openHomes).total,
       }));
 
       setData(historyData);

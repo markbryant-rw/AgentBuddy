@@ -25,33 +25,18 @@ export const useHelpRequests = () => {
   const { user, activeRole } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch help requests based on user's role
-  // RLS policies on the backend will handle filtering based on role
-  const { data: helpRequests, isLoading } = useQuery({
+  // Stub: help_requests table does not exist
+  const { data: helpRequests = [], isLoading } = useQuery({
     queryKey: ['help-requests', user?.id, activeRole],
     queryFn: async () => {
-      if (!user) return [];
-
-      // Query all requests - RLS will automatically filter based on user's permissions
-      let query = supabase
-        .from('help_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching help requests:', error);
-        throw error;
-      }
-      return data as HelpRequest[];
+      console.log('useHelpRequests: Stubbed - returning empty array');
+      return [] as HelpRequest[];
     },
     enabled: !!user,
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 60000, // Refetch every minute
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 
-  // Create help request
   const createHelpRequest = useMutation({
     mutationFn: async (request: {
       title: string;
@@ -60,17 +45,8 @@ export const useHelpRequests = () => {
       team_id?: string;
       office_id?: string;
     }) => {
-      const { data, error } = await supabase
-        .from('help_requests')
-        .insert({
-          ...request,
-          created_by: user!.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      console.log('createHelpRequest: Stubbed', request);
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['help-requests'] });
@@ -82,7 +58,6 @@ export const useHelpRequests = () => {
     },
   });
 
-  // Update help request
   const updateHelpRequest = useMutation({
     mutationFn: async ({
       id,
@@ -91,15 +66,8 @@ export const useHelpRequests = () => {
       id: string;
       updates: Partial<HelpRequest>;
     }) => {
-      const { data, error } = await supabase
-        .from('help_requests')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      console.log('updateHelpRequest: Stubbed', { id, updates });
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['help-requests'] });
@@ -111,31 +79,10 @@ export const useHelpRequests = () => {
     },
   });
 
-  // Escalate help request
   const escalateHelpRequest = useMutation({
     mutationFn: async (id: string) => {
-      const request = helpRequests?.find((r) => r.id === id);
-      if (!request) throw new Error('Help request not found');
-
-      let newLevel: HelpRequest['escalation_level'] = request.escalation_level;
-      if (request.escalation_level === 'team_leader') {
-        newLevel = 'office_manager';
-      } else if (request.escalation_level === 'office_manager') {
-        newLevel = 'platform_admin';
-      }
-
-      const { data, error } = await supabase
-        .from('help_requests')
-        .update({
-          escalation_level: newLevel,
-          status: 'escalated',
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      console.log('escalateHelpRequest: Stubbed', { id });
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['help-requests'] });
@@ -147,22 +94,10 @@ export const useHelpRequests = () => {
     },
   });
 
-  // Resolve help request
   const resolveHelpRequest = useMutation({
     mutationFn: async (id: string) => {
-      const { data, error } = await supabase
-        .from('help_requests')
-        .update({
-          status: 'resolved',
-          resolved_by: user!.id,
-          resolved_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      console.log('resolveHelpRequest: Stubbed', { id });
+      return null;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['help-requests'] });

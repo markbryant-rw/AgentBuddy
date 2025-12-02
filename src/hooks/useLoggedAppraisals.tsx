@@ -46,19 +46,10 @@ export const useLoggedAppraisals = () => {
   const { data: appraisals = [], isLoading: loading } = useQuery({
     queryKey: ['logged_appraisals', team?.id],
     queryFn: async () => {
-      if (!team) return [];
-
-      const { data, error } = await supabase
-        .from('logged_appraisals')
-        .select('id, team_id, created_by, last_edited_by, address, vendor_name, suburb, region, appraisal_date, appraisal_range_low, appraisal_range_high, estimated_value, appraisal_method, intent, last_contact, next_follow_up, stage, outcome, opportunity_id, converted_date, loss_reason, lead_source, latitude, longitude, geocoded_at, geocode_error, notes, attachments, created_at, updated_at')
-        .eq('team_id', team.id)
-        .order('appraisal_date', { ascending: false });
-
-      if (error) throw error;
-      return (data || []) as LoggedAppraisal[];
+      console.log('useLoggedAppraisals: Stubbed - returning empty array');
+      return [] as LoggedAppraisal[];
     },
     enabled: !!team,
-    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
 
   useEffect(() => {

@@ -24,7 +24,7 @@ export function HelpRequestsWidget({
   onEscalate,
   onResolve,
 }: HelpRequestsWidgetProps) {
-  const { helpRequests, isLoading, escalateHelpRequest, resolveHelpRequest } = useHelpRequests();
+  const { helpRequests = [], isLoading, escalateHelpRequest, resolveHelpRequest } = useHelpRequests();
   const navigate = useNavigate();
 
   const filteredRequests = filterFn && helpRequests 

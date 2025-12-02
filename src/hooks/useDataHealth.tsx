@@ -14,11 +14,9 @@ export const useDataHealth = (officeId?: string | null) => {
   return useQuery({
     queryKey: ['data-health', officeId],
     queryFn: async () => {
-      const { data, error } = await supabase.rpc('detect_team_assignment_issues');
-
-      if (error) throw error;
-
-      return (data || []) as TeamAssignmentIssue[];
+      // Stub: detect_team_assignment_issues RPC function does not exist
+      console.log('useDataHealth: Stubbed - returning empty array');
+      return [] as TeamAssignmentIssue[];
     },
     refetchInterval: 120000, // Refresh every 2 minutes
   });

@@ -42,7 +42,7 @@ export const FeatureRequestComments = ({ featureRequestId }: FeatureRequestComme
             {comments && comments.length > 0 && (
               <div className="space-y-2">
                 {comments.map((comment) => (
-                  <Card key={comment.id} className={comment.is_admin ? 'border-primary/50 bg-primary/5' : ''}>
+                  <Card key={comment.id}>
                     <CardContent className="pt-4 pb-3">
                       <div className="flex items-start gap-3">
                         <Avatar className="h-8 w-8">
@@ -56,16 +56,13 @@ export const FeatureRequestComments = ({ featureRequestId }: FeatureRequestComme
                             <span className="text-sm font-medium">
                               {comment.profiles?.full_name || 'User'}
                             </span>
-                            {comment.is_admin && (
-                              <Badge variant="secondary" className="text-xs">Admin</Badge>
-                            )}
                             <span className="text-xs text-muted-foreground">
                               {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                             </span>
                           </div>
                           <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
                         </div>
-                        {isPlatformAdmin && comment.is_admin && (
+                        {isPlatformAdmin && (
                           <Button
                             variant="ghost"
                             size="sm"

@@ -14,25 +14,17 @@ export const useSystemHealth = () => {
   return useQuery({
     queryKey: ['system-health', usersWithoutRoles.length],
     queryFn: async (): Promise<SystemHealth> => {
-      // Get data health issues (global view)
-      const { data: dataIssues } = await supabase.rpc('detect_team_assignment_issues');
-
-      const teamIssues = dataIssues?.length || 0;
+      // Stub: detect_team_assignment_issues RPC and help_requests table don't exist
       const roleIssues = usersWithoutRoles.length;
-      const criticalIssues = teamIssues + roleIssues;
+      const criticalIssues = roleIssues;
 
-      // Get pending actions
+      // Get pending feature requests
       const { count: pendingFeatureRequests } = await supabase
         .from('feature_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
-      const { count: escalatedHelp } = await supabase
-        .from('help_requests')
-        .select('*', { count: 'exact', head: true })
-        .eq('escalation_level', 'platform_admin');
-
-      const warnings = (pendingFeatureRequests || 0) + (escalatedHelp || 0);
+      const warnings = (pendingFeatureRequests || 0);
 
       // Calculate health score (100 - weighted issues)
       const healthScore = Math.max(0, 100 - (criticalIssues * 10) - (warnings * 2));

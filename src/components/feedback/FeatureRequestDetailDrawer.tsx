@@ -224,15 +224,12 @@ export function FeatureRequestDetailDrawer({ requestId, open, onClose, isAdmin }
             <h4 className="font-medium mb-3">Comments</h4>
             <div className="space-y-3 mb-4">
               {comments?.map((comment) => (
-                <div key={comment.id} className={`p-3 rounded-lg ${comment.is_admin ? 'bg-indigo-50 dark:bg-indigo-900/10' : 'bg-muted'}`}>
+                <div key={comment.id} className="p-3 rounded-lg bg-muted">
                   <div className="flex items-start justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium">
                         {comment.profiles?.full_name || 'Unknown'}
                       </span>
-                      {comment.is_admin && (
-                        <Badge variant="outline" className="text-xs">Admin</Badge>
-                      )}
                     </div>
                     <span className="text-xs text-muted-foreground">
                       {format(new Date(comment.created_at), 'PPp')}

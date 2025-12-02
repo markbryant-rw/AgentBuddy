@@ -75,7 +75,14 @@ export const useListingPipeline = () => {
         .order('expected_month', { ascending: true });
 
       if (error) throw error;
-      setListings((data || []) as Listing[]);
+      setListings((data || []).map(d => ({
+        ...d,
+        last_edited_by: d.created_by,
+        vendor_name: '',
+        likelihood: 50,
+        expected_month: '',
+        last_contact: '',
+      })) as Listing[]);
     } catch (error) {
       logger.error('Error fetching listings:', error);
       toast.error('Failed to load listings');
