@@ -308,10 +308,6 @@ export const TransactionDetailDrawer = ({
           commission: transaction.team_price ? (transaction.team_price * 0.02) : undefined,
           notes: `Lead source: ${transaction.lead_source || 'Unknown'}`,
         });
-          days_on_market: calculateDaysOnMarket(transaction.live_date, transaction.settlement_date),
-          vendor_details: mapVendorDetails(transaction.vendor_names),
-          buyer_details: mapBuyerDetails(transaction.buyer_names),
-        });
         
       if (pastSalesError) {
         console.error('Failed to create past sales entry:', pastSalesError);
