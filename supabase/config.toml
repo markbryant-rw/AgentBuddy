@@ -82,7 +82,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.get-weather]
-verify_jwt = true
+verify_jwt = false
 
 [functions.giphy-search]
 verify_jwt = true
