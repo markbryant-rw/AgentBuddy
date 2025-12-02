@@ -159,7 +159,7 @@ export default function KnowledgeBaseEditor() {
               </div>
 
               <CardList
-                cards={cards || []}
+                cards={(cards || []).map((c, idx) => ({ ...c, card_number: idx + 1 }))}
                 onEdit={handleEditCard}
                 onDelete={handleDeleteCard}
                 onReorder={handleReorderCards}

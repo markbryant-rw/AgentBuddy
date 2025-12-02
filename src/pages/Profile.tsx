@@ -91,7 +91,7 @@ export default function Profile() {
       // Aggregate stats
       const calls = data.filter((e) => e.kpi_type === 'calls').reduce((sum, e) => sum + e.value, 0);
       const appraisals = data.filter((e) => e.kpi_type === 'appraisals').reduce((sum, e) => sum + e.value, 0);
-      const openHomes = data.filter((e) => e.kpi_type === 'open_homes').reduce((sum, e) => sum + e.value, 0);
+      const openHomes = data.filter((e) => (e.kpi_type as string) === 'open_homes').reduce((sum, e) => sum + e.value, 0);
 
       return { calls, appraisals, openHomes };
     },

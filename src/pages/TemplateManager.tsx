@@ -60,14 +60,14 @@ export default function TemplateManager() {
 
   const handleDelete = async () => {
     if (templateToDelete) {
-      await deleteTemplate.mutateAsync(templateToDelete.id);
+      deleteTemplate.mutate(templateToDelete.id);
       setDeleteDialogOpen(false);
       setTemplateToDelete(null);
     }
   };
 
-  const handleArchive = async (template: NoteTemplate) => {
-    await archiveTemplate.mutateAsync(template.id);
+  const handleArchive = (template: NoteTemplate) => {
+    archiveTemplate.mutate(template.id);
   };
 
   const renderTemplateCard = (template: NoteTemplate, canEdit: boolean, canDelete: boolean) => (

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Sparkles } from 'lucide-react';
-import type { RoleplayScenario } from '@/types/roleplay';
+import type { RoleplayScenario } from '@/hooks/useRoleplayScenarios';
 
 interface ScenarioCardProps {
   scenario: RoleplayScenario;
@@ -11,10 +11,13 @@ interface ScenarioCardProps {
   isRandom?: boolean;
 }
 
-const difficultyColors = {
+const difficultyColors: Record<string, string> = {
   easy: 'bg-green-500/10 text-green-700 dark:text-green-400',
   medium: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
   hard: 'bg-red-500/10 text-red-700 dark:text-red-400',
+  beginner: 'bg-green-500/10 text-green-700 dark:text-green-400',
+  intermediate: 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400',
+  advanced: 'bg-red-500/10 text-red-700 dark:text-red-400',
 };
 
 export const ScenarioCard = ({ scenario, isSelected, onClick, isRandom }: ScenarioCardProps) => {
@@ -44,6 +47,9 @@ export const ScenarioCard = ({ scenario, isSelected, onClick, isRandom }: Scenar
     );
   }
 
+  const difficulty = scenario.difficulty || 'medium';
+  const difficultyColor = difficultyColors[difficulty] || difficultyColors.medium;
+
   return (
     <Card
       className={cn(
@@ -56,11 +62,11 @@ export const ScenarioCard = ({ scenario, isSelected, onClick, isRandom }: Scenar
     >
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
-          <Badge className={difficultyColors[scenario.difficulty]}>
-            {scenario.difficulty.charAt(0).toUpperCase() + scenario.difficulty.slice(1)}
+          <Badge className={difficultyColor}>
+            {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
           </Badge>
         </div>
-        <CardTitle className="text-lg">{scenario.scenario_name}</CardTitle>
+        <CardTitle className="text-lg">{scenario.title}</CardTitle>
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground">{scenario.description}</p>

@@ -64,8 +64,7 @@ export default function ReviewRoadmap() {
       kpi_type: newGoal.kpi_type,
       target_value: newGoal.target_value,
       goal_type: newGoal.goal_type,
-      user_id: newGoal.goal_type === 'individual' ? null : null,
-      quarter: selectedQuarter,
+      quarter: `Q${selectedQuarter}`,
       year: selectedYear
     });
     

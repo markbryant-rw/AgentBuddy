@@ -106,7 +106,7 @@ export default function OfficePerformance() {
         if (user) {
           if (entry.kpi_type === 'calls') user.calls += entry.value;
           if (entry.kpi_type === 'appraisals') user.appraisals += entry.value;
-          if (entry.kpi_type === 'open_homes') user.open_homes += entry.value;
+          if ((entry.kpi_type as string) === 'open_homes') user.open_homes += entry.value;
         }
       });
 

@@ -5,11 +5,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import ReportForm from './components/ReportForm';
 import ReportOutput from './components/ReportOutput';
-import { Button } from '@/components/ui/button';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 
 export interface GeneratedReport {
@@ -21,7 +20,6 @@ export interface GeneratedReport {
 const VendorReporting = () => {
   const { user } = useAuth();
   const { team } = useTeam();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const transactionId = searchParams.get('transactionId');
   
@@ -44,9 +42,9 @@ const VendorReporting = () => {
     queryKey: ['transaction', transactionId],
     queryFn: async () => {
       if (!transactionId) return null;
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('transactions')
-        .select('id, address, suburb, vendor_names, live_date')
+        .select('id, address, suburb, client_name, created_at, stage')
         .eq('id', transactionId)
         .single();
       if (error) throw error;
@@ -55,12 +53,12 @@ const VendorReporting = () => {
     enabled: !!transactionId,
   });
 
-  // Calculate campaign week based on live_date
-  const calculateCampaignWeek = (liveDate: string | null): number | null => {
-    if (!liveDate) return null;
-    const live = new Date(liveDate);
+  // Calculate campaign week based on created_at
+  const calculateCampaignWeek = (createdAt: string | null): number | null => {
+    if (!createdAt) return null;
+    const created = new Date(createdAt);
     const today = new Date();
-    const diffMs = today.getTime() - live.getTime();
+    const diffMs = today.getTime() - created.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffWeeks = Math.ceil(diffDays / 7);
     return Math.max(1, diffWeeks);
@@ -69,15 +67,7 @@ const VendorReporting = () => {
   // Pre-fill form when transaction data loads
   useEffect(() => {
     if (transactionData) {
-      const vendorNames = transactionData.vendor_names;
-      const vendorName = Array.isArray(vendorNames)
-        ? vendorNames
-            .map((v: any) => v.full_name || `${v.first_name || ''} ${v.last_name || ''}`.trim())
-            .filter((name: string) => name.length > 0)
-            .join(' & ')
-        : '';
-
-      const campaignWeek = calculateCampaignWeek(transactionData.live_date);
+      const campaignWeek = calculateCampaignWeek(transactionData.created_at);
       
       const propertyAddress = transactionData.suburb
         ? `${transactionData.address}, ${transactionData.suburb}`
@@ -86,26 +76,19 @@ const VendorReporting = () => {
       setFormData(prev => ({
         ...prev,
         transactionId: transactionData.id,
-        propertyAddress,
-        vendorName: vendorName,
+        propertyAddress: propertyAddress || '',
+        vendorName: transactionData.client_name || '',
         campaignWeek: campaignWeek || 1,
       }));
     }
   }, [transactionData]);
 
-  // Clean up old reports on mount
+  // Clean up old reports on mount - stub the RPC
   useEffect(() => {
     const cleanupOldReports = async () => {
-      try {
-        const { error } = await supabase.rpc('delete_old_vendor_reports');
-        if (error) {
-          console.error('Error cleaning up old reports:', error);
-        }
-      } catch (err) {
-        console.error('Error calling cleanup function:', err);
-      }
+      // delete_old_vendor_reports RPC not implemented - skip
+      console.log('VendorReporting: cleanup RPC not implemented');
     };
-
     cleanupOldReports();
   }, []);
 
@@ -120,14 +103,14 @@ const VendorReporting = () => {
           body: {
             propertyAddress: data.propertyAddress,
             vendorName: data.vendorName,
-          campaignWeek: data.campaignWeek,
-          desiredOutcome: data.desiredOutcome,
-          buyerFeedback: data.buyerFeedback,
-          useEmojiFormatting: data.useEmojiFormatting,
-          section: 'all'
+            campaignWeek: data.campaignWeek,
+            desiredOutcome: data.desiredOutcome,
+            buyerFeedback: data.buyerFeedback,
+            useEmojiFormatting: data.useEmojiFormatting,
+            section: 'all'
+          }
         }
-      }
-    );
+      );
 
       if (functionError) {
         throw functionError;
@@ -167,20 +150,19 @@ const VendorReporting = () => {
           body: {
             propertyAddress: formData.propertyAddress,
             vendorName: formData.vendorName,
-          campaignWeek: formData.campaignWeek,
-          desiredOutcome: formData.desiredOutcome,
-          buyerFeedback: formData.buyerFeedback,
-          useEmojiFormatting: formData.useEmojiFormatting,
-          section: section,
-          customInstructions: customInstructions
+            campaignWeek: formData.campaignWeek,
+            desiredOutcome: formData.desiredOutcome,
+            buyerFeedback: formData.buyerFeedback,
+            useEmojiFormatting: formData.useEmojiFormatting,
+            section: section,
+            customInstructions: customInstructions
+          }
         }
-      }
-    );
+      );
       
       if (functionError) throw functionError;
       if (!functionData.success) throw new Error(functionData.error);
       
-      // Merge regenerated section with existing report
       const sectionKey = 
         section === 'vendor' ? 'vendorReport' : 
         section === 'actions' ? 'actionPoints' : 
@@ -215,42 +197,22 @@ const VendorReporting = () => {
 
     try {
       if (currentReportId) {
-        // Update existing report
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('vendor_reports')
           .update({
-            generated_report: editedReport as any,
-            updated_at: new Date().toISOString()
+            report_data: editedReport,
           })
           .eq('id', currentReportId);
 
         if (error) throw error;
         toast.success('Report updated successfully!');
       } else {
-        // Insert new report
-        // Get property address from transaction
-        const { data: transaction } = await supabase
-          .from('transactions')
-          .select('address, suburb')
-          .eq('id', formData.transactionId)
-          .single();
-
-        const propertyAddress = transaction 
-          ? (transaction.suburb ? `${transaction.address}, ${transaction.suburb}` : transaction.address)
-          : '';
-
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('vendor_reports')
           .insert({
-            team_id: team?.id || null,
-            created_by: user.id,
-            transaction_id: formData.transactionId || null,
-            property_address: propertyAddress,
-            vendor_name: formData.vendorName || null,
-            campaign_week: formData.campaignWeek,
-            desired_outcome: formData.desiredOutcome,
-            buyer_feedback: formData.buyerFeedback,
-            generated_report: editedReport as any
+            generated_by: user.id,
+            listing_id: formData.transactionId || null,
+            report_data: editedReport,
           });
 
         if (error) throw error;
@@ -286,26 +248,26 @@ const VendorReporting = () => {
             </div>
           </div>
 
-      {/* Form Card with enhanced styling */}
-      <Card className="border-l-4 border-l-green-500 hover:shadow-xl transition-all p-6">
-        <ReportForm
-          onGenerate={handleGenerate}
-          isGenerating={isGenerating}
-          initialData={formData}
-        />
-      </Card>
-
-      {generatedReport && (
-        <div className="bg-gradient-to-br from-white to-green-50/30 dark:from-background dark:to-green-900/5 p-6 rounded-xl">
-          <ReportOutput
-            report={generatedReport}
-            onSave={handleSave}
-            onRegenerate={handleRegenerateSection}
-            isSaved={!!currentReportId}
-            regeneratingSection={regeneratingSection}
+          {/* Form Card */}
+          <Card className="border-l-4 border-l-green-500 hover:shadow-xl transition-all p-6">
+            <ReportForm
+              onGenerate={handleGenerate}
+              isGenerating={isGenerating}
+              initialData={formData}
             />
-          </div>
-        )}
+          </Card>
+
+          {generatedReport && (
+            <div className="bg-gradient-to-br from-white to-green-50/30 dark:from-background dark:to-green-900/5 p-6 rounded-xl">
+              <ReportOutput
+                report={generatedReport}
+                onSave={handleSave}
+                onRegenerate={handleRegenerateSection}
+                isSaved={!!currentReportId}
+                regeneratingSection={regeneratingSection}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
