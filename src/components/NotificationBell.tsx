@@ -53,9 +53,9 @@ export const NotificationBell = () => {
                   key={notification.id}
                   className={cn(
                     'p-4 hover:bg-accent transition-colors cursor-pointer group',
-                    !notification.read && 'bg-accent/50'
+                    !notification.is_read && 'bg-accent/50'
                   )}
-                  onClick={() => !notification.read && markAsRead(notification.id)}
+                  onClick={() => !notification.is_read && markAsRead(notification.id)}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 space-y-1">
@@ -70,7 +70,7 @@ export const NotificationBell = () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
-                      {!notification.read && (
+                      {!notification.is_read && (
                         <div className="h-2 w-2 rounded-full bg-primary" />
                       )}
                       <Button

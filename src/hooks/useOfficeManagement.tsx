@@ -32,10 +32,9 @@ export const useOfficeManagement = () => {
 
       // Log activity
       await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        activity_type: 'office_created',
-        description: `Created office: ${data.name}`,
-        metadata: { agency_id: office.id },
+        user_id: (await supabase.auth.getUser()).data.user?.id!,
+        action: 'office_created',
+        details: { agency_id: office.id, name: data.name },
       });
 
       return office;
@@ -75,10 +74,9 @@ export const useOfficeManagement = () => {
 
       // Log activity
       await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        activity_type: 'office_updated',
-        description: `Updated office: ${data.name || data.id}`,
-        metadata: { agency_id: data.id },
+        user_id: (await supabase.auth.getUser()).data.user?.id!,
+        action: 'office_updated',
+        details: { agency_id: data.id, name: data.name },
       });
     },
     onSuccess: () => {
@@ -102,10 +100,9 @@ export const useOfficeManagement = () => {
 
       // Log activity
       await supabase.from('admin_activity_log').insert({
-        admin_id: (await supabase.auth.getUser()).data.user?.id,
-        activity_type: 'office_archived',
-        description: `Archived office ${id}`,
-        metadata: { agency_id: id },
+        user_id: (await supabase.auth.getUser()).data.user?.id!,
+        action: 'office_archived',
+        details: { agency_id: id },
       });
     },
     onSuccess: () => {

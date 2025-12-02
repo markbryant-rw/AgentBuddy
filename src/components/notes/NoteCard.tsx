@@ -31,22 +31,8 @@ const NOTE_BORDER_COLORS = [
 export const NoteCard = ({ note, viewMode, onSelect }: NoteCardProps) => {
   const { archiveNote, duplicateNote, deleteNote } = useNotes();
 
-  const getPreviewText = () => {
-    try {
-      if (note.content_rich?.content) {
-        const textContent = note.content_rich.content
-          .filter((node: any) => node.type === 'paragraph')
-          .map((node: any) =>
-            node.content?.map((c: any) => c.text || '').join('') || ''
-          )
-          .join(' ');
-        return textContent.substring(0, 120) || 'No content';
-      }
-    } catch (e) {
-      return 'No content';
-    }
-    return 'No content';
-  };
+  const plainText = note.content_plain || note.content || '';
+  const displayText = plainText.slice(0, 150) + (plainText.length > 150 ? '...' : '');
 
   // Generate consistent color based on note ID
   const getBorderColor = () => {
@@ -60,17 +46,10 @@ export const NoteCard = ({ note, viewMode, onSelect }: NoteCardProps) => {
         className={`note-card p-4 cursor-pointer ${getBorderColor()} relative`} 
         onClick={onSelect}
       >
-        <div className="absolute top-2 right-2">
-          {note.visibility === 'team' ? (
-            <Badge variant="secondary" className="gap-1 text-xs"><Users className="h-3 w-3" />Team</Badge>
-          ) : (
-            <Badge variant="outline" className="gap-1 text-xs"><Lock className="h-3 w-3" />Private</Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-4 pr-20">
+        <div className="flex items-center gap-4">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold truncate text-lg mb-1">{note.title}</h3>
-            <p className="text-sm text-muted-foreground truncate">{getPreviewText()}</p>
+            <h3 className="font-semibold truncate text-lg mb-1">{note.title || 'Untitled Note'}</h3>
+            <p className="text-sm text-muted-foreground truncate">{displayText}</p>
             <div className="flex items-center gap-2 mt-2">
               <Avatar className="h-5 w-5">
                 <AvatarImage src={note.profiles?.avatar_url || undefined} />
@@ -81,11 +60,6 @@ export const NoteCard = ({ note, viewMode, onSelect }: NoteCardProps) => {
               <span className="text-xs text-muted-foreground">
                 {formatDistanceToNow(new Date(note.updated_at), { addSuffix: true })}
               </span>
-              {note.tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
             </div>
           </div>
           <DropdownMenu>
@@ -126,59 +100,15 @@ export const NoteCard = ({ note, viewMode, onSelect }: NoteCardProps) => {
       className={`note-card overflow-hidden cursor-pointer group ${getBorderColor()} relative`} 
       onClick={onSelect}
     >
-      <div className="absolute top-2 right-2 z-10">
-        {note.visibility === 'team' ? (
-          <Badge variant="secondary" className="gap-1 text-xs"><Users className="h-3 w-3" /></Badge>
-        ) : (
-          <Badge variant="outline" className="gap-1 text-xs"><Lock className="h-3 w-3" /></Badge>
-        )}
-      </div>
       <div className="p-5">
-        <div className="flex items-start justify-between mb-3 pr-16">
-          <h3 className="font-semibold line-clamp-2 flex-1 text-lg leading-snug">{note.title}</h3>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="opacity-0 group-hover:opacity-100 transition-opacity -mr-2 -mt-2"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); duplicateNote.mutate(note.id); }}>
-                <Copy className="h-4 w-4 mr-2" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); archiveNote.mutate(note.id); }}>
-                <Archive className="h-4 w-4 mr-2" />
-                Archive
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={(e) => { e.stopPropagation(); deleteNote.mutate(note.id); }}
-                className="text-destructive"
-              >
-                <Trash className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        <div className="flex items-start justify-between mb-3">
+          <h3 className="font-semibold line-clamp-2 flex-1 text-lg leading-snug">{note.title || 'Untitled Note'}</h3>
+...
         </div>
         
         <p className="text-sm text-muted-foreground line-clamp-3 mb-4 leading-relaxed">
-          {getPreviewText()}
+          {displayText}
         </p>
-        
-        {note.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {note.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs px-2 py-0.5">
-                {tag}
-              </Badge>
-            ))}
-          </div>
-        )}
         
         <div className="flex items-center gap-2 text-xs text-muted-foreground pt-3 border-t border-border/50">
           <Avatar className="h-6 w-6">

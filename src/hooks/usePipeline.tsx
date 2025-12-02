@@ -180,7 +180,8 @@ export const usePipeline = (period: Period = 'week') => {
         .from('goals')
         .select('kpi_type, target_value')
         .eq('user_id', user.id)
-        .eq('period', 'weekly');
+        .gte('start_date', weekStartStr)
+        .lte('end_date', format(weekEnd, 'yyyy-MM-dd'));
 
       if (goalsError) throw goalsError;
 
@@ -328,11 +329,10 @@ export const usePipeline = (period: Period = 'week') => {
             team_id: teamMember?.team_id || null,
             kpi_type: kpi.kpi_type,
             target_value: kpi.target_value,
-            period: 'weekly',
+            title: `Weekly ${kpi.kpi_type} goal`,
             goal_type: 'individual',
             start_date: format(weekStart, 'yyyy-MM-dd'),
             end_date: format(weekEnd, 'yyyy-MM-dd'),
-            created_by: user.id,
           }]);
       }
     }

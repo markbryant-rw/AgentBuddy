@@ -28,19 +28,8 @@ export const NoteSidebar = ({
   const { notes } = useNotes();
   const { open } = useSidebar();
 
-  // Extract unique tags from all notes
-  const allTags = useMemo(() => {
-    return Array.from(
-      new Set(notes.flatMap((note) => note.tags))
-    ).sort();
-  }, [notes]);
-
-  const tagCounts = useMemo(() => {
-    return allTags.reduce((acc, tag) => {
-      acc[tag] = notes.filter((note) => note.tags.includes(tag)).length;
-      return acc;
-    }, {} as Record<string, number>);
-  }, [notes, allTags]);
+  // Notes feature simplified - tags removed
+  const allTags: string[] = [];
 
   const toggleTag = useCallback((tag: string) => {
     if (selectedTags.includes(tag)) {
@@ -50,12 +39,13 @@ export const NoteSidebar = ({
     }
   }, [selectedTags, onTagSelect]);
 
+  // Notes are currently all private by default
   const notebookCounts = useMemo(() => {
     return {
-      private: notes.filter((n) => n.visibility === 'private').length,
-      team: notes.filter((n) => n.visibility === 'team').length,
-      office: notes.filter((n) => n.visibility === 'office').length,
-      friend: notes.filter((n) => n.visibility === 'friend').length,
+      private: notes.length,
+      team: 0,
+      office: 0,
+      friend: 0,
     };
   }, [notes]);
 
@@ -120,29 +110,7 @@ export const NoteSidebar = ({
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <div className="space-y-1 max-h-48 overflow-y-auto px-2">
-              {allTags.length === 0 ? (
-                open && <p className="text-sm text-muted-foreground px-2">No tags yet</p>
-              ) : (
-                allTags.map((tag) => (
-                  <Button
-                    key={tag}
-                    variant={selectedTags.includes(tag) ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => toggleTag(tag)}
-                  >
-                    <Tag className="h-3 w-3 mr-2" />
-                    {open && (
-                      <>
-                        <span>{tag}</span>
-                        <Badge variant="secondary" className="ml-auto">
-                          {tagCounts[tag]}
-                        </Badge>
-                      </>
-                    )}
-                  </Button>
-                ))
-              )}
+              {open && <p className="text-sm text-muted-foreground px-2">Tags coming soon</p>}
             </div>
           </SidebarGroupContent>
         </SidebarGroup>
