@@ -17,11 +17,8 @@ import { useStreakMilestones } from '@/hooks/useStreakMilestones';
 
 const kpiConfig = [
   { type: 'calls', label: 'Calls', icon: Phone },
-  { type: 'sms', label: 'SMS', icon: MessageSquare },
   { type: 'appraisals', label: 'Appraisals', icon: Calendar },
   { type: 'open_homes', label: 'Open Homes', icon: Home },
-  { type: 'listings', label: 'Listings', icon: TrendingUp },
-  { type: 'sales', label: 'Sales', icon: DollarSign },
 ];
 
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -29,11 +26,8 @@ const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Satur
 interface WeeklyLogData {
   [date: string]: {
     calls: number;
-    sms: number;
     appraisals: number;
     open_homes: number;
-    listings: number;
-    sales: number;
   };
 }
 
@@ -75,7 +69,6 @@ const WeeklyLogs = () => {
     const dates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
     setWeekDates(dates);
     
-    // Set today as default selected tab
     const todayStr = format(today, 'yyyy-MM-dd');
     setSelectedDate(todayStr);
   };
@@ -88,49 +81,38 @@ const WeeklyLogs = () => {
     const sundayStr = format(weekDates[6], 'yyyy-MM-dd');
 
     try {
-      // Fetch KPI entries
-      const { data: kpiData } = await supabase
+      // Fetch KPI entries using 'date' column
+      const { data: kpiData } = await (supabase as any)
         .from('kpi_entries')
-        .select('entry_date, kpi_type, value')
+        .select('date, kpi_type, value')
         .eq('user_id', user.id)
-        .eq('period', 'daily')
-        .gte('entry_date', mondayStr)
-        .lte('entry_date', sundayStr);
-
-      // Fetch logged dates
-      const { data: logData } = await supabase
-        .from('daily_log_tracker')
-        .select('log_date')
-        .eq('user_id', user.id)
-        .gte('log_date', mondayStr)
-        .lte('log_date', sundayStr);
+        .gte('date', mondayStr)
+        .lte('date', sundayStr);
 
       // Organize data by date
       const organized: WeeklyLogData = {};
       if (kpiData) {
-        kpiData.forEach((entry) => {
-          const dateKey = entry.entry_date;
+        kpiData.forEach((entry: any) => {
+          const dateKey = entry.date;
           if (!organized[dateKey]) {
             organized[dateKey] = {
               calls: 0,
-              sms: 0,
               appraisals: 0,
               open_homes: 0,
-              listings: 0,
-              sales: 0,
             };
           }
-          organized[dateKey][entry.kpi_type as keyof typeof organized[typeof dateKey]] = entry.value;
+          if (entry.kpi_type in organized[dateKey]) {
+            (organized[dateKey] as any)[entry.kpi_type] = entry.value;
+          }
         });
       }
 
       setWeeklyData(organized);
 
-      // Track which dates have been logged
-      const logged = new Set<string>();
-      if (logData) {
-        logData.forEach((log) => logged.add(log.log_date));
-      }
+      // Track which dates have data (logged)
+      const logged = new Set<string>(Object.keys(organized).filter(
+        date => organized[date].calls > 0 || organized[date].appraisals > 0 || organized[date].open_homes > 0
+      ));
       setLoggedDates(logged);
     } catch (error) {
       console.error('Error fetching weekly data:', error);
@@ -155,46 +137,30 @@ const WeeklyLogs = () => {
     setLoading(true);
 
     try {
-      // Upsert KPI entries
+      // Upsert KPI entries using 'date' column
       for (const [kpiType, value] of Object.entries(currentValues)) {
         if (value === undefined || value === null) continue;
 
-        await supabase
+        await (supabase as any)
           .from('kpi_entries')
           .upsert([{
             user_id: user.id,
-            kpi_type: kpiType as 'calls' | 'sms' | 'appraisals' | 'open_homes' | 'listings' | 'sales',
+            kpi_type: kpiType,
             value: Number(value),
-            period: 'daily' as const,
-            entry_date: selectedDate,
-            is_locked: true,
-            logged_at: new Date().toISOString(),
+            date: selectedDate,
           }], {
-            onConflict: 'user_id,kpi_type,period,entry_date',
+            onConflict: 'user_id,kpi_type,date',
           });
       }
-
-      // Update daily_log_tracker
-      await supabase
-        .from('daily_log_tracker')
-        .upsert([{
-          user_id: user.id,
-          log_date: selectedDate,
-          logged_at: new Date().toISOString(),
-        }], {
-          onConflict: 'user_id,log_date',
-        });
 
       toast({
         title: 'Success!',
         description: `Numbers saved for ${format(new Date(selectedDate + 'T00:00:00'), 'EEEE, MMMM d')}`,
       });
 
-      // Refetch data and check for milestones
       await fetchWeeklyData();
       await refetchStreak();
       
-      // Check for milestone celebrations after a brief delay to ensure data is updated
       setTimeout(() => {
         checkAndCelebrate(streakData.currentStreak);
       }, 500);

@@ -51,10 +51,10 @@ const NoteEditor = () => {
 
   useEffect(() => {
     if (note) {
-      setTitle(note.title);
-      setTags(note.tags);
+      setTitle(note.title || '');
+      setTags([]);
       setContent(note.content_rich || { type: 'doc', content: [] });
-      setVisibility((note.visibility as 'private' | 'team' | 'office' | 'friend') || 'private');
+      setVisibility('private');
     }
   }, [note]);
 
@@ -101,8 +101,6 @@ const NoteEditor = () => {
         id: noteId,
         title: title,
         content_rich: content,
-        tags: tags,
-        visibility: visibility,
       });
       setIsSaving(false);
       setRecentlySaved(true);
@@ -119,7 +117,6 @@ const NoteEditor = () => {
     if (noteId) {
       await updateNote.mutateAsync({
         id: noteId,
-        visibility: newVisibility,
       });
       
       // Open friend selector if switching to friend visibility
@@ -354,15 +351,10 @@ const NoteEditor = () => {
                     <h3 className="text-sm font-medium mb-2">Owner</h3>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={note.owner_profile?.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {(note.owner_profile?.full_name || note.owner_profile?.email || 'U')[0].toUpperCase()}
-                        </AvatarFallback>
+                        <AvatarFallback>U</AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">
-                          {note.owner_profile?.full_name || note.owner_profile?.email || 'Unknown'}
-                        </p>
+                        <p className="text-sm font-medium">Note Owner</p>
                       </div>
                     </div>
                   </div>

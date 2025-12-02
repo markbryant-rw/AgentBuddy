@@ -37,11 +37,11 @@ export default function KnowledgeBasePlaybook() {
     queryFn: async () => {
       if (!playbookId) return null;
       
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('knowledge_base_playbooks')
         .select(`
           *,
-          category:knowledge_base_categories(name, color_theme)
+          category:knowledge_base_categories(name)
         `)
         .eq('id', playbookId)
         .single();

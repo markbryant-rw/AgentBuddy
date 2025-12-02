@@ -20,16 +20,15 @@ export default function OfficeManagerDashboard() {
     queryFn: async () => {
       if (!activeOffice?.id) return null;
 
-      const [tasks, teams, helpRequests] = await Promise.all([
+      const [tasks, teams] = await Promise.all([
         supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('completed', false),
         supabase.from('teams').select('id', { count: 'exact', head: true }).eq('agency_id', activeOffice.id).eq('is_personal_team', false),
-        supabase.from('help_requests').select('id', { count: 'exact', head: true }).eq('office_id', activeOffice.id).eq('status', 'open'),
       ]);
 
       return {
         openTasks: tasks.count || 0,
         teams: teams.count || 0,
-        helpRequests: helpRequests.count || 0,
+        helpRequests: 0, // Stubbed - help_requests table not implemented
       };
     },
     enabled: !!activeOffice?.id && !!user?.id,

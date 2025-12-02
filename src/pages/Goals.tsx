@@ -98,9 +98,10 @@ const Goals = () => {
       start_date: new Date().toISOString().split('T')[0],
       end_date: new Date(Date.now() + 365 * 86400000).toISOString().split('T')[0],
       created_by: user.id,
+      title: `${newGoal.kpi_type} ${newGoal.goal_type} goal`,
     };
 
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('goals')
       .insert([goalData]);
 

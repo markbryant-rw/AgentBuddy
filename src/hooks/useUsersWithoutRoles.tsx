@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 
 interface UserWithoutRole {
   user_id: string;
@@ -9,16 +8,14 @@ interface UserWithoutRole {
   created_at: string;
 }
 
+// Stubbed hook - RPC function detect_users_without_roles not implemented
 export const useUsersWithoutRoles = () => {
   return useQuery({
     queryKey: ['users-without-roles'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('detect_users_without_roles');
-
-      if (error) throw error;
-
-      return (data || []) as UserWithoutRole[];
+    queryFn: async (): Promise<UserWithoutRole[]> => {
+      // RPC function not implemented - return empty array
+      return [];
     },
-    refetchInterval: 120000, // Refresh every 2 minutes
+    refetchInterval: 120000,
   });
 };

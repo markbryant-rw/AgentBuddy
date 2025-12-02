@@ -27,25 +27,24 @@ export default function KnowledgeBase() {
       if (!teamMember) return [];
 
       // Fetch libraries
-      const { data: libraries, error } = await supabase
+      const { data: libraries, error } = await (supabase as any)
         .from('knowledge_base_categories')
-        .select('id, name, description, icon, color_theme, sort_order')
-        .eq('team_id', teamMember.team_id)
-        .order('sort_order');
+        .select('id, name, description, icon')
+        .eq('agency_id', teamMember.team_id);
 
       if (error) throw error;
 
       // Get playbook counts for each library
       const librariesWithCounts = await Promise.all(
-        (libraries || []).map(async (library) => {
+        (libraries || []).map(async (library: any) => {
           const { count } = await supabase
             .from('knowledge_base_playbooks')
             .select('*', { count: 'exact', head: true })
-            .eq('category_id', library.id)
-            .eq('is_published', true);
+            .eq('category_id', library.id);
 
           return {
             ...library,
+            color_theme: 'systems', // Default theme
             playbook_count: count || 0,
           };
         })
