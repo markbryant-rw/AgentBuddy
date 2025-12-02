@@ -1785,57 +1785,120 @@ export type Database = {
         Row: {
           address: string
           agent_id: string | null
+          appraisal_date: string | null
+          appraisal_high: number | null
+          appraisal_low: number | null
           bathrooms: number | null
           bedrooms: number | null
           buyer_details: Json | null
           commission: number | null
+          commission_rate: number | null
           created_at: string | null
           created_by: string | null
+          days_on_market: number | null
+          first_contact_date: string | null
+          geocode_error: string | null
+          geocoded_at: string | null
           id: string
+          latitude: number | null
+          lead_source: string | null
+          lead_source_detail: string | null
+          listing_live_date: string | null
+          listing_price: number | null
+          listing_signed_date: string | null
+          longitude: number | null
+          lost_date: string | null
+          lost_reason: string | null
           notes: string | null
           property_type: string | null
-          sale_date: string
-          sale_price: number
+          region: string | null
+          sale_date: string | null
+          sale_price: number | null
+          settlement_date: string | null
           status: string | null
+          suburb: string | null
           team_id: string
+          unconditional_date: string | null
           updated_at: string | null
           vendor_details: Json | null
         }
         Insert: {
           address: string
           agent_id?: string | null
+          appraisal_date?: string | null
+          appraisal_high?: number | null
+          appraisal_low?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           buyer_details?: Json | null
           commission?: number | null
+          commission_rate?: number | null
           created_at?: string | null
           created_by?: string | null
+          days_on_market?: number | null
+          first_contact_date?: string | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
+          latitude?: number | null
+          lead_source?: string | null
+          lead_source_detail?: string | null
+          listing_live_date?: string | null
+          listing_price?: number | null
+          listing_signed_date?: string | null
+          longitude?: number | null
+          lost_date?: string | null
+          lost_reason?: string | null
           notes?: string | null
           property_type?: string | null
-          sale_date: string
-          sale_price: number
+          region?: string | null
+          sale_date?: string | null
+          sale_price?: number | null
+          settlement_date?: string | null
           status?: string | null
+          suburb?: string | null
           team_id: string
+          unconditional_date?: string | null
           updated_at?: string | null
           vendor_details?: Json | null
         }
         Update: {
           address?: string
           agent_id?: string | null
+          appraisal_date?: string | null
+          appraisal_high?: number | null
+          appraisal_low?: number | null
           bathrooms?: number | null
           bedrooms?: number | null
           buyer_details?: Json | null
           commission?: number | null
+          commission_rate?: number | null
           created_at?: string | null
           created_by?: string | null
+          days_on_market?: number | null
+          first_contact_date?: string | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
+          latitude?: number | null
+          lead_source?: string | null
+          lead_source_detail?: string | null
+          listing_live_date?: string | null
+          listing_price?: number | null
+          listing_signed_date?: string | null
+          longitude?: number | null
+          lost_date?: string | null
+          lost_reason?: string | null
           notes?: string | null
           property_type?: string | null
-          sale_date?: string
-          sale_price?: number
+          region?: string | null
+          sale_date?: string | null
+          sale_price?: number | null
+          settlement_date?: string | null
           status?: string | null
+          suburb?: string | null
           team_id?: string
+          unconditional_date?: string | null
           updated_at?: string | null
           vendor_details?: Json | null
         }
