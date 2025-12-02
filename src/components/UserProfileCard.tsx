@@ -37,7 +37,8 @@ export const UserProfileCard = () => {
   const handleOpenEdit = () => {
     setEditName(profile.full_name || '');
     setEditBirthday(profile.birthday || '');
-    setEditBirthdayVisibility(profile.birthday_visibility || 'team_only');
+    const visibility = profile.birthday_visibility as 'team_only' | 'friends_only' | 'public' | 'private';
+    setEditBirthdayVisibility(visibility || 'team_only');
     setIsEditDialogOpen(true);
   };
 

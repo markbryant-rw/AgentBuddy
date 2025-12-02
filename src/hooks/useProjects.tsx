@@ -9,12 +9,9 @@ interface Project {
   description: string | null;
   team_id: string;
   status: 'active' | 'on_hold' | 'completed' | 'archived';
-  priority: 'high' | 'medium' | 'low' | null;
-  due_date: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;
-  listing_id: string | null;
   assignees?: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
   task_count?: number;
   completed_task_count?: number;
@@ -27,43 +24,41 @@ export const useProjects = () => {
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['projects', user?.id],
     queryFn: async () => {
-      const { data: projectsData, error } = await supabase
+      const { data: projectsData, error } = await (supabase as any)
         .from('projects')
         .select(`
           *,
-          assignees:project_assignees(
-            user_id,
-            profiles:user_id(id, full_name, avatar_url)
-          ),
           tasks(id, status)
         `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      return projectsData.map(project => ({
+      return (projectsData || []).map((project: any) => ({
         ...project,
-        assignees: project.assignees.map((a: any) => a.profiles),
-        task_count: project.tasks.length,
-        completed_task_count: project.tasks.filter((t: any) => t.status === 'done').length,
-      }));
+        assignees: [],
+        task_count: project.tasks?.length || 0,
+        completed_task_count: project.tasks?.filter((t: any) => t.status === 'done').length || 0,
+      })) as Project[];
     },
     enabled: !!user,
   });
 
   const createProject = useMutation({
-    mutationFn: async (newProject: Omit<Project, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'task_count' | 'completed_task_count' | 'assignees'>) => {
+    mutationFn: async (newProject: { title: string; description?: string; status?: string }) => {
       const { data: teamData } = await supabase
         .from('team_members')
         .select('team_id')
         .eq('user_id', user!.id)
         .single();
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('projects')
         .insert({
-          ...newProject,
-          team_id: teamData!.team_id,
+          title: newProject.title,
+          description: newProject.description,
+          status: newProject.status || 'active',
+          team_id: teamData?.team_id,
           created_by: user!.id,
         })
         .select()
@@ -83,7 +78,7 @@ export const useProjects = () => {
 
   const updateProject = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Project> }) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('projects')
         .update({ ...updates, updated_at: new Date().toISOString() })
         .eq('id', id);
@@ -102,7 +97,7 @@ export const useProjects = () => {
 
   const deleteProject = useMutation({
     mutationFn: async (projectId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('projects')
         .delete()
         .eq('id', projectId);
@@ -121,7 +116,7 @@ export const useProjects = () => {
 
   const archiveProject = useMutation({
     mutationFn: async (projectId: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('projects')
         .update({ status: 'archived', updated_at: new Date().toISOString() })
         .eq('id', projectId);
@@ -139,7 +134,7 @@ export const useProjects = () => {
 
   const duplicateProject = useMutation({
     mutationFn: async (projectId: string) => {
-      const { data: originalProject, error: fetchError } = await supabase
+      const { data: originalProject, error: fetchError } = await (supabase as any)
         .from('projects')
         .select('*')
         .eq('id', projectId)
@@ -147,17 +142,14 @@ export const useProjects = () => {
 
       if (fetchError) throw fetchError;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('projects')
         .insert({
           title: `${originalProject.title} (Copy)`,
           description: originalProject.description,
           team_id: originalProject.team_id,
           status: 'active',
-          priority: originalProject.priority,
-          due_date: originalProject.due_date,
           created_by: user!.id,
-          listing_id: originalProject.listing_id,
         })
         .select()
         .single();
@@ -174,33 +166,22 @@ export const useProjects = () => {
     },
   });
 
+  // Stubbed assignee functions - project_assignees table not implemented
   const addAssignee = useMutation({
     mutationFn: async ({ projectId, userId }: { projectId: string; userId: string }) => {
-      const { error } = await supabase
-        .from('project_assignees')
-        .insert({ project_id: projectId, user_id: userId });
-
-      if (error) throw error;
+      toast.info('Project assignees coming soon');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success('Assignee added');
     },
   });
 
   const removeAssignee = useMutation({
     mutationFn: async ({ projectId, userId }: { projectId: string; userId: string }) => {
-      const { error } = await supabase
-        .from('project_assignees')
-        .delete()
-        .eq('project_id', projectId)
-        .eq('user_id', userId);
-
-      if (error) throw error;
+      toast.info('Project assignees coming soon');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      toast.success('Assignee removed');
     },
   });
 

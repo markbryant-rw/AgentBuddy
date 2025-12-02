@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useTransactionTemplates, TransactionStage, TransactionTemplate } from '@/hooks/useTransactionTemplates';
 import { useProfile } from '@/hooks/useProfile';
+import { useUserRoles } from '@/hooks/useUserRoles';
 import {
   Dialog,
   DialogContent,
@@ -52,6 +53,7 @@ const stageLabels: Record<TransactionStage, string> = {
 
 export function TemplateLibraryDialog({ open, onOpenChange }: TemplateLibraryDialogProps) {
   const { profile } = useProfile();
+  const { hasRole } = useUserRoles();
   const { templates, isLoading, deleteTemplate, createTemplate, setTemplateAsDefault } = useTransactionTemplates();
   const [searchQuery, setSearchQuery] = useState('');
   const [stageFilter, setStageFilter] = useState<TransactionStage | 'all'>('all');
@@ -59,7 +61,7 @@ export function TemplateLibraryDialog({ open, onOpenChange }: TemplateLibraryDia
   const [editTemplate, setEditTemplate] = useState<TransactionTemplate | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
 
-  const isPlatformAdmin = profile?.user_type === 'admin_staff';
+  const isPlatformAdmin = hasRole('platform_admin');
 
   const systemTemplates = useMemo(
     () => templates.filter(t => t.is_system_template),
@@ -408,7 +410,21 @@ export function TemplateLibraryDialog({ open, onOpenChange }: TemplateLibraryDia
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+      {/* Edit/Create Dialog */}
+      <EditTransactionTemplateDialog
+        open={!!editTemplate || showCreateDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditTemplate(null);
+            setShowCreateDialog(false);
+          }
+        }}
+        template={editTemplate}
+        mode={editTemplate ? 'edit' : 'create'}
+      />
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
@@ -427,20 +443,6 @@ export function TemplateLibraryDialog({ open, onOpenChange }: TemplateLibraryDia
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <EditTransactionTemplateDialog
-        open={!!editTemplate}
-        onOpenChange={(open) => !open && setEditTemplate(null)}
-        template={editTemplate}
-        mode="edit"
-      />
-
-      <EditTransactionTemplateDialog
-        open={showCreateDialog}
-        onOpenChange={setShowCreateDialog}
-        mode="create"
-        initialStage={stageFilter === 'all' ? 'signed' : stageFilter}
-      />
     </>
   );
 }
