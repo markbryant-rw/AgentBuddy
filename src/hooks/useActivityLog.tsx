@@ -13,8 +13,8 @@ interface ActivityLog {
 export const useActivityLog = (limit: number = 50) => {
   return useQuery({
     queryKey: ['admin-activity-log', limit],
-    queryFn: async (): Promise<ActivityLog[]> => {
-      const { data, error } = await supabase
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
         .from('admin_activity_log')
         .select('*')
         .order('created_at', { ascending: false })

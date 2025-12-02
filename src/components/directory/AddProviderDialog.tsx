@@ -201,11 +201,8 @@ export const AddProviderDialog = ({ open, onOpenChange }: AddProviderDialogProps
       email: formData.email || undefined,
       website: formData.website || undefined,
       notes: formData.notes || undefined,
-      category_id: selectedCategory?.is_team_category ? undefined : formData.category_id || undefined,
-      team_category_id: selectedCategory?.is_team_category ? formData.team_category_id || undefined : undefined,
+      category_id: formData.category_id || undefined,
       visibility_level: 'office',
-      avatar_url: formData.avatar_url || undefined,
-      logo_url: formData.logo_url || undefined,
       needs_review: shouldFlagForReview,
       duplicate_of: shouldFlagForReview ? duplicateMatch?.provider.id : undefined,
     });

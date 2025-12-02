@@ -57,46 +57,36 @@ export const useAdminUsers = () => {
       if (profilesError) throw profilesError;
 
       // Fetch roles for all users
-      const { data: rolesData, error: rolesError } = await supabase
+      const { data: rolesData, error: rolesError } = await (supabase as any)
         .from('user_roles')
         .select('user_id, role')
         .is('revoked_at', null);
 
       if (rolesError) throw rolesError;
 
-      // Fetch inviters
-      const inviterIds = profiles.map(p => p.invited_by).filter(Boolean);
-      const { data: inviters } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', inviterIds);
-
       // Fetch office names
-      const officeIds = [...new Set(profiles.map(p => p.office_id).filter(Boolean))];
-      const { data: offices } = await supabase
+      const officeIds = [...new Set(profiles.map((p: any) => p.office_id).filter(Boolean))];
+      const { data: offices } = await (supabase as any)
         .from('agencies')
         .select('id, name')
         .in('id', officeIds);
 
       // Fetch team names
-      const teamIds = [...new Set(profiles.map(p => p.primary_team_id).filter(Boolean))];
-      const { data: teams } = await supabase
+      const teamIds = [...new Set(profiles.map((p: any) => p.primary_team_id).filter(Boolean))];
+      const { data: teams } = await (supabase as any)
         .from('teams')
-        .select('id, name, is_personal_team')
+        .select('id, name')
         .in('id', teamIds);
 
       // Map everything together
-      const usersWithRoles = profiles.map(profile => ({
+      const usersWithRoles = profiles.map((profile: any) => ({
         ...profile,
         roles: rolesData
           ?.filter(r => r.user_id === profile.id)
           .map(r => r.role as AppRole) || [],
-        inviter: profile.invited_by
-          ? inviters?.find(i => i.id === profile.invited_by) || null
-          : null,
-        office_name: offices?.find(o => o.id === profile.office_id)?.name,
-        team_name: teams?.find(t => t.id === profile.primary_team_id)?.name,
-        is_personal_team: teams?.find(t => t.id === profile.primary_team_id)?.is_personal_team || false,
+        office_name: offices?.find((o: any) => o.id === profile.office_id)?.name,
+        team_name: teams?.find((t: any) => t.id === profile.primary_team_id)?.name,
+        is_personal_team: false,
       }));
 
       return usersWithRoles as AdminUser[];

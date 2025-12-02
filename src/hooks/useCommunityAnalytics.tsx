@@ -106,13 +106,11 @@ export function useCommunityAnalytics(teamId: string | null, weeksBack: number =
           userEngagementMap.set(userId, { 
             postCount: 0, 
             reactionCount: 0,
-            userName: post.profiles?.display_name || 'Unknown User'
+            userName: post.profiles?.full_name || 'Unknown User'
           });
         }
         const userData = userEngagementMap.get(userId)!;
         userData.postCount++;
-        const reactionCount = post.post_reactions?.[0]?.count || 0;
-        userData.reactionCount += reactionCount;
       });
 
       const engagementByUser = Array.from(userEngagementMap.entries())

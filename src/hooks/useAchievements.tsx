@@ -83,11 +83,23 @@ export function useAchievements() {
       const { useSocialPreferences } = await import('./useSocialPreferences');
       const { useCreatePost } = await import('./useSocialPosts');
       
-      // Get user preferences for default visibility
       const defaultVisibility = 'public';
 
-      await supabase
-        .from('social_posts' as any)
+      const achievementMessages: Record<AchievementType, string> = {
+        '5-day-streak': '🔥 5 days of consistency!',
+        '10-day-streak': '🔥🔥 10 consecutive days!',
+        '30-day-streak': '🔥🔥🔥 30 days of consistency!',
+        '100-day-streak': '💎 Legendary 100-day streak!',
+        'target-master': '🎯 Target Master unlocked!',
+        'improver': '📈 Improver badge earned!',
+        'consistent': '⭐ Consistency is key!',
+        'top-performer': '👑 Top Performer!',
+        'personal-best': '💪 New personal record!',
+        'overachiever': '🚀 Overachiever status unlocked!',
+      };
+
+      await (supabase as any)
+        .from('social_posts')
         .insert({
           user_id: user?.id,
           content: achievementMessages[variables.type],
