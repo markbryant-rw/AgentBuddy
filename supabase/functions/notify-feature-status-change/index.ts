@@ -4,11 +4,11 @@ import { Resend } from "https://esm.sh/resend@2.0.0";
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 const STATUS_MESSAGES: Record<string, { title: string; message: string; emoji: string }> = {
-  triage: { title: "Bug Under Review", emoji: "🔍", message: "Your bug report is being reviewed by our team" },
-  in_progress: { title: "Bug Fix In Progress", emoji: "🛠️", message: "We're actively working on fixing your bug report" },
-  needs_review: { title: "Fix Ready for Review", emoji: "✅", message: "A fix has been prepared for your bug report" },
-  fixed: { title: "Bug Fixed!", emoji: "🎉", message: "Great news! Your bug report has been fixed" },
-  archived: { title: "Bug Archived", emoji: "📁", message: "Your bug report has been archived" },
+  triage: { title: "Feature Under Review", emoji: "🔍", message: "Your feature request is being reviewed by our team" },
+  in_progress: { title: "Feature In Development", emoji: "🚀", message: "We've started working on your feature request" },
+  needs_review: { title: "Feature Ready for Review", emoji: "✅", message: "The feature is ready for your review" },
+  completed: { title: "Feature Implemented!", emoji: "🎉", message: "Great news! Your feature request has been implemented" },
+  archived: { title: "Feature Archived", emoji: "📁", message: "Your feature request has been archived" },
 };
 
 serve(async (req) => {
@@ -28,101 +28,97 @@ serve(async (req) => {
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
-    const { bugId, newStatus, adminComment, position } = await req.json();
+    const { featureId, newStatus, adminNotes, position } = await req.json();
 
-    console.log('Processing bug status change:', { bugId, newStatus, adminComment, position });
+    console.log('Processing feature status change:', { featureId, newStatus, adminNotes, position });
 
-    // Fetch bug details including reporter info
-    const { data: bug, error: bugError } = await supabaseClient
-      .from('bug_reports')
-      .select('id, summary, user_id, status')
-      .eq('id', bugId)
+    // Fetch feature details including requester info
+    const { data: feature, error: featureError } = await supabaseClient
+      .from('feature_requests')
+      .select('id, title, user_id, status')
+      .eq('id', featureId)
       .single();
 
-    if (bugError || !bug) {
-      console.error('Error fetching bug:', bugError);
-      throw new Error('Bug not found');
+    if (featureError || !feature) {
+      console.error('Error fetching feature:', featureError);
+      throw new Error('Feature request not found');
     }
 
-    const previousStatus = bug.status;
+    const previousStatus = feature.status;
 
     // Prepare update data
     const updateData: any = {
       status: newStatus,
-      admin_comments: adminComment || null,
+      admin_notes: adminNotes || null,
     };
-
-    if (newStatus === 'fixed') {
-      updateData.fixed_at = new Date().toISOString();
-    }
 
     if (newStatus === 'archived') {
       updateData.archived_at = new Date().toISOString();
-      updateData.archived_reason = adminComment || 'manual';
+      updateData.archived_reason = adminNotes || 'manual';
     }
 
     if (position !== undefined) {
       updateData.position = position;
     }
 
-    // Update bug status
-    const { data: updatedBug, error: updateError } = await supabaseClient
-      .from('bug_reports')
+    // Update feature status
+    const { data: updatedFeature, error: updateError } = await supabaseClient
+      .from('feature_requests')
       .update(updateData)
-      .eq('id', bugId)
+      .eq('id', featureId)
       .select('*')
       .single();
 
     if (updateError) {
-      console.error('Error updating bug:', updateError);
+      console.error('Error updating feature:', updateError);
       throw updateError;
     }
 
-    console.log('Bug updated successfully:', updatedBug);
+    console.log('Feature updated successfully:', updatedFeature);
 
     // Only send notifications if status actually changed
     if (previousStatus !== newStatus) {
-      // Fetch reporter's profile
-      const { data: reporter, error: reporterError } = await supabaseClient
+      // Fetch requester's profile
+      const { data: requester, error: requesterError } = await supabaseClient
         .from('profiles')
         .select('id, email, full_name')
-        .eq('id', bug.user_id)
+        .eq('id', feature.user_id)
         .single();
 
-      if (reporterError) {
-        console.error('Error fetching reporter:', reporterError);
+      if (requesterError) {
+        console.error('Error fetching requester:', requesterError);
       }
 
       const statusInfo = STATUS_MESSAGES[newStatus] || { 
-        title: "Bug Status Updated", 
+        title: "Feature Status Updated", 
         emoji: "📢", 
-        message: `Your bug report status has been updated to ${newStatus}` 
+        message: `Your feature request status has been updated to ${newStatus}` 
       };
 
       // Create in-app notification
-      if (reporter) {
-        const notificationMessage = adminComment 
-          ? `${statusInfo.message}. Admin note: "${adminComment}"`
+      if (requester) {
+        const notificationMessage = adminNotes 
+          ? `${statusInfo.message}. Admin note: "${adminNotes}"`
           : statusInfo.message;
 
         const { error: notifError } = await supabaseClient
           .from('notifications')
           .insert({
-            user_id: reporter.id,
-            type: 'bug_status_update',
+            user_id: requester.id,
+            type: 'feature_status_update',
             title: `${statusInfo.title} ${statusInfo.emoji}`,
             message: notificationMessage,
-            action_url: '/feedback-centre?tab=bugs',
+            action_url: '/feedback-centre?tab=features',
           });
 
         if (notifError) {
           console.error('Error creating notification:', notifError);
         } else {
-          console.log('In-app notification created for user:', reporter.id);
+          console.log('In-app notification created for user:', requester.id);
         }
 
         // Send email notification
-        if (resend && reporter.email) {
+        if (resend && requester.email) {
           try {
             const emailHtml = `
               <!DOCTYPE html>
@@ -132,12 +128,12 @@ serve(async (req) => {
                   <style>
                     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
                     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; }
+                    .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 12px 12px 0 0; }
                     .content { background: #f9fafb; padding: 30px; border-radius: 0 0 12px 12px; }
-                    .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; background: #e0e7ff; color: #4338ca; font-weight: 600; }
-                    .admin-comment { background: #fff; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+                    .status-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; background: #d1fae5; color: #065f46; font-weight: 600; }
+                    .admin-comment { background: #fff; border-left: 4px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; }
                     .footer { text-align: center; margin-top: 20px; color: #6b7280; font-size: 14px; }
-                    .button { display: inline-block; background: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; }
+                    .button { display: inline-block; background: #059669; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; }
                   </style>
                 </head>
                 <body>
@@ -146,18 +142,18 @@ serve(async (req) => {
                       <h1 style="margin: 0;">${statusInfo.emoji} ${statusInfo.title}</h1>
                     </div>
                     <div class="content">
-                      <p>Hi ${reporter.full_name || 'there'},</p>
+                      <p>Hi ${requester.full_name || 'there'},</p>
                       <p>${statusInfo.message}</p>
-                      <p><strong>Bug Report:</strong> "${bug.summary}"</p>
+                      <p><strong>Feature Request:</strong> "${feature.title}"</p>
                       <p><strong>New Status:</strong> <span class="status-badge">${newStatus.replace('_', ' ').toUpperCase()}</span></p>
-                      ${adminComment ? `
+                      ${adminNotes ? `
                         <div class="admin-comment">
                           <strong>Admin Note:</strong><br>
-                          ${adminComment}
+                          ${adminNotes}
                         </div>
                       ` : ''}
                       <p style="margin-top: 30px;">
-                        <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || ''}/feedback-centre?tab=bugs" class="button">View Bug Report</a>
+                        <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || ''}/feedback-centre?tab=features" class="button">View Feature Request</a>
                       </p>
                     </div>
                     <div class="footer">
@@ -170,43 +166,25 @@ serve(async (req) => {
 
             const { error: emailError } = await resend.emails.send({
               from: 'AgentBuddy <noreply@resend.dev>',
-              to: [reporter.email],
-              subject: `${statusInfo.emoji} ${statusInfo.title} - "${bug.summary}"`,
+              to: [requester.email],
+              subject: `${statusInfo.emoji} ${statusInfo.title} - "${feature.title}"`,
               html: emailHtml,
             });
 
             if (emailError) {
               console.error('Error sending email:', emailError);
             } else {
-              console.log('Email sent successfully to:', reporter.email);
+              console.log('Email sent successfully to:', requester.email);
             }
           } catch (emailErr) {
             console.error('Email sending failed:', emailErr);
           }
         }
       }
-
-      // Trigger satisfaction request if marked as fixed
-      if (newStatus === 'fixed') {
-        console.log('Triggering satisfaction request for bug:', bugId);
-        try {
-          const satisfactionResponse = await supabaseClient.functions.invoke('request-bug-satisfaction', {
-            body: { bugId }
-          });
-          
-          if (satisfactionResponse.error) {
-            console.error('Error requesting satisfaction:', satisfactionResponse.error);
-          } else {
-            console.log('Satisfaction request sent successfully');
-          }
-        } catch (satisfactionError) {
-          console.error('Failed to trigger satisfaction request:', satisfactionError);
-        }
-      }
     }
 
     return new Response(
-      JSON.stringify({ success: true, bug: updatedBug }),
+      JSON.stringify({ success: true, feature: updatedFeature }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {

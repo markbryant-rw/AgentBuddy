@@ -74,40 +74,29 @@ export const BugKanbanBoard = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ bugId, newStatus, reason, position }: { bugId: string; newStatus: string; reason?: string; position?: number }) => {
-      console.log('[BugKanbanBoard] Attempting status update:', { bugId, newStatus, reason, position });
+      console.log('[BugKanbanBoard] Attempting status update via edge function:', { bugId, newStatus, reason, position });
       
-      const updateData: any = { status: newStatus };
-      if (newStatus === "archived") {
-        updateData.archived_at = new Date().toISOString();
-        updateData.archived_reason = reason || "manual";
-      }
-      if (position !== undefined) {
-        updateData.position = position;
-      }
-
-      console.log('[BugKanbanBoard] Update data:', updateData);
-
-      const { data, error } = await supabase
-        .from("bug_reports")
-        .update(updateData)
-        .eq("id", bugId)
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('notify-bug-status-change', {
+        body: { 
+          bugId, 
+          newStatus, 
+          adminComment: reason,
+          position 
+        }
+      });
 
       if (error) {
-        console.error('[BugKanbanBoard] Supabase error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          bugId,
-          attemptedStatus: newStatus
-        });
+        console.error('[BugKanbanBoard] Edge function error:', error);
         throw error;
       }
 
+      if (data?.error) {
+        console.error('[BugKanbanBoard] Edge function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
       console.log('[BugKanbanBoard] Update successful:', data);
-      return data;
+      return data?.bug;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bug-reports-kanban"] });
