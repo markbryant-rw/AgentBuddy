@@ -7,13 +7,22 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2, Sheet, Link, HelpCircle } from 'lucide-react';
 import { usePastSalesImport } from '@/hooks/usePastSalesImport';
+import { useGoogleSheetsImport } from '@/hooks/useGoogleSheetsImport';
 import { FileUploadArea } from '@/components/feedback/FileUploadArea';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface PastSalesImportDialogProps {
   open: boolean;
@@ -33,8 +42,11 @@ export const PastSalesImportDialog = ({
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'complete'>('upload');
   const [summary, setSummary] = useState<any>(null);
   const [parsing, setParsing] = useState(false);
+  const [googleSheetUrl, setGoogleSheetUrl] = useState('');
+  const [importMethod, setImportMethod] = useState<'csv' | 'sheets'>('csv');
 
-  const { parseCSV, importPastSales, isImporting, progress } = usePastSalesImport();
+  const { parseCSV, parseGoogleSheetData, importPastSales, isImporting, progress } = usePastSalesImport();
+  const { fetchGoogleSheet, isFetching } = useGoogleSheetsImport();
   const { toast } = useToast();
 
   const handleFileSelect = async (files: File[]) => {
@@ -66,6 +78,40 @@ export const PastSalesImportDialog = ({
     }
   };
 
+  const handleGoogleSheetFetch = async () => {
+    if (!googleSheetUrl.trim()) {
+      toast({
+        title: "URL required",
+        description: "Please enter a Google Sheets URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setParsing(true);
+
+    try {
+      const sheetData = await fetchGoogleSheet(googleSheetUrl);
+      const results = parseGoogleSheetData(sheetData);
+      setValidatedRows(results);
+      setParsing(false);
+      setStep('preview');
+      
+      toast({
+        title: "Google Sheet parsed successfully",
+        description: `Found ${results.length} records to review`,
+      });
+    } catch (error) {
+      console.error('Google Sheets fetch error:', error);
+      setParsing(false);
+      toast({
+        title: "Failed to fetch Google Sheet",
+        description: error instanceof Error ? error.message : "Please check the URL and sharing settings",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleImport = async () => {
     setStep('importing');
     const importSummary = await importPastSales(validatedRows, teamId);
@@ -79,6 +125,8 @@ export const PastSalesImportDialog = ({
     setStep('upload');
     setSummary(null);
     setParsing(false);
+    setGoogleSheetUrl('');
+    setImportMethod('csv');
     onOpenChange(false);
     if (step === 'complete') {
       onImportComplete();
@@ -151,19 +199,21 @@ export const PastSalesImportDialog = ({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
-          <DialogTitle>Import Past Sales from CSV</DialogTitle>
+          <DialogTitle>Import Past Sales</DialogTitle>
           <DialogDescription>
-            Upload a CSV file to bulk import past sales records
+            Upload a CSV file or import directly from Google Sheets
           </DialogDescription>
         </DialogHeader>
 
         {step === 'upload' && (
           <div className="space-y-4">
-            {parsing ? (
+            {parsing || isFetching ? (
               <div className="py-8 space-y-4">
                 <div className="text-center">
                   <Loader2 className="h-12 w-12 mx-auto mb-4 animate-spin text-primary" />
-                  <div className="text-lg font-semibold">Parsing CSV...</div>
+                  <div className="text-lg font-semibold">
+                    {isFetching ? 'Fetching Google Sheet...' : 'Parsing data...'}
+                  </div>
                   <div className="text-sm text-muted-foreground mt-2">
                     Validating records and checking for errors
                   </div>
@@ -171,28 +221,94 @@ export const PastSalesImportDialog = ({
               </div>
             ) : (
               <>
-                <FileUploadArea
-                  files={file ? [file] : []}
-                  setFiles={(files) => handleFileSelect(files)}
-                  maxFiles={1}
-                  accept=".csv,text/csv,application/csv,text/plain"
-                  maxSize={10 * 1024 * 1024}
-                  label="Drop CSV file here or click to upload"
-                  description="CSV file up to 10MB"
-                />
+                <Tabs value={importMethod} onValueChange={(v) => setImportMethod(v as 'csv' | 'sheets')}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="csv" className="gap-2">
+                      <Upload className="h-4 w-4" />
+                      Upload CSV
+                    </TabsTrigger>
+                    <TabsTrigger value="sheets" className="gap-2">
+                      <Sheet className="h-4 w-4" />
+                      Google Sheets
+                    </TabsTrigger>
+                  </TabsList>
 
-                <Alert>
-                  <FileText className="h-4 w-4" />
-                  <AlertDescription>
-                    Need a template?{' '}
-                    <button
-                      onClick={downloadTemplate}
-                      className="text-primary underline hover:no-underline"
-                    >
-                      Download CSV template
-                    </button>
-                  </AlertDescription>
-                </Alert>
+                  <TabsContent value="csv" className="space-y-4 mt-4">
+                    <FileUploadArea
+                      files={file ? [file] : []}
+                      setFiles={(files) => handleFileSelect(files)}
+                      maxFiles={1}
+                      accept=".csv,text/csv,application/csv,text/plain"
+                      maxSize={10 * 1024 * 1024}
+                      label="Drop CSV file here or click to upload"
+                      description="CSV file up to 10MB"
+                    />
+
+                    <Alert>
+                      <FileText className="h-4 w-4" />
+                      <AlertDescription>
+                        Need a template?{' '}
+                        <button
+                          onClick={downloadTemplate}
+                          className="text-primary underline hover:no-underline"
+                        >
+                          Download CSV template
+                        </button>
+                      </AlertDescription>
+                    </Alert>
+                  </TabsContent>
+
+                  <TabsContent value="sheets" className="space-y-4 mt-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm font-medium">Google Sheets URL</label>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>The sheet must be shared as "Anyone with the link can view".</p>
+                              <p className="mt-1">In Google Sheets: Share → Change to "Anyone with the link" → Viewer</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="https://docs.google.com/spreadsheets/d/..."
+                            value={googleSheetUrl}
+                            onChange={(e) => setGoogleSheetUrl(e.target.value)}
+                            className="pl-10"
+                          />
+                        </div>
+                        <Button onClick={handleGoogleSheetFetch} disabled={!googleSheetUrl.trim()}>
+                          Fetch & Validate
+                        </Button>
+                      </div>
+
+                      <Alert>
+                        <Sheet className="h-4 w-4" />
+                        <AlertDescription className="space-y-2">
+                          <p>Your Google Sheet should have:</p>
+                          <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                            <li>Headers in the first row (same as CSV template)</li>
+                            <li>Public sharing enabled ("Anyone with the link")</li>
+                          </ul>
+                          <button
+                            onClick={downloadTemplate}
+                            className="text-primary underline hover:no-underline text-sm"
+                          >
+                            Download template for column reference
+                          </button>
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+                  </TabsContent>
+                </Tabs>
 
                 <div className="flex justify-end">
                   <Button variant="outline" onClick={handleClose}>
