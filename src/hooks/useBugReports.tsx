@@ -183,6 +183,19 @@ export const useBugReports = (statusFilter: string = 'all') => {
       queryClient.invalidateQueries({ queryKey: ['bug-points'] });
       queryClient.invalidateQueries({ queryKey: ['profiles'] });
       
+      // Trigger AI analysis in background (fire and forget)
+      if (data?.id) {
+        supabase.functions.invoke('analyze-bug-report', {
+          body: { bugId: data.id }
+        }).then(result => {
+          if (result.error) {
+            console.error('Auto-analysis failed:', result.error);
+          } else {
+            console.log('Bug auto-analyzed successfully');
+          }
+        }).catch(err => console.error('Auto-analysis request failed:', err));
+      }
+      
       // Fetch user's updated total points
       if (user) {
         const { data: profile } = await supabase

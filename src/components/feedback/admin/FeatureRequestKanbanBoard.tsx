@@ -74,40 +74,29 @@ export const FeatureRequestKanbanBoard = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ featureId, newStatus, reason, position }: { featureId: string; newStatus: string; reason?: string; position?: number }) => {
-      console.log('[FeatureRequestKanbanBoard] Attempting status update:', { featureId, newStatus, reason, position });
+      console.log('[FeatureRequestKanbanBoard] Attempting status update via edge function:', { featureId, newStatus, reason, position });
       
-      const updateData: any = { status: newStatus };
-      if (newStatus === "archived") {
-        updateData.archived_at = new Date().toISOString();
-        updateData.archived_reason = reason || "manual";
-      }
-      if (position !== undefined) {
-        updateData.position = position;
-      }
-
-      console.log('[FeatureRequestKanbanBoard] Update data:', updateData);
-
-      const { data, error } = await supabase
-        .from("feature_requests")
-        .update(updateData)
-        .eq("id", featureId)
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('notify-feature-status-change', {
+        body: { 
+          featureId, 
+          newStatus, 
+          adminNotes: reason,
+          position 
+        }
+      });
 
       if (error) {
-        console.error('[FeatureRequestKanbanBoard] Supabase error:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
-          featureId,
-          attemptedStatus: newStatus
-        });
+        console.error('[FeatureRequestKanbanBoard] Edge function error:', error);
         throw error;
       }
 
+      if (data?.error) {
+        console.error('[FeatureRequestKanbanBoard] Edge function returned error:', data.error);
+        throw new Error(data.error);
+      }
+
       console.log('[FeatureRequestKanbanBoard] Update successful:', data);
-      return data;
+      return data?.feature;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["feature-requests-kanban"] });
