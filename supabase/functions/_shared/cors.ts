@@ -11,14 +11,38 @@ export const corsHeaders = {
 };
 
 /**
+ * Check if origin is allowed
+ * @param origin - The origin to check
+ * @returns boolean indicating if origin is allowed
+ */
+function isAllowedOrigin(origin: string): boolean {
+  // Check exact matches
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    return true;
+  }
+  
+  // Allow all Lovable preview URLs (*.lovableproject.com)
+  if (origin.endsWith('.lovableproject.com')) {
+    return true;
+  }
+  
+  // Allow all Lovable production URLs (*.lovable.app)
+  if (origin.endsWith('.lovable.app')) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
  * Get CORS headers with origin validation
  * @param origin - The origin from the request headers
  * @returns CORS headers with validated origin
  */
 export function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin)
+  const allowedOrigin = origin && isAllowedOrigin(origin)
     ? origin
-    : ALLOWED_ORIGINS[0]; // Default to production domain if origin is not in whitelist
+    : ALLOWED_ORIGINS[0]; // Default to production domain if origin is not allowed
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
