@@ -1462,6 +1462,8 @@ export type Database = {
           team_id: string | null
           updated_at: string | null
           user_id: string
+          vendor_email: string | null
+          vendor_mobile: string | null
           vendor_name: string | null
         }
         Insert: {
@@ -1489,6 +1491,8 @@ export type Database = {
           team_id?: string | null
           updated_at?: string | null
           user_id: string
+          vendor_email?: string | null
+          vendor_mobile?: string | null
           vendor_name?: string | null
         }
         Update: {
@@ -1516,6 +1520,8 @@ export type Database = {
           team_id?: string | null
           updated_at?: string | null
           user_id?: string
+          vendor_email?: string | null
+          vendor_mobile?: string | null
           vendor_name?: string | null
         }
         Relationships: [

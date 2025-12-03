@@ -150,17 +150,16 @@ export const AppraisalsImportDialog = ({
       'address',
       'suburb',
       'vendor_name',
+      'vendor_mobile',
+      'vendor_email',
       'appraisal_date',
-      'appraisal_low',
-      'appraisal_high',
       'estimated_value',
-      'intent',
-      'status',
-      'stage',
       'lead_source',
-      'appraisal_method',
-      'next_follow_up',
+      'stage',
+      'outcome',
+      'intent',
       'last_contact',
+      'next_follow_up',
       'notes'
     ].join(',');
 
@@ -168,17 +167,16 @@ export const AppraisalsImportDialog = ({
       '"123 Main Street, Ponsonby"',
       'Ponsonby',
       'John Smith',
+      '021 123 4567',
+      'john@example.com',
       '2024-01-15',
-      '1100000',
-      '1250000',
       '1175000',
-      'Selling within 6 months',
-      'pending',
-      'prospecting',
       'referral',
-      'in-person',
-      '2024-02-15',
+      'MAP',
+      'In Progress',
+      'high',
       '2024-01-15',
+      '2024-02-15',
       'Interested in spring listing'
     ].join(',');
 
@@ -186,21 +184,20 @@ export const AppraisalsImportDialog = ({
       '"45 Beach Road, Piha"',
       'Piha',
       'Jane Doe',
+      '',
+      '',
       '2024-01-20',
       '850000',
-      '950000',
+      'open_home',
+      'VAP',
+      'In Progress',
+      'medium',
       '',
-      'Curious about value',
-      'pending',
-      'nurturing',
-      'open home',
-      'desktop',
       '2024-03-01',
-      '',
       'Follow up after Easter'
     ].join(',');
 
-    const csv = `${headers}\n${example1}\n${example2}\n\n# Required: address, appraisal_date\n# Status options: pending, converted, lost\n# Stage options: prospecting, nurturing, ready`;
+    const csv = `${headers}\n${example1}\n${example2}\n\n# Required: address, appraisal_date\n# Stage options: VAP, MAP, LAP\n# Outcome options: In Progress, WON, LOST\n# Intent options: low, medium, high`;
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

@@ -112,16 +112,32 @@ export const useAppraisalsImport = () => {
     const nextFollowUp = parseDate(findColumn(row, ['next_follow_up', 'follow_up', 'next_contact', 'followup_date']) || '');
     const lastContact = parseDate(findColumn(row, ['last_contact', 'last_contact_date', 'contacted']) || '');
     
-    const appraisalLow = parseNumber(findColumn(row, ['appraisal_low', 'appraisal_range_low', 'low_value', 'min_value', 'appraisal_value_low']) || '');
-    const appraisalHigh = parseNumber(findColumn(row, ['appraisal_high', 'appraisal_range_high', 'high_value', 'max_value', 'appraisal_value_high']) || '');
     const estimatedValue = parseNumber(findColumn(row, ['estimated_value', 'value', 'estimate', 'appraisal_value']) || '');
     
-    const vendorName = findColumn(row, ['vendor_name', 'vendor', 'owner', 'client', 'name']);
-    const intent = findColumn(row, ['intent', 'selling_intent', 'motivation']);
-    const status = findColumn(row, ['status']) || 'pending';
-    const stage = findColumn(row, ['stage']) || 'prospecting';
+    const vendorName = toTitleCase(findColumn(row, ['vendor_name', 'vendor', 'owner', 'client', 'name']) || '');
+    const vendorMobile = findColumn(row, ['vendor_mobile', 'vendor_phone', 'mobile', 'phone']);
+    const vendorEmail = findColumn(row, ['vendor_email', 'email', 'vendor_contact']);
+    
+    // Normalize intent value
+    const rawIntent = findColumn(row, ['intent', 'selling_intent', 'motivation']) || 'medium';
+    const normalizedIntent = ['low', 'medium', 'high'].includes(rawIntent.toLowerCase()) ? rawIntent.toLowerCase() : 'medium';
+    
+    // Normalize stage value to valid options
+    const rawStage = findColumn(row, ['stage']) || 'VAP';
+    const normalizedStage = ['VAP', 'MAP', 'LAP'].includes(rawStage.toUpperCase()) ? rawStage.toUpperCase() : 'VAP';
+
+    // Normalize outcome value
+    const rawOutcome = findColumn(row, ['outcome', 'result', 'status']) || 'In Progress';
+    let normalizedOutcome = rawOutcome;
+    if (rawOutcome.toLowerCase() === 'pending' || rawOutcome.toLowerCase() === 'in progress') {
+      normalizedOutcome = 'In Progress';
+    } else if (rawOutcome.toLowerCase() === 'won' || rawOutcome.toLowerCase() === 'converted') {
+      normalizedOutcome = 'WON';
+    } else if (rawOutcome.toLowerCase() === 'lost') {
+      normalizedOutcome = 'LOST';
+    }
+
     const leadSource = findColumn(row, ['lead_source', 'source', 'lead']);
-    const appraisalMethod = findColumn(row, ['appraisal_method', 'method', 'type']);
     const notes = findColumn(row, ['notes', 'comments', 'description']);
 
     return {
@@ -130,15 +146,14 @@ export const useAppraisalsImport = () => {
       appraisal_date: appraisalDate,
       next_follow_up: nextFollowUp,
       last_contact: lastContact,
-      appraisal_range_low: appraisalLow,
-      appraisal_range_high: appraisalHigh,
       estimated_value: estimatedValue,
       vendor_name: vendorName,
-      intent,
-      status,
-      stage,
+      vendor_mobile: vendorMobile,
+      vendor_email: vendorEmail,
+      intent: normalizedIntent,
+      stage: normalizedStage,
+      outcome: normalizedOutcome,
       lead_source: leadSource,
-      appraisal_method: appraisalMethod,
       notes
     };
   };
@@ -170,8 +185,22 @@ export const useAppraisalsImport = () => {
       warnings.push(`Row ${index + 1}: Missing vendor name`);
     }
 
-    if (!data.appraisal_range_low && !data.appraisal_range_high && !data.estimated_value) {
-      warnings.push(`Row ${index + 1}: Missing appraisal value (low/high range or estimated)`);
+    if (!data.estimated_value) {
+      warnings.push(`Row ${index + 1}: Missing estimated value`);
+    }
+
+    // Validate enum values
+    if (data.stage && !['VAP', 'MAP', 'LAP'].includes(data.stage)) {
+      warnings.push(`Row ${index + 1}: Stage "${data.stage}" not recognized, defaulting to VAP`);
+      data.stage = 'VAP';
+    }
+    if (data.outcome && !['In Progress', 'WON', 'LOST'].includes(data.outcome)) {
+      warnings.push(`Row ${index + 1}: Outcome "${data.outcome}" not recognized, defaulting to In Progress`);
+      data.outcome = 'In Progress';
+    }
+    if (data.intent && !['low', 'medium', 'high'].includes(data.intent)) {
+      warnings.push(`Row ${index + 1}: Intent "${data.intent}" not recognized, defaulting to medium`);
+      data.intent = 'medium';
     }
 
     // Date sequence validation
