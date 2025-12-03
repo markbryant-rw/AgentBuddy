@@ -35,7 +35,7 @@ serve(async (req) => {
     const { data: invitation, error: invitationError } = await supabaseAdmin
       .from('pending_invitations')
       .select('id, email, role, full_name, team_id, office_id, invited_by, expires_at, status')
-      .eq('token', token)
+      .eq('invite_code', token)
       .single();
 
     if (invitationError || !invitation) {
