@@ -331,11 +331,8 @@ export default function CompleteProfile() {
                 Date of Birth <span className="text-red-500">*</span>
               </Label>
               <DateSpinner
-                id="birthday"
-                date={birthday}
-                onDateChange={setBirthday}
-                minYear={1924}
-                maxYear={new Date().getFullYear() - 18}
+                value={birthday}
+                onChange={(date) => setBirthday(date || new Date())}
               />
               {birthdayError && <p className="text-sm text-red-500">{birthdayError}</p>}
               <p className="text-xs text-muted-foreground">

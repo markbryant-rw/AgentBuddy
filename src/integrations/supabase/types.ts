@@ -1447,6 +1447,8 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           estimated_value: number | null
+          geocode_error: string | null
+          geocoded_at: string | null
           id: string
           intent: string | null
           last_contact: string | null
@@ -1476,6 +1478,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           estimated_value?: number | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
           intent?: string | null
           last_contact?: string | null
@@ -1505,6 +1509,8 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           estimated_value?: number | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
           intent?: string | null
           last_contact?: string | null
