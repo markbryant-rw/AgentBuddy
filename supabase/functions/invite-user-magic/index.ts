@@ -93,19 +93,91 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: inviterProfile } = await supabaseAdmin
       .from('profiles')
-      .select('full_name, email, office_id')
+      .select('full_name, email, office_id, primary_team_id')
       .eq('id', user.id)
       .single();
 
     // Parse request body
     const { email, role, fullName, teamId, officeId }: InviteRequest = await req.json();
 
-    if (!email || !role || !officeId) {
+    if (!email || !role) {
       return new Response(
-        JSON.stringify({ error: "Email, role, and office are required" }),
+        JSON.stringify({ error: "Email and role are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    // =================================================================
+    // SERVER-SIDE CONTEXT VALIDATION (SECURITY CRITICAL)
+    // =================================================================
+    const highestRole = inviterRoles[0].role;
+    const isPlatformAdmin = highestRole === 'platform_admin';
+    const isOfficeManager = highestRole === 'office_manager';
+    const isTeamLeader = highestRole === 'team_leader';
+
+    let validatedOfficeId = officeId;
+    let validatedTeamId = teamId;
+
+    if (isPlatformAdmin) {
+      // Platform admins must specify an office
+      if (!officeId) {
+        return new Response(
+          JSON.stringify({ error: 'Platform admins must specify an office' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      validatedOfficeId = officeId;
+      validatedTeamId = teamId; // Can be null
+
+    } else if (isOfficeManager) {
+      // Office managers can only invite to their office
+      if (!inviterProfile?.office_id) {
+        return new Response(
+          JSON.stringify({ error: 'Office manager profile is incomplete' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      validatedOfficeId = inviterProfile.office_id;
+
+      // Security check
+      if (officeId && officeId !== validatedOfficeId) {
+        console.warn(`Office manager ${user.id} attempted cross-office invitation`);
+        return new Response(
+          JSON.stringify({ error: 'You can only invite users to your own office' }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      validatedTeamId = teamId || null;
+
+    } else if (isTeamLeader) {
+      // Team leaders can only add to their team
+      if (!inviterProfile?.office_id || !inviterProfile?.primary_team_id) {
+        return new Response(
+          JSON.stringify({ error: 'Team leader profile is incomplete' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      validatedOfficeId = inviterProfile.office_id;
+      validatedTeamId = inviterProfile.primary_team_id;
+
+      // Log suspicious activity
+      if (teamId && teamId !== validatedTeamId) {
+        console.warn(`Team leader ${user.id} attempted to invite to different team`);
+      }
+
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Your role doesn't have invitation permissions" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use validated values
+    const finalOfficeId = validatedOfficeId;
+    const finalTeamId = validatedTeamId;
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -120,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: officeData, error: officeError } = await supabaseAdmin
       .from('agencies')
       .select('id, name')
-      .eq('id', officeId)
+      .eq('id', finalOfficeId)
       .single();
 
     if (officeError || !officeData) {
@@ -131,11 +203,11 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Validate team if provided
-    if (teamId) {
+    if (finalTeamId) {
       const { data: teamData, error: teamError } = await supabaseAdmin
         .from('teams')
         .select('id, name, agency_id')
-        .eq('id', teamId)
+        .eq('id', finalTeamId)
         .single();
 
       if (teamError || !teamData) {
@@ -146,7 +218,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       // Ensure team belongs to the office
-      if (teamData.agency_id !== officeId) {
+      if (teamData.agency_id !== finalOfficeId) {
         return new Response(
           JSON.stringify({
             error: `Team "${teamData.name}" does not belong to ${officeData.name}`
@@ -251,7 +323,7 @@ const handler = async (req: Request): Promise<Response> => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 day expiration
 
-    // Create pending invitation record
+    // Create pending invitation record with validated context
     const { data: invitation, error: inviteError } = await supabaseAdmin
       .from('pending_invitations')
       .insert({
@@ -261,9 +333,9 @@ const handler = async (req: Request): Promise<Response> => {
         invite_code: crypto.randomUUID(), // Still generate a code for tracking
         expires_at: expiresAt.toISOString(),
         invited_by: user.id,
-        team_id: teamId || null,
-        office_id: officeId, // Use office_id (standardized naming)
-        agency_id: officeId, // Also set agency_id for backwards compatibility during transition
+        team_id: finalTeamId || null, // Validated team (null = personal team)
+        office_id: finalOfficeId, // Validated office (standardized naming)
+        agency_id: finalOfficeId, // Also set agency_id for backwards compatibility
         status: 'pending',
       })
       .select()
@@ -286,9 +358,9 @@ const handler = async (req: Request): Promise<Response> => {
         data: {
           invitation_id: invitation.id,
           role: role,
-          office_id: officeId,
+          office_id: finalOfficeId, // Validated office
           office_name: officeData.name,
-          team_id: teamId || null,
+          team_id: finalTeamId || null, // Validated team
           invited_by_name: inviterProfile?.full_name || inviterProfile?.email || 'AgentBuddy Admin',
           full_name: fullName || null,
         },

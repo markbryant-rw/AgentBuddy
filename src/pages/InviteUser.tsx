@@ -38,20 +38,10 @@ export default function InviteUser() {
   const isOfficeManager = hasRole('office_manager');
   const isTeamLeader = hasRole('team_leader');
 
-  // Auto-set office and team based on inviter's context
-  useEffect(() => {
-    if (!isPlatformAdmin) {
-      // Office Managers and Team Leaders: auto-set office_id
-      if (profile?.office_id && !selectedOfficeId) {
-        setSelectedOfficeId(profile.office_id);
-      }
-      
-      // Team Leaders: also auto-set team_id
-      if (isTeamLeader && team?.id && !selectedTeamId) {
-        setSelectedTeamId(team.id);
-      }
-    }
-  }, [profile?.office_id, team?.id, isPlatformAdmin, isTeamLeader, selectedOfficeId, selectedTeamId]);
+  // Note: Server now handles context validation
+  // Team Leaders: server forces their office + team
+  // Office Managers: server forces their office, allows team selection
+  // Platform Admins: use InviteUserPlatform.tsx (full control)
 
   // Get roles current user can invite
   const primaryRole = roles[0] as AppRole;
@@ -72,19 +62,20 @@ export default function InviteUser() {
     },
   });
 
-  // Fetch agencies/offices for office selection
-  const { data: offices = [] } = useQuery({
-    queryKey: ['offices-for-invite'],
+  // Fetch current user's office name for display
+  const { data: currentOffice } = useQuery({
+    queryKey: ['current-office', profile?.office_id],
     queryFn: async () => {
+      if (!profile?.office_id) return null;
       const { data, error } = await supabase
         .from('agencies')
         .select('id, name')
-        .eq('is_archived', false)
-        .order('name');
+        .eq('id', profile.office_id)
+        .single();
       if (error) throw error;
       return data;
     },
-    enabled: roles.includes('platform_admin') || roles.includes('office_manager'),
+    enabled: !isPlatformAdmin && !!profile?.office_id,
   });
 
   const validateEmail = (value: string) => {
@@ -100,25 +91,28 @@ export default function InviteUser() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateEmail(email) || !selectedRole) {
       return;
     }
 
+    // For team leaders, don't send teamId/officeId - server derives from their profile
+    // For office managers, only send teamId (server derives officeId from their profile)
     inviteUser({
       email: email.toLowerCase().trim(),
       role: selectedRole,
       fullName: fullName.trim() || undefined,
-      teamId: selectedTeamId || undefined,
-      officeId: selectedOfficeId || undefined,
+      teamId: isTeamLeader ? undefined : (selectedTeamId || undefined),
+      officeId: undefined, // Server always derives this
     });
 
     // Reset form
     setEmail('');
     setSelectedRole('');
     setFullName('');
-    setSelectedTeamId('');
-    setSelectedOfficeId('');
+    if (!isTeamLeader) {
+      setSelectedTeamId('');
+    }
   };
 
   return (
@@ -143,16 +137,20 @@ export default function InviteUser() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Smart Context Info */}
-            {!isPlatformAdmin && (selectedOfficeId || selectedTeamId) && (
+            {/* Context Info */}
+            {isTeamLeader && team && currentOffice && (
               <Alert className="mb-4">
                 <Info className="h-4 w-4" />
                 <AlertDescription>
-                  {isTeamLeader && selectedTeamId && selectedOfficeId
-                    ? 'New member will be added to your team and office automatically'
-                    : isOfficeManager && selectedOfficeId
-                    ? 'New member will be added to your office automatically'
-                    : 'Context will be assigned automatically'}
+                  New member will be added to your team: <strong>{team.name}</strong> ({currentOffice.name})
+                </AlertDescription>
+              </Alert>
+            )}
+            {isOfficeManager && currentOffice && (
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  New member will be added to: <strong>{currentOffice.name}</strong>
                 </AlertDescription>
               </Alert>
             )}
@@ -208,53 +206,31 @@ export default function InviteUser() {
                 )}
               </div>
 
-              {(isPlatformAdmin || isOfficeManager) && (
+              {/* Team selection - only for Office Managers (Team Leaders have fixed team) */}
+              {!isTeamLeader && (
                 <div className="space-y-2">
-                  <Label htmlFor="office">
-                    Office {!isPlatformAdmin && selectedOfficeId ? '(Auto-assigned)' : '(Optional)'}
-                  </Label>
-                  <Select 
-                    value={selectedOfficeId} 
-                    onValueChange={setSelectedOfficeId}
-                    disabled={!isPlatformAdmin && !!selectedOfficeId}
+                  <Label htmlFor="team">Team (Optional)</Label>
+                  <Select
+                    value={selectedTeamId}
+                    onValueChange={setSelectedTeamId}
                   >
-                    <SelectTrigger id="office">
-                      <SelectValue placeholder="Select an office" />
+                    <SelectTrigger id="team">
+                      <SelectValue placeholder="Select a team or create personal team" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No office</SelectItem>
-                      {offices.map((office) => (
-                        <SelectItem key={office.id} value={office.id}>
-                          {office.name}
+                      <SelectItem value="">Create personal team</SelectItem>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Leave empty to create a personal team (team of one)
+                  </p>
                 </div>
               )}
-
-              <div className="space-y-2">
-                <Label htmlFor="team">
-                  Team {isTeamLeader && selectedTeamId ? '(Auto-assigned)' : '(Optional)'}
-                </Label>
-                <Select 
-                  value={selectedTeamId} 
-                  onValueChange={setSelectedTeamId}
-                  disabled={isTeamLeader && !!selectedTeamId}
-                >
-                  <SelectTrigger id="team">
-                    <SelectValue placeholder="Select a team" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">No team</SelectItem>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
               <Button 
                 type="submit" 

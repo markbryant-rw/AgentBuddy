@@ -74,6 +74,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Get inviter's profile for context validation
+    const { data: inviterProfile } = await supabase
+      .from('profiles')
+      .select('office_id, primary_team_id')
+      .eq('id', user.id)
+      .single();
+
     // Parse request body
     const { email, role, fullName, teamId, officeId }: InviteRequest = await req.json();
 
@@ -84,26 +91,111 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // If teamId is provided, validate it exists and belongs to the office
-    if (teamId) {
+    // =================================================================
+    // SERVER-SIDE CONTEXT VALIDATION (SECURITY CRITICAL)
+    // =================================================================
+    // Determine the highest role (for permission checks)
+    const highestRole = inviterRoles[0].role;
+    const isPlatformAdmin = highestRole === 'platform_admin';
+    const isOfficeManager = highestRole === 'office_manager';
+    const isTeamLeader = highestRole === 'team_leader';
+
+    let validatedOfficeId = officeId;
+    let validatedTeamId = teamId;
+
+    if (isPlatformAdmin) {
+      // Platform admins have full control
+      // They can invite to any office and any team
+      if (!officeId) {
+        return new Response(
+          JSON.stringify({ error: 'Platform admins must specify an office' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      // Trust their selections
+      validatedOfficeId = officeId;
+      validatedTeamId = teamId; // Can be null (personal team will be created)
+
+    } else if (isOfficeManager) {
+      // Office managers can only invite to THEIR office
+      if (!inviterProfile?.office_id) {
+        return new Response(
+          JSON.stringify({ error: 'Office manager profile is incomplete (missing office)' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Force their office (ignore any client-provided value)
+      validatedOfficeId = inviterProfile.office_id;
+
+      // If client provided a different office, that's a security violation
+      if (officeId && officeId !== validatedOfficeId) {
+        console.warn(`Office manager ${user.id} attempted to invite to different office ${officeId}`);
+        return new Response(
+          JSON.stringify({ error: 'You can only invite users to your own office' }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Team is optional (null = personal team)
+      validatedTeamId = teamId || null;
+
+    } else if (isTeamLeader) {
+      // Team leaders can ONLY add to their own team
+      if (!inviterProfile?.office_id || !inviterProfile?.primary_team_id) {
+        return new Response(
+          JSON.stringify({ error: 'Team leader profile is incomplete (missing office or team)' }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Force their office and team (ignore any client-provided values)
+      validatedOfficeId = inviterProfile.office_id;
+      validatedTeamId = inviterProfile.primary_team_id;
+
+      // Log any attempts to invite to different teams
+      if (teamId && teamId !== validatedTeamId) {
+        console.warn(`Team leader ${user.id} attempted to invite to different team ${teamId}`);
+      }
+      if (officeId && officeId !== validatedOfficeId) {
+        console.warn(`Team leader ${user.id} attempted to invite to different office ${officeId}`);
+      }
+
+      // Team leaders cannot create personal teams - they build their own team
+      // Always use their team
+    } else {
+      // Other roles (salesperson, assistant) should not be able to invite
+      // (already filtered by INVITATION_HIERARCHY, but double-check)
+      return new Response(
+        JSON.stringify({ error: "Your role doesn't have invitation permissions" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Use validated values from here on
+    const finalOfficeId = validatedOfficeId;
+    const finalTeamId = validatedTeamId;
+
+    // If finalTeamId is provided, validate it exists and belongs to the office
+    if (finalTeamId) {
       const { data: teamValidation, error: teamValidationError } = await supabase
         .from('teams')
         .select('id, name, agency_id')
-        .eq('id', teamId)
+        .eq('id', finalTeamId)
         .single();
-        
+
       if (teamValidationError || !teamValidation) {
         return new Response(
           JSON.stringify({ error: 'Invalid team: team does not exist' }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      
-      // If officeId is provided, ensure team belongs to that office
-      if (officeId && teamValidation.agency_id !== officeId) {
+
+      // Ensure team belongs to the validated office
+      if (teamValidation.agency_id !== finalOfficeId) {
         return new Response(
-          JSON.stringify({ 
-            error: `Team "${teamValidation.name}" does not belong to the selected office` 
+          JSON.stringify({
+            error: `Team "${teamValidation.name}" does not belong to the specified office`
           }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
@@ -231,7 +323,7 @@ const handler = async (req: Request): Promise<Response> => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create pending invitation - use both office_id and agency_id during transition
+    // Create pending invitation - use validated context values
     const { data: invitation, error: inviteError } = await supabase
       .from('pending_invitations')
       .insert({
@@ -241,9 +333,9 @@ const handler = async (req: Request): Promise<Response> => {
         invite_code: token,
         expires_at: expiresAt.toISOString(),
         invited_by: user.id,
-        team_id: teamId || null,
-        office_id: officeId || null, // Use office_id (new standard)
-        agency_id: officeId || null, // Also set agency_id for backwards compatibility
+        team_id: finalTeamId || null, // Validated team (null = personal team will be created)
+        office_id: finalOfficeId || null, // Validated office (new standard)
+        agency_id: finalOfficeId || null, // Also set agency_id for backwards compatibility
         status: 'pending',
       })
       .select()
