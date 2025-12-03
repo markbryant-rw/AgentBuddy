@@ -87,55 +87,56 @@ const PastSalesHistory = () => {
             </div>
           </div>
 
-          {/* Filter Checkboxes */}
-          <div className="flex items-center gap-6 p-3 bg-muted/50 rounded-lg">
-            <span className="text-sm font-medium text-muted-foreground">Filter:</span>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="hide-withdrawn" 
-                checked={hideWithdrawn}
-                onCheckedChange={(checked) => setHideWithdrawn(checked === true)}
-              />
-              <Label htmlFor="hide-withdrawn" className="text-sm cursor-pointer">
-                Hide Withdrawn
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Checkbox 
-                id="hide-sold" 
-                checked={hideSold}
-                onCheckedChange={(checked) => setHideSold(checked === true)}
-              />
-              <Label htmlFor="hide-sold" className="text-sm cursor-pointer">
-                Hide Sold
-              </Label>
-            </div>
-            {(hideWithdrawn || hideSold) && (
-              <span className="text-xs text-muted-foreground ml-auto">
-                Showing {filteredPastSales.length} of {pastSales.length} records
-              </span>
-            )}
-          </div>
-
           {/* Stats Bar */}
           <PastSalesStatsBar analytics={analytics} />
 
           {/* Main Content Tabs */}
           <Tabs defaultValue="table" className="w-full">
-            <TabsList>
-              <TabsTrigger value="table">
-                <TableIcon className="mr-2 h-4 w-4" />
-                Table View
-              </TabsTrigger>
-              <TabsTrigger value="map">
-                <MapPin className="mr-2 h-4 w-4" />
-                Map View
-              </TabsTrigger>
-              <TabsTrigger value="analytics">
-                <BarChart3 className="mr-2 h-4 w-4" />
-                Analytics
-              </TabsTrigger>
-            </TabsList>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <TabsList>
+                <TabsTrigger value="table">
+                  <TableIcon className="mr-2 h-4 w-4" />
+                  Table View
+                </TabsTrigger>
+                <TabsTrigger value="map">
+                  <MapPin className="mr-2 h-4 w-4" />
+                  Map View
+                </TabsTrigger>
+                <TabsTrigger value="analytics">
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Analytics
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Filter Checkboxes - inline with tabs */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="hide-withdrawn" 
+                    checked={hideWithdrawn}
+                    onCheckedChange={(checked) => setHideWithdrawn(checked === true)}
+                  />
+                  <Label htmlFor="hide-withdrawn" className="text-sm cursor-pointer">
+                    Hide Withdrawn
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox 
+                    id="hide-sold" 
+                    checked={hideSold}
+                    onCheckedChange={(checked) => setHideSold(checked === true)}
+                  />
+                  <Label htmlFor="hide-sold" className="text-sm cursor-pointer">
+                    Hide Sold
+                  </Label>
+                </div>
+                {(hideWithdrawn || hideSold) && (
+                  <span className="text-xs text-muted-foreground">
+                    {filteredPastSales.length}/{pastSales.length}
+                  </span>
+                )}
+              </div>
+            </div>
 
             <TabsContent value="table" className="mt-6">
               <PastSalesTable
