@@ -3018,7 +3018,9 @@ export type Database = {
       }
       task_lists: {
         Row: {
+          color: string | null
           created_at: string | null
+          description: string | null
           id: string
           is_archived: boolean | null
           name: string
@@ -3028,7 +3030,9 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           is_archived?: boolean | null
           name: string
@@ -3038,7 +3042,9 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          color?: string | null
           created_at?: string | null
+          description?: string | null
           id?: string
           is_archived?: boolean | null
           name?: string
