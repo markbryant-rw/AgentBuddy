@@ -113,7 +113,7 @@ export default function ListingPipeline() {
       const term = searchTerm.toLowerCase();
       result = result.filter(l =>
         l.address.toLowerCase().includes(term) ||
-        l.vendor_name.toLowerCase().includes(term)
+        (l.vendor_name && l.vendor_name.toLowerCase().includes(term))
       );
     }
 
