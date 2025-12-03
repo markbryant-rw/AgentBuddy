@@ -1300,50 +1300,116 @@ export type Database = {
       listings_pipeline: {
         Row: {
           address: string
+          appraisal_date: string | null
+          appraisal_id: string | null
+          archived_at: string | null
           assigned_to: string | null
+          attachments: Json | null
+          campaign_start_date: string | null
+          contract_signed_date: string | null
           created_at: string | null
           created_by: string
           estimated_value: number | null
           expected_month: string | null
+          geocode_error: string | null
+          geocoded_at: string | null
           id: string
+          last_contact: string | null
+          last_edited_by: string | null
+          latitude: number | null
+          lead_source: string | null
+          likelihood: number | null
+          listing_appointment_date: string | null
+          longitude: number | null
+          loss_reason: string | null
+          lost_date: string | null
           next_action: string | null
           next_action_date: string | null
           notes: string | null
+          open_home_dates: string[] | null
+          outcome: string | null
+          region: string | null
           stage: string | null
+          suburb: string | null
           team_id: string
           updated_at: string | null
+          vendor_name: string | null
           warmth: Database["public"]["Enums"]["listing_warmth"] | null
         }
         Insert: {
           address: string
+          appraisal_date?: string | null
+          appraisal_id?: string | null
+          archived_at?: string | null
           assigned_to?: string | null
+          attachments?: Json | null
+          campaign_start_date?: string | null
+          contract_signed_date?: string | null
           created_at?: string | null
           created_by: string
           estimated_value?: number | null
           expected_month?: string | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
+          last_contact?: string | null
+          last_edited_by?: string | null
+          latitude?: number | null
+          lead_source?: string | null
+          likelihood?: number | null
+          listing_appointment_date?: string | null
+          longitude?: number | null
+          loss_reason?: string | null
+          lost_date?: string | null
           next_action?: string | null
           next_action_date?: string | null
           notes?: string | null
+          open_home_dates?: string[] | null
+          outcome?: string | null
+          region?: string | null
           stage?: string | null
+          suburb?: string | null
           team_id: string
           updated_at?: string | null
+          vendor_name?: string | null
           warmth?: Database["public"]["Enums"]["listing_warmth"] | null
         }
         Update: {
           address?: string
+          appraisal_date?: string | null
+          appraisal_id?: string | null
+          archived_at?: string | null
           assigned_to?: string | null
+          attachments?: Json | null
+          campaign_start_date?: string | null
+          contract_signed_date?: string | null
           created_at?: string | null
           created_by?: string
           estimated_value?: number | null
           expected_month?: string | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
+          last_contact?: string | null
+          last_edited_by?: string | null
+          latitude?: number | null
+          lead_source?: string | null
+          likelihood?: number | null
+          listing_appointment_date?: string | null
+          longitude?: number | null
+          loss_reason?: string | null
+          lost_date?: string | null
           next_action?: string | null
           next_action_date?: string | null
           notes?: string | null
+          open_home_dates?: string[] | null
+          outcome?: string | null
+          region?: string | null
           stage?: string | null
+          suburb?: string | null
           team_id?: string
           updated_at?: string | null
+          vendor_name?: string | null
           warmth?: Database["public"]["Enums"]["listing_warmth"] | null
         }
         Relationships: [
