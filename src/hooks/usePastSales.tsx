@@ -122,7 +122,7 @@ export const usePastSales = (teamId?: string) => {
       }
       
       const { data, error } = await query
-        .order("settlement_date", { ascending: false, nullsFirst: false })
+        .order("listing_live_date", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false });
 
       if (error) throw error;
