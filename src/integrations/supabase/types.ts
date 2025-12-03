@@ -3634,11 +3634,16 @@ export type Database = {
         Returns: string
       }
       get_user_agency_id: { Args: { _user_id: string }; Returns: string }
+      get_user_team_ids: { Args: { _user_id: string }; Returns: string[] }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_team_member: {
+        Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
       set_active_role: {
