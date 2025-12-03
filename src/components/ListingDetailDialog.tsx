@@ -17,6 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import LocationFixSection from '@/components/shared/LocationFixSection';
 
 interface ListingDetailDialogProps {
   listing: Listing | null;
@@ -170,6 +171,13 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
     onOpenChange(false);
   };
 
+  const handleLocationUpdated = () => {
+    // Refresh listing data - the parent will handle this via onUpdate
+    if (editedListing) {
+      toast.success('Location updated successfully');
+    }
+  };
+
   if (!editedListing) return null;
 
   return (
@@ -318,6 +326,19 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
                   </div>
                 </div>
               </div>
+
+              {/* Fix Location Section */}
+              <LocationFixSection
+                entityId={editedListing.id}
+                entityType="listing"
+                address={editedListing.address}
+                suburb={editedListing.suburb || undefined}
+                latitude={editedListing.latitude}
+                longitude={editedListing.longitude}
+                geocodeError={editedListing.geocode_error}
+                geocodedAt={editedListing.geocoded_at}
+                onLocationUpdated={handleLocationUpdated}
+              />
               
               {/* Opportunity Information Section */}
               <div className="space-y-4 p-4 rounded-lg bg-muted/50">

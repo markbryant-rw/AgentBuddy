@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLeadSources } from "@/hooks/useLeadSources";
 import { formatCurrencyFull, parseCurrency } from "@/lib/currencyUtils";
 import { Trash2 } from "lucide-react";
+import LocationFixSection from "@/components/shared/LocationFixSection";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,6 +125,13 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
+  };
+
+  const handleLocationUpdated = () => {
+    toast({
+      title: "Location Updated",
+      description: "The location has been re-geocoded successfully",
+    });
   };
 
   return (
@@ -238,6 +246,21 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
                 </Select>
               </div>
             </div>
+
+            {/* Fix Location Section - only show for existing past sales */}
+            {pastSale && (
+              <LocationFixSection
+                entityId={pastSale.id}
+                entityType="past-sale"
+                address={formData.address || ''}
+                suburb={formData.suburb || undefined}
+                latitude={formData.latitude}
+                longitude={formData.longitude}
+                geocodeError={formData.geocode_error}
+                geocodedAt={formData.geocoded_at}
+                onLocationUpdated={handleLocationUpdated}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="vendor" className="space-y-4 mt-4">
