@@ -14,7 +14,7 @@ interface InviteRequest {
   role: 'office_manager' | 'team_leader' | 'salesperson' | 'assistant';
   fullName?: string;
   teamId?: string;
-  officeId?: string;
+  officeId?: string; // Maps to agency_id in database
 }
 
 const INVITATION_HIERARCHY: Record<string, string[]> = {
@@ -231,22 +231,18 @@ const handler = async (req: Request): Promise<Response> => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // If NO teamId provided (solo agent), we'll need to create a personal team
-    // But we need a user ID first, so we'll handle this in accept-invitation edge function
-    // For now, just store the invitation without a team_id
-    
-    // Create pending invitation
+    // Create pending invitation - use agency_id (the actual column name in DB)
     const { data: invitation, error: inviteError } = await supabase
       .from('pending_invitations')
       .insert({
         email: email.toLowerCase(),
         role,
         full_name: fullName,
-        token,
+        invite_code: token,
         expires_at: expiresAt.toISOString(),
         invited_by: user.id,
         team_id: teamId || null,
-        office_id: officeId || null,
+        agency_id: officeId || null, // Use agency_id instead of office_id
         status: 'pending',
       })
       .select()
@@ -306,7 +302,7 @@ const handler = async (req: Request): Promise<Response> => {
                 
                 <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffc107;">
                   <p style="margin: 0; font-size: 14px; color: #856404;">
-                    ⏰ <strong>This invitation expires in 48 hours</strong><br>
+                    ⏰ <strong>This invitation expires in 7 days</strong><br>
                     📅 Expires on: ${new Date(expiresAt).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                   </p>
                 </div>
@@ -328,39 +324,6 @@ const handler = async (req: Request): Promise<Response> => {
     } catch (emailError) {
       console.error('Failed to send email:', emailError);
     }
-
-    // Log invitation to audit_logs
-    await supabase.from('audit_logs').insert({
-      user_id: user.id,
-      action: 'invitation_sent',
-      details: {
-        invited_email: email,
-        role,
-        team_id: teamId,
-        office_id: officeId,
-      },
-    });
-
-    // Log invitation activity
-    await supabase.from('invitation_activity_log').insert({
-      invitation_id: invitation.id,
-      activity_type: 'created',
-      actor_id: user.id,
-      recipient_email: email.toLowerCase(),
-      team_id: teamId || null,
-      office_id: officeId || null,
-      metadata: { role, full_name: fullName },
-    });
-
-    await supabase.from('invitation_activity_log').insert({
-      invitation_id: invitation.id,
-      activity_type: 'sent',
-      actor_id: user.id,
-      recipient_email: email.toLowerCase(),
-      team_id: teamId || null,
-      office_id: officeId || null,
-      metadata: { email_sent: true },
-    });
 
     return new Response(
       JSON.stringify({ success: true, invitation }),

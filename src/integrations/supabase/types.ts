@@ -3669,6 +3669,7 @@ export type Database = {
         Args: { p_team_id: string }
         Returns: undefined
       }
+      get_agency_team_ids: { Args: { _agency_id: string }; Returns: string[] }
       get_or_create_conversation: {
         Args: { user1_id: string; user2_id: string }
         Returns: string
@@ -3676,6 +3677,10 @@ export type Database = {
       get_or_create_direct_conversation: {
         Args: { user1_id: string; user2_id: string }
         Returns: string
+      }
+      get_user_accessible_team_ids: {
+        Args: { _user_id: string }
+        Returns: string[]
       }
       get_user_agency_id: { Args: { _user_id: string }; Returns: string }
       get_user_team_ids: { Args: { _user_id: string }; Returns: string[] }
