@@ -2,82 +2,33 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Kanban, Plus } from 'lucide-react';
-import { useTaskBoards } from '@/hooks/useTaskBoards';
-import { CreateBoardDialog } from '@/components/tasks/enhanced/CreateBoardDialog';
-import { EditBoardDialog } from '@/components/tasks/EditBoardDialog';
+import { useProjects, Project } from '@/hooks/useProjects';
+import { CreateProjectDialog } from '@/components/projects/CreateProjectDialog';
+import { EditProjectDialog } from '@/components/projects/EditProjectDialog';
 import { EnhancedProjectBoardCard } from '@/components/tasks/enhanced/EnhancedProjectBoardCard';
 import {
-  DndContext,
-  DragEndEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  closestCenter,
-} from '@dnd-kit/core';
-import { SortableContext, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { isPast, isToday } from 'date-fns';
-
-// Draggable Board Card Wrapper
-const DraggableBoardCard = ({ board, taskStats, onEdit, onDelete }: any) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ 
-    id: board.id 
-  });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <EnhancedProjectBoardCard
-        board={board}
-        taskStats={taskStats}
-        onEdit={onEdit}
-        onDelete={onDelete}
-      />
-    </div>
-  );
-};
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function TaskProjects() {
   const navigate = useNavigate();
-  const { boards, isLoading, reorderBoards, deleteBoard } = useTaskBoards();
+  const { projects, isLoading, deleteProject, duplicateProject, archiveProject } = useProjects();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [editingBoard, setEditingBoard] = useState<any>(null);
-  const [boardTaskStats, setBoardTaskStats] = useState<Record<string, any>>({});
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
-
-  // PHASE 1: Removed empty loop - stats are now computed on demand or via edge function
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = boards.findIndex(b => b.id === active.id);
-    const newIndex = boards.findIndex(b => b.id === over.id);
-
-    if (oldIndex !== newIndex) {
-      const newOrder = [...boards];
-      const [movedBoard] = newOrder.splice(oldIndex, 1);
-      newOrder.splice(newIndex, 0, movedBoard);
-      
-      await reorderBoards(newOrder.map(b => b.id));
+  const handleDeleteProject = async () => {
+    if (deletingProject) {
+      await deleteProject(deletingProject.id);
+      setDeletingProject(null);
     }
-  };
-
-  const handleDeleteBoard = async (boardId: string) => {
-    await deleteBoard(boardId);
   };
 
   if (isLoading) {
@@ -87,6 +38,9 @@ export default function TaskProjects() {
       </div>
     );
   }
+
+  // Filter out archived projects for the main view
+  const activeProjects = projects.filter(p => p.status !== 'archived');
 
   return (
     <div className="h-full flex flex-col">
@@ -104,7 +58,7 @@ export default function TaskProjects() {
             </Button>
             <div className="flex items-center gap-2">
               <Kanban className="h-5 w-5 text-primary" />
-              <h1 className="text-xl font-semibold">Project Boards</h1>
+              <h1 className="text-xl font-semibold">Projects</h1>
             </div>
           </div>
         </div>
@@ -115,61 +69,85 @@ export default function TaskProjects() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-3xl font-bold">Project Boards</h1>
+              <h1 className="text-3xl font-bold">Projects</h1>
               <p className="text-muted-foreground">Manage your projects with kanban boards</p>
             </div>
             <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              New Board
+              New Project
             </Button>
           </div>
 
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={boards.map(b => b.id)} strategy={rectSortingStrategy}>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {boards.map((board) => (
-                  <DraggableBoardCard
-                    key={board.id}
-                    board={board}
-                    taskStats={boardTaskStats[board.id]}
-                    onEdit={() => setEditingBoard(board)}
-                    onDelete={() => handleDeleteBoard(board.id)}
-                  />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {activeProjects.map((project) => (
+              <EnhancedProjectBoardCard
+                key={project.id}
+                board={{
+                  id: project.id,
+                  title: project.title,
+                  description: project.description,
+                  icon: project.icon,
+                  color: project.color,
+                  is_shared: project.is_shared,
+                  created_at: project.created_at,
+                  updated_at: project.updated_at,
+                }}
+                taskStats={{
+                  total: project.task_count || 0,
+                  completed: project.completed_task_count || 0,
+                  overdue: project.overdue_task_count || 0,
+                }}
+                onEdit={() => setEditingProject(project)}
+                onDuplicate={() => duplicateProject(project.id)}
+                onArchive={() => archiveProject(project.id)}
+                onDelete={() => setDeletingProject(project)}
+              />
+            ))}
+          </div>
 
-          {boards.length === 0 && (
+          {activeProjects.length === 0 && (
             <div className="text-center py-12">
               <Kanban className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No project boards yet</h3>
+              <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
               <p className="text-muted-foreground mb-4">
-                Create your first project board to get started
+                Create your first project to get started with task management
               </p>
               <Button onClick={() => setShowCreateDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Board
+                Create Project
               </Button>
             </div>
           )}
         </div>
       </div>
 
-      <CreateBoardDialog
+      <CreateProjectDialog
         open={showCreateDialog}
         onOpenChange={setShowCreateDialog}
       />
 
-      <EditBoardDialog
-        open={!!editingBoard}
-        onOpenChange={(open) => !open && setEditingBoard(null)}
-        board={editingBoard}
+      <EditProjectDialog
+        open={!!editingProject}
+        onOpenChange={(open) => !open && setEditingProject(null)}
+        project={editingProject}
       />
+
+      <AlertDialog open={!!deletingProject} onOpenChange={() => setDeletingProject(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete "{deletingProject?.title}" and all its tasks. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteProject} className="bg-destructive text-destructive-foreground">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

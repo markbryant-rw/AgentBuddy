@@ -2228,10 +2228,13 @@ export type Database = {
       projects: {
         Row: {
           agency_id: string | null
+          color: string | null
           created_at: string | null
           created_by: string | null
           description: string | null
+          icon: string | null
           id: string
+          is_shared: boolean | null
           status: string | null
           team_id: string | null
           title: string
@@ -2239,10 +2242,13 @@ export type Database = {
         }
         Insert: {
           agency_id?: string | null
+          color?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
+          is_shared?: boolean | null
           status?: string | null
           team_id?: string | null
           title: string
@@ -2250,10 +2256,13 @@ export type Database = {
         }
         Update: {
           agency_id?: string | null
+          color?: string | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
+          is_shared?: boolean | null
           status?: string | null
           team_id?: string | null
           title?: string
