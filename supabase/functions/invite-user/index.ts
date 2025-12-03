@@ -137,8 +137,8 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      // Team is optional (null = personal team)
-      validatedTeamId = teamId || null;
+      // Team is optional (undefined = personal team)
+      validatedTeamId = teamId || undefined;
 
     } else if (isTeamLeader) {
       // Team leaders can ONLY add to their own team
@@ -354,13 +354,13 @@ const handler = async (req: Request): Promise<Response> => {
     const acceptUrl = `${siteUrl}/accept-invitation/${token}`;
     
     // Get inviter details for personalized email
-    const { data: inviterProfile } = await supabase
+    const { data: inviterDetails } = await supabase
       .from('profiles')
       .select('full_name, email')
       .eq('id', user.id)
       .single();
     
-    const inviterName = inviterProfile?.full_name || inviterProfile?.email || 'Your colleague';
+    const inviterName = inviterDetails?.full_name || inviterDetails?.email || 'Your colleague';
     const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
     
     try {
@@ -401,7 +401,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </div>
                 
                 <p style="font-size: 14px; color: #666; margin-top: 25px;">
-                  If you have any questions, feel free to reach out to ${inviterName} at ${inviterProfile?.email || ''}.
+                  If you have any questions, feel free to reach out to ${inviterName} at ${inviterDetails?.email || ''}.
                 </p>
                 
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 25px 0;">

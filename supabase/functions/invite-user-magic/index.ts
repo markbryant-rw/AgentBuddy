@@ -149,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      validatedTeamId = teamId || null;
+      validatedTeamId = teamId || undefined;
 
     } else if (isTeamLeader) {
       // Team leaders can only add to their team
