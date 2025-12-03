@@ -151,8 +151,6 @@ const SortableTaskCard = ({
   const isDueToday = task.due_date && isToday(new Date(task.due_date));
   const isCompleted = task.completed;
 
-  const hasMetadata = task.due_date || (task.assignees && task.assignees.length > 0);
-
   const handleTitleSave = () => {
     if (editedTitle.trim() && editedTitle.trim() !== task.title) {
       onUpdateTitle(editedTitle.trim());
@@ -201,18 +199,40 @@ const SortableTaskCard = ({
       >
         <CardContent className="px-2.5 py-2">
           <div className="flex items-start gap-2">
-            {/* Completion checkbox - always visible */}
-            <button 
-              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleComplete(); }}
-              className={cn(
-                "mt-0.5 flex-shrink-0 h-4 w-4 rounded-full border-2 transition-all flex items-center justify-center",
-                isCompleted 
-                  ? "bg-emerald-500 border-emerald-500" 
-                  : "border-muted-foreground/40 hover:border-primary hover:bg-primary/10"
+            {/* Left column: checkbox + avatars */}
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              {/* Completion checkbox */}
+              <button 
+                onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleComplete(); }}
+                className={cn(
+                  "h-4 w-4 rounded-full border-2 transition-all flex items-center justify-center",
+                  isCompleted 
+                    ? "bg-emerald-500 border-emerald-500" 
+                    : "border-muted-foreground/40 hover:border-primary hover:bg-primary/10"
+                )}
+              >
+                {isCompleted && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+              </button>
+
+              {/* Stacked assignee avatars below checkbox */}
+              {task.assignees && task.assignees.length > 0 && (
+                <div className="flex flex-col -space-y-1.5">
+                  {task.assignees.slice(0, 2).map((assignee) => (
+                    <Avatar key={assignee.id} className="h-4 w-4 border border-background">
+                      <AvatarImage src={assignee.avatar_url || undefined} />
+                      <AvatarFallback className="text-[8px]">
+                        {assignee.full_name?.[0] || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {task.assignees.length > 2 && (
+                    <div className="h-4 w-4 rounded-full bg-muted border border-background flex items-center justify-center text-[8px] font-medium">
+                      +{task.assignees.length - 2}
+                    </div>
+                  )}
+                </div>
               )}
-            >
-              {isCompleted && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
-            </button>
+            </div>
 
             <div className="flex-1 min-w-0">
               {/* Title row with dropdown */}
@@ -314,39 +334,18 @@ const SortableTaskCard = ({
                 </DropdownMenu>
               </div>
 
-              {/* Compact metadata row - right aligned */}
-              {hasMetadata && (
-                <div className="flex items-center justify-end gap-1.5 mt-1.5">
-                  {task.due_date && (
-                    <span className={cn(
-                      "text-[10px] flex items-center gap-0.5",
-                      isOverdue && 'text-destructive',
-                      isDueToday && 'text-amber-600',
-                      !isOverdue && !isDueToday && 'text-muted-foreground',
-                    )}>
-                      <Clock className="h-3 w-3" />
-                      {format(new Date(task.due_date), 'd MMM')}
-                    </span>
-                  )}
-
-                  {/* Stacked assignee avatars */}
-                  {task.assignees && task.assignees.length > 0 && (
-                    <div className="flex -space-x-1.5">
-                      {task.assignees.slice(0, 3).map((assignee) => (
-                        <Avatar key={assignee.id} className="h-5 w-5 border border-background">
-                          <AvatarImage src={assignee.avatar_url || undefined} />
-                          <AvatarFallback className="text-[9px]">
-                            {assignee.full_name?.[0] || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
-                      {task.assignees.length > 3 && (
-                        <div className="h-5 w-5 rounded-full bg-muted border border-background flex items-center justify-center text-[9px] font-medium">
-                          +{task.assignees.length - 3}
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {/* Due date - right aligned */}
+              {task.due_date && (
+                <div className="flex items-center justify-end mt-1">
+                  <span className={cn(
+                    "text-[10px] flex items-center gap-0.5",
+                    isOverdue && 'text-destructive',
+                    isDueToday && 'text-amber-600',
+                    !isOverdue && !isDueToday && 'text-muted-foreground',
+                  )}>
+                    <Clock className="h-3 w-3" />
+                    {format(new Date(task.due_date), 'd MMM')}
+                  </span>
                 </div>
               )}
             </div>
