@@ -34,7 +34,7 @@ serve(async (req) => {
     // Fetch invitation with service-role permissions (bypasses RLS)
     const { data: invitation, error: invitationError } = await supabaseAdmin
       .from('pending_invitations')
-      .select('id, email, role, full_name, team_id, office_id, invited_by, expires_at, status')
+      .select('id, email, role, full_name, team_id, agency_id, invited_by, expires_at, status')
       .eq('invite_code', token)
       .single();
 
@@ -83,7 +83,7 @@ serve(async (req) => {
         role: invitation.role,
         full_name: invitation.full_name,
         team_id: invitation.team_id,
-        office_id: invitation.office_id,
+        office_id: invitation.agency_id, // Map agency_id to office_id for frontend
         invited_by: invitation.invited_by,
         expires_at: invitation.expires_at,
         inviter: inviterProfile || { full_name: null, email: 'Unknown' },

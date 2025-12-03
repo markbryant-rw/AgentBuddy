@@ -37,11 +37,14 @@ serve(async (req) => {
 
     // Step 1: Validate invitation
     console.log('Fetching invitation');
-    const { data: invitation, error: invitationError } = await supabaseAdmin
+    const { data: invitationRaw, error: invitationError } = await supabaseAdmin
       .from('pending_invitations')
-      .select('id, email, role, full_name, team_id, office_id, invited_by, expires_at, status')
+      .select('id, email, role, full_name, team_id, agency_id, invited_by, expires_at, status')
       .eq('invite_code', token)
       .single();
+    
+    // Map agency_id to office_id for consistency in the rest of the code
+    const invitation = invitationRaw ? { ...invitationRaw, office_id: invitationRaw.agency_id } : null;
 
     if (invitationError || !invitation) {
       console.error('Invitation error:', invitationError);
