@@ -65,6 +65,18 @@ const COLOR_OPTIONS = [
   { name: 'Teal', value: '#14b8a6' },
 ];
 
+// Card background colors (pastel)
+const CARD_COLORS = [
+  { name: 'None', value: null },
+  { name: 'Pink', value: '#fce7f3' },
+  { name: 'Yellow', value: '#fef9c3' },
+  { name: 'Blue', value: '#dbeafe' },
+  { name: 'Green', value: '#dcfce7' },
+  { name: 'Purple', value: '#f3e8ff' },
+  { name: 'Orange', value: '#ffedd5' },
+  { name: 'Cyan', value: '#cffafe' },
+];
+
 interface Task {
   id: string;
   title: string;
@@ -76,6 +88,8 @@ interface Task {
   assigned_to: string | null;
   project_id: string | null;
   board_position: number | null;
+  color: string | null;
+  completed: boolean | null;
   assignee?: { full_name: string | null; avatar_url: string | null };
 }
 
@@ -86,22 +100,27 @@ interface Project {
   color: string;
 }
 
-// Sortable Task Card with drop indicator
+// Sortable Task Card with drop indicator, colors, and completion
 const SortableTaskCard = ({ 
   task, 
   onEdit, 
   onDelete,
+  onToggleComplete,
+  onColorChange,
   isOverBefore,
 }: { 
   task: Task; 
   onEdit: () => void; 
   onDelete: () => void;
+  onToggleComplete: () => void;
+  onColorChange: (color: string | null) => void;
   isOverBefore?: boolean;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
   });
+  const [isHovered, setIsHovered] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -110,6 +129,7 @@ const SortableTaskCard = ({
 
   const isOverdue = task.due_date && isPast(new Date(task.due_date)) && !isToday(new Date(task.due_date)) && task.status !== 'done';
   const isDueToday = task.due_date && isToday(new Date(task.due_date));
+  const isCompleted = task.completed;
 
   return (
     <div 
@@ -119,28 +139,91 @@ const SortableTaskCard = ({
         "relative transition-all duration-200 ease-out",
         isDragging && 'z-50 opacity-30 scale-105',
       )}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Drop indicator line */}
       {isOverBefore && (
         <div className="absolute -top-1 left-0 right-0 h-0.5 bg-primary rounded-full animate-pulse shadow-[0_0_12px_4px_hsl(var(--primary)/0.6)] -translate-y-1 z-10" />
       )}
       
-      <Card className="group cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 hover:-translate-y-0.5">
+      <Card 
+        className={cn(
+          "group cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 hover:-translate-y-0.5",
+          isCompleted && "opacity-60"
+        )}
+        style={{ backgroundColor: task.color || undefined }}
+      >
         <CardContent className="p-3">
+          {/* Hover Complete Button */}
+          {isHovered && !isCompleted && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onToggleComplete(); }}
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mb-2 transition-all animate-in fade-in duration-150"
+            >
+              <div className="h-3.5 w-3.5 rounded-full border border-current" />
+              Mark complete
+            </button>
+          )}
+          
+          {/* Show checkmark if completed */}
+          {isCompleted && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onToggleComplete(); }}
+              className="flex items-center gap-1.5 text-[11px] text-emerald-600 mb-2 hover:text-emerald-700 transition-all"
+            >
+              <div className="h-3.5 w-3.5 rounded-full bg-emerald-500 flex items-center justify-center">
+                <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              Completed
+            </button>
+          )}
+
           <div className="flex items-start gap-2">
             <div {...attributes} {...listeners} className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2">
-                <p className="font-medium text-sm truncate">{task.title}</p>
+                {/* Title - Full text, no truncate */}
+                <p className={cn(
+                  "font-medium text-sm whitespace-normal break-words",
+                  isCompleted && "line-through text-muted-foreground"
+                )}>
+                  {task.title}
+                </p>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100">
+                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 flex-shrink-0">
                       <MoreVertical className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    {/* Color Picker */}
+                    <div className="px-2 py-1.5">
+                      <p className="text-xs text-muted-foreground mb-2">Card color</p>
+                      <div className="flex gap-1 flex-wrap">
+                        {CARD_COLORS.map((color) => (
+                          <button
+                            key={color.name}
+                            onClick={(e) => { e.stopPropagation(); onColorChange(color.value); }}
+                            className={cn(
+                              "w-5 h-5 rounded-full border-2 transition-all hover:scale-110",
+                              task.color === color.value && "ring-2 ring-primary ring-offset-1",
+                              !color.value && "bg-muted"
+                            )}
+                            style={{ backgroundColor: color.value || undefined }}
+                            title={color.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={onToggleComplete}>
+                      {isCompleted ? '↩ Mark incomplete' : '✓ Mark complete'}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={onEdit}>
                       <Edit className="h-4 w-4 mr-2" />
                       Edit
@@ -153,8 +236,14 @@ const SortableTaskCard = ({
                 </DropdownMenu>
               </div>
 
+              {/* Description - Full text, no clamp */}
               {task.description && (
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>
+                <p className={cn(
+                  "text-xs text-muted-foreground mt-1 whitespace-normal break-words",
+                  isCompleted && "line-through"
+                )}>
+                  {task.description}
+                </p>
               )}
 
               <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -281,6 +370,8 @@ const SortableColumn = ({
   onAddTask,
   onRenameList,
   onDeleteList,
+  onToggleComplete,
+  onColorChange,
   overTaskId,
 }: { 
   list: any; 
@@ -289,6 +380,8 @@ const SortableColumn = ({
   onAddTask: (title: string, listId: string) => void;
   onRenameList: (newName: string) => void;
   onDeleteList: () => void;
+  onToggleComplete: (taskId: string, completed: boolean) => void;
+  onColorChange: (taskId: string, color: string | null) => void;
   overTaskId: string | null;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -410,6 +503,8 @@ const SortableColumn = ({
                 task={task}
                 onEdit={() => toast.info('Edit task coming soon')}
                 onDelete={() => {}}
+                onToggleComplete={() => onToggleComplete(task.id, !task.completed)}
+                onColorChange={(color) => onColorChange(task.id, color)}
                 isOverBefore={showIndicator}
               />
             );
@@ -543,7 +638,7 @@ export default function ProjectKanbanBoard() {
       const { data, error } = await supabase
         .from('tasks')
         .select(`
-          id, title, description, status, list_id, priority, due_date, assigned_to, project_id, board_position,
+          id, title, description, status, list_id, priority, due_date, assigned_to, project_id, board_position, color, completed,
           assignee:profiles!tasks_assigned_to_fkey(full_name, avatar_url)
         `)
         .eq('project_id', projectId)
@@ -609,6 +704,37 @@ export default function ProjectKanbanBoard() {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
     onError: () => toast.error('Failed to add task'),
+  });
+
+  // Toggle task completion
+  const toggleCompleteMutation = useMutation({
+    mutationFn: async ({ taskId, completed }: { taskId: string; completed: boolean }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          completed, 
+          completed_at: completed ? new Date().toISOString() : null 
+        })
+        .eq('id', taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
+    },
+  });
+
+  // Update task color
+  const updateTaskColorMutation = useMutation({
+    mutationFn: async ({ taskId, color }: { taskId: string; color: string | null }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ color })
+        .eq('id', taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
+    },
   });
 
   // Update task positions mutation (batch)
@@ -831,6 +957,8 @@ export default function ProjectKanbanBoard() {
                   onAddTask={(title, listId) => addTaskMutation.mutate({ title, listId })}
                   onRenameList={(newName) => updateList({ id: list.id, updates: { name: newName } })}
                   onDeleteList={() => setDeleteListId(list.id)}
+                  onToggleComplete={(taskId, completed) => toggleCompleteMutation.mutate({ taskId, completed })}
+                  onColorChange={(taskId, color) => updateTaskColorMutation.mutate({ taskId, color })}
                   overTaskId={overTaskId}
                 />
               ))}
