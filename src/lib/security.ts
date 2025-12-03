@@ -125,7 +125,7 @@ export const checkClientRateLimit = (
 ): { allowed: boolean; retryAfter?: number } => {
   const storageKey = `rate_limit_${key}`;
   const stored = localStorage.getItem(storageKey);
-  
+
   if (!stored) {
     localStorage.setItem(storageKey, JSON.stringify({
       count: 1,
@@ -133,8 +133,20 @@ export const checkClientRateLimit = (
     }));
     return { allowed: true };
   }
-  
-  const data = JSON.parse(stored);
+
+  let data;
+  try {
+    data = JSON.parse(stored);
+  } catch (error) {
+    console.error('Failed to parse rate limit data:', error);
+    localStorage.removeItem(storageKey);
+    localStorage.setItem(storageKey, JSON.stringify({
+      count: 1,
+      windowStart: Date.now()
+    }));
+    return { allowed: true };
+  }
+
   const elapsed = Date.now() - data.windowStart;
   
   // Reset window if expired
