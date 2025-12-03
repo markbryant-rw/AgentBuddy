@@ -18,6 +18,9 @@ export interface UserCardData {
   office_id: string | null;
   primary_team_id: string | null;
   is_orphaned: boolean;
+  isPending?: boolean;
+  invitationId?: string;
+  invitedAt?: string;
 }
 
 export const usePlatformOfficeDetail = (officeId: string | undefined) => {
@@ -46,10 +49,22 @@ export const usePlatformOfficeDetail = (officeId: string | undefined) => {
         .select('team_id')
         .in('team_id', teamIds);
       
-      // Count members per team
+      // Fetch pending invitation counts
+      const { data: pendingCounts } = await supabase
+        .from('pending_invitations')
+        .select('team_id')
+        .in('team_id', teamIds)
+        .eq('status', 'pending');
+      
+      // Count members per team (active + pending)
       const countMap = new Map<string, number>();
       (memberCounts || []).forEach(m => {
         countMap.set(m.team_id, (countMap.get(m.team_id) || 0) + 1);
+      });
+      (pendingCounts || []).forEach(p => {
+        if (p.team_id) {
+          countMap.set(p.team_id, (countMap.get(p.team_id) || 0) + 1);
+        }
       });
       
       return teamsData.map(team => ({
@@ -125,46 +140,74 @@ export const useTeamMembers = (teamId: string | undefined) => {
         .eq('team_id', teamId);
       
       if (teamMembersError) throw teamMembersError;
-      if (!teamMembersData || teamMembersData.length === 0) return [];
       
-      const userIds = teamMembersData.map(tm => tm.user_id);
+      const userIds = teamMembersData?.map(tm => tm.user_id) || [];
       
-      // Then fetch profiles with roles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          avatar_url,
-          status,
-          office_id,
-          primary_team_id
-        `)
-        .in('id', userIds);
+      let activeMembers: UserCardData[] = [];
       
-      if (profilesError) throw profilesError;
-      if (!profilesData) return [];
+      if (userIds.length > 0) {
+        // Then fetch profiles with roles
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select(`
+            id,
+            full_name,
+            email,
+            avatar_url,
+            status,
+            office_id,
+            primary_team_id
+          `)
+          .in('id', userIds);
+        
+        if (profilesError) throw profilesError;
+        
+        // Fetch roles separately
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', userIds)
+          .is('revoked_at', null);
+        
+        // Combine active members data
+        activeMembers = (profilesData || []).map(profile => ({
+          id: profile.id,
+          full_name: profile.full_name || profile.email,
+          email: profile.email,
+          avatar_url: profile.avatar_url,
+          status: profile.status || 'active',
+          roles: rolesData?.filter(r => r.user_id === profile.id).map(r => r.role) || [],
+          office_id: profile.office_id,
+          primary_team_id: profile.primary_team_id,
+          is_orphaned: !profile.office_id || !profile.primary_team_id,
+          isPending: false,
+        }));
+      }
       
-      // Fetch roles separately
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('user_id', userIds)
-        .is('revoked_at', null);
+      // Fetch pending invitations for this team
+      const { data: pendingInvitations } = await supabase
+        .from('pending_invitations')
+        .select('id, email, full_name, role, created_at')
+        .eq('team_id', teamId)
+        .eq('status', 'pending');
       
-      // Combine the data
-      return profilesData.map(profile => ({
-        id: profile.id,
-        full_name: profile.full_name,
-        email: profile.email,
-        avatar_url: profile.avatar_url,
-        status: profile.status,
-        roles: rolesData?.filter(r => r.user_id === profile.id).map(r => r.role) || [],
-        office_id: profile.office_id,
-        primary_team_id: profile.primary_team_id,
-        is_orphaned: !profile.office_id || !profile.primary_team_id,
-      })) as UserCardData[];
+      const pendingMembers: UserCardData[] = (pendingInvitations || []).map((invitation) => ({
+        id: invitation.id, // Use invitation ID for pending users
+        full_name: invitation.full_name || invitation.email.split('@')[0],
+        email: invitation.email,
+        avatar_url: null,
+        status: 'pending',
+        roles: [invitation.role],
+        office_id: null,
+        primary_team_id: teamId,
+        is_orphaned: false,
+        isPending: true,
+        invitationId: invitation.id,
+        invitedAt: invitation.created_at,
+      }));
+      
+      // Combine active members and pending invitations
+      return [...activeMembers, ...pendingMembers];
     },
     enabled: !!teamId,
   });
