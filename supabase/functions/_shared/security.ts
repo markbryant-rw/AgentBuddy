@@ -137,3 +137,142 @@ export function createSuccessResponse(data?: Record<string, any>) {
     ...data
   };
 }
+
+// ============================================================================
+// CSRF-like Protection for JWT-based Authentication
+// ============================================================================
+
+// Allowed origins - must match cors.ts
+const ALLOWED_ORIGINS = [
+  'https://www.agentbuddy.co',
+  'https://agentbuddy.co',
+  'http://localhost:8080',
+  'http://localhost:5173',
+];
+
+/**
+ * Validates request origin and required security headers
+ * Provides CSRF-like protection by ensuring:
+ * 1. Request comes from allowed origin
+ * 2. Custom headers are present (can't be set by CSRF attacks)
+ * 3. Content-Type is correct for JSON requests
+ *
+ * @param req - The incoming request
+ * @returns Object with isValid boolean and error message if invalid
+ */
+export function validateRequestSecurity(req: Request): { isValid: boolean; error?: string } {
+  const origin = req.headers.get('origin');
+  const referer = req.headers.get('referer');
+  const contentType = req.headers.get('content-type');
+  const requestedWith = req.headers.get('x-requested-with');
+
+  // Skip validation for OPTIONS requests (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    return { isValid: true };
+  }
+
+  // 1. Origin validation (primary CSRF defense)
+  if (origin) {
+    const isOriginAllowed = ALLOWED_ORIGINS.includes(origin) ||
+                            origin.endsWith('.lovableproject.com') ||
+                            origin.endsWith('.lovable.app');
+
+    if (!isOriginAllowed) {
+      return {
+        isValid: false,
+        error: `Invalid origin: ${origin}. Request must come from an allowed domain.`,
+      };
+    }
+  } else if (referer) {
+    // Fallback to referer validation if no origin header
+    try {
+      const refererOrigin = new URL(referer).origin;
+      const isRefererAllowed = ALLOWED_ORIGINS.includes(refererOrigin) ||
+                               refererOrigin.endsWith('.lovableproject.com') ||
+                               refererOrigin.endsWith('.lovable.app');
+
+      if (!isRefererAllowed) {
+        return {
+          isValid: false,
+          error: `Invalid referer: ${referer}. Request must come from an allowed domain.`,
+        };
+      }
+    } catch (error) {
+      return {
+        isValid: false,
+        error: 'Invalid referer URL format.',
+      };
+    }
+  } else {
+    // No origin or referer - likely a direct API call or CSRF attempt
+    return {
+      isValid: false,
+      error: 'Missing origin and referer headers. Requests must include origin information.',
+    };
+  }
+
+  // 2. Custom header validation (CSRF attacks can't set custom headers)
+  // The presence of x-requested-with or proper content-type indicates a legitimate request
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    const hasCustomHeader = requestedWith === 'XMLHttpRequest' ||
+                           (contentType && contentType.includes('application/json'));
+
+    if (!hasCustomHeader) {
+      return {
+        isValid: false,
+        error: 'Missing required security headers. Request must include X-Requested-With or proper Content-Type.',
+      };
+    }
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Validates that the request is a state-changing operation
+ * Ensures extra security for mutations (POST, PUT, DELETE, PATCH)
+ *
+ * @param req - The incoming request
+ * @returns boolean indicating if additional security is required
+ */
+export function isStateChangingRequest(req: Request): boolean {
+  return ['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method);
+}
+
+/**
+ * Creates a security-validated response wrapper
+ * Use this wrapper to automatically validate requests and return errors
+ *
+ * @param req - The incoming request
+ * @param handler - The function to execute if validation passes
+ * @param corsHeaders - CORS headers to include in response
+ * @returns Response from handler or security error response
+ */
+export async function withSecurityValidation(
+  req: Request,
+  handler: () => Promise<Response>,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  // Validate security for state-changing operations
+  if (isStateChangingRequest(req)) {
+    const validation = validateRequestSecurity(req);
+
+    if (!validation.isValid) {
+      console.error('[Security] Request validation failed:', validation.error);
+      return new Response(
+        JSON.stringify({
+          error: 'Security validation failed',
+          details: validation.error,
+          code: ErrorCodes.FORBIDDEN,
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+  }
+
+  // Validation passed or not required, execute handler
+  return handler();
+}

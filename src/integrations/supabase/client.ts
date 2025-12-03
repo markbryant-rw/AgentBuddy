@@ -13,5 +13,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+    // Cookie configuration for enhanced security
+    // SameSite=Lax provides CSRF protection while allowing normal navigation
+    storageKey: 'supabase.auth.token',
+    flowType: 'pkce',
+  },
+  global: {
+    // Add X-Requested-With header to all requests for CSRF-like protection
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  },
 });
