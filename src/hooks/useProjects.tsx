@@ -31,7 +31,7 @@ export const useProjects = () => {
         .from('projects')
         .select(`
           *,
-          tasks(id, status, due_date, completed)
+          tasks!tasks_project_id_fkey(id, status, due_date, completed)
         `)
         .order('created_at', { ascending: false });
 
