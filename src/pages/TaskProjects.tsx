@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Kanban, Plus } from 'lucide-react';
 import { useTaskBoards } from '@/hooks/useTaskBoards';
-import { useTasks } from '@/hooks/useTasks';
 import { CreateBoardDialog } from '@/components/tasks/enhanced/CreateBoardDialog';
 import { EditBoardDialog } from '@/components/tasks/EditBoardDialog';
 import { EnhancedProjectBoardCard } from '@/components/tasks/enhanced/EnhancedProjectBoardCard';
-import { MyAssignmentsCard } from '@/components/projects/MyAssignmentsCard';
 import {
   DndContext,
   DragEndEvent,
@@ -124,11 +122,6 @@ export default function TaskProjects() {
               <Plus className="h-4 w-4 mr-2" />
               New Board
             </Button>
-          </div>
-
-          {/* My Assignments Card */}
-          <div className="mb-6">
-            <MyAssignmentsCard />
           </div>
 
           <DndContext
