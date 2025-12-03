@@ -127,8 +127,24 @@ export async function geocodeEntity(
     );
   }
 
-  // Build geocoding query
-  const query = `${entity.address}${entity.suburb ? ', ' + entity.suburb : ''}, New Zealand`;
+  // Build geocoding query - avoid duplicating suburb if already in address
+  let query: string;
+  const addressLower = entity.address.toLowerCase();
+  const suburbLower = entity.suburb?.toLowerCase() || '';
+  
+  // Check if suburb (or its first word for multi-word suburbs) is already in address
+  const suburbFirstWord = suburbLower.split(' ')[0];
+  const suburbInAddress = suburbLower && (
+    addressLower.includes(suburbLower) || 
+    (suburbFirstWord.length > 3 && addressLower.includes(suburbFirstWord))
+  );
+  
+  if (suburbInAddress) {
+    query = `${entity.address}, New Zealand`;
+    console.log('Suburb already in address, skipping duplication');
+  } else {
+    query = `${entity.address}${entity.suburb ? ', ' + entity.suburb : ''}, New Zealand`;
+  }
   console.log('Geocoding address:', query);
 
   // Call OpenCage API with retry logic
