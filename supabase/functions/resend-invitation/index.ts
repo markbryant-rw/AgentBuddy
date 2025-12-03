@@ -64,7 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch the invitation
     const { data: invitation, error: invitationError } = await supabaseAdmin
       .from('pending_invitations')
-      .select('id, email, full_name, status, invited_by, team_id, office_id')
+      .select('id, email, full_name, status, invited_by, team_id, agency_id')
       .eq('id', invitationId)
       .single();
 
@@ -193,16 +193,20 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    // Log activity
-    await supabaseAdmin.from('invitation_activity_log').insert({
-      invitation_id: invitationId,
-      activity_type: 'reminder_sent',
-      actor_id: user.id,
-      recipient_email: invitation.email,
-      team_id: invitation.team_id,
-      office_id: invitation.office_id,
-      metadata: { new_expiry: newExpiresAt.toISOString() },
-    });
+    // Log activity (skip if table doesn't exist yet)
+    try {
+      await supabaseAdmin.from('invitation_activity_log').insert({
+        invitation_id: invitationId,
+        activity_type: 'reminder_sent',
+        actor_id: user.id,
+        recipient_email: invitation.email,
+        team_id: invitation.team_id,
+        agency_id: invitation.agency_id,
+        metadata: { new_expiry: newExpiresAt.toISOString() },
+      });
+    } catch (logError) {
+      console.log('Activity log skipped:', logError);
+    }
 
     return new Response(
       JSON.stringify({ success: true, message: "Invitation resent successfully" }),
