@@ -1,2041 +1,1272 @@
-# Comprehensive Codebase Audit Report
-**Real Estate Team Operating System**
-
-**Date:** November 25, 2025
-**Branch:** `claude/codebase-audit-01QyKAAefAMVVqbbZDQJFHXP`
-**Codebase Size:** ~51,000 lines of TypeScript
-**Files Analyzed:** 1,045+ TypeScript files, 665+ React components, 136+ database tables
+# AgentBuddy Codebase Audit Report
+**Date:** December 3, 2025
+**Audited Files:** 1,059 TypeScript/TSX files
+**Total Lines of Code:** ~156,000
 
 ---
 
 ## Executive Summary
 
-This comprehensive audit reveals a **well-architected codebase with solid foundations** but containing several critical issues that require immediate attention. The codebase demonstrates excellent architectural patterns (RBAC, RLS, clean hook design) alongside issues typical of rapid AI-assisted development.
+This comprehensive audit analyzed the AgentBuddy codebase for bugs, security vulnerabilities, performance issues, circular dependencies, code duplication, inconsistent patterns, missing error handling, and unused code. The codebase shows signs of rapid prototyping and AI-generated code with several areas requiring attention.
 
-### Overall Health Score: **7.2/10**
+**Overall Health Score: 6.5/10**
 
-| Category | Score | Status |
-|----------|-------|--------|
-| Architecture | 9/10 | ⭐⭐⭐⭐⭐ Excellent |
-| Security | 7/10 | ⚠️ Needs Attention |
-| Performance | 6/10 | ⚠️ Optimization Needed |
-| Code Quality | 7/10 | ⚠️ Some Issues |
-| Error Handling | 6/10 | ⚠️ Gaps Present |
-| Maintainability | 8/10 | 🟢 Good |
-
-### Critical Statistics
-
-- **Critical Issues:** 9 (security + bugs)
-- **High Priority Issues:** 12
-- **Medium Priority Issues:** 23
-- **Low Priority Issues:** 15
-- **Circular Dependencies:** 1 (excellent!)
-- **Total Issues Found:** 59
+### Key Findings by Severity
+- **Critical Issues:** 4
+- **High Severity Issues:** 19
+- **Medium Severity Issues:** 38
+- **Low Severity Issues:** 15
 
 ---
 
 ## Table of Contents
-
-1. [Critical Issues](#1-critical-issues)
-2. [High Priority Issues](#2-high-priority-issues)
-3. [Medium Priority Issues](#3-medium-priority-issues)
-4. [Low Priority Issues](#4-low-priority-issues)
-5. [Architecture Analysis](#5-architecture-analysis)
-6. [Performance Analysis](#6-performance-analysis)
-7. [Code Quality Patterns](#7-code-quality-patterns)
-8. [Recommended Action Plan](#8-recommended-action-plan)
+1. [Critical Issues](#critical-issues)
+2. [High Severity Issues](#high-severity-issues)
+3. [Medium Severity Issues](#medium-severity-issues)
+4. [Low Severity Issues](#low-severity-issues)
+5. [Code Quality Observations](#code-quality-observations)
+6. [Recommendations](#recommendations)
 
 ---
 
-## 1. CRITICAL ISSUES
+## Critical Issues
 
-### 🔴 CRITICAL-001: XSS Vulnerability - Unsafe innerHTML Usage
-
+### 🔴 CRITICAL-1: React Hooks Rules Violations
+**Category:** Bugs / Runtime Errors
 **Severity:** CRITICAL
-**Category:** Security - Cross-Site Scripting
-**File:** `src/pages/role-playing/RolePlaying.tsx:88-94`
+**Impact:** Memory leaks, race conditions, stale closures, unpredictable behavior
 
-**Issue:**
-```typescript
-modal.innerHTML = `
-  <div class="text-center text-white p-8">
-    <h2 class="text-4xl font-bold mb-4">Coming Soon</h2>
-    ...
-  </div>
-`;
-```
+**Description:** Multiple components use `useState` initializer functions with async operations and side effects, violating React Hooks rules. This should use `useEffect` instead.
+
+**Locations:**
+1. `/home/user/AgentBuddy/src/pages/ReviewRoadmap.tsx:52-54`
+   ```typescript
+   useState(() => {
+     calculatePerformance().then(setPerformance);  // ❌ Async in useState
+   });
+   ```
+
+2. `/home/user/AgentBuddy/src/components/feedback/BugReportForm.tsx:62-66`
+   ```typescript
+   useState(() => {
+     if (!workspaceModule) {
+       setWorkspaceModule(detectModuleFromURL());  // ❌ Side effects in useState
+     }
+   });
+   ```
+
+3. `/home/user/AgentBuddy/src/components/platform-admin/UserManagementTab.tsx:36-60`
+   ```typescript
+   useState(() => {
+     const cleanupDuplicates = async () => {
+       await supabase.functions.invoke('merge-duplicate-users', ...);  // ❌ Async
+       toast.success('Cleaned up duplicate Josh Smith user');
+       queryClient.invalidateQueries(...);
+     };
+     cleanupDuplicates();
+   });
+   ```
+
+4. `/home/user/AgentBuddy/src/components/people/OfficesTab.tsx:35-52`
+   ```typescript
+   useState(() => {
+     if (user) {
+       const fetchFriends = async () => {
+         const { data: sent } = await supabase.from('friend_connections')...  // ❌ Async fetch
+         setFriendConnections([...(sent || []), ...(received || [])]);
+       };
+       fetchFriends();
+     }
+   });
+   ```
 
 **Why It's a Problem:**
-- Direct innerHTML assignment without sanitization creates XSS vulnerability
-- While currently using static content, any future dynamic data enables code injection
-- Bypasses React's built-in XSS protection
-
-**Impact:**
-- Session hijacking
-- Data theft
-- Malicious script execution
+- useState initializers run during render phase (synchronous)
+- Async operations create race conditions
+- State updates during render cause infinite loops
+- Memory leaks from unmounted components
+- Stale closure issues
 
 **Suggested Fix:**
 ```typescript
-// Replace with React portal or component
-const ComingSoonModal = () => (
-  <div className="text-center text-white p-8">
-    <h2 className="text-4xl font-bold mb-4">Coming Soon</h2>
-    ...
-  </div>
-);
-
-// Use React's createPortal instead of innerHTML
-```
-
-**Effort:** 30 minutes
-**Risk if unfixed:** High - Exploitable security vulnerability
-
----
-
-### 🔴 CRITICAL-002: CORS Wildcard Origin
-
-**Severity:** CRITICAL
-**Category:** Security - CORS Misconfiguration
-**File:** `supabase/functions/_shared/cors.ts:1-4`
-
-**Issue:**
-```typescript
-export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',  // ⚠️ Allows ANY domain
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
-```
-
-**Why It's a Problem:**
-- Allows any domain to access your API
-- Enables CSRF attacks
-- Unauthorized access from malicious sites
-
-**Impact:**
-- Cross-origin attacks
-- Data theft
-- Unauthorized API access
-
-**Suggested Fix:**
-```typescript
-const allowedOrigins = [
-  'https://yourdomain.com',
-  'https://app.yourdomain.com',
-  process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : null
-].filter(Boolean);
-
-export function getCorsHeaders(origin: string | null) {
-  if (origin && allowedOrigins.includes(origin)) {
-    return {
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    };
-  }
-  return {};
-}
-```
-
-**Effort:** 1 hour
-**Risk if unfixed:** Critical - Open attack vector
-
----
-
-### 🔴 CRITICAL-003: Sensitive Data in Console Logs
-
-**Severity:** CRITICAL
-**Category:** Security - Data Exposure
-**Files:** Multiple (50+ instances)
-
-**Issue Examples:**
-```typescript
-// src/pages/CoachesCorner.tsx:307
-console.log('Fresh auth token retrieved:', {
-  tokenLength: accessToken?.length,
-  hasToken: !!accessToken
+// ❌ Wrong
+useState(() => {
+  calculatePerformance().then(setPerformance);
 });
 
-// supabase/functions/accept-invitation/index.ts:38
-console.log('Fetching invitation for token:', token);
+// ✅ Correct
+useEffect(() => {
+  calculatePerformance()
+    .then(setPerformance)
+    .catch(error => console.error('Error:', error));
+}, []);
 ```
-
-**Why It's a Problem:**
-- Authentication tokens logged to console
-- Accessible via browser DevTools
-- Persisted in server logs
-- Can be stolen and reused
-
-**Impact:**
-- Token theft
-- Session hijacking
-- Unauthorized access
-
-**Suggested Fix:**
-```typescript
-// Remove ALL console.log statements with sensitive data
-// Use a proper logging library with automatic sanitization
-
-// lib/logger.ts enhancement
-export const logger = {
-  log: (message: string, data?: any) => {
-    if (process.env.NODE_ENV === 'development') {
-      const sanitized = sanitizeLogData(data);
-      console.log(message, sanitized);
-    }
-  },
-  // Never log tokens, passwords, or API keys
-};
-
-function sanitizeLogData(data: any): any {
-  if (!data) return data;
-  const sensitive = ['token', 'password', 'apiKey', 'secret', 'authorization'];
-  // Recursively remove sensitive fields
-  return Object.keys(data).reduce((acc, key) => {
-    if (sensitive.some(s => key.toLowerCase().includes(s))) {
-      acc[key] = '[REDACTED]';
-    } else {
-      acc[key] = data[key];
-    }
-    return acc;
-  }, {} as any);
-}
-```
-
-**Effort:** 2-3 hours
-**Risk if unfixed:** Critical - Active data leakage
 
 ---
 
-### 🔴 CRITICAL-004: Missing useEffect Dependencies (React Rules Violation)
-
+### 🔴 CRITICAL-2: Array Bounds Violations (18 instances)
+**Category:** Bugs / Runtime Errors
 **Severity:** CRITICAL
-**Category:** Bugs - Hook Rules
-**Files:** Multiple hooks (6 instances)
+**Impact:** Application crashes with "Cannot read property of undefined"
 
-**Issue 1:** `src/hooks/useAuth.tsx:191`
+**Description:** Direct access to array first element without checking if array exists or has elements.
+
+**Pattern:** `.errors[0]` without validation
+
+**Locations:**
+1. `/home/user/AgentBuddy/src/pages/Auth.tsx` - Lines 163, 173, 183, 195, 213, 225, 435
+2. `/home/user/AgentBuddy/src/pages/ResetPassword.tsx:69`
+3. `/home/user/AgentBuddy/src/components/settings/UserProfileSection.tsx` - Lines 109, 170
+4. `/home/user/AgentBuddy/src/pages/AcceptInvitation.tsx` - Lines 99, 134
+5. `/home/user/AgentBuddy/src/pages/InviteUser.tsx:87`
+6. `/home/user/AgentBuddy/src/pages/onboarding/CompleteProfile.tsx:133`
+7. `/home/user/AgentBuddy/src/components/office-manager/AddUserDialog.tsx:68`
+8. `/home/user/AgentBuddy/src/components/office-manager/InviteTeamMemberDialog.tsx:82`
+9. `/home/user/AgentBuddy/src/components/platform-admin/AddUserDialogPlatform.tsx:66`
+10. `/home/user/AgentBuddy/src/pages/platform-admin/InviteUserPlatform.tsx:88`
+
+**Example from Auth.tsx:163-165:**
 ```typescript
-useEffect(() => {
-  const handleEsc = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && isViewingAs) {
-      stopViewingAs();  // ⚠️ Not in dependencies
-    }
-  };
-
-  window.addEventListener('keydown', handleEsc);
-  return () => window.removeEventListener('keydown', handleEsc);
-}, [isViewingAs]); // Missing: stopViewingAs
+const emailResult = authSchemas.email.safeParse(signUpEmail);
+if (!emailResult.success) {
+  description: emailResult.error.errors[0].message,  // ❌ No check if errors array exists
 ```
-
-**Issue 2:** `src/hooks/useKPITrackerData.tsx:384-386`
-```typescript
-useEffect(() => {
-  fetchData();  // ⚠️ Uses hasAnyRole, getTargetByType
-}, [user, team]); // Missing: hasAnyRole, getTargetByType, fetchData
-```
-
-**Issue 3:** `src/hooks/useTeam.tsx:99-101`
-```typescript
-useEffect(() => {
-  fetchTeam();  // ⚠️ Not in dependencies
-}, [user]); // Missing: fetchTeam
-```
-
-**Also found in:**
-- `src/hooks/useCCH.tsx:193-195`
-- `src/hooks/usePipeline.tsx:334-336`
-- Multiple other hooks
 
 **Why It's a Problem:**
-- Stale closure bugs - uses old values instead of current state
-- Can cause infinite loops when fixed incorrectly
-- Data inconsistencies
-- Hard-to-diagnose runtime errors
-
-**Impact:**
-- Incorrect data displayed to users
-- State synchronization issues
-- Potential app crashes
+- If `errors` array is empty or undefined, causes runtime crash
+- Zod validation can return empty errors array in edge cases
+- User sees "Something went wrong" instead of proper error handling
 
 **Suggested Fix:**
 ```typescript
-// Option 1: Add missing dependencies
-useEffect(() => {
-  const handleEsc = (e: KeyboardEvent) => {
-    if (e.key === 'Escape' && isViewingAs) {
-      stopViewingAs();
-    }
-  };
+// ❌ Wrong
+description: emailResult.error.errors[0].message
 
-  window.addEventListener('keydown', handleEsc);
-  return () => window.removeEventListener('keydown', handleEsc);
-}, [isViewingAs, stopViewingAs]);
-
-// Option 2: Wrap in useCallback
-const fetchData = useCallback(async () => {
-  // ... implementation
-}, [user, team, hasAnyRole, getTargetByType]);
-
-useEffect(() => {
-  fetchData();
-}, [fetchData]);
+// ✅ Correct
+description: emailResult.error.errors?.[0]?.message || 'Invalid input'
 ```
-
-**Effort:** 3-4 hours to fix all instances
-**Risk if unfixed:** High - Unpredictable behavior
 
 ---
 
-### 🔴 CRITICAL-005: Overly Permissive RLS Policies
-
+### 🔴 CRITICAL-3: Exposed Environment Variables
+**Category:** Security
 **Severity:** CRITICAL
-**Category:** Security - Authorization
-**Files:** `supabase/migrations/*.sql`
+**Impact:** Information disclosure, potential unauthorized access
 
-**Issue 1: Public invitation access**
-```sql
-CREATE POLICY "Public view invitation by token"
-ON public.pending_invitations FOR SELECT USING (true);
-```
+**Description:** Supabase credentials exposed in `.env` file with potential git history exposure.
 
-**Issue 2: Unrestricted audit log insertion**
-```sql
-CREATE POLICY "System insert audit logs"
-ON public.audit_logs FOR INSERT WITH CHECK (true);
-```
-
-**Issue 3: Public agency viewing**
-```sql
-CREATE POLICY "Anyone can view agencies"
-ON agencies FOR SELECT USING (true);
+**Location:** `/home/user/AgentBuddy/.env:1-3`
+```env
+VITE_SUPABASE_PROJECT_ID=mxsefnpxrnamupatgrlb
+VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_URL=https://mxsefnpxrnamupatgrlb.supabase.co
 ```
 
 **Why It's a Problem:**
-- `USING (true)` allows unrestricted access
-- Anyone can view sensitive data
-- Audit logs can be manipulated
-- Violates principle of least privilege
-
-**Impact:**
-- Information disclosure
-- Privacy violations
-- Audit trail corruption
-- Compliance violations (GDPR, CCPA)
+- While these are "public" frontend keys (VITE_ prefix), their exposure in git makes project discoverable
+- Attackers can identify Supabase project and attempt attacks
+- Git history may contain sensitive values
+- .env files should never be committed
 
 **Suggested Fix:**
-```sql
--- 1. Restrict invitation access
-DROP POLICY "Public view invitation by token" ON public.pending_invitations;
-CREATE POLICY "View invitation by token"
-ON public.pending_invitations FOR SELECT
-USING (
-  token = current_setting('request.jwt.claims', true)::json->>'invitation_token'
-);
-
--- 2. Restrict audit logs to service role
-DROP POLICY "System insert audit logs" ON public.audit_logs;
-CREATE POLICY "Service role insert audit logs"
-ON public.audit_logs FOR INSERT
-WITH CHECK (auth.role() = 'service_role');
-
--- 3. Restrict agency viewing
-DROP POLICY "Anyone can view agencies" ON agencies;
-CREATE POLICY "Authenticated users view agencies"
-ON agencies FOR SELECT
-USING (auth.role() = 'authenticated');
-```
-
-**Effort:** 2 hours
-**Risk if unfixed:** Critical - Data exposure
+1. Ensure `.env` is in `.gitignore`
+2. Remove from git history: `git filter-branch --force --index-filter "git rm --cached --ignore-unmatch .env" --prune-empty --tag-name-filter cat -- --all`
+3. Use environment-specific configuration
+4. Rotate keys if previously exposed
+5. Use Supabase RLS policies to limit damage
 
 ---
 
-### 🔴 CRITICAL-006: Unsafe .single() Calls Without Error Handling
-
+### 🔴 CRITICAL-4: Unsafe Touch Event Handling
+**Category:** Bugs / Runtime Errors
 **Severity:** CRITICAL
-**Category:** Bugs - Null Reference Errors
-**Files:** Multiple hooks (10+ instances)
+**Impact:** Crashes on touch devices
 
-**Issue:** `src/hooks/useConversations.tsx:154`
-```typescript
-const { data: conversation, error: convError } = await supabase
-  .from("conversations")
-  .insert({ type: "group", title, created_by: user.id })
-  .select()
-  .single(); // ⚠️ Can throw if 0 or multiple rows returned
+**Description:** Touch event handlers access first touch without validating array length.
 
-// No null check afterwards - direct usage
-await supabase.from("conversation_participants").insert(
-  participants.map(userId => ({
-    conversation_id: conversation.id,  // ⚠️ conversation might be null
-    ...
-  }))
-);
-```
+**Locations:**
+1. `/home/user/AgentBuddy/src/components/social/PostImageLightbox.tsx:53,57`
+   ```typescript
+   const onTouchStart = (e: React.TouchEvent) => {
+     setTouchEnd(null);
+     setTouchStart(e.targetTouches[0].clientX);  // ❌ No check
+   };
 
-**Also found in:**
-- `src/hooks/useAuth.tsx:258, 267, 318`
-- `src/hooks/useProfile.tsx:85`
-- Multiple edge functions
+   const onTouchMove = (e: React.TouchEvent) => {
+     setTouchEnd(e.targetTouches[0].clientX);  // ❌ No check
+   };
+   ```
+
+2. `/home/user/AgentBuddy/src/hooks/useSwipeGestures.tsx:15,20`
+   ```typescript
+   const handleTouchStart = (e: TouchEvent) => {
+     touchStartX.current = e.targetTouches[0].clientX;  // ❌ No bounds check
+   };
+
+   const handleTouchMove = (e: TouchEvent) => {
+     touchEndX.current = e.targetTouches[0].clientX;  // ❌ No bounds check
+   };
+   ```
 
 **Why It's a Problem:**
-- `.single()` throws if result isn't exactly 1 row
-- No null checks after query
-- Causes runtime errors and app crashes
-
-**Impact:**
-- Application crashes
-- User workflows broken
-- Data corruption (partial inserts)
+- Multi-touch events could have empty targetTouches
+- Edge cases on some devices return undefined
+- Causes "Cannot read property 'clientX' of undefined"
 
 **Suggested Fix:**
 ```typescript
-const { data: conversation, error: convError } = await supabase
-  .from("conversations")
-  .insert({ type: "group", title, created_by: user.id })
-  .select()
-  .single();
-
-if (convError || !conversation) {
-  throw new Error(`Failed to create conversation: ${convError?.message || 'Unknown error'}`);
-}
-
-// Now safe to use conversation.id
-await supabase.from("conversation_participants").insert(...);
-```
-
-**Effort:** 2-3 hours
-**Risk if unfixed:** High - Frequent crashes
-
----
-
-### 🔴 CRITICAL-007: JSON.parse Without Error Handling
-
-**Severity:** CRITICAL
-**Category:** Bugs - Runtime Errors
-**Files:** Multiple (5+ instances)
-
-**Issue:** `src/hooks/useLocalStorage.tsx:8`
-```typescript
-return item ? JSON.parse(item) : initialValue;  // ⚠️ No try-catch
-```
-
-**Also found in:**
-- `src/hooks/usePomodoro.tsx:35`
-- `src/components/messages/MessageBubble.tsx:154, 207`
-- `src/pages/CoachesCorner.tsx:145, 164`
-
-**Why It's a Problem:**
-- Corrupted localStorage data will crash the app
-- No recovery mechanism
-- Silent data loss
-
-**Impact:**
-- App crash on startup
-- User data loss
-- Poor user experience
-
-**Suggested Fix:**
-```typescript
-try {
-  return item ? JSON.parse(item) : initialValue;
-} catch (error) {
-  console.error('Failed to parse localStorage item:', key, error);
-  // Clear corrupted data
-  localStorage.removeItem(key);
-  return initialValue;
-}
-```
-
-**Effort:** 1 hour
-**Risk if unfixed:** High - App crashes
-
----
-
-### 🔴 CRITICAL-008: Promise.race Race Conditions
-
-**Severity:** CRITICAL
-**Category:** Bugs - Memory Leaks
-**File:** `src/hooks/useCCH.tsx:64-79`
-
-**Issue:**
-```typescript
-const timeoutPromise = new Promise((_, reject) =>
-  setTimeout(() => reject(new Error('CCH data fetch timeout')), 30000)
-);
-const { data: todayData } = await Promise.race([todayPromise, timeoutPromise]) as any;
-```
-
-**Why It's a Problem:**
-- Timeout rejects but doesn't cancel the original promise
-- Supabase query continues running after timeout
-- Type cast to `any` loses type safety
-- Memory leaks accumulate
-
-**Impact:**
-- Memory leaks
-- Wasted database resources
-- Degraded performance over time
-
-**Suggested Fix:**
-```typescript
-const controller = new AbortController();
-const timeout = setTimeout(() => controller.abort(), 30000);
-
-try {
-  const { data } = await supabase
-    .from('kpi_entries')
-    .select('*')
-    .abortSignal(controller.signal);
-
-  clearTimeout(timeout);
-  return data;
-} catch (error) {
-  if (error.name === 'AbortError') {
-    throw new Error('CCH data fetch timeout');
+// ✅ Correct
+const onTouchStart = (e: React.TouchEvent) => {
+  if (e.targetTouches.length > 0) {
+    setTouchStart(e.targetTouches[0].clientX);
   }
-  throw error;
-} finally {
-  clearTimeout(timeout);
-}
+};
 ```
-
-**Effort:** 30 minutes
-**Risk if unfixed:** Medium - Performance degradation
 
 ---
 
-### 🔴 CRITICAL-009: Impersonation Feature Security Concerns
+## High Severity Issues
 
-**Severity:** CRITICAL
-**Category:** Security - Authorization
-**File:** `src/hooks/useAuth.tsx:244-303, 128-129`
+### 🟠 HIGH-1: Direct Object Reference in "View As" Feature
+**Category:** Security
+**Severity:** HIGH
+**Impact:** Unauthorized data access, privilege escalation
 
-**Issues:**
-1. Impersonation state stored in localStorage (line 289)
-2. Keeps `isPlatformAdmin: true` during impersonation (line 286)
-3. Persists across browser sessions indefinitely
-4. No automatic timeout
+**Description:** Admin impersonation feature accepts any user ID without proper UI-level scope validation.
+
+**Location:** `/home/user/AgentBuddy/src/hooks/useAuth.tsx:244-303`
+
+**Code:**
+```typescript
+const startViewingAs = async (userId: string) => {
+  await supabase.functions.invoke('start-impersonation', {
+    body: { targetUserId: userId }
+  });
+
+  // Line 282-283: Sets viewAsUser without validating authorization scope
+  setViewAsUser(user);
+
+  // Line 286: Maintains isPlatformAdmin = true while impersonating (privilege escalation)
+  setUser({ ...user, isPlatformAdmin: true });
+
+  // Line 289: Stores in localStorage (client-side, manipulable)
+  localStorage.setItem('viewAsUserId', userId);
+};
+```
 
 **Why It's a Problem:**
-- Session hijacking if device compromised
-- Privilege escalation if admin forgets to exit
-- No audit trail of actions during impersonation
-- Admin privileges while viewing as another user
-
-**Impact:**
-- Unauthorized access
-- Data breach
-- Compliance violations
-- Audit failures
+- Platform admins could view any user's data across offices/teams
+- No audit trail verification at UI layer
+- localStorage storage is client-side manipulable
+- Maintains admin privileges while impersonating (privilege escalation)
 
 **Suggested Fix:**
-```typescript
-// 1. Add session expiry
-const IMPERSONATION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+1. Implement server-side authorization scope checking in edge function
+2. Validate admin has permission to view target user's office/team
+3. Add comprehensive audit logging
+4. Consider session-based storage instead of localStorage
+5. Drop admin privileges when impersonating
 
+---
+
+### 🟠 HIGH-2: Missing CSRF Protection
+**Category:** Security
+**Severity:** HIGH
+**Impact:** Cross-site request forgery attacks
+
+**Description:** No CSRF tokens implemented for state-changing operations.
+
+**Locations:**
+- `/home/user/AgentBuddy/src/components/InvitationSignup.tsx:345` - Form submission
+- `/home/user/AgentBuddy/src/pages/Auth.tsx` - Auth forms
+- All Supabase mutations rely solely on session authentication
+
+**Why It's a Problem:**
+- Attackers can forge requests from authenticated users
+- State-changing operations (create, update, delete) vulnerable
+- Session-based auth alone insufficient
+
+**Suggested Fix:**
+1. Implement CSRF token generation and validation
+2. Add token to all POST/PUT/DELETE requests
+3. Validate on server-side
+4. Use SameSite cookie attribute
+5. Consider Supabase's built-in CSRF protection features
+
+---
+
+### 🟠 HIGH-3: Insecure Data Storage (localStorage for Admin State)
+**Category:** Security
+**Severity:** HIGH
+**Impact:** XSS attacks could gain admin access
+
+**Description:** Sensitive admin impersonation state stored in localStorage.
+
+**Location:** `/home/user/AgentBuddy/src/hooks/useAuth.tsx:129,289,310`
+
+**Code:**
+```typescript
+// Line 129
+const storedViewAs = localStorage.getItem('viewAsUserId');
+
+// Line 289
 localStorage.setItem('viewAsUserId', userId);
-localStorage.setItem('viewAsExpiry', (Date.now() + IMPERSONATION_TIMEOUT).toString());
 
-// 2. Check expiry on load
-const checkImpersonationExpiry = () => {
-  const storedExpiry = localStorage.getItem('viewAsExpiry');
-  if (storedExpiry && Date.now() > parseInt(storedExpiry)) {
-    localStorage.removeItem('viewAsUserId');
-    localStorage.removeItem('viewAsExpiry');
-    window.location.reload();
-  }
-};
-
-// 3. Don't keep platform admin privileges
-// Fetch actual target user roles instead
-const targetRoles = await fetchUserRoles(userId);
-setActiveRole(targetRoles[0]);
-
-// 4. Add visible banner with countdown
-// 5. Log all actions during impersonation
-```
-
-**Effort:** 3-4 hours
-**Risk if unfixed:** Critical - Security and compliance risk
-
----
-
-## 2. HIGH PRIORITY ISSUES
-
-### 🟠 HIGH-001: Missing Rate Limiting on Edge Functions
-
-**Severity:** HIGH
-**Category:** Security - API Abuse
-**Files:** 40+ edge functions in `supabase/functions/`
-
-**Issue:**
-Only 2 functions implement rate limiting (`invite-user`, `send-team-invite`). Critical functions lack protection:
-- `delete-user`
-- `change-user-role`
-- `suspend-user`
-- `reactivate-user`
-- `coaches-corner-chat`
-- `send-notification`
-- 34 more functions
-
-**Why It's a Problem:**
-- Brute force attacks possible
-- API abuse and DoS attacks
-- Resource exhaustion
-- Cost escalation
-
-**Impact:**
-- Service disruption
-- Unexpected costs
-- Unauthorized access attempts succeed
-
-**Suggested Fix:**
-```typescript
-// Create shared rate limiting function
-// _shared/rateLimit.ts
-export async function checkRateLimit(
-  supabase: SupabaseClient,
-  userId: string,
-  action: string,
-  limit: number,
-  windowMs: number
-): Promise<{ allowed: boolean; retryAfter?: number }> {
-  const { data } = await supabase
-    .from('rate_limits')
-    .select('count, window_start')
-    .eq('user_id', userId)
-    .eq('action', action)
-    .single();
-
-  // Check and update logic...
-  return { allowed: true };
-}
-
-// Apply to all edge functions
-const rateLimit = await checkRateLimit(supabaseAdmin, userId, 'delete-user', 5, 60000);
-if (!rateLimit.allowed) {
-  return new Response('Rate limit exceeded', { status: 429 });
-}
-```
-
-**Effort:** 4-6 hours
-**Risk if unfixed:** High - Security vulnerability
-
-**File:** `src/hooks/useAuth.tsx:244-303`
-**Location:** All edge functions
-
----
-
-### 🟠 HIGH-002: Unsafe Type Casting (as any)
-
-**Severity:** HIGH
-**Category:** Code Quality - Type Safety
-**Files:** 47+ instances across codebase
-
-**Issue Examples:**
-```typescript
-// usePipeline.tsx:128
-teamMemberMap.set(m.user_id, (m.profiles as any)?.full_name || 'Unknown');
-
-// useTeamMembers.tsx:39
-...(member.profiles as any),
-
-// useAuth.tsx:325
-const adminName = (logData.admin as any)?.full_name || 'Platform Admin';
+// Line 310
+localStorage.removeItem('viewAsUserId');
 ```
 
 **Why It's a Problem:**
-- Bypasses TypeScript's type checking
-- Masks underlying type issues
-- Runtime type errors
-- Technical debt accumulation
-
-**Impact:**
-- Unpredictable runtime errors
-- Difficult debugging
-- Maintenance burden
+- localStorage accessible to any JavaScript code
+- XSS vulnerability could steal admin session
+- Plain text storage of sensitive user ID
+- No encryption or integrity checking
 
 **Suggested Fix:**
-```typescript
-// Define proper interfaces
-interface MemberWithProfile {
-  user_id: string;
-  profiles: {
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    email: string;
-  } | null;
-}
-
-// Use type guards
-function hasProfile(member: any): member is MemberWithProfile {
-  return member && member.profiles && typeof member.profiles === 'object';
-}
-
-// Apply safely
-if (hasProfile(member)) {
-  teamMemberMap.set(member.user_id, member.profiles.full_name || 'Unknown');
-}
-```
-
-**Effort:** 6-8 hours
-**Risk if unfixed:** Medium - Technical debt
-
-**Locations:** 47 files
+1. Use sessionStorage instead of localStorage (cleared on tab close)
+2. Implement secure, httpOnly cookies for sensitive data
+3. Add integrity checking (HMAC)
+4. Consider server-side session management
+5. Encrypt sensitive values before storage
 
 ---
 
-### 🟠 HIGH-003: Missing File Extension Validation
+### 🟠 HIGH-4: Unsafe File Upload Validation
+**Category:** Security
+**Severity:** MEDIUM-HIGH
+**Impact:** Malicious file upload, potential XSS/RCE
 
-**Severity:** HIGH
-**Category:** Security - File Upload
-**File:** `src/hooks/useFileUpload.tsx:13-14, 40-47`
+**Description:** File type validation relies only on MIME type, which is easily spoofed.
 
-**Issue:**
+**Location:** `/home/user/AgentBuddy/src/hooks/useImageUpload.tsx:8-46`
+
+**Code:**
 ```typescript
-const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
-// Only MIME type check, no extension validation
+// Line 13-14: Only checks file.type (unreliable)
+if (!file.type.startsWith('image/')) {
+  throw new Error('Please select an image file');
+}
+
+// Line 16: Uses user-controlled filename for extension
+const extension = resizedFile.type.split('/')[1];
+
+// Line 30: Constructs filename from user input
+const fileName = `${Date.now()}-${Math.random()}.${extension}`;
 ```
 
 **Why It's a Problem:**
-- MIME types can be spoofed
-- Malicious files can be uploaded
-- No extension whitelist
-- Potential RCE if files processed server-side
-
-**Impact:**
-- Malware distribution
-- Server compromise
-- Storage abuse
+- MIME type is client-side and easily spoofed
+- No magic byte verification
+- Attacker could upload malicious files disguised as images
+- Extension derived from unreliable MIME type
 
 **Suggested Fix:**
-```typescript
-const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
-const ALLOWED_DOC_EXTENSIONS = ['.pdf', '.doc', '.docx'];
-
-function validateFileExtension(filename: string, allowedExtensions: string[]): boolean {
-  const ext = filename.toLowerCase().match(/\.[^.]+$/)?.[0];
-  return ext ? allowedExtensions.includes(ext) : false;
-}
-
-function validateMimeType(file: File, expectedMimes: string[]): boolean {
-  return expectedMimes.includes(file.type);
-}
-
-// In upload function
-if (!validateFileExtension(file.name, ALLOWED_IMAGE_EXTENSIONS)) {
-  throw new Error("Invalid file extension");
-}
-
-if (!validateMimeType(file, ['image/jpeg', 'image/png', ...])) {
-  throw new Error("Invalid file type");
-}
-```
-
-**Effort:** 2 hours
-**Risk if unfixed:** High - Security risk
+1. Validate file magic bytes/signatures server-side
+2. Whitelist allowed extensions
+3. Sanitize filenames completely (remove user input)
+4. Use content-based detection (libmagic)
+5. Scan uploads with antivirus
+6. Store uploads outside web root
 
 ---
 
-### 🟠 HIGH-004: Insufficient Input Validation in Edge Functions
-
+### 🟠 HIGH-5: Unhandled Promise Rejections
+**Category:** Bugs / Missing Error Handling
 **Severity:** HIGH
-**Category:** Security - Input Validation
-**Files:** Multiple edge functions
+**Impact:** Silent failures, uncaught errors
 
-**Issue:** `supabase/functions/send-notification/index.ts`
-```typescript
-const { title, message, type, targetType, targetId } = requestData;
-// No validation on length, content, or format
-```
+**Description:** Promises without `.catch()` handlers can crash app silently.
+
+**Locations:**
+1. `/home/user/AgentBuddy/src/pages/ResetPassword.tsx:37`
+   ```typescript
+   supabase.auth.setSession({
+     access_token: accessToken,
+     refresh_token: refreshToken,
+   }).then(({ error }) => {  // ❌ No .catch()
+     // ... handle error
+   });
+   ```
+
+2. `/home/user/AgentBuddy/src/pages/ReviewRoadmap.tsx:53`
+   ```typescript
+   calculatePerformance().then(setPerformance);  // ❌ No catch
+   ```
 
 **Why It's a Problem:**
-- No length limits on text inputs
-- No content sanitization
-- Potential for DoS via large payloads
-- Database bloat
-
-**Impact:**
-- Service disruption
-- Data corruption
-- Storage costs
+- Network errors or rejected promises crash silently
+- User sees no feedback on failures
+- Difficult to debug production issues
 
 **Suggested Fix:**
 ```typescript
-import { z } from 'zod';
-
-const NotificationSchema = z.object({
-  title: z.string().min(1).max(200),
-  message: z.string().min(1).max(2000),
-  type: z.enum(['info', 'warning', 'error', 'success']),
-  targetType: z.enum(['user', 'team', 'agency']),
-  targetId: z.string().uuid(),
-});
-
-// Validate
-const validation = NotificationSchema.safeParse(requestData);
-if (!validation.success) {
-  return new Response(
-    JSON.stringify({ error: validation.error.errors }),
-    { status: 400 }
-  );
-}
-
-const { title, message, type, targetType, targetId } = validation.data;
+// ✅ Correct
+promise
+  .then(handleSuccess)
+  .catch(error => {
+    console.error('Error:', error);
+    toast.error('Operation failed');
+  });
 ```
-
-**Effort:** 4-5 hours (across all functions)
-**Risk if unfixed:** Medium-High - DoS and abuse
 
 ---
 
-### 🟠 HIGH-005: Service Role Key Usage Without Validation
-
+### 🟠 HIGH-6: N+1 Query Problems (O(n*m) complexity)
+**Category:** Performance
 **Severity:** HIGH
-**Category:** Security - Privilege Escalation
-**Files:** 30 edge functions
+**Impact:** Slow page loads, poor user experience
 
-**Issue:** `supabase/functions/delete-user/index.ts:67-71`
-```typescript
-const supabaseAdmin = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-);
+**Description:** Sequential `.map().find()` operations create O(n*m) complexity.
 
-// Used for privileged operations
-// But some functions lack proper auth checks before using it
-```
+**Locations:**
+1. `/home/user/AgentBuddy/src/components/ListingDetailDialog.tsx:63`
+   ```typescript
+   const commentsWithProfiles = commentsData?.map((comment) => ({
+     ...comment,
+     profiles: profilesData.find((p) => p.id === comment.user_id)  // ❌ O(n*m)
+   }));
+   ```
+
+2. `/home/user/AgentBuddy/src/components/feedback/admin/BugKanbanBoard.tsx:59-69`
+   ```typescript
+   const bugsWithProfiles = data?.map((bug) => ({
+     ...bug,
+     profiles: profiles?.find((p) => p.id === bug.user_id),  // ❌ O(n*m)
+   })) || [];
+   ```
+
+3. `/home/user/AgentBuddy/src/components/feedback/admin/FeatureRequestKanbanBoard.tsx:66-69`
+   - Same pattern
 
 **Why It's a Problem:**
-- Service role bypasses RLS
-- If auth checks are missing/weak, privilege escalation possible
-- Not all functions validate admin status before service role usage
-
-**Impact:**
-- Unauthorized admin operations
-- Data manipulation
-- Security breach
+- For 100 comments and 100 profiles: 10,000 iterations
+- Should be O(n+m) with Map lookup
+- Noticeable lag on large datasets
 
 **Suggested Fix:**
 ```typescript
-// Add strict validation before service role usage
-const authHeader = req.headers.get('authorization');
-if (!authHeader) {
-  return new Response('Unauthorized', { status: 401 });
-}
-
-// Verify user is authenticated
-const supabaseClient = createClient(url, anonKey, {
-  global: { headers: { Authorization: authHeader } }
-});
-
-const { data: { user } } = await supabaseClient.auth.getUser();
-if (!user) {
-  return new Response('Unauthorized', { status: 401 });
-}
-
-// Verify user has required role
-const { data: roles } = await supabaseClient
-  .from('user_roles')
-  .select('role')
-  .eq('user_id', user.id);
-
-if (!roles?.some(r => ['platform_admin', 'office_manager'].includes(r.role))) {
-  return new Response('Forbidden', { status: 403 });
-}
-
-// Now safe to use service role
-const supabaseAdmin = createClient(url, serviceRoleKey);
+// ✅ Correct: O(n+m) with Map
+const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+const commentsWithProfiles = commentsData?.map((comment) => ({
+  ...comment,
+  profiles: profilesMap.get(comment.user_id)
+}));
 ```
-
-**Effort:** 6-8 hours
-**Risk if unfixed:** High - Privilege escalation
 
 ---
 
-### 🟠 HIGH-006: Select '*' in Queries (Over-fetching Data)
-
+### 🟠 HIGH-7: Missing Query Field Selection (25+ instances)
+**Category:** Performance
 **Severity:** HIGH
-**Category:** Performance - Database Queries
-**Files:** 20+ files
+**Impact:** Unnecessary bandwidth usage, slow queries
 
-**Issue:**
-```typescript
-// Fetches ALL columns unnecessarily
-await supabase.from("team_members").select('*')
-await supabase.from("transactions").select('*')
-await supabase.from("profiles").select('*')
-```
+**Description:** Using `select('*')` fetches all columns when only specific fields needed.
+
+**Locations:**
+- `/home/user/AgentBuddy/src/hooks/useSystemMetrics.tsx:24-28` - Uses `select('*', { count: 'exact', head: true })` when only count needed
+- `/home/user/AgentBuddy/src/hooks/useTasks.tsx:394,492,579`
+- `/home/user/AgentBuddy/src/hooks/useListingPipeline.tsx:73`
+- `/home/user/AgentBuddy/src/hooks/usePastSales.tsx:117`
+- `/home/user/AgentBuddy/src/hooks/useProjects.tsx:139`
+- `/home/user/AgentBuddy/src/hooks/useOfficeMembers.tsx:39`
+- `/home/user/AgentBuddy/src/hooks/useDailyPlanner.tsx:45,330`
+- `/home/user/AgentBuddy/src/components/ListingDetailDialog.tsx:57`
 
 **Why It's a Problem:**
 - Fetches unnecessary data
 - Increases bandwidth usage
-- Slower query performance
-- Larger bundle sizes
-- Privacy risk (fetching sensitive fields not needed)
-
-**Impact:**
-- Degraded performance
-- Increased costs
-- Poor mobile experience
+- Slower database queries
+- Higher memory usage
 
 **Suggested Fix:**
 ```typescript
-// Only select needed columns
-await supabase
-  .from("team_members")
-  .select('id, user_id, team_id, access_level')
-  .eq('team_id', teamId);
+// ❌ Wrong
+.select('*')
 
-// With related data
-await supabase
-  .from("team_members")
-  .select(`
-    id,
-    user_id,
-    access_level,
-    profiles:user_id (
-      full_name,
-      avatar_url
-    )
-  `)
-  .eq('team_id', teamId);
+// ✅ Correct
+.select('id, name, email, created_at')
 ```
-
-**Effort:** 3-4 hours
-**Risk if unfixed:** Medium - Performance impact
-
-**Files Found:**
-- `src/components/feedback/admin/BugHuntDashboard.tsx`
-- `src/components/feedback/BugDetailDrawer.tsx`
-- `src/components/hub/OfficeMembersPopover.tsx`
-- 17 more files...
 
 ---
 
-### 🟠 HIGH-007: Nested .map() Operations (O(n²) Complexity)
-
+### 🟠 HIGH-8: Missing List Keys (22 instances)
+**Category:** Performance / React Best Practices
 **Severity:** HIGH
-**Category:** Performance - Algorithm Efficiency
-**Files:** 3 files
+**Impact:** React reconciliation issues, state bugs
 
-**Issue Found:**
-```typescript
-// src/components/community/CommunityAnalytics.tsx
-data.map(team =>
-  team.members.map(member => {
-    // O(n²) operation
-  })
-)
-```
+**Description:** Using array index as key causes state mismatches when list reorders.
 
-**Also in:**
-- `src/components/people/FriendsTab.tsx`
-- `src/pages/office-manager/InvitationActivityLog.tsx`
+**Locations:**
+1. `/home/user/AgentBuddy/src/components/appraisals/AppraisalsImportDialog.tsx:395`
+   ```typescript
+   {filteredRows.map((row, index) => <div key={index}>)}  // ❌
+   ```
+
+2. `/home/user/AgentBuddy/src/components/feedback/FileUploadArea.tsx:199`
+3. `/home/user/AgentBuddy/src/components/social/ImageUploadZone.tsx:83`
+4. `/home/user/AgentBuddy/src/components/past-sales/PastSalesImportDialog.tsx:431`
+5. Plus 18 more instances
 
 **Why It's a Problem:**
-- Quadratic time complexity
-- Slows down with more data
-- Blocks UI rendering
-- Poor scalability
-
-**Impact:**
-- Laggy UI
-- Poor user experience
-- App freezing with large datasets
+- React reconciliation uses keys for identity
+- Index keys cause wrong components to receive state
+- List reordering breaks component state
+- Deletions cause wrong items to be removed
 
 **Suggested Fix:**
 ```typescript
-// Flatten first, then process
-const allMembers = data.flatMap(team =>
-  team.members.map(member => ({
-    ...member,
-    teamName: team.name
-  }))
-);
+// ❌ Wrong
+{items.map((item, index) => <Item key={index} />)}
 
-// Or use better data structure
-const memberMap = new Map();
-for (const team of teams) {
-  for (const member of team.members) {
-    memberMap.set(member.id, { ...member, teamName: team.name });
-  }
-}
+// ✅ Correct
+{items.map((item) => <Item key={item.id} />)}
 ```
-
-**Effort:** 2 hours
-**Risk if unfixed:** Medium - Performance bottleneck
 
 ---
 
-### 🟠 HIGH-008: Missing React.memo/useMemo/useCallback
-
-**Severity:** HIGH
-**Category:** Performance - React Optimization
-**Files:** Most components
-
-**Issue:**
-Only 62 usages of React.memo/useMemo/useCallback found across 1,045 files (~6%)
-
-**Why It's a Problem:**
-- Unnecessary re-renders
-- Expensive computations repeated
-- Props causing child re-renders
-- Poor performance at scale
-
-**Impact:**
-- Sluggish UI
-- Battery drain on mobile
-- Poor user experience
-
-**High Priority Files to Optimize:**
-```typescript
-// src/components/kpi-tracker/KPITrackerWidget.tsx
-// Heavy calculations on every render
-export const KPITrackerWidget = React.memo(() => {
-  const cchCalculation = useMemo(() =>
-    calculateCCH(kpiData),
-    [kpiData]
-  );
-
-  const handleUpdate = useCallback((newData) => {
-    updateKPI(newData);
-  }, [updateKPI]);
-
-  return <div>...</div>;
-});
-
-// Similar for:
-// - src/components/plan/WeeklyPerformanceWidget.tsx
-// - src/components/transaction-management/TransactionCard.tsx
-// - src/components/directory/ProviderCard.tsx
-```
-
-**Effort:** 8-10 hours (prioritize most-used components)
-**Risk if unfixed:** Medium - Performance degradation
-
----
-
-## 3. MEDIUM PRIORITY ISSUES
-
-### 🟡 MEDIUM-001: Missing Null Checks on Nested Properties
-
+### 🟠 HIGH-9: Password Validation Inconsistency
+**Category:** Security
 **Severity:** MEDIUM
-**Category:** Bugs - Null Reference
-**Files:** Multiple
+**Impact:** User confusion, potential security weakness
 
-**Issue 1:** `src/hooks/useProfile.tsx:106-107`
+**Description:** Frontend shows different password requirements than validation schema.
+
+**Locations:**
+- `/home/user/AgentBuddy/src/lib/authValidation.ts:15-22` - Schema requires 8+ characters
+- `/home/user/AgentBuddy/src/components/InvitationSignup.tsx:406` - HTML form requires minimum 6
+- `/home/user/AgentBuddy/src/pages/Auth.tsx:131` - Shows 6 character minimum
+
+**Code:**
 ```typescript
-const fileExt = file.name.split('.').pop();  // ⚠️ Can be undefined
-const filePath = `${user.id}/avatar.${fileExt}`;  // avatar.undefined
-```
+// authValidation.ts - Backend schema
+password: z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Must contain uppercase')
+  .regex(/[a-z]/, 'Must contain lowercase')
+  .regex(/[0-9]/, 'Must contain number')
+  .regex(/[^A-Za-z0-9]/, 'Must contain special character')
 
-**Issue 2:** `src/hooks/useTeam.tsx:133`
-```typescript
-const fileExt = file.name.split('.').pop();  // Same issue
-```
-
-**Why It's a Problem:**
-- `.pop()` returns `undefined` on empty array
-- Creates invalid file paths
-- Breaks file uploads
-
-**Impact:**
-- Failed uploads
-- Invalid file names
-- User frustration
-
-**Suggested Fix:**
-```typescript
-const fileExt = file.name.split('.').pop() || 'jpg';
-const filePath = `${user.id}/avatar.${fileExt}`;
-```
-
-**Effort:** 15 minutes
-**Risk if unfixed:** Low-Medium - Edge case failures
-
----
-
-### 🟡 MEDIUM-002: Weak Session Management for Rate Limiting
-
-**Severity:** MEDIUM
-**Category:** Security - Rate Limiting
-**File:** `src/lib/security.ts:119-164`
-
-**Issue:**
-```typescript
-// Client-side rate limiting using localStorage
-localStorage.setItem(key, JSON.stringify({ count, timestamp }));
+// InvitationSignup.tsx - Frontend HTML
+<input type="password" minLength="6" />  // ❌ Inconsistent
 ```
 
 **Why It's a Problem:**
-- Client-side checks easily bypassed
-- Clear storage = reset limits
-- Private browsing = no limits
-- Not a real security control
-
-**Impact:**
-- Rate limits ineffective
-- API abuse possible
-
-**Suggested Fix:**
-```typescript
-// Client-side for UX only
-// Server-side (already implemented in DB) for security
-
-// Remove security dependency on client-side checks
-// Keep only for showing user-friendly messages
-```
-
-**Effort:** 1 hour (documentation/refactor)
-**Risk if unfixed:** Low - Server-side checks exist
-
----
-
-### 🟡 MEDIUM-003: parseInt/parseFloat Without NaN Validation
-
-**Severity:** MEDIUM
-**Category:** Bugs - Input Validation
-**Files:** Multiple
-
-**Issue:**
-```typescript
-// ReviewRoadmap.tsx:160
-setNewGoal({ ...newGoal, target_value: parseInt(e.target.value) || 0 })
-
-// NurtureCalculator.tsx:138
-setDailyCalls(Math.max(1, parseInt(e.target.value) || 1))
-```
-
-**Why It's a Problem:**
-- Silent failures with invalid input
-- `|| 0` fallback masks validation issues
-- NaN can propagate through calculations
-
-**Impact:**
-- Invalid data stored
-- Incorrect calculations
 - User confusion
+- Form submits then fails validation
+- Security policy unclear
 
 **Suggested Fix:**
-```typescript
-const value = parseInt(e.target.value, 10);
-if (isNaN(value)) {
-  toast.error('Please enter a valid number');
-  return;
-}
-setNewGoal({ ...newGoal, target_value: value });
-```
-
-**Effort:** 2 hours
-**Risk if unfixed:** Low-Medium - Data quality
+Align all validations to 8 characters with complexity requirements.
 
 ---
 
-### 🟡 MEDIUM-004: Circular Dependency in VendorReporting
-
+### 🟠 HIGH-10: Unsafe JSON Parsing from localStorage
+**Category:** Security / Error Handling
 **Severity:** MEDIUM
-**Category:** Code Quality - Architecture
-**Files:** Vendor reporting module
+**Impact:** Application crashes, potential data corruption
 
-**Issue:**
+**Description:** JSON.parse without try-catch can crash app if localStorage corrupted.
+
+**Locations:**
+- `/home/user/AgentBuddy/src/lib/security.ts:137`
+  ```typescript
+  const data = JSON.parse(stored);  // ❌ No try-catch
+  ```
+- `/home/user/AgentBuddy/src/hooks/useLocalStorage.tsx:8`
+  ```typescript
+  return item ? JSON.parse(item) : initialValue;  // ❌ No error handling
+  ```
+- Multiple components parse without try-catch
+
+**Why It's a Problem:**
+- Corrupted localStorage crashes app
+- Malformed JSON from tampering
+- No graceful degradation
+
+**Suggested Fix:**
+```typescript
+// ✅ Correct
+try {
+  const data = JSON.parse(stored);
+  return data;
+} catch (error) {
+  console.error('Failed to parse stored data:', error);
+  localStorage.removeItem(key);
+  return defaultValue;
+}
 ```
-VendorReporting.tsx → ReportOutput.tsx → VendorReporting.tsx
+
+---
+
+### 🟠 HIGH-11: Client-Side Rate Limiting Only
+**Category:** Security
+**Severity:** MEDIUM
+**Impact:** Easily bypassed, brute force attacks possible
+
+**Description:** Rate limiting implemented only client-side in localStorage.
+
+**Location:** `/home/user/AgentBuddy/src/lib/security.ts:119-164`
+
+**Code:**
+```typescript
+export const checkClientRateLimit = (action: string, maxAttempts: number): boolean => {
+  const key = `rate_limit_${action}`;
+  const stored = localStorage.getItem(key);  // ❌ Client-side only
+  // ... validation logic
+};
 ```
 
 **Why It's a Problem:**
-- Type exported from page component
-- Child imports parent type
-- Parent imports child component
-- Creates tight coupling
-
-**Impact:**
-- Build warnings
-- HMR issues
-- Maintenance difficulty
+- localStorage can be cleared or manipulated
+- No server-side enforcement
+- Attackers can bypass entirely
+- Date.now() is client-controlled
 
 **Suggested Fix:**
-```typescript
-// Create src/pages/vendor-reporting/types.ts
-export interface GeneratedReport {
-  vendorReport: string;
-  actionPoints: string;
-  whatsappSummary: string;
-}
-
-// Update both files to import from types.ts
-```
-
-**Effort:** 15 minutes
-**Risk if unfixed:** Low - Already working but suboptimal
-
-**See:** `CIRCULAR_DEPENDENCY_ANALYSIS.md` for full details
+1. Implement server-side rate limiting
+2. Use Redis or similar for distributed rate limiting
+3. Rate limit by IP address
+4. Use Supabase auth rate limiting features
+5. Client-side rate limiting as UX enhancement only
 
 ---
 
-### 🟡 MEDIUM-005: Inconsistent Error Handling Patterns
+## Medium Severity Issues
 
+### 🟡 MEDIUM-1: Circular Dependency
+**Category:** Code Quality
 **Severity:** MEDIUM
-**Category:** Code Quality - Consistency
-**Files:** Throughout codebase
+**Impact:** Build issues, maintenance difficulty
 
-**Issue:**
-Mixed error handling approaches:
-- Some use toast notifications
-- Some use console.error
-- Some throw errors
-- Some return error states
-- Inconsistent error message formats
+**Description:** Circular import between page and component.
+
+**Cycle:**
+```
+src/pages/vendor-reporting/VendorReporting.tsx
+  ├─ Line 11: imports ReportOutput component
+  └─ Line 14: exports GeneratedReport interface
+
+src/pages/vendor-reporting/components/ReportOutput.tsx
+  └─ Line 8: imports GeneratedReport type from ../VendorReporting
+```
+
+**Why It's a Problem:**
+- Creates tight coupling
+- Harder to refactor
+- Potential module resolution issues
+- Build order dependency
+
+**Suggested Fix:**
+Create `src/pages/vendor-reporting/types.ts` and move interface there:
+```typescript
+// types.ts
+export interface GeneratedReport {
+  // ... fields
+}
+
+// VendorReporting.tsx
+import { GeneratedReport } from './types';
+
+// ReportOutput.tsx
+import { GeneratedReport } from '../types';
+```
+
+---
+
+### 🟡 MEDIUM-2: Duplicate Import Dialog Components
+**Category:** Code Duplication
+**Severity:** MEDIUM
+**Impact:** Maintenance burden, inconsistent behavior
+
+**Description:** Two import dialog components with 95% identical code.
+
+**Locations:**
+- `/home/user/AgentBuddy/src/components/appraisals/AppraisalsImportDialog.tsx` (516 lines)
+- `/home/user/AgentBuddy/src/components/past-sales/PastSalesImportDialog.tsx` (540 lines)
+
+**Duplication:**
+- Identical multi-step dialog flow
+- Same state management (file, validatedRows, step, summary, parsing)
+- Nearly identical UI components
+- Same validation preview logic
+- Lines 42-137 are 95% identical
+- Only differences: hook imports and template data
+
+**Why It's a Problem:**
+- Bug fixes must be applied twice
+- Inconsistent user experience
+- Maintenance overhead
+- Duplicated logic increases bundle size
+
+**Suggested Fix:**
+Create generic `ImportDialog` component:
+```typescript
+<ImportDialog
+  title="Import Appraisals"
+  useImportHook={useAppraisalsImport}
+  templateData={appraisalTemplate}
+/>
+```
+
+---
+
+### 🟡 MEDIUM-3: Duplicate Import Hooks
+**Category:** Code Duplication
+**Severity:** MEDIUM
+**Impact:** Maintenance burden
+
+**Description:** Two import hooks with shared utility functions.
+
+**Locations:**
+- `/home/user/AgentBuddy/src/hooks/useAppraisalsImport.ts` (356 lines)
+- `/home/user/AgentBuddy/src/hooks/usePastSalesImport.ts` (512 lines)
+
+**Duplicated Functions:**
+- `normalizeColumnName()` (identical)
+- `findColumn()` (identical)
+- `parseDate()` (identical)
+- `parseNumber()` (identical)
+- `toTitleCase()` (identical)
+- `extractSuburb()` (identical)
+
+**Why It's a Problem:**
+- Bug in utility affects multiple places
+- Inconsistent behavior
+- Increased bundle size
+
+**Suggested Fix:**
+Create `/home/user/AgentBuddy/src/lib/csvParsingUtils.ts`:
+```typescript
+export const normalizeColumnName = (name: string) => { /* ... */ };
+export const findColumn = (headers: string[], patterns: string[]) => { /* ... */ };
+export const parseDate = (dateStr: string) => { /* ... */ };
+export const parseNumber = (value: string) => { /* ... */ };
+export const toTitleCase = (str: string) => { /* ... */ };
+export const extractSuburb = (address: string) => { /* ... */ };
+```
+
+---
+
+### 🟡 MEDIUM-4: 6x Duplicate Email Validation Functions
+**Category:** Code Duplication
+**Severity:** MEDIUM
+**Impact:** Inconsistent validation
+
+**Description:** Same email validation function duplicated across 6 files.
+
+**Locations:**
+1. `/home/user/AgentBuddy/src/components/platform-admin/AddUserDialogPlatform.tsx:60-69`
+2. `/home/user/AgentBuddy/src/components/office-manager/AddUserDialog.tsx:62-71`
+3. `/home/user/AgentBuddy/src/components/office-manager/InviteTeamMemberDialog.tsx:76-80`
+4. `/home/user/AgentBuddy/src/pages/InviteUser.tsx:81-90`
+5. `/home/user/AgentBuddy/src/pages/platform-admin/InviteUserPlatform.tsx`
+6. `/home/user/AgentBuddy/src/hooks/useUserImport.tsx:47-50`
+
+**Suggested Fix:**
+Move to `/home/user/AgentBuddy/src/lib/validation.ts` (file already exists).
+
+---
+
+### 🟡 MEDIUM-5: Duplicate Validation Schemas
+**Category:** Code Quality / Inconsistency
+**Severity:** MEDIUM
+**Impact:** Inconsistent validation behavior
+
+**Description:** Same schemas defined in two places with slight variations.
+
+**Locations:**
+- `/home/user/AgentBuddy/src/lib/validation.ts` - Contains signUpSchema, signInSchema
+- `/home/user/AgentBuddy/src/lib/authValidation.ts` - Contains signUpSchema, signInSchema
+
+**Differences:**
+```typescript
+// validation.ts:33
+teamCode: z.string().min(6).max(20)
+
+// authValidation.ts:43
+teamCode: z.string().length(8)
+
+// validation.ts:30
+fullName: z.string().regex(/^[a-zA-Z\s'-]+$/)
+
+// authValidation.ts:30
+fullName: z.string().regex(/^[a-zA-ZÀ-ÿ\s'-]+$/)  // Supports accents
+```
+
+**Why It's a Problem:**
+- Different parts of app use different schemas
+- Inconsistent validation rules
+- Confusing for developers
+
+**Suggested Fix:**
+Consolidate into single source of truth in `authValidation.ts`, delete from `validation.ts`.
+
+---
+
+### 🟡 MEDIUM-6: Toast System Inconsistency
+**Category:** Inconsistent Patterns
+**Severity:** MEDIUM
+**Impact:** Code maintainability
+
+**Description:** Two different toast implementations used inconsistently.
+
+**Statistics:**
+- Direct sonner imports: 210 files
+- useToast hook imports: 30+ files
 
 **Examples:**
 ```typescript
-// Pattern 1: Toast
-toast.error("Failed to save");
+// Pattern 1 (210 files)
+import { toast } from 'sonner';
+toast.success('Done!');
 
-// Pattern 2: Console
-console.error("Save failed", error);
-
-// Pattern 3: Throw
-throw new Error("Save failed");
-
-// Pattern 4: Return
-return { error: "Save failed" };
+// Pattern 2 (30 files)
+import { useToast } from '@/hooks/use-toast';
+const { toast } = useToast();
+toast({ title: 'Success', description: 'Done!' });
 ```
 
 **Why It's a Problem:**
 - Inconsistent user experience
-- Some errors visible, others silent
-- Difficult to debug
-- No centralized error tracking
-
-**Impact:**
-- Poor UX
-- Debugging difficulty
-- Lost error information
+- Different APIs for same functionality
+- Harder to maintain
+- Custom hook bypassed in most files
 
 **Suggested Fix:**
-```typescript
-// Centralized error handler
-// lib/errorHandler.ts
-export function handleError(error: Error, context: string, options: {
-  showToast?: boolean;
-  logToService?: boolean;
-}) {
-  // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
-    console.error(`[${context}]`, error);
-  }
-
-  // Show user-friendly message
-  if (options.showToast) {
-    toast.error(getUserFriendlyMessage(error));
-  }
-
-  // Send to error tracking service
-  if (options.logToService) {
-    errorTrackingService.log(error, context);
-  }
-}
-
-// Usage
-try {
-  await saveData();
-} catch (error) {
-  handleError(error, 'saveData', {
-    showToast: true,
-    logToService: true
-  });
-}
-```
-
-**Effort:** 6-8 hours
-**Risk if unfixed:** Low - Maintenance burden
+Choose one approach and standardize across codebase. Recommend using sonner directly for consistency.
 
 ---
 
-### 🟡 MEDIUM-006: Code Duplication - Query Patterns
-
+### 🟡 MEDIUM-7: Logger vs Console Inconsistency
+**Category:** Inconsistent Patterns
 **Severity:** MEDIUM
-**Category:** Code Quality - DRY Principle
-**Files:** Multiple hooks
+**Impact:** Debugging, production logging
 
-**Issue:**
-Similar Supabase query patterns repeated across hooks:
+**Description:** Mixed use of custom logger vs console methods.
 
+**Statistics:**
+- console.* calls: 227 instances
+- logger imports: 8 instances in hooks
+
+**Example from useAuth.tsx:**
 ```typescript
-// Repeated in 10+ hooks
-const { data, error } = await supabase
-  .from("table_name")
-  .select('*')
-  .eq('user_id', user.id);
-
-if (error) {
-  console.error('Error:', error);
-  throw error;
-}
+Line 86: logger.error('[useAuth] Error fetching user roles...')
+Line 120: console.error('[useAuth] Error in fetchUserRoles...')
+Line 169: console.error('Failed to restore view-as session:')
 ```
 
 **Why It's a Problem:**
-- Violates DRY principle
-- Inconsistent error handling
-- Harder to update patterns
-- More code to maintain
-
-**Impact:**
-- Maintenance burden
-- Inconsistencies
-- Bug duplication
+- Inconsistent log formatting
+- Harder to filter/search logs
+- Production logging inconsistent
+- Can't easily disable console.log in production
 
 **Suggested Fix:**
-```typescript
-// lib/supabaseHelpers.ts
-export async function queryWithAuth<T>(
-  table: string,
-  userId: string,
-  options?: QueryOptions
-): Promise<T[]> {
-  const query = supabase
-    .from(table)
-    .select(options?.select || '*')
-    .eq('user_id', userId);
-
-  if (options?.filters) {
-    options.filters.forEach(([column, value]) => {
-      query.eq(column, value);
-    });
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
-    logger.error(`Query failed for ${table}`, error);
-    throw new Error(`Failed to fetch ${table}`);
-  }
-
-  return data as T[];
-}
-
-// Usage
-const transactions = await queryWithAuth<Transaction>(
-  'transactions',
-  user.id,
-  { select: 'id, title, status' }
-);
-```
-
-**Effort:** 4-5 hours
-**Risk if unfixed:** Low - Technical debt
+Standardize on logger utility for all logging.
 
 ---
 
-### 🟡 MEDIUM-007: Inconsistent Naming Conventions
-
+### 🟡 MEDIUM-8: Geocoding Hooks Implementation Differences
+**Category:** Inconsistent Patterns
 **Severity:** MEDIUM
-**Category:** Code Quality - Standards
-**Files:** Throughout
+**Impact:** Different user experience, maintenance
 
-**Issue:**
-Mixed naming patterns:
-- `useKPITrackerData` vs `useKpiHistory` (KPI vs Kpi)
-- `TransactionCard.tsx` vs `transaction-card.tsx` (inconsistent file naming)
-- `fetchData` vs `getData` vs `loadData` (inconsistent function prefixes)
+**Description:** Three geocoding hooks with different patterns.
+
+**Locations:**
+1. `/home/user/AgentBuddy/src/hooks/useListingGeocoding.ts`
+   - Sequential processing with rate limiting
+   - Uses localStorage for progress
+   - Direct toast calls
+
+2. `/home/user/AgentBuddy/src/hooks/useTransactionGeocoding.ts`
+   - Sequential processing
+   - Uses localStorage for progress
+   - Includes queryClient invalidation
+
+3. `/home/user/AgentBuddy/src/hooks/useProspectGeocoding.tsx`
+   - Parallel processing with Promise.allSettled()
+   - No localStorage usage
+   - Different error aggregation
 
 **Why It's a Problem:**
-- Hard to find files
-- Inconsistent codebase feel
-- Onboarding difficulty
-- Merge conflicts
-
-**Impact:**
-- Developer productivity
-- Code searchability
-- Maintainability
+- Inconsistent user experience
+- Different performance characteristics
+- Harder to maintain
+- Bug fixes need to be applied to all three
 
 **Suggested Fix:**
-```typescript
-// Establish and document conventions:
-
-// 1. Component files: PascalCase
-ComponentName.tsx
-
-// 2. Hook files: camelCase starting with 'use'
-useSomething.tsx
-
-// 3. Utility files: camelCase
-someUtility.ts
-
-// 4. Acronyms: Uppercase (API, KPI, UI)
-useKPITracker.tsx  ✓
-useKpiTracker.tsx  ✗
-
-// 5. Fetch functions: Always use 'fetch' prefix
-fetchUserData()     ✓
-getUserData()       ✗
-loadUserData()      ✗
-```
-
-**Effort:** 2-3 hours (documentation + gradual refactor)
-**Risk if unfixed:** Low - Quality of life
+Create generic `useGeocoding` hook with configuration options.
 
 ---
 
-### 🟡 MEDIUM-008: TODO Comments Indicate Incomplete Features
-
+### 🟡 MEDIUM-9: Missing Memoization for Expensive Operations
+**Category:** Performance
 **Severity:** MEDIUM
-**Category:** Code Quality - Technical Debt
-**Files:** 9 files with TODOs
+**Impact:** Unnecessary re-renders, poor performance
 
-**Found TODOs:**
+**Description:** Expensive calculations without useMemo/useCallback.
+
+**Location:** `/home/user/AgentBuddy/src/components/AdjustTargetsDialogEnhanced.tsx:84-104,149-156`
+
+**Code:**
 ```typescript
-// src/components/plan/PlanHeroMetrics.tsx:19
-const quarterlyAppraisalsTarget = 65; // TODO: fetch from team goals
-
-// src/pages/role-playing/RolePlaying.tsx:30
-// TODO: Navigate to voice session
-
-// src/components/kpi-tracker/ManageTargets.tsx:135
-{getStatusBadge(50)} {/* TODO: Calculate actual progress */}
-
-// src/components/people/GlobalTab.tsx:22
-// TODO: Add all-time CCH
-
-// src/components/ListingDetailDialog.tsx:97
-// TODO: Open TC modal with pre-populated data
-```
-
-**Why It's a Problem:**
-- Incomplete features in production
-- Hard-coded values instead of dynamic data
-- Technical debt accumulation
-- Forgotten improvements
-
-**Impact:**
-- Feature incompleteness
-- User confusion
-- Maintenance burden
-
-**Suggested Fix:**
-1. Create issues for each TODO
-2. Prioritize and schedule
-3. Remove TODOs as implemented
-4. Add FIXME for bugs, TODO for enhancements
-
-**Effort:** Varies per TODO
-**Risk if unfixed:** Low-Medium - Feature gaps
-
----
-
-### 🟡 MEDIUM-009: Potential Memory Leaks in Realtime Subscriptions
-
-**Severity:** MEDIUM
-**Category:** Bugs - Memory Leaks
-**File:** `src/hooks/useConversations.tsx:85-117`
-
-**Issue:**
-```typescript
-useEffect(() => {
-  if (!user) return;
-
-  const channel = supabase.channel("conversations-changes")...
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [user, queryClient]); // ⚠️ queryClient shouldn't be in dependencies
-```
-
-**Why It's a Problem:**
-- `queryClient` in deps causes unnecessary re-subscriptions
-- Creates/destroys channels repeatedly
-- Memory leaks from unclosed connections
-- Performance impact
-
-**Impact:**
-- Memory usage growth
-- Connection exhaustion
-- Performance degradation
-
-**Suggested Fix:**
-```typescript
-useEffect(() => {
-  if (!user) return;
-
-  const channel = supabase.channel("conversations-changes")...
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-}, [user]); // Remove queryClient - it's stable
-```
-
-**Effort:** 30 minutes
-**Risk if unfixed:** Low-Medium - Gradual degradation
-
----
-
-### 🟡 MEDIUM-010: Missing Pagination on Large Datasets
-
-**Severity:** MEDIUM
-**Category:** Performance - Scalability
-**Files:** Multiple list components
-
-**Issue:**
-Components fetching all records without pagination:
-- Transaction lists
-- Team member lists
-- Past sales lists
-- Service provider directories
-
-**Why It's a Problem:**
-- Poor performance with large datasets
-- High memory usage
-- Slow initial load
-- Network bandwidth waste
-
-**Impact:**
-- Slow page loads
-- Poor mobile experience
-- Scalability issues
-
-**Suggested Fix:**
-```typescript
-// Add pagination to hooks
-export const useTransactions = (page = 1, pageSize = 50) => {
-  return useQuery({
-    queryKey: ['transactions', page],
-    queryFn: async () => {
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-
-      const { data, error, count } = await supabase
-        .from('transactions')
-        .select('*', { count: 'exact' })
-        .range(from, to)
-        .order('created_at', { ascending: false });
-
-      return { data, totalCount: count };
-    }
-  });
+const calculateVariance = (kpiType: string) => {
+  const teamGoal = teamGoals.find(g => g.kpi_type === kpiType)?.target_value || 0;
+  const memberSum = memberGoals
+    .filter(g => g.kpi_type === kpiType)
+    .filter(g => {
+      const member = teamMembers.find(m => m.user_id === g.user_id);  // ❌ O(n) in loop
+      return member?.contributes_to_kpis !== false;
+    })
+    .reduce((sum, g) => sum + (g.target_value || 0), 0);
+  return teamGoal - memberSum;
 };
 
-// Add infinite scroll or pagination UI
+// Called multiple times in render without memoization
 ```
 
-**Effort:** 6-8 hours
-**Risk if unfixed:** Medium - Scalability concern
+**Why It's a Problem:**
+- Recalculates on every render
+- Multiple .find() calls in nested loops
+- Causes performance lag
+- Should use useMemo
+
+**Suggested Fix:**
+```typescript
+const calculateVariance = useMemo(() => {
+  const teamMembersMap = new Map(teamMembers.map(m => [m.user_id, m]));
+
+  return (kpiType: string) => {
+    const teamGoal = teamGoals.find(g => g.kpi_type === kpiType)?.target_value || 0;
+    const memberSum = memberGoals
+      .filter(g => g.kpi_type === kpiType)
+      .filter(g => teamMembersMap.get(g.user_id)?.contributes_to_kpis !== false)
+      .reduce((sum, g) => sum + (g.target_value || 0), 0);
+    return teamGoal - memberSum;
+  };
+}, [teamGoals, memberGoals, teamMembers]);
+```
 
 ---
 
-### 🟡 MEDIUM-011 through MEDIUM-023
+### 🟡 MEDIUM-10: Large Components (>500 lines)
+**Category:** Performance / Code Quality
+**Severity:** MEDIUM
+**Impact:** Maintenance, performance
 
-Additional medium priority issues include:
-- Duplicate interface definitions across files
-- Missing loading states in some components
-- Inconsistent date formatting
-- Hard-coded strings that should be constants
-- Missing TypeScript strict mode checks
-- Unused imports in various files
-- Console.log statements in production code (50+ files)
-- Missing alt text on images
-- Accessibility issues (missing ARIA labels)
-- Incomplete error messages
-- Missing data validation in forms
-- Weak password strength indicators
-- Inconsistent button styling
+**Description:** Several components exceed 500 lines, hindering maintainability and performance.
 
-**See detailed findings in individual audit reports.**
+**Files:**
+1. `/home/user/AgentBuddy/src/components/transaction-management/TransactionDetailDrawer.tsx` - 990 lines
+2. `/home/user/AgentBuddy/src/hooks/useTasks.tsx` - 818 lines
+3. `/home/user/AgentBuddy/src/components/past-sales/PastSaleDetailDialog.tsx` - 799 lines
+4. `/home/user/AgentBuddy/src/pages/CoachesCorner.tsx` - 783 lines
+5. `/home/user/AgentBuddy/src/components/feedback/BugDetailDrawer.tsx` - 745 lines
+
+**Why It's a Problem:**
+- Hard to understand and maintain
+- Difficult to test
+- Performance issues (no component memoization)
+- Harder code reviews
+
+**Suggested Fix:**
+Break into smaller, focused components:
+- Extract repeated sections
+- Create reusable sub-components
+- Use React.memo for sub-components
+- Separate concerns (UI, logic, data fetching)
 
 ---
 
-## 4. LOW PRIORITY ISSUES
+### 🟡 MEDIUM-11: Missing useEffect Dependencies
+**Category:** Bugs
+**Severity:** MEDIUM
+**Impact:** Stale closures, incorrect behavior
 
-### 🔵 LOW-001 through LOW-015
+**Description:** useEffect hooks with missing dependencies in dependency array.
 
-Low priority issues include:
-- Environment variables in client code (expected for public keys)
-- Inconsistent comment styles
-- Mixed quote styles (single vs double)
-- Verbose function names
+**Location:** `/home/user/AgentBuddy/src/components/social/PostImageLightbox.tsx:75-86`
+
+**Code:**
+```typescript
+useEffect(() => {
+  const handleKeyPress = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') goToPrevious();  // ❌ Not in deps
+    if (e.key === 'ArrowRight') goToNext();     // ❌ Not in deps
+    if (e.key === 'Escape') onClose();          // ❌ Not in deps
+    if (e.key === '+' || e.key === '=') handleZoomIn();  // ❌ Not in deps
+    if (e.key === '-') handleZoomOut();         // ❌ Not in deps
+  };
+
+  window.addEventListener('keydown', handleKeyPress);
+  return () => window.removeEventListener('keydown', handleKeyPress);
+}, [currentIndex, zoom]);  // ❌ Missing: onClose, goToPrevious, goToNext, handleZoomIn, handleZoomOut
+```
+
+**Why It's a Problem:**
+- Stale closures capture old function references
+- Event handlers use outdated state/props
+- Difficult to debug
+
+**Suggested Fix:**
+```typescript
+useEffect(() => {
+  const handleKeyPress = (e: KeyboardEvent) => {
+    if (e.key === 'ArrowLeft') goToPrevious();
+    if (e.key === 'ArrowRight') goToNext();
+    if (e.key === 'Escape') onClose();
+    if (e.key === '+' || e.key === '=') handleZoomIn();
+    if (e.key === '-') handleZoomOut();
+  };
+
+  window.addEventListener('keydown', handleKeyPress);
+  return () => window.removeEventListener('keydown', handleKeyPress);
+}, [currentIndex, zoom, onClose, goToPrevious, goToNext, handleZoomIn, handleZoomOut]);
+```
+
+---
+
+### 🟡 MEDIUM-12 through MEDIUM-38
+
+Additional medium priority issues identified but abbreviated for report length:
+- localStorage access without try-catch (5 locations)
+- Fire-and-forget promises (2 locations)
+- Division without zero checks
+- Array index out of bounds
+- Missing database mutation error handling
+- CSV import input validation
+- Idempotency key client-side generation
+- Unsafe type casting (138 instances)
+- DangerouslySetInnerHTML usage (3 files)
+- URL hash parsing without validation
+- Query cache key inconsistency
+
+**See detailed findings in section above.**
+
+---
+
+## Low Severity Issues
+
+### 🔵 LOW-1: Hook File Extension Inconsistency
+**Category:** Code Quality
+**Severity:** LOW
+**Impact:** Minimal, but inconsistent
+
+**Description:** Most hooks use `.tsx` extension even without JSX.
+
+**Statistics:**
+- `.tsx` hook files: 204
+- `.ts` hook files: 8
+
+**Why It Matters:**
+- `.tsx` files are for JSX/TSX
+- Hooks rarely need JSX
+- Inconsistent with best practices
+
+**Suggested Fix:**
+Rename non-JSX hooks from `.tsx` to `.ts`.
+
+---
+
+### 🔵 LOW-2 through LOW-15
+
+Additional low priority issues:
+- Form handler naming inconsistency
+- Props type definition inconsistency (type vs interface)
+- Insufficient file size validation
+- Error messages expose details
+- 480+ console statements
+- Stubbed functions (112 instances)
+- @ts-ignore directives (37 instances)
+- TODO/FIXME comments (2,315 instances)
+- Deprecated code blocks
+- Unused imports
 - Missing JSDoc comments
-- Unused utility functions
-- Split operations without bounds checks
-- Incomplete error messages
-- Over-complicated conditional logic
-- Missing PropTypes (using TypeScript)
-- Unused CSS classes
-- Redundant null checks
-- Missing keyboard shortcuts
 - Inconsistent spacing
-- File organization could be improved
 
 ---
 
-## 5. ARCHITECTURE ANALYSIS
+## Code Quality Observations
 
-### ✅ Strengths
+### Positive Findings ✅
+1. **RLS Enabled:** Row Level Security properly configured on Supabase tables
+2. **DOMPurify Usage:** HTML sanitization library in use
+3. **Security Utilities:** Good security functions in `/lib/security.ts`
+4. **Password Requirements:** Strong password validation (8+ chars, complexity)
+5. **Parameterized Queries:** Proper use of Supabase query builder
+6. **Error Boundary:** React error boundary implemented
+7. **Circular Dependencies:** Only 1 circular dependency (excellent for codebase size)
+8. **TypeScript Usage:** Strong typing throughout (despite some `as any`)
 
-1. **Excellent Hook Architecture (9/10)**
-   - Clean unidirectional dependencies
-   - Only 1 circular dependency in entire codebase
-   - Well-organized hook directory
-   - Composite hooks pattern used effectively
+### Architecture Strengths ✅
+- Clear separation: Pages → Components → Hooks → Lib
+- 100% unidirectional imports in main hierarchy
+- Good hook abstraction
+- Consistent component structure
+- Supabase integration well-organized
 
-2. **Strong Security Foundation (7/10)**
-   - Row Level Security on 136 tables
-   - Role-Based Access Control implemented
-   - Password policies enforced
-   - Audit logging present
-   - DOMPurify for XSS protection
-
-3. **Good State Management (8/10)**
-   - React Query for server state
-   - Context API for auth/team state
-   - Local state appropriately used
-   - Cache configuration reasonable
-
-4. **Code Splitting (9/10)**
-   - All pages lazy-loaded
-   - Good bundle size management
-   - Effective route-based splitting
-
-5. **Database Design (8/10)**
-   - Comprehensive schema
-   - Good normalization
-   - RLS policies (though some need tightening)
-   - Proper indexes (assumed)
-
-### ⚠️ Weaknesses
-
-1. **Inconsistent Patterns (6/10)**
-   - Mixed error handling approaches
-   - Inconsistent naming conventions
-   - Type definitions scattered
-   - No clear coding standards document
-
-2. **Performance Optimization (6/10)**
-   - Limited use of React.memo/useMemo
-   - Select '*' queries common
-   - Missing pagination on lists
-   - Some O(n²) operations
-
-3. **Security Gaps (7/10)**
-   - CORS wildcard
-   - Sensitive data in logs
-   - Missing rate limiting
-   - Some overly permissive RLS policies
-
-4. **Error Handling (6/10)**
-   - Inconsistent approaches
-   - Some missing try-catch blocks
-   - Silent failures
-   - No centralized error tracking
-
-5. **Type Safety (7/10)**
-   - 47+ uses of 'as any'
-   - Some missing interfaces
-   - Type definitions in component files
-   - Could use stricter TypeScript settings
+### Areas for Improvement 🔄
+- **Code Duplication:** High (import dialogs, hooks, utilities)
+- **Inconsistent Patterns:** Medium (toast, logging, validation)
+- **Error Handling:** Needs improvement (missing try-catch, no error boundaries)
+- **Performance:** Multiple opportunities for optimization
+- **Type Safety:** Too many `as any` casts
+- **Bundle Size:** Heavy libraries not code-split
 
 ---
 
-## 6. PERFORMANCE ANALYSIS
-
-### Current Performance Profile
-
-**Bundle Size Estimate:**
-- Initial bundle: ~800KB (estimated, needs measurement)
-- With code splitting: Good
-- Lazy loading: Effective
-
-**Render Performance:**
-- Most components: Good
-- KPI Dashboard: Could be optimized
-- Large lists: Need pagination
-- Nested maps: Performance issues
-
-**Database Query Performance:**
-- Select '*' queries: 20+ instances
-- Missing indexes: Unknown (needs profiling)
-- N+1 query potential: Some risk
-- Realtime subscriptions: Well implemented
-
-**Key Bottlenecks Identified:**
-
-1. **KPI Calculations**
-   - Heavy computations in render
-   - Not memoized
-   - Runs on every re-render
-   - **Fix:** Add useMemo hooks
-
-2. **Large Lists Without Pagination**
-   - Team members
-   - Transactions
-   - Past sales
-   - **Fix:** Implement pagination/infinite scroll
-
-3. **Nested Loops**
-   - 3 files with O(n²) operations
-   - **Fix:** Flatten or use better data structures
-
-4. **Over-fetching**
-   - 20+ select '*' queries
-   - **Fix:** Select only needed columns
-
-### Performance Recommendations Priority
-
-1. **Immediate:** Add React.memo to KPI components
-2. **Short-term:** Implement pagination on main lists
-3. **Medium-term:** Optimize queries to select specific fields
-4. **Long-term:** Add performance monitoring (Web Vitals)
-
----
-
-## 7. CODE QUALITY PATTERNS
-
-### Positive Patterns Observed ✅
-
-1. **Custom Hooks for Logic Reuse**
-   - 208+ custom hooks
-   - Good separation of concerns
-   - Reusable business logic
-
-2. **Type Safety**
-   - Comprehensive TypeScript usage
-   - Type definitions for most entities
-   - Good IDE support
-
-3. **Component Composition**
-   - Well-structured component hierarchy
-   - Reusable UI components
-   - shadcn/ui integration
-
-4. **Error Boundaries**
-   - Some present in App.tsx
-   - Diagnostic panel for debugging
-
-5. **Configuration Management**
-   - Environment variables used
-   - Separate config files
-   - Route permissions centralized
-
-### Anti-Patterns Found ⚠️
-
-1. **Type Casting with 'as any'** (47 instances)
-   - Bypasses type safety
-   - Masks issues
-   - Technical debt
-
-2. **Mixed Error Handling**
-   - No consistent pattern
-   - Some errors silent
-   - User experience varies
-
-3. **Hard-coded Values**
-   - Magic numbers/strings
-   - Configuration in components
-   - TODOs indicating should be dynamic
-
-4. **Large Components**
-   - Some 500+ line components
-   - Multiple responsibilities
-   - Hard to test
-
-5. **Prop Drilling**
-   - Some deep prop passing
-   - Could use Context or composition
-
-### Code Smells Detected
-
-1. **God Components** - Some components doing too much
-2. **Long Parameter Lists** - Functions with 5+ params
-3. **Feature Envy** - Components reaching into other component data
-4. **Duplicate Code** - Similar patterns repeated
-5. **Dead Code** - Unused imports and functions
-
----
-
-## 8. RECOMMENDED ACTION PLAN
-
-### Phase 1: Critical Security & Stability (Week 1)
-**Priority:** CRITICAL
-**Effort:** 20-30 hours
-**Impact:** High
-
-1. **Fix CORS Configuration** (1 hour)
-   - Replace wildcard with allowed origins
-   - Test all API calls still work
-
-2. **Remove Sensitive Data from Logs** (2-3 hours)
-   - Search and remove all token/key logs
-   - Implement log sanitization
-   - Add linting rule to prevent future occurrences
-
-3. **Fix XSS Vulnerability** (30 minutes)
-   - Replace innerHTML with React component
-   - Test modal still works
-
-4. **Fix useEffect Dependencies** (3-4 hours)
-   - Add missing dependencies to 6 hooks
-   - Test for infinite loops
-   - Verify data freshness
-
-5. **Add Null Checks to .single() Calls** (2-3 hours)
-   - Find all .single() calls (10+ instances)
-   - Add error and null checks
-   - Add user-friendly error messages
-
-6. **Fix JSON.parse Errors** (1 hour)
-   - Add try-catch blocks (5 locations)
-   - Add data recovery logic
-   - Test with corrupted localStorage
-
-7. **Tighten RLS Policies** (2 hours)
-   - Fix 3 overly permissive policies
-   - Test access control still works
-   - Document changes
-
-8. **Add Impersonation Timeout** (3-4 hours)
-   - Implement 30-minute timeout
-   - Add visible banner
-   - Test auto-logout
-
-**Total Effort:** ~15-20 hours
-**Deliverables:**
-- Security vulnerabilities closed
-- Critical bugs fixed
-- Stability improved
-
----
-
-### Phase 2: High Priority Security & Performance (Weeks 2-3)
-**Priority:** HIGH
-**Effort:** 30-40 hours
-**Impact:** Medium-High
-
-1. **Implement Rate Limiting** (4-6 hours)
-   - Create shared rate limit function
-   - Apply to 40+ edge functions
-   - Test limits work correctly
-
-2. **Fix Type Safety Issues** (6-8 hours)
-   - Replace 'as any' with proper types (47 instances)
-   - Define missing interfaces
-   - Enable stricter TypeScript checks
-
-3. **Add File Upload Validation** (2 hours)
-   - Implement extension whitelist
-   - Add MIME type validation
-   - Test with various file types
-
-4. **Add Input Validation to Edge Functions** (4-5 hours)
-   - Add Zod schemas
-   - Validate all user inputs
-   - Return proper error messages
-
-5. **Audit Service Role Usage** (6-8 hours)
-   - Review 30 edge functions
-   - Add additional auth checks
-   - Log all service role operations
-
-6. **Optimize Database Queries** (3-4 hours)
-   - Replace select '*' with specific fields (20 files)
-   - Measure query performance improvement
-   - Document best practices
-
-7. **Fix Nested Loops** (2 hours)
-   - Refactor 3 O(n²) operations
-   - Use better algorithms/data structures
-   - Add performance tests
-
-8. **Add React Performance Optimizations** (8-10 hours)
-   - Add React.memo to key components
-   - Memoize expensive calculations
-   - Add useCallback for handlers
-   - Focus on KPI and transaction components
-
-**Total Effort:** ~35-45 hours
-**Deliverables:**
-- Security hardened
-- Performance improved
-- Type safety increased
-
----
-
-### Phase 3: Medium Priority Quality & Consistency (Weeks 4-6)
-**Priority:** MEDIUM
-**Effort:** 20-30 hours
-**Impact:** Medium
-
-1. **Fix Circular Dependency** (15 minutes)
-   - Extract GeneratedReport type
-   - Update imports
-   - Test vendor reporting
-
-2. **Standardize Error Handling** (6-8 hours)
-   - Create centralized error handler
-   - Update components to use it
-   - Add error tracking service integration
-
-3. **Reduce Code Duplication** (4-5 hours)
-   - Extract common query patterns
-   - Create shared utility functions
-   - Update hooks to use shared code
-
-4. **Implement Pagination** (6-8 hours)
-   - Add to transaction lists
-   - Add to team member lists
-   - Add to service provider directory
-   - Consider infinite scroll vs traditional pagination
-
-5. **Fix Memory Leaks** (2-3 hours)
-   - Fix useEffect dependencies
-   - Clean up subscriptions
-   - Test for memory growth
-
-6. **Address TODO Comments** (varies)
-   - Create issues for each TODO
-   - Implement high-priority ones
-   - Remove stale TODOs
-
-7. **Standardize Naming Conventions** (2-3 hours)
-   - Document conventions
-   - Create linting rules
-   - Gradual refactoring
-
-**Total Effort:** ~20-30 hours
-**Deliverables:**
-- Code quality improved
-- Consistency increased
-- Technical debt reduced
-
----
-
-### Phase 4: Long-term Improvements (Ongoing)
-**Priority:** LOW-MEDIUM
-**Effort:** Ongoing
-**Impact:** Long-term
-
-1. **Add Monitoring & Observability**
-   - Performance monitoring (Web Vitals)
-   - Error tracking (Sentry)
-   - Analytics dashboard
-   - User behavior tracking
-
-2. **Improve Testing**
-   - Add unit tests for critical hooks
-   - Add integration tests for key flows
-   - Add E2E tests for main user journeys
-   - Aim for 70%+ coverage
-
-3. **Documentation**
-   - Architecture documentation
-   - Coding standards
-   - Onboarding guide
-   - API documentation
-
-4. **Performance Optimization**
-   - Bundle size analysis
-   - Code splitting optimization
-   - Image optimization
-   - Lazy loading improvements
-
-5. **Accessibility**
-   - ARIA labels
-   - Keyboard navigation
-   - Screen reader support
-   - WCAG 2.1 AA compliance
-
-6. **Developer Experience**
-   - Add pre-commit hooks
-   - Improve linting rules
-   - Add code formatting (Prettier)
-   - Improve error messages
-
-7. **Security Hardening**
-   - Regular dependency updates
-   - Security audits
-   - Penetration testing
-   - Security training
-
-**Total Effort:** Ongoing
-**Deliverables:**
-- Robust, maintainable system
-- Great developer experience
-- Production-ready quality
+## Recommendations
+
+### Immediate Actions (Critical/High Priority)
+
+1. **Fix React Hooks Violations** (CRITICAL-1)
+   - Replace useState with useEffect for async operations
+   - Timeline: 2-4 hours
+   - Files: 4 components
+
+2. **Fix Array Bounds Violations** (CRITICAL-2)
+   - Add optional chaining to .errors[0] access
+   - Timeline: 4-6 hours
+   - Files: 18 locations
+
+3. **Secure .env File** (CRITICAL-3)
+   - Ensure .gitignore includes .env
+   - Remove from git history
+   - Timeline: 1 hour
+
+4. **Fix Touch Event Handling** (CRITICAL-4)
+   - Add bounds checking
+   - Timeline: 30 minutes
+   - Files: 2 locations
+
+5. **Review Admin Impersonation** (HIGH-1)
+   - Add server-side authorization checks
+   - Implement audit logging
+   - Timeline: 4-8 hours
+
+6. **Implement CSRF Protection** (HIGH-2)
+   - Add CSRF tokens
+   - Timeline: 8-16 hours
+
+7. **Fix localStorage Security** (HIGH-3)
+   - Move to sessionStorage or secure cookies
+   - Timeline: 2-4 hours
+
+8. **Improve File Upload Security** (HIGH-4)
+   - Add magic byte verification
+   - Server-side validation
+   - Timeline: 4-8 hours
+
+### Short-Term Actions (Medium Priority)
+
+1. **Fix Circular Dependency** (MEDIUM-1)
+   - Create types.ts file
+   - Timeline: 15 minutes
+
+2. **Consolidate Import Components** (MEDIUM-2, MEDIUM-3)
+   - Create generic ImportDialog and CSV utilities
+   - Timeline: 16-24 hours
+
+3. **Standardize Toast System** (MEDIUM-6)
+   - Choose one approach, refactor all usages
+   - Timeline: 8-16 hours
+
+4. **Standardize Logging** (MEDIUM-7)
+   - Replace console.* with logger
+   - Timeline: 4-8 hours
+
+5. **Fix N+1 Queries** (HIGH-6)
+   - Replace .map().find() with Map lookups
+   - Timeline: 2-4 hours
+
+6. **Add Query Field Selection** (HIGH-7)
+   - Replace select('*') with specific fields
+   - Timeline: 4-8 hours
+
+7. **Fix List Keys** (HIGH-8)
+   - Replace index keys with unique IDs
+   - Timeline: 4-6 hours
+
+### Long-Term Actions (Low Priority / Code Quality)
+
+1. **Component Size Refactoring**
+   - Break down 5 large components
+   - Timeline: 40-80 hours
+
+2. **Add Memoization**
+   - Identify and wrap expensive calculations
+   - Timeline: 16-32 hours
+
+3. **Remove Type Casts**
+   - Replace 138 `as any` with proper types
+   - Timeline: 24-40 hours
+
+4. **Code Cleanup**
+   - Remove console statements (480)
+   - Remove TODO comments (2,315)
+   - Remove stubbed code (112 functions)
+   - Remove deprecated code
+   - Timeline: 40-60 hours
+
+5. **Standardize Patterns**
+   - Query keys
+   - Error handling
+   - Form handlers
+   - Props definitions
+   - Timeline: 16-24 hours
+
+6. **Implement Code Splitting**
+   - Dynamic imports for heavy libraries
+   - Timeline: 8-16 hours
+
+7. **Add Circular Dependency Detection**
+   - Integrate madge into CI/CD
+   - Timeline: 2-4 hours
 
 ---
 
 ## Summary Statistics
 
-### Issues by Severity
-
-| Severity | Count | % of Total |
-|----------|-------|------------|
-| Critical | 9 | 15% |
-| High | 12 | 20% |
-| Medium | 23 | 39% |
-| Low | 15 | 26% |
-| **Total** | **59** | **100%** |
-
 ### Issues by Category
+| Category | Critical | High | Medium | Low | Total |
+|----------|----------|------|--------|-----|-------|
+| Bugs / Runtime Errors | 4 | 1 | 4 | 0 | 9 |
+| Security | 1 | 5 | 7 | 2 | 15 |
+| Performance | 0 | 3 | 2 | 0 | 5 |
+| Code Duplication | 0 | 0 | 4 | 0 | 4 |
+| Inconsistent Patterns | 0 | 0 | 5 | 3 | 8 |
+| Error Handling | 0 | 1 | 4 | 0 | 5 |
+| Code Quality | 0 | 0 | 3 | 7 | 10 |
+| Type Safety | 0 | 0 | 2 | 1 | 3 |
+| **Total** | **4** | **19** | **38** | **15** | **76** |
 
-| Category | Count |
-|----------|-------|
-| Security | 15 |
-| Bugs | 14 |
-| Performance | 12 |
-| Code Quality | 11 |
-| Architecture | 4 |
-| Maintainability | 3 |
+### Estimated Remediation Time
+- **Critical Issues:** 8-14 hours
+- **High Severity:** 56-112 hours
+- **Medium Severity:** 90-170 hours
+- **Low Severity:** 130-214 hours
+- **Total:** 284-510 hours (7-13 weeks at 40 hours/week)
 
-### Estimated Fix Effort
-
-| Phase | Effort | Timeline |
-|-------|--------|----------|
-| Phase 1 (Critical) | 15-20 hours | Week 1 |
-| Phase 2 (High) | 35-45 hours | Weeks 2-3 |
-| Phase 3 (Medium) | 20-30 hours | Weeks 4-6 |
-| Phase 4 (Long-term) | Ongoing | Continuous |
-| **Total Initial** | **70-95 hours** | **6 weeks** |
-
----
-
-## Key Strengths to Preserve
-
-1. ✅ **Excellent hook architecture** - Only 1 circular dependency!
-2. ✅ **Strong RBAC implementation** - Well-thought-out permissions
-3. ✅ **Comprehensive RLS policies** - Good security foundation
-4. ✅ **Clean code splitting** - Effective lazy loading
-5. ✅ **Good type coverage** - TypeScript used throughout
-6. ✅ **Audit logging** - Important operations tracked
-7. ✅ **DOMPurify usage** - XSS protection in place
-8. ✅ **Supabase integration** - Well-implemented BaaS usage
+### Priority Order
+1. **Week 1:** Fix all 4 critical issues (8-14 hours)
+2. **Weeks 2-4:** Address high severity security and performance issues (56-112 hours)
+3. **Weeks 5-8:** Tackle medium severity issues (90-170 hours)
+4. **Weeks 9-13:** Code quality improvements and cleanup (130-214 hours)
 
 ---
 
 ## Conclusion
 
-This codebase demonstrates **solid architectural foundations** with room for improvement in security hardening, performance optimization, and code consistency. The critical issues are fixable within 1-2 weeks, and the high-priority issues within 3-4 weeks.
+The AgentBuddy codebase shows signs of **rapid development and AI-assisted code generation** with several areas requiring attention. The most critical issues are related to **React Hooks violations** and **array bounds checking**, which can cause immediate crashes. Security concerns around **admin impersonation**, **CSRF protection**, and **file uploads** should be addressed promptly.
 
-**Key Takeaways:**
+The codebase has a **solid architectural foundation** with good separation of concerns and minimal circular dependencies. However, significant **code duplication** and **inconsistent patterns** increase maintenance burden.
 
-1. **Security:** Address CORS, sensitive data logging, and RLS policies immediately
-2. **Stability:** Fix React hooks and error handling issues
-3. **Performance:** Add memoization and pagination
-4. **Quality:** Standardize patterns and reduce duplication
+**Recommended approach:**
+1. Fix critical bugs immediately (Week 1)
+2. Address security vulnerabilities (Weeks 2-3)
+3. Improve performance (Weeks 3-4)
+4. Consolidate duplicated code (Weeks 5-8)
+5. Standardize patterns and cleanup (Weeks 9-13)
 
-**Overall Assessment:** This is a **well-structured codebase** that suffers from issues typical of rapid AI-assisted development. With focused effort on the critical and high-priority issues, this can become a **production-ready, enterprise-grade application**.
-
-**Recommended Next Steps:**
-1. Review this report with the team
-2. Prioritize fixes based on business impact
-3. Start with Phase 1 (critical security issues)
-4. Implement monitoring to track improvements
-5. Establish coding standards to prevent regression
-
----
-
-*Report generated on November 25, 2025*
-*For questions or clarifications, refer to individual issue sections above*
+With focused effort, the codebase can be brought to production-ready quality within 2-3 months.
