@@ -231,7 +231,7 @@ const handler = async (req: Request): Promise<Response> => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create pending invitation - use agency_id (the actual column name in DB)
+    // Create pending invitation - use both office_id and agency_id during transition
     const { data: invitation, error: inviteError } = await supabase
       .from('pending_invitations')
       .insert({
@@ -242,7 +242,8 @@ const handler = async (req: Request): Promise<Response> => {
         expires_at: expiresAt.toISOString(),
         invited_by: user.id,
         team_id: teamId || null,
-        agency_id: officeId || null, // Use agency_id instead of office_id
+        office_id: officeId || null, // Use office_id (new standard)
+        agency_id: officeId || null, // Also set agency_id for backwards compatibility
         status: 'pending',
       })
       .select()

@@ -39,12 +39,15 @@ serve(async (req) => {
     console.log('Fetching invitation');
     const { data: invitationRaw, error: invitationError } = await supabaseAdmin
       .from('pending_invitations')
-      .select('id, email, role, full_name, team_id, agency_id, invited_by, expires_at, status')
+      .select('id, email, role, full_name, team_id, office_id, agency_id, invited_by, expires_at, status')
       .eq('invite_code', token)
       .single();
-    
-    // Map agency_id to office_id for consistency in the rest of the code
-    const invitation = invitationRaw ? { ...invitationRaw, office_id: invitationRaw.agency_id } : null;
+
+    // Use office_id if available, fallback to agency_id for backwards compatibility
+    const invitation = invitationRaw ? {
+      ...invitationRaw,
+      office_id: invitationRaw.office_id || invitationRaw.agency_id
+    } : null;
 
     if (invitationError || !invitation) {
       console.error('Invitation error:', invitationError);

@@ -37,6 +37,7 @@ const Home = lazy(() => import("./pages/Home"));
 const KPITracker = lazy(() => import("./pages/KPITracker"));
 const Auth = lazy(() => import("./pages/Auth"));
 const AcceptInvitation = lazy(() => import("./pages/AcceptInvitation"));
+const CompleteProfile = lazy(() => import("./pages/onboarding/CompleteProfile"));
 const InviteUser = lazy(() => import("./pages/InviteUser"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const Setup = lazy(() => import("./pages/Setup"));
@@ -153,6 +154,7 @@ const AppContent = () => {
           <Route path="/landing-alt" element={<LandingAlt />} />
                 <Route path="/auth" element={<AuthGuard><Auth /></AuthGuard>} />
                 <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
+                <Route path="/onboarding/complete-profile" element={<CompleteProfile />} />
                 <Route path="/access-denied" element={<AccessDenied />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/create-admin" element={<CreateAdminUser />} />
