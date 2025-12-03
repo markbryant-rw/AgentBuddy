@@ -99,6 +99,15 @@ export const usePastSalesImport = () => {
     };
   };
 
+  const toTitleCase = (str: string): string => {
+    if (!str) return '';
+    return str
+      .toLowerCase()
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   const extractSuburb = (address: string): string => {
     if (!address) return '';
     // Split by comma and take the second-to-last segment
@@ -121,14 +130,18 @@ export const usePastSalesImport = () => {
   };
 
   const mapRowToPastSale = (row: ImportRow): any => {
-    const address = findColumn(row, ['listing_address', 'address', 'property_address', 'street_address']);
-    let suburb = findColumn(row, ['suburb', 'city']);
+    const rawAddress = findColumn(row, ['listing_address', 'address', 'property_address', 'street_address']);
+    let rawSuburb = findColumn(row, ['suburb', 'city']);
     const region = findColumn(row, ['region', 'area', 'district']);
     
     // Extract suburb from address if not provided
-    if (!suburb && address) {
-      suburb = extractSuburb(address);
+    if (!rawSuburb && rawAddress) {
+      rawSuburb = extractSuburb(rawAddress);
     }
+    
+    // Apply title case to address and suburb
+    const address = toTitleCase(rawAddress || '');
+    const suburb = toTitleCase(rawSuburb || '');
     
     const settlementDate = parseDate(findColumn(row, ['settlement_date', 'settlement', 'settled_date']) || '');
     const listingDate = parseDate(findColumn(row, ['listing_signed_date', 'listing_date', 'listing_signed', 'contract_signed_date']) || '');
