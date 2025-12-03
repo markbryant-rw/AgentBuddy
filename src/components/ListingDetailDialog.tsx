@@ -32,6 +32,7 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
   const [showStageConfirm, setShowStageConfirm] = useState(false);
   const [showWonDialog, setShowWonDialog] = useState(false);
   const [showLossReasonDialog, setShowLossReasonDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [lossReason, setLossReason] = useState('');
   const [moveToTC, setMoveToTC] = useState(false);
   const { user } = useAuth();
@@ -153,8 +154,13 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
   };
 
   const handleDelete = () => {
-    if (!listing || !confirm('Are you sure you want to delete this opportunity?')) return;
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = () => {
+    if (!listing) return;
     onDelete(listing.id);
+    setShowDeleteDialog(false);
     onOpenChange(false);
   };
 
@@ -433,6 +439,24 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
             <AlertDialogCancel onClick={() => setLossReason('')}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmLoss} disabled={!lossReason.trim()}>
               Confirm Loss
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Opportunity</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this opportunity? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
