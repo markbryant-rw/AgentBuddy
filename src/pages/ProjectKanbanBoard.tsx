@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectLists } from '@/hooks/useProjectLists';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { TaskAssigneeSelector } from '@/components/tasks/TaskAssigneeSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -100,13 +102,14 @@ interface Project {
   color: string;
 }
 
-// Sortable Task Card - Slimline Trello-style with full-card drag
+// Sortable Task Card - Slimline Trello-style with full-card drag + inline editing
 const SortableTaskCard = ({ 
   task, 
   onEdit, 
   onDelete,
   onToggleComplete,
   onColorChange,
+  onUpdateTitle,
   isOverBefore,
 }: { 
   task: Task; 
@@ -114,12 +117,24 @@ const SortableTaskCard = ({
   onDelete: () => void;
   onToggleComplete: () => void;
   onColorChange: (color: string | null) => void;
+  onUpdateTitle: (title: string) => void;
   isOverBefore?: boolean;
 }) => {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(task.title);
+  const titleInputRef = useRef<HTMLTextAreaElement>(null);
+  
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
   });
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -132,6 +147,29 @@ const SortableTaskCard = ({
 
   const hasMetadata = task.priority || task.due_date || task.assignee;
 
+  const handleTitleSave = () => {
+    if (editedTitle.trim() && editedTitle.trim() !== task.title) {
+      onUpdateTitle(editedTitle.trim());
+    } else {
+      setEditedTitle(task.title);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleTitleSave();
+    }
+    if (e.key === 'Escape') {
+      setEditedTitle(task.title);
+      setIsEditingTitle(false);
+    }
+  };
+
+  // Determine if drag should be enabled (not when editing)
+  const dragProps = isEditingTitle ? {} : { ...attributes, ...listeners };
+
   return (
     <div 
       ref={setNodeRef} 
@@ -140,8 +178,7 @@ const SortableTaskCard = ({
         "relative transition-all duration-200 ease-out",
         isDragging && 'z-50 opacity-30 scale-105',
       )}
-      {...attributes}
-      {...listeners}
+      {...dragProps}
     >
       {/* Drop indicator line */}
       {isOverBefore && (
@@ -150,7 +187,8 @@ const SortableTaskCard = ({
       
       <Card 
         className={cn(
-          "group cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200",
+          "group hover:shadow-md transition-all duration-200",
+          !isEditingTitle && "cursor-grab active:cursor-grabbing",
           isCompleted && "opacity-60"
         )}
         style={{ backgroundColor: task.color || undefined }}
@@ -173,12 +211,34 @@ const SortableTaskCard = ({
             <div className="flex-1 min-w-0">
               {/* Title row with dropdown */}
               <div className="flex items-start justify-between gap-1">
-                <p className={cn(
-                  "text-sm leading-tight whitespace-normal break-words flex-1",
-                  isCompleted && "line-through text-muted-foreground"
-                )}>
-                  {task.title}
-                </p>
+                {isEditingTitle ? (
+                  <textarea
+                    ref={titleInputRef}
+                    value={editedTitle}
+                    onChange={(e) => setEditedTitle(e.target.value)}
+                    onBlur={handleTitleSave}
+                    onKeyDown={handleTitleKeyDown}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-1 text-sm leading-tight bg-background border rounded px-1.5 py-0.5 resize-none focus:outline-none focus:ring-1 focus:ring-primary min-h-[24px]"
+                    rows={1}
+                    style={{ height: 'auto' }}
+                    onInput={(e) => {
+                      const target = e.target as HTMLTextAreaElement;
+                      target.style.height = 'auto';
+                      target.style.height = target.scrollHeight + 'px';
+                    }}
+                  />
+                ) : (
+                  <p 
+                    className={cn(
+                      "text-sm leading-tight whitespace-normal break-words flex-1 cursor-text hover:bg-muted/50 rounded px-1 -mx-1 transition-colors",
+                      isCompleted && "line-through text-muted-foreground"
+                    )}
+                    onClick={(e) => { e.stopPropagation(); setIsEditingTitle(true); }}
+                  >
+                    {task.title}
+                  </p>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 flex-shrink-0 -mr-1 -mt-0.5">
@@ -211,7 +271,7 @@ const SortableTaskCard = ({
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={onEdit}>
                       <Edit className="h-4 w-4 mr-2" />
-                      Edit
+                      Edit details
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={onDelete} className="text-destructive">
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -357,8 +417,11 @@ const SortableColumn = ({
   onDeleteList,
   onToggleComplete,
   onColorChange,
+  onUpdateTitle,
+  onEditTask,
+  onDeleteTask,
   overTaskId,
-}: { 
+}: {
   list: any; 
   tasks: Task[];
   projectId: string;
@@ -367,6 +430,9 @@ const SortableColumn = ({
   onDeleteList: () => void;
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onColorChange: (taskId: string, color: string | null) => void;
+  onUpdateTitle: (taskId: string, title: string) => void;
+  onEditTask: (task: Task) => void;
+  onDeleteTask: (taskId: string) => void;
   overTaskId: string | null;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -486,10 +552,11 @@ const SortableColumn = ({
               <SortableTaskCard
                 key={task.id}
                 task={task}
-                onEdit={() => toast.info('Edit task coming soon')}
-                onDelete={() => {}}
+                onEdit={() => onEditTask(task)}
+                onDelete={() => onDeleteTask(task.id)}
                 onToggleComplete={() => onToggleComplete(task.id, !task.completed)}
                 onColorChange={(color) => onColorChange(task.id, color)}
+                onUpdateTitle={(title) => onUpdateTitle(task.id, title)}
                 isOverBefore={showIndicator}
               />
             );
@@ -594,8 +661,14 @@ export default function ProjectKanbanBoard() {
   const [deleteListId, setDeleteListId] = useState<string | null>(null);
   const [listName, setListName] = useState('');
   const [listColor, setListColor] = useState('#3b82f6');
+  
+  // Edit task dialog state
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editTaskDescription, setEditTaskDescription] = useState('');
+  const [editTaskAssignee, setEditTaskAssignee] = useState<string | null>(null);
 
   const { lists, isLoading: listsLoading, createList, updateList, deleteList, reorderLists, createDefaultLists } = useProjectLists(projectId);
+  const { members: teamMembers } = useTeamMembers();
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -720,6 +793,36 @@ export default function ProjectKanbanBoard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
     },
+  });
+
+  // Update task title
+  const updateTaskTitleMutation = useMutation({
+    mutationFn: async ({ taskId, title }: { taskId: string; title: string }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ title })
+        .eq('id', taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
+    },
+  });
+
+  // Update task (general updates including assigned_to, description)
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update(updates)
+        .eq('id', taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
+      toast.success('Task updated');
+    },
+    onError: () => toast.error('Failed to update task'),
   });
 
   // Update task positions mutation (batch)
@@ -944,6 +1047,13 @@ export default function ProjectKanbanBoard() {
                   onDeleteList={() => setDeleteListId(list.id)}
                   onToggleComplete={(taskId, completed) => toggleCompleteMutation.mutate({ taskId, completed })}
                   onColorChange={(taskId, color) => updateTaskColorMutation.mutate({ taskId, color })}
+                  onUpdateTitle={(taskId, title) => updateTaskTitleMutation.mutate({ taskId, title })}
+                  onEditTask={(task) => {
+                    setEditTask(task);
+                    setEditTaskDescription(task.description || '');
+                    setEditTaskAssignee(task.assigned_to);
+                  }}
+                  onDeleteTask={(taskId) => deleteTaskMutation.mutate(taskId)}
                   overTaskId={overTaskId}
                 />
               ))}
@@ -1045,6 +1155,76 @@ export default function ProjectKanbanBoard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Task Dialog */}
+      <Dialog open={!!editTask} onOpenChange={(open) => !open && setEditTask(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Task</DialogTitle>
+          </DialogHeader>
+          {editTask && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Textarea
+                  value={editTaskDescription}
+                  onChange={(e) => setEditTaskDescription(e.target.value)}
+                  placeholder="Add a description..."
+                  rows={3}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Assignee</Label>
+                <div className="border rounded-lg overflow-hidden">
+                  <div className="max-h-[200px] overflow-auto">
+                    {teamMembers.map((member) => (
+                      <div
+                        key={member.id}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted transition-colors",
+                          editTaskAssignee === member.id && "bg-primary/10"
+                        )}
+                        onClick={() => setEditTaskAssignee(editTaskAssignee === member.id ? null : member.id)}
+                      >
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={member.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {member.full_name?.[0] || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm flex-1">{member.full_name || 'Unknown'}</span>
+                        {editTaskAssignee === member.id && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
+                      </div>
+                    ))}
+                    {teamMembers.length === 0 && (
+                      <p className="text-sm text-muted-foreground p-3">No team members found</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTask(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (editTask) {
+                updateTaskMutation.mutate({
+                  taskId: editTask.id,
+                  updates: {
+                    description: editTaskDescription || null,
+                    assigned_to: editTaskAssignee,
+                  }
+                });
+                setEditTask(null);
+              }
+            }}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
