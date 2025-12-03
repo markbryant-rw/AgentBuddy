@@ -2072,6 +2072,7 @@ export type Database = {
           id: string
           invite_code: string
           invited_by: string
+          office_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: string | null
           team_id: string | null
@@ -2086,6 +2087,7 @@ export type Database = {
           id?: string
           invite_code: string
           invited_by: string
+          office_id?: string | null
           role: Database["public"]["Enums"]["app_role"]
           status?: string | null
           team_id?: string | null
@@ -2100,6 +2102,7 @@ export type Database = {
           id?: string
           invite_code?: string
           invited_by?: string
+          office_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string | null
           team_id?: string | null
@@ -2117,6 +2120,13 @@ export type Database = {
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_invitations_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
           {
@@ -3901,6 +3911,7 @@ export type Database = {
         | "salesperson"
         | "assistant"
       goal_type: "individual" | "team"
+      invitation_status: "pending" | "accepted" | "revoked" | "expired"
       kpi_type: "calls" | "appraisals" | "listings_won" | "settlement_volume"
       listing_warmth: "cold" | "warm" | "hot"
       log_period: "daily" | "weekly" | "monthly" | "quarterly" | "annual"
@@ -4040,6 +4051,7 @@ export const Constants = {
         "assistant",
       ],
       goal_type: ["individual", "team"],
+      invitation_status: ["pending", "accepted", "revoked", "expired"],
       kpi_type: ["calls", "appraisals", "listings_won", "settlement_volume"],
       listing_warmth: ["cold", "warm", "hot"],
       log_period: ["daily", "weekly", "monthly", "quarterly", "annual"],
