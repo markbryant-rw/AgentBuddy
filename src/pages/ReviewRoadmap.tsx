@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -49,27 +49,37 @@ export default function ReviewRoadmap() {
 
   const [performance, setPerformance] = useState<Record<string, number>>({});
 
-  useState(() => {
-    calculatePerformance().then(setPerformance);
-  });
+  useEffect(() => {
+    calculatePerformance()
+      .then(setPerformance)
+      .catch(error => console.error('Error calculating performance:', error));
+  }, []);
 
   const handleSaveReview = async () => {
-    await saveReview(reviewForm);
+    try {
+      await saveReview(reviewForm);
+    } catch (error) {
+      console.error('Error saving review:', error);
+    }
   };
 
   const handleCreateGoal = async () => {
     if (!newGoal.kpi_type || newGoal.target_value <= 0) return;
-    
-    await createGoal({
-      kpi_type: newGoal.kpi_type,
-      target_value: newGoal.target_value,
-      goal_type: newGoal.goal_type,
-      quarter: `Q${selectedQuarter}`,
-      year: selectedYear
-    });
-    
-    setNewGoalDialogOpen(false);
-    setNewGoal({ kpi_type: '', target_value: 0, goal_type: 'individual' });
+
+    try {
+      await createGoal({
+        kpi_type: newGoal.kpi_type,
+        target_value: newGoal.target_value,
+        goal_type: newGoal.goal_type,
+        quarter: `Q${selectedQuarter}`,
+        year: selectedYear
+      });
+
+      setNewGoalDialogOpen(false);
+      setNewGoal({ kpi_type: '', target_value: 0, goal_type: 'individual' });
+    } catch (error) {
+      console.error('Error creating goal:', error);
+    }
   };
 
   return (

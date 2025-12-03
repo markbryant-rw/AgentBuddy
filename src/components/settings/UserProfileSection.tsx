@@ -106,7 +106,7 @@ export const UserProfileSection = () => {
       if (formData.mobile) {
         const mobileValidation = mobileSchema.safeParse(formData.mobile);
         if (!mobileValidation.success) {
-          toast.error(mobileValidation.error.errors[0].message);
+          toast.error(mobileValidation.error.errors?.[0]?.message || 'Invalid mobile number format');
           setIsSaving(false);
           return;
         }
@@ -167,7 +167,7 @@ export const UserProfileSection = () => {
 
       const passwordValidation = passwordSchema.safeParse(passwordData.newPassword);
       if (!passwordValidation.success) {
-        toast.error(passwordValidation.error.errors[0].message);
+        toast.error(passwordValidation.error.errors?.[0]?.message || 'Invalid password format');
         setIsChangingPassword(false);
         return;
       }

@@ -160,7 +160,7 @@ const Auth = () => {
       if (!emailResult.success) {
         toast({
           title: 'Invalid Email',
-          description: emailResult.error.errors[0].message,
+          description: emailResult.error.errors?.[0]?.message || 'Invalid email format',
           variant: 'destructive',
         });
         return;
@@ -170,7 +170,7 @@ const Auth = () => {
       if (!nameResult.success) {
         toast({
           title: 'Invalid Name',
-          description: nameResult.error.errors[0].message,
+          description: nameResult.error.errors?.[0]?.message || 'Invalid name format',
           variant: 'destructive',
         });
         return;
@@ -180,7 +180,7 @@ const Auth = () => {
       if (!passwordResult.success) {
         toast({
           title: 'Invalid Password',
-          description: passwordResult.error.errors[0].message,
+          description: passwordResult.error.errors?.[0]?.message || 'Invalid password format',
           variant: 'destructive',
         });
         return;
@@ -192,7 +192,7 @@ const Auth = () => {
         if (!birthdayResult.success) {
           toast({
             title: 'Invalid Birthday',
-            description: birthdayResult.error.errors[0].message,
+            description: birthdayResult.error.errors?.[0]?.message || 'Invalid birthday format',
             variant: 'destructive',
           });
           return;
@@ -210,7 +210,7 @@ const Auth = () => {
         if (!teamCodeResult.success) {
           toast({
             title: 'Invalid Team Code',
-            description: teamCodeResult.error.errors[0].message,
+            description: teamCodeResult.error.errors?.[0]?.message || 'Invalid team code format',
             variant: 'destructive',
           });
           return;
@@ -222,7 +222,7 @@ const Auth = () => {
         if (!teamNameResult.success) {
           toast({
             title: 'Invalid Team Name',
-            description: teamNameResult.error.errors[0].message,
+            description: teamNameResult.error.errors?.[0]?.message || 'Invalid team name format',
             variant: 'destructive',
           });
           return;
@@ -432,7 +432,7 @@ const Auth = () => {
     if (!emailResult.success) {
       toast({
         title: 'Invalid Email',
-        description: emailResult.error.errors[0].message,
+        description: emailResult.error.errors?.[0]?.message || 'Invalid email format',
         variant: 'destructive',
       });
       setLoading(false);
