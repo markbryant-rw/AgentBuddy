@@ -55,15 +55,16 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const COLOR_OPTIONS = [
-  { name: 'Slate', value: '#64748b' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Green', value: '#10b981' },
-  { name: 'Yellow', value: '#f59e0b' },
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Purple', value: '#8b5cf6' },
-  { name: 'Pink', value: '#ec4899' },
-  { name: 'Teal', value: '#14b8a6' },
+// Column colors - 8 colors with faint (top row) and solid (bottom row) variants
+const COLUMN_COLORS = [
+  { name: 'Slate', faint: '#f1f5f9', solid: '#cbd5e1' },
+  { name: 'Blue', faint: '#dbeafe', solid: '#93c5fd' },
+  { name: 'Green', faint: '#dcfce7', solid: '#86efac' },
+  { name: 'Yellow', faint: '#fef9c3', solid: '#fde047' },
+  { name: 'Red', faint: '#fee2e2', solid: '#fca5a5' },
+  { name: 'Purple', faint: '#f3e8ff', solid: '#d8b4fe' },
+  { name: 'Pink', faint: '#fce7f3', solid: '#f9a8d4' },
+  { name: 'Teal', faint: '#ccfbf1', solid: '#5eead4' },
 ];
 
 // Card background colors (pastel)
@@ -447,6 +448,7 @@ const SortableColumn = ({
   overTaskId,
   isCollapsed,
   onToggleCollapse,
+  onColumnColorChange,
 }: {
   list: any; 
   tasks: Task[];
@@ -463,6 +465,7 @@ const SortableColumn = ({
   overTaskId: string | null;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onColumnColorChange: (color: string) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
@@ -515,18 +518,18 @@ const SortableColumn = ({
     return (
       <div 
         ref={setNodeRef} 
-        style={style}
+        style={{
+          ...style,
+          backgroundColor: list.color || undefined,
+        }}
         className={cn(
-          "w-10 flex-shrink-0 flex flex-col bg-muted/30 rounded-lg max-h-full cursor-pointer hover:bg-muted/50 transition-colors",
+          "w-10 flex-shrink-0 flex flex-col rounded-lg max-h-full cursor-pointer hover:opacity-80 transition-opacity",
+          !list.color && "bg-muted/30",
           isDragging && 'opacity-50'
         )}
         onClick={onToggleCollapse}
       >
         <div className="p-2 flex flex-col items-center gap-2 h-full">
-          <div 
-            className="w-3 h-3 rounded-full flex-shrink-0" 
-            style={{ backgroundColor: list.color || '#3b82f6' }}
-          />
           <Badge variant="secondary" className="text-[10px] px-1 py-0">
             {tasks.length}
           </Badge>
@@ -548,25 +551,23 @@ const SortableColumn = ({
   return (
     <div 
       ref={setNodeRef} 
-      style={style}
+      style={{
+        ...style,
+        backgroundColor: list.color || undefined,
+      }}
       className={cn(
-        "w-56 flex-shrink-0 flex flex-col bg-muted/30 rounded-lg max-h-full",
+        "w-56 flex-shrink-0 flex flex-col rounded-lg max-h-full",
+        !list.color && "bg-muted/30",
         isDragging && 'opacity-50'
       )}
     >
       {/* Column Header */}
-      <div className="p-2 border-b flex items-center gap-1.5">
-        <div 
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing"
-        >
-          <div 
-            className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
-            style={{ backgroundColor: list.color || '#3b82f6' }}
-          />
-        </div>
-        
+      <div 
+        className="p-2 border-b border-black/10 flex items-center gap-1.5"
+        {...attributes}
+        {...listeners}
+        style={{ cursor: 'grab' }}
+      >
         {isEditingTitle ? (
           <Input
             ref={titleInputRef}
@@ -575,11 +576,12 @@ const SortableColumn = ({
             onBlur={handleTitleSave}
             onKeyDown={handleTitleKeyDown}
             className="h-6 flex-1 font-medium text-xs"
+            onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <span 
-            className="font-medium text-xs flex-1 truncate cursor-pointer hover:bg-muted/50 px-1 py-0.5 -mx-1 rounded transition-colors"
-            onClick={() => setIsEditingTitle(true)}
+            className="font-medium text-xs flex-1 truncate cursor-text hover:bg-black/5 px-1 py-0.5 -mx-1 rounded transition-colors"
+            onClick={(e) => { e.stopPropagation(); setIsEditingTitle(true); }}
           >
             {list.name}
           </span>
@@ -594,14 +596,43 @@ const SortableColumn = ({
               <MoreVertical className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-48">
+            {/* Color Picker Section */}
+            <div className="p-2">
+              <p className="text-xs text-muted-foreground mb-2">Column color</p>
+              {/* Top Row - Faint colors */}
+              <div className="flex gap-1 mb-1">
+                {COLUMN_COLORS.map((c) => (
+                  <button
+                    key={c.faint}
+                    onClick={(e) => { e.stopPropagation(); onColumnColorChange(c.faint); }}
+                    className={cn(
+                      "w-5 h-5 rounded border border-black/10 hover:scale-110 transition-transform",
+                      list.color === c.faint && "ring-2 ring-primary ring-offset-1"
+                    )}
+                    style={{ backgroundColor: c.faint }}
+                  />
+                ))}
+              </div>
+              {/* Bottom Row - Solid colors */}
+              <div className="flex gap-1">
+                {COLUMN_COLORS.map((c) => (
+                  <button
+                    key={c.solid}
+                    onClick={(e) => { e.stopPropagation(); onColumnColorChange(c.solid); }}
+                    className={cn(
+                      "w-5 h-5 rounded border border-black/10 hover:scale-110 transition-transform",
+                      list.color === c.solid && "ring-2 ring-primary ring-offset-1"
+                    )}
+                    style={{ backgroundColor: c.solid }}
+                  />
+                ))}
+              </div>
+            </div>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onToggleCollapse}>
               <PanelLeftClose className="h-4 w-4 mr-2" />
               Collapse
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setIsEditingTitle(true)}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Rename
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onDeleteList} className="text-destructive">
@@ -1194,6 +1225,7 @@ export default function ProjectKanbanBoard() {
                   overTaskId={overTaskId}
                   isCollapsed={collapsedColumns.has(list.id)}
                   onToggleCollapse={() => toggleColumnCollapse(list.id)}
+                  onColumnColorChange={(color) => updateList({ id: list.id, updates: { color } })}
                 />
               ))}
             </SortableContext>
@@ -1253,15 +1285,15 @@ export default function ProjectKanbanBoard() {
             <div className="space-y-2">
               <Label>Color</Label>
               <div className="flex gap-2 flex-wrap">
-                {COLOR_OPTIONS.map((option) => (
+                {[...COLUMN_COLORS.map(c => ({ name: c.name + ' Light', value: c.faint })), ...COLUMN_COLORS.map(c => ({ name: c.name, value: c.solid }))].map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => setListColor(option.value)}
-                    className="w-8 h-8 rounded-full border-2 transition-all hover:scale-110"
+                    className="w-6 h-6 rounded border border-black/10 transition-all hover:scale-110"
                     style={{
                       backgroundColor: option.value,
-                      borderColor: listColor === option.value ? 'hsl(var(--primary))' : 'transparent',
+                      boxShadow: listColor === option.value ? '0 0 0 2px hsl(var(--primary))' : 'none',
                     }}
                     title={option.name}
                   />
