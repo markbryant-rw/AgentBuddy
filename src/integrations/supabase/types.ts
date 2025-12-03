@@ -1304,6 +1304,7 @@ export type Database = {
           created_at: string | null
           created_by: string
           estimated_value: number | null
+          expected_month: string | null
           id: string
           next_action: string | null
           next_action_date: string | null
@@ -1319,6 +1320,7 @@ export type Database = {
           created_at?: string | null
           created_by: string
           estimated_value?: number | null
+          expected_month?: string | null
           id?: string
           next_action?: string | null
           next_action_date?: string | null
@@ -1334,6 +1336,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           estimated_value?: number | null
+          expected_month?: string | null
           id?: string
           next_action?: string | null
           next_action_date?: string | null
