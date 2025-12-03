@@ -89,96 +89,128 @@ serve(async (req) => {
       u => u.email?.toLowerCase() === invitation.email.toLowerCase()
     );
 
+    let userId: string;
+
     if (existingAuthUser) {
       console.log('Auth user already exists:', existingAuthUser.id);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          code: 'user_exists',
-          message: 'This email already has an account. Please sign in or ask your office manager to reactivate/transfer it.' 
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Step 3: Check for existing profiles (both active and inactive)
-    console.log('Checking for existing profiles');
-    const { data: existingProfiles } = await supabaseAdmin
-      .from('profiles')
-      .select('id, email, status, office_id, primary_team_id')
-      .eq('email', invitation.email);
-
-    if (existingProfiles && existingProfiles.length > 0) {
-      console.log(`⚠️ Found ${existingProfiles.length} existing profile(s):`, 
-        existingProfiles.map(p => ({ id: p.id, status: p.status, has_office: !!p.office_id }))
-      );
       
-      // CRITICAL: Check if any ACTIVE profiles exist
-      const activeProfiles = existingProfiles.filter(p => p.status === 'active');
-      if (activeProfiles.length > 0) {
-        console.error(`❌ Cannot accept invitation - active profile(s) already exist:`, activeProfiles);
+      // Check if this existing user has a COMPLETE profile (office_id and primary_team_id)
+      const { data: existingProfile } = await supabaseAdmin
+        .from('profiles')
+        .select('id, office_id, primary_team_id, status')
+        .eq('id', existingAuthUser.id)
+        .single();
+      
+      if (existingProfile && existingProfile.status === 'active' && existingProfile.office_id && existingProfile.primary_team_id) {
+        // Fully configured user - they should sign in instead
+        console.log('User is fully configured, should sign in instead');
         return new Response(
           JSON.stringify({ 
             success: false, 
             code: 'user_exists',
-            message: 'An active account with this email already exists. Please sign in instead, or contact your office manager if you need assistance.'
+            message: 'This email already has an active account. Please sign in instead.' 
           }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      // Archive inactive/orphaned profiles by changing their email
-      console.log(`📦 Archiving ${existingProfiles.length} inactive profile(s)...`);
-      const timestamp = Date.now();
-      for (const profile of existingProfiles) {
-        const { error: archiveError } = await supabaseAdmin
-          .from('profiles')
-          .update({ 
-            email: `${profile.id}.archived-${timestamp}@deleted.local`,
-            status: 'inactive'
-          })
-          .eq('id', profile.id);
-          
-        if (archiveError) {
-          console.error(`❌ Failed to archive profile ${profile.id}:`, archiveError);
+      // Auth user exists but profile is incomplete - resume setup
+      console.log('Auth user exists but profile incomplete - resuming setup');
+      userId = existingAuthUser.id;
+      
+      // Update the auth user's password since they're re-accepting
+      const { error: updatePwError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        password: password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
+      
+      if (updatePwError) {
+        console.error('Failed to update auth user password:', updatePwError);
+        // Continue anyway - user might need to reset password later
+      } else {
+        console.log('✅ Updated auth user password');
+      }
+    } else {
+      // Step 3: Check for existing profiles (both active and inactive)
+      console.log('Checking for existing profiles');
+      const { data: existingProfiles } = await supabaseAdmin
+        .from('profiles')
+        .select('id, email, status, office_id, primary_team_id')
+        .eq('email', invitation.email);
+
+      if (existingProfiles && existingProfiles.length > 0) {
+        console.log(`⚠️ Found ${existingProfiles.length} existing profile(s):`, 
+          existingProfiles.map(p => ({ id: p.id, status: p.status, has_office: !!p.office_id }))
+        );
+        
+        // CRITICAL: Check if any ACTIVE profiles exist
+        const activeProfiles = existingProfiles.filter(p => p.status === 'active');
+        if (activeProfiles.length > 0) {
+          console.error(`❌ Cannot accept invitation - active profile(s) already exist:`, activeProfiles);
           return new Response(
             JSON.stringify({ 
               success: false, 
-              message: 'Failed to prepare account for activation. Please contact support.'
+              code: 'user_exists',
+              message: 'An active account with this email already exists. Please sign in instead, or contact your office manager if you need assistance.'
             }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
           );
-        } else {
-          console.log(`✅ Archived profile ${profile.id}`);
         }
+        
+        // Archive inactive/orphaned profiles by changing their email
+        console.log(`📦 Archiving ${existingProfiles.length} inactive profile(s)...`);
+        const timestamp = Date.now();
+        for (const profile of existingProfiles) {
+          const { error: archiveError } = await supabaseAdmin
+            .from('profiles')
+            .update({ 
+              email: `${profile.id}.archived-${timestamp}@deleted.local`,
+              status: 'inactive'
+            })
+            .eq('id', profile.id);
+            
+          if (archiveError) {
+            console.error(`❌ Failed to archive profile ${profile.id}:`, archiveError);
+            return new Response(
+              JSON.stringify({ 
+                success: false, 
+                message: 'Failed to prepare account for activation. Please contact support.'
+              }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+            );
+          } else {
+            console.log(`✅ Archived profile ${profile.id}`);
+          }
+        }
+      } else {
+        console.log('✅ No existing profiles found - proceeding with user creation');
       }
-    } else {
-      console.log('✅ No existing profiles found - proceeding with user creation');
+
+      // Step 4: Create the auth user
+      console.log('Creating auth user');
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: invitation.email,
+        password: password,
+        email_confirm: true,
+        user_metadata: { full_name: fullName },
+      });
+
+      if (authError || !authData.user) {
+        console.error('Auth creation error:', authError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            code: 'auth_creation_failed',
+            message: `Failed to create user account: ${authError?.message || 'Unknown error'}` 
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      userId = authData.user.id;
+      console.log('Auth user created:', userId);
     }
-
-    // Step 4: Create the auth user
-    console.log('Creating auth user');
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: invitation.email,
-      password: password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName },
-    });
-
-    if (authError || !authData.user) {
-      console.error('Auth creation error:', authError);
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          code: 'auth_creation_failed',
-          message: `Failed to create user account: ${authError?.message || 'Unknown error'}` 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const userId = authData.user.id;
-    console.log('Auth user created:', userId);
 
     // Step 5: Upsert profile WITHOUT primary_team_id (will be set after team membership is created)
     console.log('Upserting profile for user:', userId);
