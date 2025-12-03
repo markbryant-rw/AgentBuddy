@@ -1,25 +1,27 @@
-// Shared geocoding utilities for edge functions
+// Shared geocoding utilities for edge functions using Photon API (OpenStreetMap)
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from './cors.ts';
 
-export interface OpenCageResponse {
-  results: Array<{
+export interface PhotonResponse {
+  type: string;
+  features: Array<{
+    type: string;
     geometry: {
-      lat: number;
-      lng: number;
+      type: string;
+      coordinates: [number, number]; // [lng, lat]
     };
-    formatted: string;
-    confidence: number;
+    properties: {
+      osm_type: string;
+      osm_id: number;
+      country: string;
+      city?: string;
+      district?: string;
+      street?: string;
+      housenumber?: string;
+      postcode?: string;
+      state?: string;
+    };
   }>;
-  status: {
-    code: number;
-    message: string;
-  };
-  rate: {
-    limit: number;
-    remaining: number;
-    reset: number;
-  };
 }
 
 export interface GeocodeConfig {
@@ -33,14 +35,11 @@ export interface GeocodeResult {
   latitude?: number;
   longitude?: number;
   formatted?: string;
-  confidence?: number;
-  rate?: {
-    limit: number;
-    remaining: number;
-    reset: number;
-  };
   error?: string;
 }
+
+// NZ bounding box for Photon API
+const NZ_BBOX = '166.0,-47.5,179.0,-34.0';
 
 /**
  * Fetch with retry logic and timeout
@@ -75,7 +74,7 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
 }
 
 /**
- * Geocode an entity (listing, appraisal, transaction, etc.)
+ * Geocode an entity (listing, appraisal, transaction, etc.) using Photon API
  */
 export async function geocodeEntity(
   supabaseClient: any,
@@ -83,15 +82,6 @@ export async function geocodeEntity(
   config: GeocodeConfig
 ): Promise<Response> {
   const { tableName, idFieldName, entityName } = config;
-
-  const opencageApiKey = Deno.env.get('OPENCAGE_API_KEY');
-  if (!opencageApiKey) {
-    console.error('OPENCAGE_API_KEY not configured');
-    return new Response(
-      JSON.stringify({ error: 'Geocoding service not configured' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  }
 
   if (!entityId) {
     return new Response(
@@ -145,17 +135,17 @@ export async function geocodeEntity(
   } else {
     query = `${entity.address}${entity.suburb ? ', ' + entity.suburb : ''}, New Zealand`;
   }
-  console.log('Geocoding address:', query);
+  console.log('Geocoding address with Photon:', query);
 
-  // Call OpenCage API with retry logic
-  const opencageUrl = `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(query)}&key=${opencageApiKey}&countrycode=nz&limit=1`;
+  // Call Photon API (no API key required!)
+  const photonUrl = `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&bbox=${NZ_BBOX}&limit=1`;
 
   try {
-    const geocodeResponse = await fetchWithRetry(opencageUrl);
+    const geocodeResponse = await fetchWithRetry(photonUrl);
 
     if (!geocodeResponse.ok) {
       const errorText = await geocodeResponse.text();
-      console.error('OpenCage API error:', errorText);
+      console.error('Photon API error:', errorText);
 
       await supabaseClient
         .from(tableName)
@@ -168,23 +158,9 @@ export async function geocodeEntity(
       );
     }
 
-    const geocodeData: OpenCageResponse = await geocodeResponse.json();
+    const geocodeData: PhotonResponse = await geocodeResponse.json();
 
-    if (geocodeData.status.code !== 200) {
-      console.error('OpenCage status error:', geocodeData.status);
-
-      await supabaseClient
-        .from(tableName)
-        .update({ geocode_error: geocodeData.status.message })
-        .eq('id', entityId);
-
-      return new Response(
-        JSON.stringify({ error: geocodeData.status.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!geocodeData.results || geocodeData.results.length === 0) {
+    if (!geocodeData.features || geocodeData.features.length === 0) {
       console.log('No geocoding results found for:', query);
 
       await supabaseClient
@@ -203,10 +179,24 @@ export async function geocodeEntity(
       );
     }
 
-    const result = geocodeData.results[0];
-    const { lat, lng } = result.geometry;
+    const result = geocodeData.features[0];
+    // Photon returns coordinates as [lng, lat]
+    const lng = result.geometry.coordinates[0];
+    const lat = result.geometry.coordinates[1];
 
-    console.log('Geocoding successful:', { lat, lng, confidence: result.confidence });
+    // Build formatted address from properties
+    const props = result.properties;
+    const formattedParts = [
+      props.housenumber,
+      props.street,
+      props.district || props.city,
+      props.state,
+      props.postcode,
+      props.country
+    ].filter(Boolean);
+    const formatted = formattedParts.join(', ');
+
+    console.log('Geocoding successful:', { lat, lng, formatted });
 
     // Update entity with coordinates
     const { error: updateError } = await supabaseClient
@@ -232,9 +222,7 @@ export async function geocodeEntity(
         success: true,
         latitude: lat,
         longitude: lng,
-        confidence: result.confidence,
-        formatted: result.formatted,
-        rate: geocodeData.rate,
+        formatted: formatted,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
