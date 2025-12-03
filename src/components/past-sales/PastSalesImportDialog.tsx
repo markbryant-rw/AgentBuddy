@@ -417,10 +417,10 @@ export const PastSalesImportDialog = ({
                     key={index}
                     className={`p-3 rounded-lg border ${
                       !row.valid
-                        ? 'border-destructive bg-destructive/10'
+                        ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50'
                         : row.warnings.length > 0
                         ? 'border-warning bg-warning/10'
-                        : 'border-success bg-success/10'
+                        : 'border-border bg-background'
                     }`}
                   >
                     <div className="flex items-start justify-between">
