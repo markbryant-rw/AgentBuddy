@@ -162,6 +162,7 @@ export const useBugReports = (statusFilter: string = 'all') => {
         .from('bug_reports')
         .insert({
           user_id: user.id,
+          title: submission.summary,
           summary: submission.summary,
           description: submission.description,
           expected_behaviour: submission.expected_behaviour,
