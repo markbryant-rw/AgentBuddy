@@ -30,8 +30,13 @@ export const WeatherWidget = () => {
     // Try to get from localStorage first
     const savedLocation = localStorage.getItem('userLocation');
     if (savedLocation) {
-      setLocation(JSON.parse(savedLocation));
-      return;
+      try {
+        setLocation(JSON.parse(savedLocation));
+        return;
+      } catch (error) {
+        console.error('Failed to parse saved location:', error);
+        localStorage.removeItem('userLocation');
+      }
     }
 
     // Otherwise use geolocation
@@ -64,13 +69,19 @@ export const WeatherWidget = () => {
       // Check cache (30 min)
       const cachedWeather = localStorage.getItem('weatherData');
       const cachedTime = localStorage.getItem('weatherCacheTime');
-      
+
       if (cachedWeather && cachedTime) {
         const timeDiff = Date.now() - parseInt(cachedTime);
         if (timeDiff < 30 * 60 * 1000) { // 30 minutes
-          setWeather(JSON.parse(cachedWeather));
-          setLoading(false);
-          return;
+          try {
+            setWeather(JSON.parse(cachedWeather));
+            setLoading(false);
+            return;
+          } catch (error) {
+            console.error('Failed to parse cached weather:', error);
+            localStorage.removeItem('weatherData');
+            localStorage.removeItem('weatherCacheTime');
+          }
         }
       }
 

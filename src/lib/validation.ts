@@ -85,3 +85,17 @@ export const sanitizeText = (text: string): string => {
     .replace(/[<>]/g, '') // Remove angle brackets
     .trim();
 };
+
+// Shared email validation helper
+// Returns validation result with optional error message
+export const validateEmail = (email: string): { isValid: boolean; error?: string } => {
+  try {
+    emailSchema.parse(email);
+    return { isValid: true };
+  } catch (error: any) {
+    return {
+      isValid: false,
+      error: error.errors?.[0]?.message || 'Invalid email'
+    };
+  }
+};

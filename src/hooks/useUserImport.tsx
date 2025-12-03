@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Papa from 'papaparse';
 import { supabase } from '@/integrations/supabase/client';
 import { normalizeNZMobile } from '@/lib/phoneUtils';
+import { validateEmail } from '@/lib/validation';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppRole = Database['public']['Enums']['app_role'];
@@ -44,11 +45,6 @@ export const useUserImport = () => {
   const [isParsing, setIsParsing] = useState(false);
   const [parsedUsers, setParsedUsers] = useState<ParsedUser[]>([]);
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
   const validateRole = (role: string): AppRole | null => {
     const normalized = role.toLowerCase().trim().replace(/\s+/g, '_');
     if (ALLOWED_ROLES.includes(normalized as AppRole)) {
@@ -75,7 +71,7 @@ export const useUserImport = () => {
     }
     if (!row.email?.trim()) {
       errors.push({ field: 'email', message: 'Email is required' });
-    } else if (!validateEmail(row.email)) {
+    } else if (!validateEmail(row.email).isValid) {
       errors.push({ field: 'email', message: 'Invalid email format' });
     }
 
@@ -103,7 +99,7 @@ export const useUserImport = () => {
     }
 
     // Check if email already exists
-    if (row.email && validateEmail(row.email)) {
+    if (row.email && validateEmail(row.email).isValid) {
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('id, email')
