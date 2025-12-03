@@ -1439,6 +1439,7 @@ export type Database = {
       logged_appraisals: {
         Row: {
           address: string
+          agent_id: string | null
           appraisal_date: string
           appraisal_method: string | null
           appraisal_range_high: number | null
@@ -1470,6 +1471,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          agent_id?: string | null
           appraisal_date: string
           appraisal_method?: string | null
           appraisal_range_high?: number | null
@@ -1501,6 +1503,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          agent_id?: string | null
           appraisal_date?: string
           appraisal_method?: string | null
           appraisal_range_high?: number | null
@@ -1531,6 +1534,13 @@ export type Database = {
           vendor_name?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "logged_appraisals_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "logged_appraisals_created_by_fkey"
             columns: ["created_by"]

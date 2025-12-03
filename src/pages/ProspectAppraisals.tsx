@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload } from 'lucide-react';
+import { Plus, Upload, Trash2 } from 'lucide-react';
 import { useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { useTeam } from '@/hooks/useTeam';
 import AppraisalsList from '@/components/appraisals/AppraisalsList';
@@ -10,12 +10,13 @@ import { LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 
 const ProspectAppraisals = () => {
-  const { appraisals, loading, refreshAppraisals } = useLoggedAppraisals();
+  const { appraisals, loading, refreshAppraisals, removeDuplicates } = useLoggedAppraisals();
   const { team } = useTeam();
   const [selectedAppraisal, setSelectedAppraisal] = useState<LoggedAppraisal | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
 
   const handleAppraisalClick = (appraisal: LoggedAppraisal) => {
     setSelectedAppraisal(appraisal);
@@ -38,6 +39,12 @@ const ProspectAppraisals = () => {
     refreshAppraisals();
   };
 
+  const handleRemoveDuplicates = async () => {
+    setIsRemovingDuplicates(true);
+    await removeDuplicates();
+    setIsRemovingDuplicates(false);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <WorkspaceHeader workspace="prospect" currentPage="Appraisals" />
@@ -52,6 +59,14 @@ const ProspectAppraisals = () => {
               </p>
             </div>
             <div className="flex gap-3">
+              <Button 
+                onClick={handleRemoveDuplicates} 
+                variant="outline"
+                disabled={isRemovingDuplicates}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isRemovingDuplicates ? 'Removing...' : 'Remove Duplicates'}
+              </Button>
               <Button onClick={handleAddAppraisal} variant="secondary">
                 <Plus className="h-4 w-4 mr-2" />
                 Log Appraisal

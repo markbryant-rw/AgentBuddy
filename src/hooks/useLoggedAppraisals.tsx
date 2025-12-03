@@ -3,15 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
 import { toast } from 'sonner';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 
-// Extended interface to match component expectations (stubbed)
 export interface LoggedAppraisal {
   id: string;
   user_id: string;
   team_id?: string;
   created_by?: string;
   last_edited_by?: string;
+  agent_id?: string;
   address: string;
   vendor_name?: string;
   vendor_mobile?: string;
@@ -40,6 +40,14 @@ export interface LoggedAppraisal {
   attachments?: any[];
   created_at: string;
   updated_at: string;
+  // Joined profile data
+  agent?: {
+    id: string;
+    full_name: string;
+    avatar_url?: string;
+  };
+  // Computed field for repeat visits
+  visit_number?: number;
 }
 
 export const useLoggedAppraisals = () => {
@@ -54,7 +62,10 @@ export const useLoggedAppraisals = () => {
       
       const { data, error } = await supabase
         .from('logged_appraisals')
-        .select('*')
+        .select(`
+          *,
+          agent:profiles!logged_appraisals_agent_id_fkey(id, full_name, avatar_url)
+        `)
         .eq('team_id', team.id)
         .order('appraisal_date', { ascending: false });
 
@@ -64,7 +75,23 @@ export const useLoggedAppraisals = () => {
         return [] as LoggedAppraisal[];
       }
 
-      return (data || []) as LoggedAppraisal[];
+      // Calculate visit numbers for repeat addresses
+      const addressCounts: Record<string, number> = {};
+      const sortedByDate = [...(data || [])].sort(
+        (a, b) => new Date(a.appraisal_date).getTime() - new Date(b.appraisal_date).getTime()
+      );
+      
+      sortedByDate.forEach((appraisal) => {
+        const normalizedAddress = appraisal.address.toLowerCase().trim();
+        addressCounts[normalizedAddress] = (addressCounts[normalizedAddress] || 0) + 1;
+        (appraisal as any).visit_number = addressCounts[normalizedAddress];
+      });
+
+      return (data || []).map(a => ({
+        ...a,
+        agent: a.agent as LoggedAppraisal['agent'],
+        visit_number: (a as any).visit_number,
+      })) as LoggedAppraisal[];
     },
     enabled: !!team,
   });
@@ -72,7 +99,6 @@ export const useLoggedAppraisals = () => {
   useEffect(() => {
     if (!team) return;
 
-    // Subscribe to real-time changes (stubbed)
     const channel = supabase
       .channel('logged_appraisals_changes')
       .on(
@@ -92,15 +118,33 @@ export const useLoggedAppraisals = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, team]);
+  }, [user, team, queryClient]);
 
   const addAppraisal = async (
     appraisal: Omit<LoggedAppraisal, 'id' | 'created_at' | 'updated_at' | 'user_id'>
   ) => {
-    if (!user) return;
-    console.log('addAppraisal: Stubbed', appraisal);
-    toast.success('Appraisal logged');
-    return null;
+    if (!user || !team) return null;
+    
+    const { data, error } = await supabase
+      .from('logged_appraisals')
+      .insert({
+        ...appraisal,
+        user_id: user.id,
+        team_id: team.id,
+        created_by: user.id,
+        agent_id: appraisal.agent_id || user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding appraisal:', error);
+      toast.error('Failed to log appraisal');
+      return null;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
+    return data;
   };
 
   const updateAppraisal = async (id: string, updates: Partial<LoggedAppraisal>): Promise<void> => {
@@ -108,13 +152,81 @@ export const useLoggedAppraisals = () => {
       toast.error('User not authenticated');
       return;
     }
-    console.log('updateAppraisal: Stubbed', { id, updates });
-    toast.success('Appraisal updated');
+    
+    const { error } = await supabase
+      .from('logged_appraisals')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating appraisal:', error);
+      toast.error('Failed to update appraisal');
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
   };
 
   const deleteAppraisal = async (id: string): Promise<void> => {
-    console.log('deleteAppraisal: Stubbed', id);
-    toast.success('Appraisal deleted');
+    const { error } = await supabase
+      .from('logged_appraisals')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting appraisal:', error);
+      toast.error('Failed to delete appraisal');
+      return;
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
+  };
+
+  const removeDuplicates = async (): Promise<number> => {
+    if (!team?.id) return 0;
+
+    // Group by address + appraisal_date, keep oldest
+    const grouped: Record<string, LoggedAppraisal[]> = {};
+    appraisals.forEach((a) => {
+      const key = `${a.address.toLowerCase().trim()}_${a.appraisal_date}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(a);
+    });
+
+    const toDelete: string[] = [];
+    Object.values(grouped).forEach((group) => {
+      if (group.length > 1) {
+        // Sort by created_at, keep oldest
+        const sorted = group.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        // Delete all but the first (oldest)
+        sorted.slice(1).forEach((a) => toDelete.push(a.id));
+      }
+    });
+
+    if (toDelete.length === 0) {
+      toast.info('No duplicates found');
+      return 0;
+    }
+
+    const { error } = await supabase
+      .from('logged_appraisals')
+      .delete()
+      .in('id', toDelete);
+
+    if (error) {
+      console.error('Error removing duplicates:', error);
+      toast.error('Failed to remove duplicates');
+      return 0;
+    }
+
+    toast.success(`Removed ${toDelete.length} duplicate(s)`);
+    queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
+    return toDelete.length;
   };
 
   const convertToListing = async (appraisalId: string, listingData: any) => {
@@ -128,12 +240,15 @@ export const useLoggedAppraisals = () => {
     if (!user || !team) return null;
     
     try {
-      // Create listings_pipeline record
+      // Get the appraisal to carry over agent_id
+      const appraisal = appraisals.find(a => a.id === appraisalId);
+      
       const { data: opportunity, error } = await supabase
         .from('listings_pipeline')
         .insert({
           team_id: team.id,
           created_by: user.id,
+          assigned_to: appraisal?.agent_id || user.id,
           address: opportunityData.address,
           stage: opportunityData.stage || 'vap',
           warmth: opportunityData.warmth || 'warm',
@@ -146,7 +261,6 @@ export const useLoggedAppraisals = () => {
 
       if (error) throw error;
 
-      // Update appraisal to mark as converted
       const { error: updateError } = await supabase
         .from('logged_appraisals')
         .update({
@@ -170,6 +284,17 @@ export const useLoggedAppraisals = () => {
     }
   };
 
+  // Get previous appraisals at the same address
+  const getPreviousAppraisals = (address: string, currentId: string): LoggedAppraisal[] => {
+    const normalizedAddress = address.toLowerCase().trim();
+    return appraisals
+      .filter(a => 
+        a.address.toLowerCase().trim() === normalizedAddress && 
+        a.id !== currentId
+      )
+      .sort((a, b) => new Date(b.appraisal_date).getTime() - new Date(a.appraisal_date).getTime());
+  };
+
   const stats = {
     total: appraisals.length,
     active: appraisals.filter(a => a.outcome === 'In Progress').length,
@@ -182,8 +307,10 @@ export const useLoggedAppraisals = () => {
     addAppraisal,
     updateAppraisal,
     deleteAppraisal,
+    removeDuplicates,
     convertToListing,
     convertToOpportunity,
+    getPreviousAppraisals,
     stats,
     refreshAppraisals: () => queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] }),
   };
