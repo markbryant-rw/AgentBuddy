@@ -59,13 +59,14 @@ const AppraisalDetailDialog = ({
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
     address: '',
     vendor_name: '',
+    vendor_mobile: '',
+    vendor_email: '',
     suburb: '',
     appraisal_date: new Date().toISOString().split('T')[0],
     intent: 'medium',
-    stage: 'MAP',
+    stage: 'VAP',
     outcome: 'In Progress',
     estimated_value: undefined,
-    appraisal_method: 'in_person',
     last_contact: new Date().toISOString().split('T')[0],
     next_follow_up: '',
     lead_source: undefined,
@@ -80,13 +81,14 @@ const AppraisalDetailDialog = ({
       setFormData({
         address: '',
         vendor_name: '',
+        vendor_mobile: '',
+        vendor_email: '',
         suburb: '',
         appraisal_date: new Date().toISOString().split('T')[0],
         intent: 'medium',
-        stage: 'MAP',
+        stage: 'VAP',
         outcome: 'In Progress',
         estimated_value: undefined,
-        appraisal_method: 'in_person',
         last_contact: new Date().toISOString().split('T')[0],
         next_follow_up: '',
         lead_source: undefined,
@@ -188,6 +190,16 @@ const AppraisalDetailDialog = ({
                 <Label htmlFor="vendor_name" className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>
                 <Input id="vendor_name" value={formData.vendor_name} onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })} placeholder="John Smith" required className="h-10" />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="vendor_mobile" className="text-sm font-medium">Vendor Mobile</Label>
+                  <Input id="vendor_mobile" value={formData.vendor_mobile || ''} onChange={(e) => setFormData({ ...formData, vendor_mobile: e.target.value })} placeholder="021 123 4567" className="h-10" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="vendor_email" className="text-sm font-medium">Vendor Email</Label>
+                  <Input id="vendor_email" type="email" value={formData.vendor_email || ''} onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })} placeholder="john@example.com" className="h-10" />
+                </div>
+              </div>
             </div>
 
             <div className="space-y-4 p-4 rounded-lg bg-muted/50">
@@ -196,17 +208,6 @@ const AppraisalDetailDialog = ({
                 <div className="space-y-2">
                   <Label htmlFor="appraisal_date" className="text-sm font-medium">Appraisal Date <span className="text-destructive">*</span></Label>
                   <Input id="appraisal_date" type="date" value={formData.appraisal_date} onChange={(e) => setFormData({ ...formData, appraisal_date: e.target.value })} required className="h-10" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="appraisal_method" className="text-sm font-medium">Appraisal Method</Label>
-                  <Select value={formData.appraisal_method} onValueChange={(value) => setFormData({ ...formData, appraisal_method: value as any })}>
-                    <SelectTrigger className="h-10"><SelectValue placeholder="Select method" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in_person">In Person</SelectItem>
-                      <SelectItem value="desktop">Desktop</SelectItem>
-                      <SelectItem value="virtual">Virtual</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="estimated_value" className="text-sm font-medium">Estimated Value</Label>
@@ -253,9 +254,10 @@ const AppraisalDetailDialog = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="stage" className="text-sm font-medium">Stage <span className="text-destructive">*</span></Label>
-                  <Select value={formData.stage} onValueChange={(value: 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
+                  <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
                     <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[60]">
+                      <SelectItem value="VAP">VAP</SelectItem>
                       <SelectItem value="MAP">MAP</SelectItem>
                       <SelectItem value="LAP">LAP</SelectItem>
                     </SelectContent>

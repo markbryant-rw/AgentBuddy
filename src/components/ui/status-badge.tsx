@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
-  stage?: 'MAP' | 'LAP';
+  stage?: 'VAP' | 'MAP' | 'LAP';
   outcome?: 'In Progress' | 'WON' | 'LOST';
   className?: string;
 }
@@ -17,6 +17,9 @@ export const StatusBadge = ({ stage, outcome, className }: StatusBadgeProps) => 
     }
 
     // Otherwise show stage
+    if (stage === 'VAP') {
+      return 'bg-purple-100 text-purple-800 border-purple-200';
+    }
     if (stage === 'MAP') {
       return 'bg-blue-100 text-blue-800 border-blue-200';
     }

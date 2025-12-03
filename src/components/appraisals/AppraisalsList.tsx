@@ -106,7 +106,7 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
     setSelectedAppraisals(newSelected);
   };
 
-  const handleBulkStageUpdate = async (newStage: 'MAP' | 'LAP') => {
+  const handleBulkStageUpdate = async (newStage: 'VAP' | 'MAP' | 'LAP') => {
     const promises = Array.from(selectedAppraisals).map(id =>
       updateAppraisal(id, { stage: newStage })
     );
@@ -160,11 +160,12 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
             {selectedAppraisals.size} appraisal{selectedAppraisals.size > 1 ? 's' : ''} selected
           </span>
           <div className="flex gap-2">
-            <Select onValueChange={(value) => handleBulkStageUpdate(value as 'MAP' | 'LAP')}>
+            <Select onValueChange={(value) => handleBulkStageUpdate(value as 'VAP' | 'MAP' | 'LAP')}>
               <SelectTrigger className="w-[140px] h-8">
                 <SelectValue placeholder="Set Stage" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="VAP">VAP</SelectItem>
                 <SelectItem value="MAP">MAP</SelectItem>
                 <SelectItem value="LAP">LAP</SelectItem>
               </SelectContent>
@@ -227,6 +228,7 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Stages</SelectItem>
+            <SelectItem value="VAP">VAP</SelectItem>
             <SelectItem value="MAP">MAP</SelectItem>
             <SelectItem value="LAP">LAP</SelectItem>
           </SelectContent>
