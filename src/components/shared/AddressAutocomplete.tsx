@@ -67,8 +67,11 @@ export function AddressAutocomplete({
 
       setIsLoading(true);
       try {
+        // NZ bounding box: SW(-47.5, 166.0) to NE(-34.0, 179.0)
+        const nzBbox = '166.0,-47.5,179.0,-34.0';
+        const searchQuery = `${debouncedQuery}, New Zealand`;
         const response = await fetch(
-          `https://photon.komoot.io/api?q=${encodeURIComponent(debouncedQuery)}&countrycodes=nz&limit=5`
+          `https://photon.komoot.io/api?q=${encodeURIComponent(searchQuery)}&bbox=${nzBbox}&limit=5`
         );
         const data: PhotonResponse = await response.json();
 
