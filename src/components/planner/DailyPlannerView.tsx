@@ -229,7 +229,7 @@ export function DailyPlannerView() {
               onClick={() => setRollForwardDialogOpen(true)}
             >
               <ArrowRight className="h-3.5 w-3.5" />
-              Roll {uncompletedCount}
+              Roll {uncompletedCount} forward
             </Button>
           )}
         </div>
