@@ -134,8 +134,13 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
   };
 
   const handleBulkOutcomeUpdate = async (newOutcome: 'In Progress' | 'WON' | 'LOST') => {
+    // When setting to WON, also auto-set stage to LAP and intent to high
+    const updates = newOutcome === 'WON' 
+      ? { outcome: newOutcome, stage: 'LAP' as const, intent: 'high' as const }
+      : { outcome: newOutcome };
+    
     const promises = Array.from(selectedAppraisals).map(id =>
-      updateAppraisal(id, { outcome: newOutcome })
+      updateAppraisal(id, updates)
     );
     await Promise.all(promises);
     setSelectedAppraisals(new Set());
@@ -341,7 +346,11 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
               filteredAppraisals.map((appraisal) => (
                 <TableRow 
                   key={appraisal.id} 
-                  className="cursor-pointer hover:bg-muted/50"
+                  className={cn(
+                    "cursor-pointer hover:bg-muted/50",
+                    appraisal.outcome === 'WON' && "bg-emerald-50/50 dark:bg-emerald-950/20",
+                    appraisal.outcome === 'LOST' && "bg-gray-100/50 dark:bg-gray-800/30"
+                  )}
                   onClick={() => onAppraisalClick(appraisal)}
                 >
                   <TableCell>

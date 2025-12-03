@@ -120,6 +120,17 @@ const AppraisalDetailDialog = ({
     }
   }, [appraisal, isNew, user?.id]);
 
+  // Auto-set stage and intent when outcome changes to WON
+  useEffect(() => {
+    if (formData.outcome === 'WON') {
+      setFormData(prev => ({
+        ...prev,
+        stage: 'LAP',
+        intent: 'high',
+      }));
+    }
+  }, [formData.outcome]);
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
