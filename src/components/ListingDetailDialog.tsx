@@ -83,7 +83,7 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
     setShowWonDialog(true);
   };
 
-  const confirmWon = (moveToTC: boolean) => {
+  const confirmWon = async (moveToTC: boolean) => {
     const updates = { ...editedListing!, outcome: 'won' as const };
     onUpdate(editedListing!.id, updates);
     setShowWonDialog(false);
@@ -92,9 +92,36 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
     onOpenChange(false);
     
     if (moveToTC) {
-      // Will trigger TC dialog with pre-populated data
-      toast.success('Opportunity won! Opening Transaction Coordinating...');
-      // TODO: Open TC modal with pre-populated data
+      // Create transaction in Transaction Coordinating
+      try {
+        const transactionData = {
+          team_id: editedListing!.team_id,
+          created_by: user?.id,
+          last_edited_by: user?.id,
+          address: editedListing!.address,
+          suburb: editedListing!.suburb || null,
+          stage: 'signed',
+          warmth: 'active',
+          on_hold: false,
+          archived: false,
+          lead_source: editedListing!.lead_source || null,
+          vendor_names: editedListing!.vendor_name 
+            ? [{ first_name: editedListing!.vendor_name, last_name: '' }] 
+            : [],
+          listing_signed_date: new Date().toISOString().split('T')[0],
+        };
+
+        const { error } = await supabase
+          .from('transactions')
+          .insert(transactionData as any);
+
+        if (error) throw error;
+        
+        toast.success('🎉 Opportunity won and moved to Transaction Coordinating!');
+      } catch (error) {
+        console.error('Error creating transaction:', error);
+        toast.error('Won marked but failed to create transaction');
+      }
     } else {
       toast.success('🎉 Congratulations! Opportunity marked as WON');
     }

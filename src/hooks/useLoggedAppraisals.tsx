@@ -112,10 +112,49 @@ export const useLoggedAppraisals = () => {
   };
 
   const convertToOpportunity = async (appraisalId: string, opportunityData: any) => {
-    if (!user || !team) return;
-    console.log('convertToOpportunity: Stubbed', { appraisalId, opportunityData });
-    toast.success('Converted to opportunity');
-    return null;
+    if (!user || !team) return null;
+    
+    try {
+      // Create listings_pipeline record
+      const { data: opportunity, error } = await supabase
+        .from('listings_pipeline')
+        .insert({
+          team_id: team.id,
+          created_by: user.id,
+          address: opportunityData.address,
+          stage: opportunityData.stage || 'vap',
+          warmth: opportunityData.warmth || 'warm',
+          estimated_value: opportunityData.estimated_value,
+          expected_month: opportunityData.expected_month,
+          notes: opportunityData.notes,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Update appraisal to mark as converted
+      const { error: updateError } = await supabase
+        .from('logged_appraisals')
+        .update({
+          outcome: 'WON',
+          converted_date: new Date().toISOString().split('T')[0],
+        })
+        .eq('id', appraisalId);
+
+      if (updateError) {
+        console.error('Failed to update appraisal status:', updateError);
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      
+      return opportunity;
+    } catch (error) {
+      console.error('Error converting to opportunity:', error);
+      toast.error('Failed to convert to opportunity');
+      return null;
+    }
   };
 
   const stats = {
