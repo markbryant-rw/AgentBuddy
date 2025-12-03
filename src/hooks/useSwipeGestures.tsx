@@ -12,12 +12,16 @@ export const useSwipeGestures = ({ onSwipeLeft, onSwipeRight, threshold = 50 }: 
   const [isSwiping, setIsSwiping] = useState(false);
 
   const handleTouchStart = (e: TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-    setIsSwiping(true);
+    if (e.targetTouches.length > 0) {
+      touchStartX.current = e.targetTouches[0].clientX;
+      setIsSwiping(true);
+    }
   };
 
   const handleTouchMove = (e: TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
+    if (e.targetTouches.length > 0) {
+      touchEndX.current = e.targetTouches[0].clientX;
+    }
   };
 
   const handleTouchEnd = () => {
