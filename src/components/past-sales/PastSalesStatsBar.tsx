@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, Calendar, Target, TrendingUp } from "lucide-react";
+import { DollarSign, Calendar, Target, TrendingUp, Hash } from "lucide-react";
 
 interface PastSalesStatsBarProps {
   analytics: {
+    soldCount: number;
     totalSalesValue: number;
     averageSalePrice: number;
     averageDaysOnMarket: number;
@@ -19,6 +20,12 @@ const PastSalesStatsBar = ({ analytics }: PastSalesStatsBarProps) => {
   };
 
   const stats = [
+    {
+      label: "Total Sales",
+      value: analytics.soldCount.toString(),
+      icon: Hash,
+      color: "text-indigo-600",
+    },
     {
       label: "Total Sales Value",
       value: formatCurrency(analytics.totalSalesValue),
@@ -46,7 +53,7 @@ const PastSalesStatsBar = ({ analytics }: PastSalesStatsBarProps) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
       {stats.map((stat) => (
         <Card key={stat.label}>
           <CardContent className="pt-6">
