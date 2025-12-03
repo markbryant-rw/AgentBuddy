@@ -120,19 +120,49 @@ const LocationFixSection = ({
         body: { [idFieldName]: entityId },
       });
 
+      // Handle edge function errors (including 404 "Address not found")
       if (error) {
-        throw new Error(error.message);
+        // Check if it's an "Address not found" error
+        const errorMessage = error.message || '';
+        if (errorMessage.includes('Address not found') || errorMessage.includes('404')) {
+          toast({
+            title: 'Address Not Found',
+            description: 'The geocoding service could not find this address. Try being more specific (e.g., include street number, suburb, and city).',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Geocoding Failed',
+            description: errorMessage || 'Failed to geocode address',
+            variant: 'destructive',
+          });
+        }
+        return;
       }
 
       if (data?.error) {
-        throw new Error(data.error);
+        // Handle error in response data
+        if (data.error === 'Address not found') {
+          toast({
+            title: 'Address Not Found',
+            description: 'The geocoding service could not find this address. Try being more specific (e.g., include street number, suburb, and city).',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Geocoding Failed',
+            description: data.error,
+            variant: 'destructive',
+          });
+        }
+        return;
       }
 
       toast({
         title: 'Location Updated',
-        description: data?.suburb 
-          ? `Found: ${data.suburb} (${data.latitude?.toFixed(4)}, ${data.longitude?.toFixed(4)})`
-          : 'Coordinates updated successfully',
+        description: data?.formatted 
+          ? `Found: ${data.formatted}`
+          : `Coordinates updated (${data?.latitude?.toFixed(4)}, ${data?.longitude?.toFixed(4)})`,
       });
 
       // Notify parent to refresh data
@@ -141,11 +171,22 @@ const LocationFixSection = ({
       
     } catch (error) {
       console.error('Geocoding error:', error);
-      toast({
-        title: 'Geocoding Failed',
-        description: error instanceof Error ? error.message : 'Failed to geocode address',
-        variant: 'destructive',
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to geocode address';
+      
+      // Handle "Address not found" in catch block too
+      if (errorMessage.includes('Address not found')) {
+        toast({
+          title: 'Address Not Found',
+          description: 'Try a more specific address format: "123 Street Name, Suburb, Auckland, New Zealand"',
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Geocoding Failed',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsGeocoding(false);
     }
