@@ -87,7 +87,7 @@ export const PostImageLightbox = ({
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [currentIndex, zoom]);
+  }, [goToPrevious, goToNext, onClose, handleZoomIn, handleZoomOut]);
 
   return (
     <Dialog open onOpenChange={onClose}>
