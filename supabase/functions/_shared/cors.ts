@@ -1,6 +1,7 @@
 // Allowed origins whitelist
 const ALLOWED_ORIGINS = [
-  'https://lndyurrvcblxnkjprdwr.lovable.app', // Production Lovable deployment
+  'https://www.agentbuddy.co',                 // Production domain
+  'https://agentbuddy.co',                     // Production domain (no www)
   'http://localhost:8080',                     // Local development (vite.config.ts)
   'http://localhost:5173',                     // Alternative Vite dev port
 ];
