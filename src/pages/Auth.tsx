@@ -17,7 +17,7 @@ import { InvitationSignup } from '@/components/InvitationSignup';
 import { TrendingUp, Check, X, Users, Loader2 } from 'lucide-react';
 import { useAgencies } from '@/hooks/useAgencies';
 import { cn } from '@/lib/utils';
-import { authSchemas } from '@/lib/authValidation';
+import { authSchemas } from '@/lib/validation';
 
 const Auth = () => {
   const navigate = useNavigate();

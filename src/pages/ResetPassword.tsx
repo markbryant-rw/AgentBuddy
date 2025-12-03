@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { AnimatedAuthBackground } from '@/components/AnimatedAuthBackground';
 import { TrendingUp, CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { authSchemas } from '@/lib/authValidation';
+import { authSchemas } from '@/lib/validation';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
