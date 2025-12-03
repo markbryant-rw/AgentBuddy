@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ConvertToOpportunityDialog from './ConvertToOpportunityDialog';
+import LocationFixSection from '@/components/shared/LocationFixSection';
 import { Trash2, ChevronDown, History } from "lucide-react";
 import {
   AlertDialog,
@@ -118,11 +119,14 @@ const AppraisalDetailDialog = ({
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Strip non-database fields before sending
+      const { agent, visit_number, ...dbFields } = formData as any;
+      
       const sanitizedData = {
-        ...formData,
-        next_follow_up: formData.next_follow_up || null,
-        last_contact: formData.last_contact || null,
-        converted_date: formData.converted_date || null,
+        ...dbFields,
+        next_follow_up: dbFields.next_follow_up || null,
+        last_contact: dbFields.last_contact || null,
+        converted_date: dbFields.converted_date || null,
       };
       
       if (isNew) {
@@ -148,6 +152,18 @@ const AppraisalDetailDialog = ({
       });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleLocationUpdated = () => {
+    // Refresh the appraisal data by closing and reopening the dialog
+    // or by refetching the data
+    if (appraisal) {
+      // For now, just show a success message - the data will refresh when dialog reopens
+      toast({
+        title: "Location Updated",
+        description: "The location has been re-geocoded successfully",
+      });
     }
   };
 
@@ -362,6 +378,21 @@ const AppraisalDetailDialog = ({
                 <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
               </div>
             </div>
+
+            {/* Fix Location Section - only show for existing appraisals */}
+            {!isNew && appraisal && (
+              <LocationFixSection
+                entityId={appraisal.id}
+                entityType="appraisal"
+                address={formData.address || ''}
+                suburb={formData.suburb || undefined}
+                latitude={formData.latitude}
+                longitude={formData.longitude}
+                geocodeError={formData.geocode_error}
+                geocodedAt={formData.geocoded_at}
+                onLocationUpdated={handleLocationUpdated}
+              />
+            )}
 
             {/* Previous Appraisals Section */}
             {previousAppraisals.length > 0 && (
