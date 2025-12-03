@@ -66,7 +66,7 @@ const ResetPassword = () => {
     if (!passwordValidation.success) {
       toast({
         title: 'Invalid Password',
-        description: passwordValidation.error.errors[0].message,
+        description: passwordValidation.error.errors?.[0]?.message || 'Invalid password format',
         variant: 'destructive',
       });
       return;
