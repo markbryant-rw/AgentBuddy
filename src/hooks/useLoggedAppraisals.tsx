@@ -50,9 +50,21 @@ export const useLoggedAppraisals = () => {
   const { data: appraisals = [], isLoading: loading } = useQuery({
     queryKey: ['logged_appraisals', team?.id],
     queryFn: async () => {
-      // Stub: logged_appraisals functionality is not fully implemented
-      console.log('useLoggedAppraisals: Stubbed - returning empty array');
-      return [] as LoggedAppraisal[];
+      if (!team?.id) return [] as LoggedAppraisal[];
+      
+      const { data, error } = await supabase
+        .from('logged_appraisals')
+        .select('*')
+        .eq('team_id', team.id)
+        .order('appraisal_date', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching appraisals:', error);
+        toast.error('Failed to load appraisals');
+        return [] as LoggedAppraisal[];
+      }
+
+      return (data || []) as LoggedAppraisal[];
     },
     enabled: !!team,
   });
