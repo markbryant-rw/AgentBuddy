@@ -279,7 +279,7 @@ const SortableColumn = ({
   tasks, 
   projectId,
   onAddTask,
-  onEditList,
+  onRenameList,
   onDeleteList,
   overTaskId,
 }: { 
@@ -287,7 +287,7 @@ const SortableColumn = ({
   tasks: Task[];
   projectId: string;
   onAddTask: (title: string, listId: string) => void;
-  onEditList: () => void;
+  onRenameList: (newName: string) => void;
   onDeleteList: () => void;
   overTaskId: string | null;
 }) => {
@@ -296,6 +296,36 @@ const SortableColumn = ({
     data: { type: 'column', list },
   });
   const [isAdding, setIsAdding] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedName, setEditedName] = useState(list.name);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const handleTitleSave = () => {
+    if (editedName.trim() && editedName.trim() !== list.name) {
+      onRenameList(editedName.trim());
+    } else {
+      setEditedName(list.name);
+    }
+    setIsEditingTitle(false);
+  };
+
+  const handleTitleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTitleSave();
+    }
+    if (e.key === 'Escape') {
+      setEditedName(list.name);
+      setIsEditingTitle(false);
+    }
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -312,16 +342,36 @@ const SortableColumn = ({
       )}
     >
       {/* Column Header */}
-      <div 
-        {...attributes}
-        {...listeners}
-        className="p-3 border-b flex items-center gap-2 cursor-grab active:cursor-grabbing"
-      >
+      <div className="p-3 border-b flex items-center gap-2">
         <div 
-          className="w-3 h-3 rounded-full flex-shrink-0" 
-          style={{ backgroundColor: list.color || '#3b82f6' }}
-        />
-        <span className="font-medium flex-1 truncate">{list.name}</span>
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing"
+        >
+          <div 
+            className="w-3 h-3 rounded-full flex-shrink-0" 
+            style={{ backgroundColor: list.color || '#3b82f6' }}
+          />
+        </div>
+        
+        {isEditingTitle ? (
+          <Input
+            ref={titleInputRef}
+            value={editedName}
+            onChange={(e) => setEditedName(e.target.value)}
+            onBlur={handleTitleSave}
+            onKeyDown={handleTitleKeyDown}
+            className="h-7 flex-1 font-medium text-sm"
+          />
+        ) : (
+          <span 
+            className="font-medium flex-1 truncate cursor-pointer hover:bg-muted/50 px-1.5 py-0.5 -mx-1.5 rounded transition-colors"
+            onClick={() => setIsEditingTitle(true)}
+          >
+            {list.name}
+          </span>
+        )}
+        
         <Badge variant="secondary" className="flex-shrink-0">
           {tasks.length}
         </Badge>
@@ -332,7 +382,7 @@ const SortableColumn = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={onEditList}>
+            <DropdownMenuItem onClick={() => setIsEditingTitle(true)}>
               <Pencil className="h-4 w-4 mr-2" />
               Rename
             </DropdownMenuItem>
@@ -779,7 +829,7 @@ export default function ProjectKanbanBoard() {
                   tasks={tasksByList[list.id] || []}
                   projectId={projectId!}
                   onAddTask={(title, listId) => addTaskMutation.mutate({ title, listId })}
-                  onEditList={() => openEditDialog(list)}
+                  onRenameList={(newName) => updateList({ id: list.id, updates: { name: newName } })}
                   onDeleteList={() => setDeleteListId(list.id)}
                   overTaskId={overTaskId}
                 />
