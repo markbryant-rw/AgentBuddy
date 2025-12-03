@@ -184,7 +184,8 @@ const LocationFixSection = ({
             Search for correct address
           </Label>
           <AddressAutocomplete
-            placeholder={`${address}${suburb ? `, ${suburb}` : ''}`}
+            defaultValue={`${address}${suburb ? `, ${suburb}` : ''}`}
+            placeholder="Start typing to search NZ addresses..."
             onSelect={handleAddressSelect}
           />
           {selectedAddress && (
