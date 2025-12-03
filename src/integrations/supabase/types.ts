@@ -3388,27 +3388,56 @@ export type Database = {
           agent_id: string | null
           archived: boolean | null
           assignees: Json | null
+          attachments: Json | null
           auction_deadline_date: string | null
+          building_report_date: string | null
+          buyer_names: Json | null
+          campaign_type: string | null
+          client_email: string | null
           client_name: string | null
+          client_phone: string | null
           commission: number | null
+          conditional_date: string | null
           contract_date: string | null
           created_at: string | null
           created_by: string | null
+          deal_history: Json | null
+          docs_done: number | null
+          docs_total: number | null
           expected_settlement: string | null
+          geocode_error: string | null
+          geocoded_at: string | null
           id: string
           last_edited_by: string | null
+          latitude: number | null
+          lead_source: string | null
+          links: Json | null
           listing_expires_date: string | null
+          listing_id: string | null
+          listing_signed_date: string | null
           live_date: string | null
+          longitude: number | null
           notes: string | null
           on_hold: boolean | null
+          photoshoot_date: string | null
+          pre_settlement_inspection_date: string | null
+          price_alignment_status: string | null
           sale_price: number | null
           settlement_date: string | null
           stage: string | null
           status: string | null
           suburb: string | null
+          tasks_done: number | null
+          tasks_total: number | null
           team_id: string
+          team_price: number | null
           transaction_type: string
+          unconditional_date: string | null
           updated_at: string | null
+          vendor_email: string | null
+          vendor_names: Json | null
+          vendor_phone: string | null
+          vendor_price: number | null
           warmth: string | null
         }
         Insert: {
@@ -3416,27 +3445,56 @@ export type Database = {
           agent_id?: string | null
           archived?: boolean | null
           assignees?: Json | null
+          attachments?: Json | null
           auction_deadline_date?: string | null
+          building_report_date?: string | null
+          buyer_names?: Json | null
+          campaign_type?: string | null
+          client_email?: string | null
           client_name?: string | null
+          client_phone?: string | null
           commission?: number | null
+          conditional_date?: string | null
           contract_date?: string | null
           created_at?: string | null
           created_by?: string | null
+          deal_history?: Json | null
+          docs_done?: number | null
+          docs_total?: number | null
           expected_settlement?: string | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
           last_edited_by?: string | null
+          latitude?: number | null
+          lead_source?: string | null
+          links?: Json | null
           listing_expires_date?: string | null
+          listing_id?: string | null
+          listing_signed_date?: string | null
           live_date?: string | null
+          longitude?: number | null
           notes?: string | null
           on_hold?: boolean | null
+          photoshoot_date?: string | null
+          pre_settlement_inspection_date?: string | null
+          price_alignment_status?: string | null
           sale_price?: number | null
           settlement_date?: string | null
           stage?: string | null
           status?: string | null
           suburb?: string | null
+          tasks_done?: number | null
+          tasks_total?: number | null
           team_id: string
+          team_price?: number | null
           transaction_type: string
+          unconditional_date?: string | null
           updated_at?: string | null
+          vendor_email?: string | null
+          vendor_names?: Json | null
+          vendor_phone?: string | null
+          vendor_price?: number | null
           warmth?: string | null
         }
         Update: {
@@ -3444,27 +3502,56 @@ export type Database = {
           agent_id?: string | null
           archived?: boolean | null
           assignees?: Json | null
+          attachments?: Json | null
           auction_deadline_date?: string | null
+          building_report_date?: string | null
+          buyer_names?: Json | null
+          campaign_type?: string | null
+          client_email?: string | null
           client_name?: string | null
+          client_phone?: string | null
           commission?: number | null
+          conditional_date?: string | null
           contract_date?: string | null
           created_at?: string | null
           created_by?: string | null
+          deal_history?: Json | null
+          docs_done?: number | null
+          docs_total?: number | null
           expected_settlement?: string | null
+          geocode_error?: string | null
+          geocoded_at?: string | null
           id?: string
           last_edited_by?: string | null
+          latitude?: number | null
+          lead_source?: string | null
+          links?: Json | null
           listing_expires_date?: string | null
+          listing_id?: string | null
+          listing_signed_date?: string | null
           live_date?: string | null
+          longitude?: number | null
           notes?: string | null
           on_hold?: boolean | null
+          photoshoot_date?: string | null
+          pre_settlement_inspection_date?: string | null
+          price_alignment_status?: string | null
           sale_price?: number | null
           settlement_date?: string | null
           stage?: string | null
           status?: string | null
           suburb?: string | null
+          tasks_done?: number | null
+          tasks_total?: number | null
           team_id?: string
+          team_price?: number | null
           transaction_type?: string
+          unconditional_date?: string | null
           updated_at?: string | null
+          vendor_email?: string | null
+          vendor_names?: Json | null
+          vendor_phone?: string | null
+          vendor_price?: number | null
           warmth?: string | null
         }
         Relationships: [
