@@ -84,7 +84,7 @@ export const EnhancedProjectBoardCard = ({
   };
 
   const handleCardClick = () => {
-    navigate(`/tasks/projects/${board.id}`);
+    navigate(`/projects/${board.id}`);
   };
 
   const handleMenuAction = (e: React.MouseEvent, action?: () => void) => {

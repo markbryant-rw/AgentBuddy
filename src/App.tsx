@@ -113,6 +113,7 @@ const DailyTasks = lazy(() => import("./pages/DailyTasks"));
 const DailyPlanner = lazy(() => import("./pages/DailyPlanner"));
 const TaskProjects = lazy(() => import("./pages/TaskProjects"));
 const TaskProjectBoard = lazy(() => import("./pages/TaskProjectBoard"));
+const ProjectKanbanBoard = lazy(() => import("./pages/ProjectKanbanBoard"));
 const MyTasks = lazy(() => import("./pages/MyTasks"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ModuleControl = lazy(() => import("./pages/ModuleControl"));
@@ -195,6 +196,7 @@ const AppContent = () => {
             <Route path="/notes/:noteId" element={<NoteEditor />} />
             <Route path="/systems/directory" element={<Directory />} />
             <Route path="/projects" element={<TaskProjects />} />
+            <Route path="/projects/:projectId" element={<ProjectKanbanBoard />} />
             <Route path="/tasks/projects" element={<TaskProjects />} />
             <Route path="/tasks/projects/:boardId" element={<TaskProjectBoard />} />
             <Route path="/tasks/my-assignments" element={<MyTasks />} />
