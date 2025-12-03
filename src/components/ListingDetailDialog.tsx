@@ -9,6 +9,7 @@ import { StarRating } from '@/components/ui/star-rating';
 import { Listing, ListingComment } from '@/hooks/useListingPipeline';
 import { useAssignableTeamMembers } from '@/hooks/useAssignableTeamMembers';
 import { useLeadSources } from '@/hooks/useLeadSources';
+import { useTeam } from '@/hooks/useTeam';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -38,6 +39,7 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
   const [lossReason, setLossReason] = useState('');
   const [moveToTC, setMoveToTC] = useState(false);
   const { user } = useAuth();
+  const { team } = useTeam();
   const { assignableMembers, isLoading: membersLoading } = useAssignableTeamMembers();
   const { activeLeadSources, isLoading: leadSourcesLoading } = useLeadSources();
   const queryClient = useQueryClient();
@@ -171,11 +173,19 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
     onOpenChange(false);
   };
 
-  const handleLocationUpdated = () => {
-    // Refresh listing data - the parent will handle this via onUpdate
-    if (editedListing) {
-      toast.success('Location updated successfully');
-    }
+  const handleLocationUpdated = (data: { address: string; suburb: string; latitude: number; longitude: number }) => {
+    // Update local state with new coordinates
+    setEditedListing(prev => prev ? {
+      ...prev,
+      address: data.address,
+      suburb: data.suburb,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      geocode_error: null,
+      geocoded_at: new Date().toISOString(),
+    } : prev);
+    // Invalidate cache to refresh map and list views
+    queryClient.invalidateQueries({ queryKey: ['listings', team?.id] });
   };
 
   if (!editedListing) return null;

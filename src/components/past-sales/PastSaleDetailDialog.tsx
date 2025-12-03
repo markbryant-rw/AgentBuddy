@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PastSale, usePastSales } from "@/hooks/usePastSales";
@@ -33,6 +34,7 @@ interface PastSaleDetailDialogProps {
 }
 
 const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialogProps) => {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { team } = useTeam();
   const { toast } = useToast();
@@ -127,11 +129,19 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
     }
   };
 
-  const handleLocationUpdated = () => {
-    toast({
-      title: "Location Updated",
-      description: "The location has been re-geocoded successfully",
-    });
+  const handleLocationUpdated = (data: { address: string; suburb: string; latitude: number; longitude: number }) => {
+    // Update local form data with new coordinates
+    setFormData(prev => ({
+      ...prev,
+      address: data.address,
+      suburb: data.suburb,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      geocode_error: null,
+      geocoded_at: new Date().toISOString(),
+    }));
+    // Invalidate cache to refresh map and list views
+    queryClient.invalidateQueries({ queryKey: ['past_sales', team?.id] });
   };
 
   return (

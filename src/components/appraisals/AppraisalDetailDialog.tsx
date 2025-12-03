@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { LoggedAppraisal, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { useLeadSources } from '@/hooks/useLeadSources';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useAuth } from '@/hooks/useAuth';
+import { useTeam } from '@/hooks/useTeam';
 import {
   Dialog,
   DialogContent,
@@ -57,6 +59,8 @@ const AppraisalDetailDialog = ({
   onOpenChange,
   isNew = false,
 }: AppraisalDetailDialogProps) => {
+  const queryClient = useQueryClient();
+  const { team } = useTeam();
   const { addAppraisal, updateAppraisal, deleteAppraisal, getPreviousAppraisals } = useLoggedAppraisals();
   const { activeLeadSources } = useLeadSources();
   const { members } = useTeamMembers();
@@ -155,16 +159,19 @@ const AppraisalDetailDialog = ({
     }
   };
 
-  const handleLocationUpdated = () => {
-    // Refresh the appraisal data by closing and reopening the dialog
-    // or by refetching the data
-    if (appraisal) {
-      // For now, just show a success message - the data will refresh when dialog reopens
-      toast({
-        title: "Location Updated",
-        description: "The location has been re-geocoded successfully",
-      });
-    }
+  const handleLocationUpdated = (data: { address: string; suburb: string; latitude: number; longitude: number }) => {
+    // Update local form data with new coordinates
+    setFormData(prev => ({
+      ...prev,
+      address: data.address,
+      suburb: data.suburb,
+      latitude: data.latitude,
+      longitude: data.longitude,
+      geocode_error: null,
+      geocoded_at: new Date().toISOString(),
+    }));
+    // Invalidate cache to refresh map and list views
+    queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
   };
 
   const handleConvert = () => {

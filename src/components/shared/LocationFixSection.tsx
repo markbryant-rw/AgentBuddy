@@ -11,6 +11,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AddressAutocomplete, AddressResult } from './AddressAutocomplete';
 
+export interface LocationUpdateData {
+  address: string;
+  suburb: string;
+  latitude: number;
+  longitude: number;
+}
+
 interface LocationFixSectionProps {
   entityId: string;
   entityType: 'appraisal' | 'listing' | 'past-sale';
@@ -20,7 +27,7 @@ interface LocationFixSectionProps {
   longitude?: number | null;
   geocodeError?: string | null;
   geocodedAt?: string | null;
-  onLocationUpdated: () => void;
+  onLocationUpdated: (data: LocationUpdateData) => void;
 }
 
 const LocationFixSection = ({
@@ -91,8 +98,13 @@ const LocationFixSection = ({
         description: `Updated to: ${selectedAddress.fullDisplay}`,
       });
 
-      // Notify parent to refresh data
-      onLocationUpdated();
+      // Notify parent with new location data
+      onLocationUpdated({
+        address: selectedAddress.address,
+        suburb: selectedAddress.suburb,
+        latitude: selectedAddress.latitude,
+        longitude: selectedAddress.longitude,
+      });
       setSelectedAddress(null);
       
     } catch (error) {
