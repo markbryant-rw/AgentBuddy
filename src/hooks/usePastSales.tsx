@@ -317,6 +317,60 @@ export const usePastSales = (teamId?: string) => {
     },
   });
 
+  // Remove duplicate past sales (same address + settlement_date)
+  const removeDuplicates = useMutation({
+    mutationFn: async () => {
+      // Group by address + settlement_date, keeping the oldest record
+      const duplicateGroups = new Map<string, PastSale[]>();
+      
+      pastSales.forEach(sale => {
+        const key = `${(sale.address || '').toLowerCase().trim()}|${sale.settlement_date || ''}`;
+        if (!duplicateGroups.has(key)) {
+          duplicateGroups.set(key, []);
+        }
+        duplicateGroups.get(key)!.push(sale);
+      });
+
+      const idsToDelete: string[] = [];
+      duplicateGroups.forEach(group => {
+        if (group.length > 1) {
+          // Sort by created_at, keep the oldest (first created)
+          group.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+          // Delete all except the first one
+          group.slice(1).forEach(sale => idsToDelete.push(sale.id));
+        }
+      });
+
+      if (idsToDelete.length === 0) {
+        return { deleted: 0 };
+      }
+
+      const { error } = await supabase
+        .from('past_sales')
+        .delete()
+        .in('id', idsToDelete);
+
+      if (error) throw error;
+      return { deleted: idsToDelete.length };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["pastSales"] });
+      toast({
+        title: "Duplicates Removed",
+        description: result.deleted > 0 
+          ? `Removed ${result.deleted} duplicate record${result.deleted > 1 ? 's' : ''}`
+          : "No duplicates found",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   return {
     pastSales,
     isLoading,
@@ -326,5 +380,7 @@ export const usePastSales = (teamId?: string) => {
     deletePastSale: deletePastSale.mutateAsync,
     geocodePastSale: geocodePastSale.mutateAsync,
     geocodeAllPastSales: geocodeAllPastSales.mutateAsync,
+    removeDuplicates: removeDuplicates.mutateAsync,
+    isRemovingDuplicates: removeDuplicates.isPending,
   };
 };
