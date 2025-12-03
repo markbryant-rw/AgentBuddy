@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { LoggedAppraisal, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { useLeadSources } from '@/hooks/useLeadSources';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Dialog,
   DialogContent,
@@ -19,9 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { StarRating } from '@/components/ui/star-rating';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import ConvertToOpportunityDialog from './ConvertToOpportunityDialog';
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronDown, History } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +41,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrencyFull, parseCurrency } from "@/lib/currencyUtils";
+import { format } from 'date-fns';
 
 interface AppraisalDetailDialogProps {
   appraisal: LoggedAppraisal | null;
@@ -48,14 +56,17 @@ const AppraisalDetailDialog = ({
   onOpenChange,
   isNew = false,
 }: AppraisalDetailDialogProps) => {
-  const { addAppraisal, updateAppraisal, deleteAppraisal } = useLoggedAppraisals();
+  const { addAppraisal, updateAppraisal, deleteAppraisal, getPreviousAppraisals } = useLoggedAppraisals();
   const { activeLeadSources } = useLeadSources();
+  const { members } = useTeamMembers();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [showConvertDialog, setShowConvertDialog] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [estimatedValueDisplay, setEstimatedValueDisplay] = useState("");
+  const [previousAppraisalsOpen, setPreviousAppraisalsOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
     address: '',
     vendor_name: '',
@@ -71,7 +82,12 @@ const AppraisalDetailDialog = ({
     next_follow_up: '',
     lead_source: undefined,
     notes: '',
+    agent_id: undefined,
   });
+
+  const previousAppraisals = appraisal && !isNew 
+    ? getPreviousAppraisals(appraisal.address, appraisal.id)
+    : [];
 
   useEffect(() => {
     if (appraisal && !isNew) {
@@ -93,10 +109,11 @@ const AppraisalDetailDialog = ({
         next_follow_up: '',
         lead_source: undefined,
         notes: '',
+        agent_id: user?.id,
       });
       setEstimatedValueDisplay("");
     }
-  }, [appraisal, isNew]);
+  }, [appraisal, isNew, user?.id]);
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -160,6 +177,11 @@ const AppraisalDetailDialog = ({
     }
   };
 
+  const getInitials = (name?: string) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -208,6 +230,42 @@ const AppraisalDetailDialog = ({
                 <div className="space-y-2">
                   <Label htmlFor="appraisal_date" className="text-sm font-medium">Appraisal Date <span className="text-destructive">*</span></Label>
                   <Input id="appraisal_date" type="date" value={formData.appraisal_date} onChange={(e) => setFormData({ ...formData, appraisal_date: e.target.value })} required className="h-10" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agent_id" className="text-sm font-medium">Appraised By</Label>
+                  <Select
+                    value={formData.agent_id || ''}
+                    onValueChange={(value) => setFormData({ ...formData, agent_id: value })}
+                  >
+                    <SelectTrigger className="h-10">
+                      <SelectValue placeholder="Select agent">
+                        {formData.agent_id && members.find(m => m.user_id === formData.agent_id) && (
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={members.find(m => m.user_id === formData.agent_id)?.avatar_url} />
+                              <AvatarFallback className="text-xs">
+                                {getInitials(members.find(m => m.user_id === formData.agent_id)?.full_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{members.find(m => m.user_id === formData.agent_id)?.full_name}</span>
+                          </div>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {members.map((member) => (
+                        <SelectItem key={member.user_id} value={member.user_id}>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-5 w-5">
+                              <AvatarImage src={member.avatar_url} />
+                              <AvatarFallback className="text-xs">{getInitials(member.full_name)}</AvatarFallback>
+                            </Avatar>
+                            <span>{member.full_name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="estimated_value" className="text-sm font-medium">Estimated Value</Label>
@@ -304,6 +362,53 @@ const AppraisalDetailDialog = ({
                 <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
               </div>
             </div>
+
+            {/* Previous Appraisals Section */}
+            {previousAppraisals.length > 0 && (
+              <Collapsible open={previousAppraisalsOpen} onOpenChange={setPreviousAppraisalsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20">
+                    <div className="flex items-center gap-2 text-amber-600">
+                      <History className="h-4 w-4" />
+                      <span className="font-medium">Previous Appraisals at this Address ({previousAppraisals.length})</span>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${previousAppraisalsOpen ? 'rotate-180' : ''}`} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-2 space-y-2">
+                  {previousAppraisals.map((prev) => (
+                    <div key={prev.id} className="p-3 rounded-lg bg-muted/50 border text-sm">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="font-medium">{format(new Date(prev.appraisal_date), 'dd MMM yyyy')}</div>
+                          <div className="text-muted-foreground">
+                            {prev.vendor_name} • {prev.stage} • {prev.outcome}
+                          </div>
+                          {prev.estimated_value && (
+                            <div className="text-muted-foreground">
+                              Estimated: ${prev.estimated_value.toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                        {prev.agent && (
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={prev.agent.avatar_url} />
+                              <AvatarFallback className="text-xs">{getInitials(prev.agent.full_name)}</AvatarFallback>
+                            </Avatar>
+                          </div>
+                        )}
+                      </div>
+                      {prev.notes && (
+                        <div className="mt-2 text-xs text-muted-foreground border-t pt-2">
+                          {prev.notes}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            )}
           </div>
 
           <div className="flex justify-between gap-3 pt-6 border-t">
