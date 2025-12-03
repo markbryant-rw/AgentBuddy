@@ -59,11 +59,15 @@ export const useRoleSwitcher = () => {
       });
       
       if (error) throw error;
-      return data;
+      return { ...data, role };
     },
-    onSuccess: (_, role) => {
-      // Invalidate all relevant queries to update UI
-      queryClient.invalidateQueries({ queryKey: ['active-role'] });
+    onSuccess: async (result) => {
+      const role = result.role;
+      
+      // Update the query cache immediately with the new role (optimistic)
+      queryClient.setQueryData(['active-role', user?.id], role);
+      
+      // Then invalidate to refetch fresh data in background
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       queryClient.invalidateQueries({ queryKey: ['team'] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });

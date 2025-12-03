@@ -1,4 +1,5 @@
 import { Check, ChevronDown, Loader2 } from 'lucide-react';
+import { useMemo } from 'react';
 import { useRoleSwitcher } from '@/hooks/useRoleSwitcher';
 import { getRoleIcon, getRoleDisplayName } from '@/lib/rbac';
 import type { AppRole } from '@/lib/rbac';
@@ -12,8 +13,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
+// Role seniority order: highest first
+const ROLE_SENIORITY: AppRole[] = ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'];
+
 export function RoleSwitcher() {
   const { activeRole, availableRoles, switchRole, isSwitching, isLoading } = useRoleSwitcher();
+
+  // Sort available roles by seniority
+  const sortedRoles = useMemo(() => {
+    return [...availableRoles].sort((a, b) => {
+      return ROLE_SENIORITY.indexOf(a) - ROLE_SENIORITY.indexOf(b);
+    });
+  }, [availableRoles]);
 
   // Don't show switcher if user has only one role
   if (isLoading || !availableRoles || availableRoles.length <= 1) {
@@ -45,7 +56,7 @@ export function RoleSwitcher() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Switch View</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {availableRoles.map((role) => (
+        {sortedRoles.map((role) => (
           <DropdownMenuItem
             key={role}
             onClick={() => switchRole(role)}
