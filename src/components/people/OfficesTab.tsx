@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/select';
 import { useOfficeStats } from '@/hooks/useOfficeStats';
 import { Building2, Users, LogOut, Building } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { OfficeTeamMemberGrid } from './OfficeTeamMemberGrid';
 import { ConversationSheet } from './ConversationSheet';
 import { JoinOfficeDialog } from './JoinOfficeDialog';
@@ -32,24 +32,28 @@ export default function OfficesTab() {
   const [friendConnections, setFriendConnections] = useState<any[]>([]);
 
   // Fetch friend connections
-  useState(() => {
+  useEffect(() => {
     if (user) {
       const fetchFriends = async () => {
-        const { data: sent } = await supabase
-          .from('friend_connections')
-          .select('user_id, friend_id, accepted')
-          .eq('user_id', user.id);
+        try {
+          const { data: sent } = await supabase
+            .from('friend_connections')
+            .select('user_id, friend_id, accepted')
+            .eq('user_id', user.id);
 
-        const { data: received } = await supabase
-          .from('friend_connections')
-          .select('user_id, friend_id, accepted')
-          .eq('friend_id', user.id);
+          const { data: received } = await supabase
+            .from('friend_connections')
+            .select('user_id, friend_id, accepted')
+            .eq('friend_id', user.id);
 
-        setFriendConnections([...(sent || []), ...(received || [])]);
+          setFriendConnections([...(sent || []), ...(received || [])]);
+        } catch (error) {
+          console.error('Error fetching friend connections:', error);
+        }
       };
       fetchFriends();
     }
-  });
+  }, [user]);
 
   const handleMessage = async (memberId: string, memberName: string) => {
     if (!user) return;

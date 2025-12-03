@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,11 +59,11 @@ export const BugReportForm = ({
   };
 
   // Initialize workspace module on mount
-  useState(() => {
+  useEffect(() => {
     if (!workspaceModule) {
       setWorkspaceModule(detectModuleFromURL());
     }
-  });
+  }, [workspaceModule]);
 
   const checkForDuplicates = async () => {
     if (!summary || !description) return [];

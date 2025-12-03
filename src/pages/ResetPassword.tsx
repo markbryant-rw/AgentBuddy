@@ -46,6 +46,14 @@ const ResetPassword = () => {
         } else {
           setValidating(false);
         }
+      }).catch((error) => {
+        console.error('Session error:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to validate reset link. Please try again.',
+          variant: 'destructive',
+        });
+        setTimeout(() => navigate('/auth'), 3000);
       });
     } else {
       console.error('Invalid reset link - missing required parameters');

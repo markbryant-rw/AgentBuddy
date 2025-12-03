@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Users, Search, UserPlus, Building2, UsersRound, UserX } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RepairUserDialog } from '@/components/platform/RepairUserDialog';
 import { useAdminUsers, AdminUser } from '@/hooks/useAdminUsers';
@@ -33,13 +33,13 @@ export const UserManagementTab = () => {
   const { users, isLoadingUsers } = useAdminUsers();
 
   // Clean up Josh Smith duplicates on mount
-  useState(() => {
+  useEffect(() => {
     const cleanupDuplicates = async () => {
       const joshUsers = users.filter(u => u.email === 'joshsmith@mrxx.co.nz');
       if (joshUsers.length > 1) {
         const activeUser = joshUsers.find(u => u.status === 'active');
         const inactiveUser = joshUsers.find(u => u.status === 'inactive');
-        
+
         if (activeUser && inactiveUser) {
           try {
             await supabase.functions.invoke('merge-duplicate-users', {
@@ -56,8 +56,11 @@ export const UserManagementTab = () => {
         }
       }
     };
-    cleanupDuplicates();
-  });
+
+    if (users.length > 0) {
+      cleanupDuplicates();
+    }
+  }, [users.length]);
 
   const filteredUsers = users.filter(user => {
     const query = searchQuery.toLowerCase();
