@@ -7,7 +7,7 @@ import { useProjectLists } from '@/hooks/useProjectLists';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, GripVertical, MoreVertical, Trash2, Edit, Pencil, X } from 'lucide-react';
+import { ArrowLeft, Plus, MoreVertical, Trash2, Edit, Pencil, X, Clock, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -100,7 +100,7 @@ interface Project {
   color: string;
 }
 
-// Sortable Task Card with drop indicator, colors, and completion
+// Sortable Task Card - Slimline Trello-style with full-card drag
 const SortableTaskCard = ({ 
   task, 
   onEdit, 
@@ -120,7 +120,6 @@ const SortableTaskCard = ({
     id: task.id,
     data: { type: 'task', task },
   });
-  const [isHovered, setIsHovered] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -131,6 +130,8 @@ const SortableTaskCard = ({
   const isDueToday = task.due_date && isToday(new Date(task.due_date));
   const isCompleted = task.completed;
 
+  const hasMetadata = task.priority || task.due_date || task.assignee;
+
   return (
     <div 
       ref={setNodeRef} 
@@ -139,8 +140,8 @@ const SortableTaskCard = ({
         "relative transition-all duration-200 ease-out",
         isDragging && 'z-50 opacity-30 scale-105',
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      {...attributes}
+      {...listeners}
     >
       {/* Drop indicator line */}
       {isOverBefore && (
@@ -149,54 +150,38 @@ const SortableTaskCard = ({
       
       <Card 
         className={cn(
-          "group cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200 hover:-translate-y-0.5",
+          "group cursor-grab active:cursor-grabbing hover:shadow-md transition-all duration-200",
           isCompleted && "opacity-60"
         )}
         style={{ backgroundColor: task.color || undefined }}
       >
-        <CardContent className="p-3">
-          {/* Hover Complete Button */}
-          {isHovered && !isCompleted && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); onToggleComplete(); }}
-              className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground mb-2 transition-all animate-in fade-in duration-150"
-            >
-              <div className="h-3.5 w-3.5 rounded-full border border-current" />
-              Mark complete
-            </button>
-          )}
-          
-          {/* Show checkmark if completed */}
-          {isCompleted && (
-            <button 
-              onClick={(e) => { e.stopPropagation(); onToggleComplete(); }}
-              className="flex items-center gap-1.5 text-[11px] text-emerald-600 mb-2 hover:text-emerald-700 transition-all"
-            >
-              <div className="h-3.5 w-3.5 rounded-full bg-emerald-500 flex items-center justify-center">
-                <svg className="h-2 w-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              Completed
-            </button>
-          )}
-
+        <CardContent className="px-2.5 py-2">
           <div className="flex items-start gap-2">
-            <div {...attributes} {...listeners} className="mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <GripVertical className="h-4 w-4 text-muted-foreground" />
-            </div>
+            {/* Completion checkbox - always visible */}
+            <button 
+              onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleComplete(); }}
+              className={cn(
+                "mt-0.5 flex-shrink-0 h-4 w-4 rounded-full border-2 transition-all flex items-center justify-center",
+                isCompleted 
+                  ? "bg-emerald-500 border-emerald-500" 
+                  : "border-muted-foreground/40 hover:border-primary hover:bg-primary/10"
+              )}
+            >
+              {isCompleted && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
+            </button>
+
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                {/* Title - Full text, no truncate */}
+              {/* Title row with dropdown */}
+              <div className="flex items-start justify-between gap-1">
                 <p className={cn(
-                  "font-medium text-sm whitespace-normal break-words",
+                  "text-sm leading-tight whitespace-normal break-words flex-1",
                   isCompleted && "line-through text-muted-foreground"
                 )}>
                   {task.title}
                 </p>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100 flex-shrink-0">
+                    <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 flex-shrink-0 -mr-1 -mt-0.5">
                       <MoreVertical className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -236,7 +221,7 @@ const SortableTaskCard = ({
                 </DropdownMenu>
               </div>
 
-              {/* Description - Full text, no clamp */}
+              {/* Description - compact, indented */}
               {task.description && (
                 <p className={cn(
                   "text-xs text-muted-foreground mt-1 whitespace-normal break-words",
@@ -246,40 +231,40 @@ const SortableTaskCard = ({
                 </p>
               )}
 
-              <div className="flex items-center gap-2 mt-2 flex-wrap">
-                {task.priority && (
-                  <Badge variant="outline" className={cn(
-                    'text-xs',
-                    task.priority === 'high' && 'border-red-500 text-red-500',
-                    task.priority === 'medium' && 'border-amber-500 text-amber-500',
-                    task.priority === 'low' && 'border-green-500 text-green-500',
-                  )}>
-                    {task.priority}
-                  </Badge>
-                )}
+              {/* Compact metadata row - right aligned */}
+              {hasMetadata && (
+                <div className="flex items-center justify-end gap-1.5 mt-1.5">
+                  {task.priority && (
+                    <span className={cn(
+                      'w-2 h-2 rounded-full flex-shrink-0',
+                      task.priority === 'high' && 'bg-red-500',
+                      task.priority === 'medium' && 'bg-amber-500',
+                      task.priority === 'low' && 'bg-green-500',
+                    )} title={`${task.priority} priority`} />
+                  )}
 
-                {task.due_date && (
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      'text-xs',
-                      isOverdue && 'border-destructive text-destructive',
-                      isDueToday && 'border-amber-500 text-amber-500',
-                    )}
-                  >
-                    {format(new Date(task.due_date), 'MMM d')}
-                  </Badge>
-                )}
+                  {task.due_date && (
+                    <span className={cn(
+                      "text-[10px] flex items-center gap-0.5",
+                      isOverdue && 'text-destructive',
+                      isDueToday && 'text-amber-600',
+                      !isOverdue && !isDueToday && 'text-muted-foreground',
+                    )}>
+                      <Clock className="h-3 w-3" />
+                      {format(new Date(task.due_date), 'd MMM')}
+                    </span>
+                  )}
 
-                {task.assignee && (
-                  <Avatar className="h-5 w-5">
-                    <AvatarImage src={task.assignee.avatar_url || undefined} />
-                    <AvatarFallback className="text-[10px]">
-                      {task.assignee.full_name?.[0] || '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
+                  {task.assignee && (
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={task.assignee.avatar_url || undefined} />
+                      <AvatarFallback className="text-[9px]">
+                        {task.assignee.full_name?.[0] || '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
