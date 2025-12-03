@@ -17,17 +17,18 @@ export const passwordSchema = z
 export const emailSchema = z
   .string()
   .trim()
+  .min(1, 'Email is required')
   .email('Invalid email address')
   .max(255, 'Email must be less than 255 characters')
   .toLowerCase();
 
-// Full name validation
+// Full name validation (supports accented characters)
 export const fullNameSchema = z
   .string()
   .trim()
   .min(2, 'Name must be at least 2 characters')
   .max(100, 'Name must be less than 100 characters')
-  .regex(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes');
+  .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes');
 
 // Team code validation
 export const teamCodeSchema = z
@@ -86,6 +87,21 @@ export const sanitizeText = (text: string): string => {
     .trim();
 };
 
+// Birthday validation (age must be 18+)
+export const birthdaySchema = z
+  .string()
+  .optional()
+  .refine(
+    (val) => {
+      if (!val) return true;
+      const date = new Date(val);
+      const now = new Date();
+      const age = now.getFullYear() - date.getFullYear();
+      return age >= 18 && age <= 120;
+    },
+    { message: 'You must be at least 18 years old' }
+  );
+
 // Shared email validation helper
 // Returns validation result with optional error message
 export const validateEmail = (email: string): { isValid: boolean; error?: string } => {
@@ -98,4 +114,15 @@ export const validateEmail = (email: string): { isValid: boolean; error?: string
       error: error.errors?.[0]?.message || 'Invalid email'
     };
   }
+};
+
+// Auth schemas object for backward compatibility
+export const authSchemas = {
+  email: emailSchema,
+  password: passwordSchema,
+  fullName: fullNameSchema,
+  teamName: teamNameSchema,
+  teamCode: teamCodeSchema,
+  agencySlug: agencySlugSchema,
+  birthday: birthdaySchema,
 };
