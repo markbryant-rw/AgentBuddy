@@ -93,6 +93,22 @@ export const useProjects = () => {
         .single();
 
       if (error) throw error;
+
+      // Create default lists for the new project
+      const defaultLists = [
+        { name: 'To Do', color: '#64748b', position: 0 },
+        { name: 'In Progress', color: '#3b82f6', position: 1 },
+        { name: 'Done', color: '#10b981', position: 2 },
+      ];
+
+      await (supabase as any)
+        .from('task_lists')
+        .insert(defaultLists.map(list => ({
+          ...list,
+          project_id: data.id,
+          team_id: teamData?.team_id,
+        })));
+
       return data;
     },
     onSuccess: () => {
