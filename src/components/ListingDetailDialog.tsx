@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -38,6 +39,7 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
   const { user } = useAuth();
   const { assignableMembers, isLoading: membersLoading } = useAssignableTeamMembers();
   const { activeLeadSources, isLoading: leadSourcesLoading } = useLeadSources();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (listing) {
@@ -102,6 +104,7 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
           address: editedListing!.address,
           suburb: editedListing!.suburb || null,
           stage: 'signed',
+          transaction_type: 'sale',
           warmth: 'active',
           on_hold: false,
           archived: false,
@@ -117,6 +120,9 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
           .insert(transactionData as any);
 
         if (error) throw error;
+        
+        // Invalidate transactions query to refresh Transaction Coordinating module
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
         
         toast.success('🎉 Opportunity won and moved to Transaction Coordinating!');
       } catch (error) {
