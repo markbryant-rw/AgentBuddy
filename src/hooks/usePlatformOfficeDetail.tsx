@@ -26,25 +26,34 @@ export const usePlatformOfficeDetail = (officeId: string | undefined) => {
     queryFn: async () => {
       if (!officeId) return [];
       
-      const { data, error } = await supabase
+      // First fetch teams without joining team_members (to avoid RLS recursion)
+      const { data: teamsData, error: teamsError } = await supabase
         .from('teams')
-        .select(`
-          id,
-          name,
-          team_members (
-            user_id
-          )
-        `)
+        .select('id, name')
         .eq('agency_id', officeId)
         .eq('is_personal_team', false)
         .order('name');
       
-      if (error) throw error;
+      if (teamsError) throw teamsError;
+      if (!teamsData || teamsData.length === 0) return [];
       
-      return (data || []).map(team => ({
+      // Fetch member counts separately
+      const teamIds = teamsData.map(t => t.id);
+      const { data: memberCounts } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .in('team_id', teamIds);
+      
+      // Count members per team
+      const countMap = new Map<string, number>();
+      (memberCounts || []).forEach(m => {
+        countMap.set(m.team_id, (countMap.get(m.team_id) || 0) + 1);
+      });
+      
+      return teamsData.map(team => ({
         id: team.id,
         name: team.name,
-        member_count: team.team_members?.length || 0,
+        member_count: countMap.get(team.id) || 0,
       })) as TeamWithMembers[];
     },
     enabled: !!officeId,
