@@ -3,6 +3,7 @@ import { useHubData } from '@/hooks/useHubData';
 import { useProjects } from '@/hooks/useProjects';
 import OperateNavigationCards from '@/components/operate/OperateNavigationCards';
 import { useNotes } from '@/hooks/useNotes';
+import { MyAssignmentsCard } from '@/components/projects/MyAssignmentsCard';
 import { subDays } from 'date-fns';
 
 const OperateDashboard = () => {
@@ -70,6 +71,9 @@ const OperateDashboard = () => {
         recentNotes={notesStats.recentNotes}
         pinnedNotes={notesStats.pinnedNotes}
       />
+
+      {/* My Assignments - Quick view of tasks assigned to you */}
+      <MyAssignmentsCard />
     </div>
   );
 };
