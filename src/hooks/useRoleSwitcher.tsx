@@ -54,14 +54,21 @@ export const useRoleSwitcher = () => {
   // Switch role mutation
   const switchRoleMutation = useMutation({
     mutationFn: async (role: AppRole) => {
+      console.log('[RoleSwitcher] Invoking switch-role function with role:', role);
       const { data, error } = await supabase.functions.invoke('switch-role', {
         body: { role },
       });
       
-      if (error) throw error;
+      console.log('[RoleSwitcher] Response:', { data, error });
+      
+      if (error) {
+        console.error('[RoleSwitcher] Error from edge function:', error);
+        throw error;
+      }
       return { ...data, role };
     },
     onSuccess: async (result) => {
+      console.log('[RoleSwitcher] Success! Result:', result);
       const role = result.role;
       
       // Update the query cache immediately with the new role (optimistic)
@@ -76,9 +83,11 @@ export const useRoleSwitcher = () => {
       
       // Navigate to the appropriate dashboard for the new role
       const redirectPath = getRoleBasedRedirect(role, availableRoles);
+      console.log('[RoleSwitcher] Navigating to:', redirectPath);
       navigate(redirectPath, { replace: true });
     },
     onError: (error: Error) => {
+      console.error('[RoleSwitcher] Mutation error:', error);
       toast.error(error.message || 'Failed to switch role');
     },
   });
