@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useOfficeSwitcher } from "@/hooks/useOfficeSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 
 export interface LeadSource {
   id: string;
+  agency_id: string | null;
   value: string;
   label: string;
   is_active: boolean;
@@ -16,28 +18,51 @@ export interface LeadSource {
 export const useLeadSources = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { activeOffice } = useOfficeSwitcher();
 
+  // Fetch platform defaults + office-specific sources
   const { data: leadSources = [], isLoading } = useQuery({
-    queryKey: ["leadSources"],
+    queryKey: ["leadSources", activeOffice?.id],
     queryFn: async () => {
+      // Get platform defaults (agency_id IS NULL) and office-specific
       const { data, error } = await supabase
         .from("lead_sources")
         .select("*")
+        .or(`agency_id.is.null${activeOffice?.id ? `,agency_id.eq.${activeOffice.id}` : ''}`)
         .order("sort_order", { ascending: true });
 
       if (error) throw error;
-      return data as LeadSource[];
+      
+      // Office-specific sources with same value override platform defaults
+      const sources = data as LeadSource[];
+      const officeValues = new Set(
+        sources.filter(s => s.agency_id === activeOffice?.id).map(s => s.value)
+      );
+      
+      // Return office sources + platform defaults that aren't overridden
+      return sources.filter(s => 
+        s.agency_id === activeOffice?.id || 
+        (s.agency_id === null && !officeValues.has(s.value))
+      );
     },
   });
 
   const activeLeadSources = leadSources.filter((source) => source.is_active);
+  
+  // Separate platform vs office sources for management UI
+  const platformSources = leadSources.filter(s => s.agency_id === null);
+  const officeSources = leadSources.filter(s => s.agency_id !== null);
 
   const addLeadSource = useMutation({
-    mutationFn: async (newSource: { value: string; label: string }) => {
+    mutationFn: async (newSource: { value: string; label: string; agency_id?: string | null }) => {
       const maxOrder = Math.max(...leadSources.map(s => s.sort_order), 0);
       const { data, error } = await supabase
         .from("lead_sources")
-        .insert([{ ...newSource, sort_order: maxOrder + 1 }])
+        .insert([{ 
+          ...newSource, 
+          sort_order: maxOrder + 1,
+          agency_id: newSource.agency_id ?? null 
+        }])
         .select()
         .single();
 
@@ -110,7 +135,10 @@ export const useLeadSources = () => {
   return {
     leadSources,
     activeLeadSources,
+    platformSources,
+    officeSources,
     isLoading,
+    activeOfficeId: activeOffice?.id,
     addLeadSource: addLeadSource.mutateAsync,
     updateLeadSource: updateLeadSource.mutateAsync,
     deleteLeadSource: deleteLeadSource.mutateAsync,
