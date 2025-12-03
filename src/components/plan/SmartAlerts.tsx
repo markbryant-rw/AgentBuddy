@@ -76,14 +76,14 @@ export const SmartAlerts = ({ userId, onSetGoals }: SmartAlertsProps) => {
       <div className="space-y-3">
         {alerts.map((alert, index) => {
           const Icon = alert.icon;
-          const colorClass = 
+          const colorClass =
             alert.type === 'urgent' ? 'text-red-500 bg-red-500/10' :
             alert.type === 'warning' ? 'text-yellow-500 bg-yellow-500/10' :
             'text-blue-500 bg-blue-500/10';
 
           return (
             <div
-              key={index}
+              key={alert.title}
               className={`p-4 rounded-lg border-2 ${
                 alert.type === 'urgent' ? 'border-red-500/20' :
                 alert.type === 'warning' ? 'border-yellow-500/20' :

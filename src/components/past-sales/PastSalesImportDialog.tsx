@@ -428,7 +428,7 @@ export const PastSalesImportDialog = ({
               <div className="p-4 space-y-2">
                 {filteredRows.map((row, index) => (
                   <div
-                    key={index}
+                    key={`${row.data.address || 'no-address'}-${row.data.sale_price || ''}-${index}`}
                     className={`p-3 rounded-lg border ${
                       !row.valid
                         ? 'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/50'

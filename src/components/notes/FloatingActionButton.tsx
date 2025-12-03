@@ -27,7 +27,7 @@ export const FloatingActionButton = ({
         <div className="mb-3 flex flex-col gap-2 animate-fade-in">
           {actions.map((action, index) => (
             <Button
-              key={index}
+              key={action.label}
               onClick={() => {
                 action.onClick();
                 setIsOpen(false);

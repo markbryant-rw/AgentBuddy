@@ -125,7 +125,7 @@ export const HeatMapInsights = ({ userId, year, quarter }: HeatMapInsightsProps)
       <h4 className="text-sm font-semibold mb-3">📊 Activity Insights</h4>
       <div className="space-y-2">
         {insights.map((insight, index) => (
-          <div key={index} className="flex items-start gap-2 text-sm">
+          <div key={insight.text} className="flex items-start gap-2 text-sm">
             <insight.icon className={`h-4 w-4 mt-0.5 ${insight.color}`} />
             <span className="text-muted-foreground">{insight.text}</span>
           </div>

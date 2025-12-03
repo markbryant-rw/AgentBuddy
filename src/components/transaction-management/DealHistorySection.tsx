@@ -43,7 +43,7 @@ export const DealHistorySection = ({ dealHistory }: DealHistorySectionProps) => 
 
       <div className="space-y-2">
         {dealHistory.map((entry, index) => (
-          <Card key={index} className="p-3 border-orange-200 bg-orange-50/50">
+          <Card key={`${entry.collapse_date}-${entry.collapse_reason}`} className="p-3 border-orange-200 bg-orange-50/50">
             <div className="space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1">

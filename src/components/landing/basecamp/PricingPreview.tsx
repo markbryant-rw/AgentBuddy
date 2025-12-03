@@ -67,7 +67,7 @@ export const PricingPreview = () => {
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {tiers.map((tier, index) => (
             <motion.div
-              key={index}
+              key={tier.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -89,7 +89,7 @@ export const PricingPreview = () => {
                 <CardContent className="space-y-6">
                   <ul className="space-y-3">
                     {tier.highlights.map((highlight, i) => (
-                      <li key={i} className="flex items-start gap-3">
+                      <li key={highlight} className="flex items-start gap-3">
                         <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                         <span>{highlight}</span>
                       </li>

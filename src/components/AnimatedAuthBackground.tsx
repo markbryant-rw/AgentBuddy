@@ -27,7 +27,7 @@ export const AnimatedAuthBackground = ({ enabled = true }: AnimatedAuthBackgroun
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
         {icons.map(({ Icon, delay, duration, size }, index) => (
           <div
-            key={index}
+            key={`${delay}-${duration}-${size}`}
             className="absolute top-0 left-0 animate-orbit"
             style={{
               animationDelay: delay,

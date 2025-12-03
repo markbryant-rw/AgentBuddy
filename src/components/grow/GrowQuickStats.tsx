@@ -110,7 +110,7 @@ export function GrowQuickStats() {
       {quickStats.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="hover:shadow-lg transition-shadow">
+          <Card key={stat.title} className="hover:shadow-lg transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>

@@ -196,7 +196,7 @@ export const FileUploadArea = ({
         <div className="grid grid-cols-2 gap-2">
           {files.map((file, index) => (
             <div
-              key={index}
+              key={`${file.name}-${file.lastModified}-${file.size}`}
               className="relative group border rounded-lg p-2 bg-muted/30"
             >
               <div className="flex items-center gap-2">

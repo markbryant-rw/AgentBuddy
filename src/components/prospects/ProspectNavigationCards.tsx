@@ -57,7 +57,7 @@ const NavigationCard = ({
         {secondaryStats && secondaryStats.length > 0 && (
           <div className="flex gap-4 text-sm">
             {secondaryStats.map((stat, index) => (
-              <div key={index}>
+              <div key={stat.label}>
                 <span className="font-semibold text-foreground">{stat.value}</span>
                 <span className="text-muted-foreground ml-1">{stat.label}</span>
               </div>

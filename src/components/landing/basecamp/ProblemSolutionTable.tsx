@@ -37,7 +37,7 @@ export const ProblemSolutionTable = () => {
           <div className="space-y-6">
             {problemSolutions.map((item, index) => (
               <motion.div
-                key={index}
+                key={item.pain}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}

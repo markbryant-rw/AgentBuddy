@@ -260,8 +260,8 @@ export function PostCard({ post }: PostCardProps) {
             postImages.length >= 3 && "grid-cols-2"
           )}>
             {postImages.map((image: string, index: number) => (
-              <div 
-                key={index} 
+              <div
+                key={image}
                 className={cn(
                   "relative aspect-video bg-muted cursor-pointer hover:opacity-90 transition-opacity rounded-lg overflow-hidden",
                   postImages.length === 3 && index === 0 && "col-span-2"

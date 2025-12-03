@@ -87,7 +87,7 @@ export const TaskSuggestions = ({
       <div className="space-y-3">
         {suggestions.map((suggestion, index) => (
           <div
-            key={index}
+            key={`${suggestion.title}-${index}`}
             className={cn(
               "flex items-start gap-3 p-3 rounded-lg border transition-all duration-200",
               "hover:shadow-md hover:border-primary/30",
