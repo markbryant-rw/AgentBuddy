@@ -169,16 +169,21 @@ export async function geocodeEntity(
     }
 
     if (!geocodeData.results || geocodeData.results.length === 0) {
-      console.log('No geocoding results found');
+      console.log('No geocoding results found for:', query);
 
       await supabaseClient
         .from(tableName)
-        .update({ geocode_error: 'Address not found' })
+        .update({ geocode_error: 'Address not found - try using the Fix Location tool with autocomplete' })
         .eq('id', entityId);
 
+      // Return 200 with success: false - this is a valid response, not an error
       return new Response(
-        JSON.stringify({ error: 'Address not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: false, 
+          error: 'Address not found',
+          message: 'Use the Fix Location tool to search and select the correct address'
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
