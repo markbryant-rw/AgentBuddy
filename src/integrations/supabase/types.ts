@@ -3058,7 +3058,7 @@ export type Database = {
             foreignKeyName: "task_lists_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "task_projects"
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
