@@ -216,18 +216,18 @@ const SortableTaskCard = ({
 
               {/* Stacked assignee avatars below checkbox */}
               {task.assignees && task.assignees.length > 0 && (
-                <div className="flex flex-col -space-y-1.5">
-                  {task.assignees.slice(0, 2).map((assignee) => (
-                    <Avatar key={assignee.id} className="h-4 w-4 border border-background">
+                <div className="flex flex-col -space-y-1 mt-0.5">
+                  {task.assignees.slice(0, 3).map((assignee) => (
+                    <Avatar key={assignee.id} className="h-5 w-5 border-2 border-background">
                       <AvatarImage src={assignee.avatar_url || undefined} />
-                      <AvatarFallback className="text-[8px]">
+                      <AvatarFallback className="text-[9px]">
                         {assignee.full_name?.[0] || '?'}
                       </AvatarFallback>
                     </Avatar>
                   ))}
-                  {task.assignees.length > 2 && (
-                    <div className="h-4 w-4 rounded-full bg-muted border border-background flex items-center justify-center text-[8px] font-medium">
-                      +{task.assignees.length - 2}
+                  {task.assignees.length > 3 && (
+                    <div className="h-5 w-5 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] font-medium">
+                      +{task.assignees.length - 3}
                     </div>
                   )}
                 </div>
