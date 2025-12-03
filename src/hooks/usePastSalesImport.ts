@@ -434,17 +434,13 @@ export const usePastSalesImport = () => {
         } else {
           summary.successful += data?.length || 0;
           
-          // Trigger geocoding for imported records
+          // Fire-and-forget geocoding for imported records (don't block import)
           if (data) {
-            for (const record of data) {
-              try {
-                await supabase.functions.invoke('geocode-past-sale', {
-                  body: { pastSaleId: record.id }
-                });
-              } catch (geocodeError) {
-                console.error('Geocoding error:', geocodeError);
-              }
-            }
+            data.forEach(record => {
+              supabase.functions.invoke('geocode-past-sale', {
+                body: { pastSaleId: record.id }
+              }).catch(err => console.error('Geocoding error:', err));
+            });
           }
         }
 
