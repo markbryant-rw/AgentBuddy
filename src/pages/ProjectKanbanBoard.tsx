@@ -8,7 +8,7 @@ import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, MoreVertical, Trash2, Pencil, X, Clock, Check } from 'lucide-react';
+import { ArrowLeft, Plus, MoreVertical, Trash2, Pencil, X, Clock, Check, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -445,6 +445,8 @@ const SortableColumn = ({
   onDeleteTask,
   teamMembers,
   overTaskId,
+  isCollapsed,
+  onToggleCollapse,
 }: {
   list: any; 
   tasks: Task[];
@@ -459,6 +461,8 @@ const SortableColumn = ({
   onDeleteTask: (taskId: string) => void;
   teamMembers: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
   overTaskId: string | null;
+  isCollapsed: boolean;
+  onToggleCollapse: () => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
@@ -467,7 +471,12 @@ const SortableColumn = ({
   const [isAdding, setIsAdding] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedName, setEditedName] = useState(list.name);
+  const [showCompletedSection, setShowCompletedSection] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  // Separate active and completed tasks
+  const activeTasks = tasks.filter(t => !t.completed);
+  const completedTasks = tasks.filter(t => t.completed);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -501,24 +510,59 @@ const SortableColumn = ({
     transition,
   };
 
+  // Collapsed column view
+  if (isCollapsed) {
+    return (
+      <div 
+        ref={setNodeRef} 
+        style={style}
+        className={cn(
+          "w-10 flex-shrink-0 flex flex-col bg-muted/30 rounded-lg max-h-full cursor-pointer hover:bg-muted/50 transition-colors",
+          isDragging && 'opacity-50'
+        )}
+        onClick={onToggleCollapse}
+      >
+        <div className="p-2 flex flex-col items-center gap-2 h-full">
+          <div 
+            className="w-3 h-3 rounded-full flex-shrink-0" 
+            style={{ backgroundColor: list.color || '#3b82f6' }}
+          />
+          <Badge variant="secondary" className="text-[10px] px-1 py-0">
+            {tasks.length}
+          </Badge>
+          <span 
+            className="font-medium text-xs whitespace-nowrap origin-center"
+            style={{ 
+              writingMode: 'vertical-rl', 
+              textOrientation: 'mixed',
+              transform: 'rotate(180deg)',
+            }}
+          >
+            {list.name}
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       ref={setNodeRef} 
       style={style}
       className={cn(
-        "w-80 flex-shrink-0 flex flex-col bg-muted/30 rounded-lg max-h-full",
+        "w-56 flex-shrink-0 flex flex-col bg-muted/30 rounded-lg max-h-full",
         isDragging && 'opacity-50'
       )}
     >
       {/* Column Header */}
-      <div className="p-3 border-b flex items-center gap-2">
+      <div className="p-2 border-b flex items-center gap-1.5">
         <div 
           {...attributes}
           {...listeners}
           className="cursor-grab active:cursor-grabbing"
         >
           <div 
-            className="w-3 h-3 rounded-full flex-shrink-0" 
+            className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
             style={{ backgroundColor: list.color || '#3b82f6' }}
           />
         </div>
@@ -530,27 +574,31 @@ const SortableColumn = ({
             onChange={(e) => setEditedName(e.target.value)}
             onBlur={handleTitleSave}
             onKeyDown={handleTitleKeyDown}
-            className="h-7 flex-1 font-medium text-sm"
+            className="h-6 flex-1 font-medium text-xs"
           />
         ) : (
           <span 
-            className="font-medium flex-1 truncate cursor-pointer hover:bg-muted/50 px-1.5 py-0.5 -mx-1.5 rounded transition-colors"
+            className="font-medium text-xs flex-1 truncate cursor-pointer hover:bg-muted/50 px-1 py-0.5 -mx-1 rounded transition-colors"
             onClick={() => setIsEditingTitle(true)}
           >
             {list.name}
           </span>
         )}
         
-        <Badge variant="secondary" className="flex-shrink-0">
-          {tasks.length}
+        <Badge variant="secondary" className="flex-shrink-0 text-[10px] px-1 py-0">
+          {activeTasks.length}
         </Badge>
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0">
-              <MoreVertical className="h-4 w-4" />
+            <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0">
+              <MoreVertical className="h-3 w-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onToggleCollapse}>
+              <PanelLeftClose className="h-4 w-4 mr-2" />
+              Collapse
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setIsEditingTitle(true)}>
               <Pencil className="h-4 w-4 mr-2" />
               Rename
@@ -565,13 +613,12 @@ const SortableColumn = ({
       </div>
 
       {/* Tasks */}
-      <div className="flex-1 overflow-auto p-2 space-y-2">
+      <div className="flex-1 overflow-auto p-1.5 space-y-1.5">
         <SortableContext
-          items={tasks.map(t => t.id)}
+          items={activeTasks.map(t => t.id)}
           strategy={verticalListSortingStrategy}
         >
-          {tasks.map((task, index) => {
-            // Show drop indicator before this task if it's being hovered
+          {activeTasks.map((task) => {
             const showIndicator = overTaskId === task.id;
             return (
               <SortableTaskCard
@@ -596,6 +643,49 @@ const SortableColumn = ({
           onExpand={() => setIsAdding(true)}
           onCollapse={() => setIsAdding(false)}
         />
+
+        {/* Completed Section */}
+        {completedTasks.length > 0 && (
+          <div className="pt-2 mt-2 border-t border-muted-foreground/20">
+            <button
+              onClick={() => setShowCompletedSection(!showCompletedSection)}
+              className="w-full flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+            >
+              {showCompletedSection ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+              <span>Completed ({completedTasks.length})</span>
+            </button>
+            
+            {showCompletedSection && (
+              <div className="space-y-1.5 mt-1.5">
+                <SortableContext
+                  items={completedTasks.map(t => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {completedTasks.map((task) => {
+                    const showIndicator = overTaskId === task.id;
+                    return (
+                      <SortableTaskCard
+                        key={task.id}
+                        task={task}
+                        onDelete={() => onDeleteTask(task.id)}
+                        onToggleComplete={() => onToggleComplete(task.id, !task.completed)}
+                        onColorChange={(color) => onColorChange(task.id, color)}
+                        onUpdateTitle={(title) => onUpdateTitle(task.id, title)}
+                        onToggleAssignee={(userId, isAdding) => onToggleAssignee(task.id, userId, isAdding)}
+                        teamMembers={teamMembers}
+                        isOverBefore={showIndicator}
+                      />
+                    );
+                  })}
+                </SortableContext>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -621,7 +711,6 @@ const AddColumnPlaceholder = ({
     if (name.trim()) {
       onCreate(name.trim());
       setName('');
-      // Keep expanded for adding multiple columns quickly
     }
   };
 
@@ -639,34 +728,35 @@ const AddColumnPlaceholder = ({
     return (
       <button
         onClick={() => setIsExpanded(true)}
-        className="w-80 flex-shrink-0 p-3 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-2"
+        className="w-56 flex-shrink-0 p-2 rounded-lg border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all flex items-center gap-2 text-sm"
       >
         <Plus className="h-4 w-4" />
-        Add another list
+        Add list
       </button>
     );
   }
 
   return (
-    <div className="w-80 flex-shrink-0 p-3 rounded-lg bg-muted/30 space-y-2 animate-in fade-in slide-in-from-right-4 duration-200">
+    <div className="w-56 flex-shrink-0 p-2 rounded-lg bg-muted/30 space-y-2 animate-in fade-in slide-in-from-right-4 duration-200">
       <Input
         ref={inputRef}
         placeholder="Enter list name..."
         value={name}
         onChange={(e) => setName(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="bg-background"
+        className="bg-background h-8 text-sm"
       />
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={handleCreate} disabled={!name.trim()}>
+        <Button size="sm" onClick={handleCreate} disabled={!name.trim()} className="h-7 text-xs">
           Add list
         </Button>
         <Button 
           size="sm" 
           variant="ghost" 
           onClick={() => { setName(''); setIsExpanded(false); }}
+          className="h-7"
         >
-          <X className="h-4 w-4" />
+          <X className="h-3 w-3" />
         </Button>
       </div>
     </div>
@@ -681,13 +771,25 @@ export default function ProjectKanbanBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<'task' | 'column' | null>(null);
   const [overTaskId, setOverTaskId] = useState<string | null>(null);
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
   
   // List management dialogs
   const [editListId, setEditListId] = useState<string | null>(null);
   const [deleteListId, setDeleteListId] = useState<string | null>(null);
   const [listName, setListName] = useState('');
   const [listColor, setListColor] = useState('#3b82f6');
-  
+
+  const toggleColumnCollapse = (listId: string) => {
+    setCollapsedColumns(prev => {
+      const next = new Set(prev);
+      if (next.has(listId)) {
+        next.delete(listId);
+      } else {
+        next.add(listId);
+      }
+      return next;
+    });
+  };
 
   const { lists, isLoading: listsLoading, createList, updateList, deleteList, reorderLists, createDefaultLists } = useProjectLists(projectId);
   const { members: teamMembers } = useTeamMembers();
@@ -1072,7 +1174,7 @@ export default function ProjectKanbanBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-4 h-full min-w-max items-start">
+          <div className="flex gap-3 h-full min-w-max items-start">
             <SortableContext items={lists.map(l => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <SortableColumn
@@ -1090,6 +1192,8 @@ export default function ProjectKanbanBoard() {
                   onDeleteTask={(taskId) => deleteTaskMutation.mutate(taskId)}
                   teamMembers={teamMembers}
                   overTaskId={overTaskId}
+                  isCollapsed={collapsedColumns.has(list.id)}
+                  onToggleCollapse={() => toggleColumnCollapse(list.id)}
                 />
               ))}
             </SortableContext>
@@ -1103,10 +1207,10 @@ export default function ProjectKanbanBoard() {
             easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
           }}>
             {activeTask && (
-              <Card className="w-80 shadow-2xl rotate-3 scale-105 border-2 border-primary/30 bg-background overflow-hidden">
-                <CardContent className="px-2.5 py-2">
+              <Card className="w-56 shadow-2xl rotate-3 scale-105 border-2 border-primary/30 bg-background overflow-hidden">
+                <CardContent className="px-2 py-1.5">
                   <p 
-                    className="font-medium text-sm"
+                    className="font-medium text-xs"
                     style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                   >
                     {activeTask.title}
@@ -1115,13 +1219,13 @@ export default function ProjectKanbanBoard() {
               </Card>
             )}
             {activeList && (
-              <div className="w-80 h-32 bg-muted rounded-lg shadow-2xl rotate-2 flex items-center justify-center border-2 border-primary/30">
+              <div className="w-56 h-24 bg-muted rounded-lg shadow-2xl rotate-2 flex items-center justify-center border-2 border-primary/30">
                 <div className="flex items-center gap-2">
                   <div 
-                    className="w-3 h-3 rounded-full" 
+                    className="w-2.5 h-2.5 rounded-full" 
                     style={{ backgroundColor: activeList.color || '#3b82f6' }}
                   />
-                  <p className="font-semibold">{activeList.name}</p>
+                  <p className="font-semibold text-sm">{activeList.name}</p>
                 </div>
               </div>
             )}
