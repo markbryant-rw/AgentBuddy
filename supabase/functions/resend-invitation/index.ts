@@ -107,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
     const { error: updateError } = await supabaseAdmin
       .from('pending_invitations')
       .update({
-        token: newToken,
+        invite_code: newToken,
         expires_at: newExpiresAt.toISOString(),
       })
       .eq('id', invitationId);
