@@ -7,8 +7,9 @@ import { cn } from '@/lib/utils';
 import { useState, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Plus, Check, HelpCircle } from 'lucide-react';
+import { Plus, HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
 
 interface CategorySectionProps {
   category: 'big' | 'medium' | 'little';
@@ -22,30 +23,36 @@ interface CategorySectionProps {
 
 const categoryConfig = {
   big: {
-    title: '🎯 High-Impact Tasks (3)',
+    title: 'High-Impact',
+    shortTitle: 'High-Impact',
     description: 'Your most important work today',
-    helpText: 'Tasks with the biggest impact on your goals. Examples: Client presentations, strategic decisions, major deals, critical problem-solving, revenue-generating activities.',
+    helpText: 'Tasks with the biggest impact on your goals. Examples: Client presentations, strategic decisions, major deals.',
     icon: '🎯',
     color: 'text-red-500',
     bgColor: 'bg-red-500/10',
+    progressColor: 'bg-red-500',
     max: 3,
   },
   medium: {
-    title: '⭐ Important Work (6)',
+    title: 'Important Work',
+    shortTitle: 'Important',
     description: 'Tasks that move projects forward',
-    helpText: 'Important but not urgent tasks that keep projects on track. Examples: Follow-up calls, proposal writing, meeting prep, property research, contract reviews, team check-ins.',
+    helpText: 'Important but not urgent tasks. Examples: Follow-up calls, proposal writing, meeting prep.',
     icon: '⭐',
     color: 'text-amber-500',
     bgColor: 'bg-amber-500/10',
+    progressColor: 'bg-amber-500',
     max: 6,
   },
   little: {
-    title: '⚡ Quick Wins (Under 15min)',
-    description: 'Small tasks you can knock out quickly',
-    helpText: 'Tasks you can complete in 5-15 minutes. Examples: Respond to emails, schedule appointments, update CRM, send documents, make quick phone calls, social media posts.',
+    title: 'Quick Wins',
+    shortTitle: 'Quick Wins',
+    description: 'Under 15 minutes each',
+    helpText: 'Tasks you can complete in 5-15 minutes. Examples: Respond to emails, schedule appointments.',
     icon: '⚡',
     color: 'text-green-500',
     bgColor: 'bg-green-500/10',
+    progressColor: 'bg-green-500',
     max: undefined,
   },
 };
@@ -78,7 +85,9 @@ export function CategorySection({
   }, [items]);
 
   const totalTasks = sortedItems.uncompleted.length + sortedItems.completed.length;
+  const completedCount = sortedItems.completed.length;
   const isAtLimit = config.max && totalTasks >= config.max;
+  const progressPercent = totalTasks > 0 ? (completedCount / totalTasks) * 100 : 0;
   
   const [editingSlot, setEditingSlot] = useState<number | null>(null);
   const [inputValue, setInputValue] = useState('');
@@ -129,63 +138,73 @@ export function CategorySection({
     <div 
       ref={setNodeRef} 
       className={cn(
-        "space-y-2 transition-all rounded-lg p-4 -m-4",
+        "space-y-2 transition-all rounded-lg p-3 -m-3",
         isOver && "bg-primary/5 ring-2 ring-primary/20 shadow-lg"
       )}
     >
-      <div className="flex items-center justify-between mb-1">
-        <div className="space-y-0.5">
-          <h3 className="text-sm font-semibold uppercase tracking-wide flex items-center gap-2">
-            <span className={config.color}>{config.icon}</span>
-            <span>{config.title}</span>
-            
-            <TooltipProvider>
-              <Tooltip delayDuration={200}>
-                <TooltipTrigger asChild>
-                  <button 
-                    className="text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <HelpCircle className="h-3.5 w-3.5" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent 
-                  side="right" 
-                  className="max-w-xs text-sm"
-                  sideOffset={8}
-                >
-                  <p className="font-medium mb-1">{config.title}</p>
-                  <p className="text-muted-foreground">{config.helpText}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            {config.max && (
+      {/* Compact Header with Integrated Progress */}
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={cn("text-base", config.color)}>{config.icon}</span>
+          <span className="text-sm font-medium truncate">{config.shortTitle}</span>
+          
+          <TooltipProvider>
+            <Tooltip delayDuration={200}>
+              <TooltipTrigger asChild>
+                <button className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+                  <HelpCircle className="h-3 w-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-xs text-sm" sideOffset={8}>
+                <p className="font-medium mb-1">{config.title}</p>
+                <p className="text-muted-foreground">{config.helpText}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        {/* Progress Section */}
+        <div className="flex items-center gap-2 flex-1 max-w-[200px]">
+          {config.max ? (
+            <>
+              <Progress 
+                value={progressPercent} 
+                className="h-1.5 flex-1 bg-muted/50"
+                indicatorClassName={config.progressColor}
+              />
               <span className={cn(
-                "text-xs px-2 py-0.5 rounded-full",
-                isAtLimit ? "bg-destructive/20 text-destructive" : config.bgColor
+                "text-xs font-medium tabular-nums shrink-0",
+                completedCount === totalTasks && totalTasks > 0 ? "text-green-600" : "text-muted-foreground"
               )}>
-                {sortedItems.uncompleted.length}/{config.max}
+                {completedCount}/{config.max}
               </span>
-            )}
-            {!config.max && sortedItems.uncompleted.length > 0 && (
-              <span className={cn("text-xs px-2 py-0.5 rounded-full", config.bgColor)}>
-                {sortedItems.uncompleted.length}
+            </>
+          ) : totalTasks > 0 ? (
+            <>
+              <Progress 
+                value={progressPercent} 
+                className="h-1.5 flex-1 bg-muted/50"
+                indicatorClassName={config.progressColor}
+              />
+              <span className={cn(
+                "text-xs font-medium tabular-nums shrink-0",
+                completedCount === totalTasks ? "text-green-600" : "text-muted-foreground"
+              )}>
+                {completedCount}/{totalTasks}
               </span>
-            )}
-          </h3>
-          <p className="text-xs text-muted-foreground max-w-2xl">
-            {config.description}
-          </p>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">No tasks</span>
+          )}
         </div>
       </div>
 
-      {/* Live Tasks First, Completed at Back */}
+      {/* Tasks Grid */}
       <SortableContext
         items={sortedItems.uncompleted.map(i => i.id)}
         strategy={rectSortingStrategy}
       >
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-3">
           {/* First: All uncompleted tasks sorted by order */}
           {sortedItems.uncompleted.map((item) => (
             <PlannerItem
@@ -225,12 +244,12 @@ export function CategorySection({
           {config.max && Array.from({ length: emptySlots }).map((_, idx) => {
             const slotIndex = sortedItems.uncompleted.length + idx;
             return editingSlot === slotIndex ? (
-              <div key={`input-${idx}`} className="flex items-center gap-2 p-4 rounded-lg border-2 border-dashed bg-card/50 w-[240px] h-[140px]" style={{ borderColor: `hsl(var(--${category === 'big' ? 'primary' : category === 'medium' ? 'chart-2' : 'chart-3'}) / 0.3)` }}>
+              <div key={`input-${idx}`} className="flex items-center gap-2 p-3 rounded-lg border-2 border-dashed bg-card/50 min-h-[120px]" style={{ borderColor: `hsl(var(--${category === 'big' ? 'primary' : category === 'medium' ? 'chart-2' : 'chart-3'}) / 0.3)` }}>
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={`Add ${config.title.toLowerCase()}...`}
+                  placeholder={`Add task...`}
                   className="flex-1"
                   autoFocus
                 />
@@ -254,7 +273,7 @@ export function CategorySection({
           {/* Quick Wins - always show add slot */}
           {!config.max && (
             editingSlot === sortedItems.uncompleted.length ? (
-              <div className="flex items-center gap-2 p-4 rounded-lg border-2 border-dashed border-green-500/30 bg-card/50 w-[240px] h-[140px]">
+              <div className="flex items-center gap-2 p-3 rounded-lg border-2 border-dashed border-green-500/30 bg-card/50 min-h-[120px]">
                 <Input
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}

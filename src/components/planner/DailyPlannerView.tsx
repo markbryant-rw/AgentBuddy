@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { addDays, subDays, format, isToday } from 'date-fns';
 import {
   DndContext,
@@ -12,19 +12,17 @@ import {
   DragOverlay,
 } from '@dnd-kit/core';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, ArrowRight, Repeat } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { useDailyPlanner, DailyPlannerItem } from '@/hooks/useDailyPlanner';
 import { useTeam } from '@/hooks/useTeam';
 import { AssignmentDialog } from './AssignmentDialog';
 import { RollForwardDialog } from './RollForwardDialog';
 import { RollForwardBanner } from './RollForwardBanner';
-import { AssignedTasksSection } from '@/components/planner/AssignedTasksSection';
 import { CategorySection } from './CategorySection';
 import { PlannerItem } from './PlannerItem';
 import { ViewToggle } from './ViewToggle';
 import { ThreeDayView } from './ThreeDayView';
 import { WeeklyAnalytics } from './WeeklyAnalytics';
-import { DailySummary } from './DailySummary';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -146,13 +144,6 @@ export function DailyPlannerView() {
     updateAssignments({ itemId, userIds });
   };
 
-  const handleUpdateTitle = (itemId: string, newTitle: string) => {
-    const item = items.find(i => i.id === itemId);
-    if (item) {
-      updateItem({ ...item, title: newTitle });
-    }
-  };
-
   const handleRollForward = () => {
     const nextDay = addDays(selectedDate, 1);
     rollForward(nextDay);
@@ -169,31 +160,38 @@ export function DailyPlannerView() {
   const mediumItems = items.filter(i => i.size_category === 'medium');
   const littleItems = items.filter(i => i.size_category === 'little');
 
+  // Calculate overall progress
+  const completedCount = items.filter(i => i.completed).length;
+  const totalCount = items.length;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
-    <div className="space-y-6">
-      {/* Header with Date Navigation and View Toggle */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div className="flex items-center gap-4">
+    <div className="space-y-4">
+      {/* Compact Header with Date Navigation, Progress, and Actions */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             size="icon"
+            className="h-8 w-8"
             onClick={() => setSelectedDate(subDays(selectedDate, 1))}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
 
-          <div className="text-center">
-            <h2 className="text-2xl font-bold">
+          <div className="text-center min-w-[140px]">
+            <h2 className="text-lg font-semibold leading-tight">
               {format(selectedDate, 'EEEE')}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              {format(selectedDate, 'MMMM d, yyyy')}
+            <p className="text-xs text-muted-foreground">
+              {format(selectedDate, 'MMM d, yyyy')}
             </p>
           </div>
 
           <Button
             variant="outline"
             size="icon"
+            className="h-8 w-8"
             onClick={() => setSelectedDate(addDays(selectedDate, 1))}
           >
             <ChevronRight className="h-4 w-4" />
@@ -202,37 +200,41 @@ export function DailyPlannerView() {
           {!isToday(selectedDate) && (
             <Button
               variant="ghost"
+              size="sm"
+              className="h-8"
               onClick={() => setSelectedDate(new Date())}
             >
               Today
             </Button>
           )}
-        </div>
 
-        <ViewToggle view={view} onViewChange={setView} />
+          {/* Compact Progress Badge */}
+          {view === 'day' && totalCount > 0 && (
+            <Badge 
+              variant={progressPercent === 100 ? "default" : "secondary"} 
+              className="ml-2 gap-1.5 font-medium"
+            >
+              <span>{completedCount}/{totalCount}</span>
+              <span className="text-muted-foreground">•</span>
+              <span>{progressPercent}%</span>
+            </Badge>
+          )}
 
-        <div className="flex items-center gap-2">
-          <Button
-            disabled
-            variant="outline"
-            className="gap-2 relative"
-          >
-            <Repeat className="h-4 w-4" />
-            Recurring Tasks
-            <Badge variant="secondary" className="ml-2">Coming Soon</Badge>
-          </Button>
-
+          {/* Roll Forward - Inline */}
           {view === 'day' && uncompletedCount > 0 && (
             <Button
-              variant="outline"
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
               onClick={() => setRollForwardDialogOpen(true)}
-              className="gap-2"
             >
-              Roll Forward {uncompletedCount} Task{uncompletedCount !== 1 ? 's' : ''}
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-3.5 w-3.5" />
+              Roll {uncompletedCount}
             </Button>
           )}
         </div>
+
+        <ViewToggle view={view} onViewChange={setView} />
       </div>
 
       {/* Content based on view */}
@@ -246,13 +248,10 @@ export function DailyPlannerView() {
 
       {view === 'day' && (
         <>
-          {/* Roll Forward Banner */}
+          {/* Roll Forward Banner - Keep this for important notifications */}
           {team?.id && <RollForwardBanner teamId={team.id} currentDate={selectedDate} />}
 
-          {/* Daily Summary */}
-          {!isLoading && <DailySummary items={items} />}
-
-          {/* Category Sections */}
+          {/* Category Sections - Now immediately visible */}
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">
               Loading...
@@ -264,7 +263,7 @@ export function DailyPlannerView() {
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
             >
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <CategorySection
                   category="big"
                   items={bigItems}
