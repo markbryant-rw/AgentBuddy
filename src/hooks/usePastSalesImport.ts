@@ -409,8 +409,35 @@ export const usePastSalesImport = () => {
     const chunkSize = 50;
 
     try {
-      for (let i = 0; i < validRows.length; i += chunkSize) {
-        const chunk = validRows.slice(i, i + chunkSize);
+      // Fetch existing records to detect duplicates
+      const { data: existingRecords } = await supabase
+        .from('past_sales')
+        .select('address, settlement_date, sale_date')
+        .eq('team_id', teamId);
+
+      const existingSet = new Set(
+        (existingRecords || []).map(r => 
+          `${(r.address || '').toLowerCase().trim()}|${r.settlement_date || r.sale_date || ''}`
+        )
+      );
+
+      // Filter out duplicates
+      const uniqueRows = validRows.filter(r => {
+        const key = `${(r.data.address || '').toLowerCase().trim()}|${r.data.settlement_date || r.data.sale_date || ''}`;
+        if (existingSet.has(key)) {
+          return false; // Skip duplicate
+        }
+        existingSet.add(key); // Also prevent duplicates within the import
+        return true;
+      });
+
+      const skippedDuplicates = validRows.length - uniqueRows.length;
+      if (skippedDuplicates > 0) {
+        toast.info(`Skipped ${skippedDuplicates} duplicate records`);
+      }
+
+      for (let i = 0; i < uniqueRows.length; i += chunkSize) {
+        const chunk = uniqueRows.slice(i, i + chunkSize);
         const records = chunk.map(r => ({
           ...r.data,
           team_id: teamId,
@@ -444,7 +471,7 @@ export const usePastSalesImport = () => {
           }
         }
 
-        setProgress(Math.round(((i + chunk.length) / validRows.length) * 100));
+        setProgress(Math.round(((i + chunk.length) / uniqueRows.length) * 100));
       }
 
       summary.warnings = validatedRows.filter(r => r.warnings.length > 0).length;
