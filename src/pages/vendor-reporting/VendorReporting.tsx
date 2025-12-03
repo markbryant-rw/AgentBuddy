@@ -10,12 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import ReportForm from './components/ReportForm';
 import ReportOutput from './components/ReportOutput';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
-
-export interface GeneratedReport {
-  vendorReport: string;
-  actionPoints: string;
-  whatsappSummary: string;
-}
+import type { GeneratedReport } from './types';
 
 const VendorReporting = () => {
   const { user } = useAuth();

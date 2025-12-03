@@ -9,7 +9,7 @@ import { useInvitations } from '@/hooks/useInvitations';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { getInvitableRoles, getRoleDisplayName, type AppRole } from '@/lib/rbac';
-import { emailSchema } from '@/lib/validation';
+import { validateEmail } from '@/lib/validation';
 import { Loader2, UserPlus, Copy } from 'lucide-react';
 import { RoleBadge } from '@/components/RoleBadge';
 import { InvitationWarningDialog } from './InvitationWarningDialog';
@@ -73,21 +73,17 @@ export function InviteTeamMemberDialog({ open, onOpenChange, officeId, defaultTe
     enabled: open && !!officeId,
   });
 
-  const validateEmail = (value: string) => {
-    try {
-      emailSchema.parse(value);
-      setEmailError('');
-      return true;
-    } catch (error: any) {
-      setEmailError(error.errors[0]?.message || 'Invalid email');
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateEmail(email) || !selectedRole) {
+
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setEmailError(emailValidation.error || 'Invalid email');
+      return;
+    }
+    setEmailError('');
+
+    if (!selectedRole) {
       return;
     }
 

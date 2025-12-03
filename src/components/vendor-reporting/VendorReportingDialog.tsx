@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import ReportForm from '@/pages/vendor-reporting/components/ReportForm';
 import ReportOutput from '@/pages/vendor-reporting/components/ReportOutput';
 import { differenceInWeeks, parseISO } from 'date-fns';
+import type { GeneratedReport } from '@/pages/vendor-reporting/types';
 
 interface VendorReportingDialogProps {
   isOpen: boolean;
@@ -18,12 +19,6 @@ interface VendorReportingDialogProps {
     client_name?: any;
   };
   onReportSaved?: () => void;
-}
-
-interface GeneratedReport {
-  vendorReport: string;
-  actionPoints: string;
-  whatsappSummary: string;
 }
 
 const calculateCampaignWeek = (liveDate: string | null): number => {

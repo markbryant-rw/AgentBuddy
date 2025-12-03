@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Copy, Save, Check, RefreshCw, Loader2, FileText, CheckSquare, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
-import { GeneratedReport } from '../VendorReporting';
+import type { GeneratedReport } from '../types';
 
 interface ReportOutputProps {
   report: GeneratedReport;

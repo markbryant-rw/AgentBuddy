@@ -15,7 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserPlus, Mail, Loader2, RefreshCw, XCircle, Clock, Info } from 'lucide-react';
 import { getInvitableRoles, getRoleDisplayName, type AppRole } from '@/lib/rbac';
 import { RoleBadge } from '@/components/RoleBadge';
-import { emailSchema } from '@/lib/validation';
+import { validateEmail } from '@/lib/validation';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeaderWithBack } from '@/components/PageHeaderWithBack';
@@ -78,21 +78,17 @@ export default function InviteUser() {
     enabled: !isPlatformAdmin && !!profile?.office_id,
   });
 
-  const validateEmail = (value: string) => {
-    try {
-      emailSchema.parse(value);
-      setEmailError('');
-      return true;
-    } catch (error: any) {
-      setEmailError(error.errors[0]?.message || 'Invalid email');
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateEmail(email) || !selectedRole) {
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setEmailError(emailValidation.error || 'Invalid email');
+      return;
+    }
+    setEmailError('');
+
+    if (!selectedRole) {
       return;
     }
 

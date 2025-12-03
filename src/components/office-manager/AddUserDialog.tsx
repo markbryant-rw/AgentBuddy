@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, UserPlus } from 'lucide-react';
 import { getInvitableRoles, getRoleDisplayName, type AppRole } from '@/lib/rbac';
-import { emailSchema } from '@/lib/validation';
+import { validateEmail } from '@/lib/validation';
 
 interface AddUserDialogProps {
   open: boolean;
@@ -59,21 +59,17 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
     enabled: !!activeOffice?.id,
   });
 
-  const validateEmail = (value: string) => {
-    try {
-      emailSchema.parse(value);
-      setEmailError('');
-      return true;
-    } catch (error: any) {
-      setEmailError(error.errors[0]?.message || 'Invalid email');
-      return false;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateEmail(email) || !selectedRole || !activeOffice?.id) {
+
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setEmailError(emailValidation.error || 'Invalid email');
+      return;
+    }
+    setEmailError('');
+
+    if (!selectedRole || !activeOffice?.id) {
       return;
     }
 
