@@ -78,6 +78,12 @@ const CARD_COLORS = [
   { name: 'Cyan', value: '#cffafe' },
 ];
 
+interface Assignee {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -86,12 +92,11 @@ interface Task {
   list_id: string | null;
   priority: string | null;
   due_date: string | null;
-  assigned_to: string | null;
   project_id: string | null;
   board_position: number | null;
   color: string | null;
   completed: boolean | null;
-  assignee?: { full_name: string | null; avatar_url: string | null };
+  assignees: Assignee[];
 }
 
 interface Project {
@@ -108,7 +113,7 @@ const SortableTaskCard = ({
   onToggleComplete,
   onColorChange,
   onUpdateTitle,
-  onAssigneeChange,
+  onToggleAssignee,
   teamMembers,
   isOverBefore,
 }: { 
@@ -117,7 +122,7 @@ const SortableTaskCard = ({
   onToggleComplete: () => void;
   onColorChange: (color: string | null) => void;
   onUpdateTitle: (title: string) => void;
-  onAssigneeChange: (assigneeId: string | null) => void;
+  onToggleAssignee: (userId: string, isAdding: boolean) => void;
   teamMembers: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
   isOverBefore?: boolean;
 }) => {
@@ -146,7 +151,7 @@ const SortableTaskCard = ({
   const isDueToday = task.due_date && isToday(new Date(task.due_date));
   const isCompleted = task.completed;
 
-  const hasMetadata = task.due_date || task.assignee;
+  const hasMetadata = task.due_date || (task.assignees && task.assignees.length > 0);
 
   const handleTitleSave = () => {
     if (editedTitle.trim() && editedTitle.trim() !== task.title) {
@@ -268,44 +273,36 @@ const SortableTaskCard = ({
                       </div>
                     </div>
                     <DropdownMenuSeparator />
-                    {/* Assignee Section */}
+                    {/* Assignee Section - Multi-select */}
                     <div className="px-2 py-1.5">
-                      <p className="text-xs text-muted-foreground mb-2">Assignee</p>
+                      <p className="text-xs text-muted-foreground mb-2">Assignees</p>
                       <div className="max-h-32 overflow-auto space-y-0.5">
-                        {/* Unassign option */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); onAssigneeChange(null); }}
-                          className={cn(
-                            "flex items-center gap-2 w-full p-1.5 rounded hover:bg-muted text-left",
-                            !task.assigned_to && "bg-muted"
-                          )}
-                        >
-                          <div className="w-5 h-5 rounded-full bg-muted-foreground/20 flex items-center justify-center flex-shrink-0">
-                            <X className="h-3 w-3" />
-                          </div>
-                          <span className="text-sm">No one</span>
-                          {!task.assigned_to && <Check className="h-3 w-3 text-primary ml-auto" />}
-                        </button>
                         {/* Team members */}
-                        {teamMembers.map((member) => (
-                          <button 
-                            key={member.id}
-                            onClick={(e) => { e.stopPropagation(); onAssigneeChange(member.id); }}
-                            className={cn(
-                              "flex items-center gap-2 w-full p-1.5 rounded hover:bg-muted text-left",
-                              task.assigned_to === member.id && "bg-primary/10"
-                            )}
-                          >
-                            <Avatar className="h-5 w-5 flex-shrink-0">
-                              <AvatarImage src={member.avatar_url || undefined} />
-                              <AvatarFallback className="text-[9px]">
-                                {member.full_name?.[0] || '?'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm truncate">{member.full_name || 'Unknown'}</span>
-                            {task.assigned_to === member.id && <Check className="h-3 w-3 text-primary ml-auto flex-shrink-0" />}
-                          </button>
-                        ))}
+                        {teamMembers.map((member) => {
+                          const isAssigned = task.assignees?.some(a => a.id === member.id);
+                          return (
+                            <button 
+                              key={member.id}
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                onToggleAssignee(member.id, !isAssigned); 
+                              }}
+                              className={cn(
+                                "flex items-center gap-2 w-full p-1.5 rounded hover:bg-muted text-left",
+                                isAssigned && "bg-primary/10"
+                              )}
+                            >
+                              <Avatar className="h-5 w-5 flex-shrink-0">
+                                <AvatarImage src={member.avatar_url || undefined} />
+                                <AvatarFallback className="text-[9px]">
+                                  {member.full_name?.[0] || '?'}
+                                </AvatarFallback>
+                              </Avatar>
+                              <span className="text-sm truncate">{member.full_name || 'Unknown'}</span>
+                              {isAssigned && <Check className="h-3 w-3 text-primary ml-auto flex-shrink-0" />}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     <DropdownMenuSeparator />
@@ -332,13 +329,23 @@ const SortableTaskCard = ({
                     </span>
                   )}
 
-                  {task.assignee && (
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={task.assignee.avatar_url || undefined} />
-                      <AvatarFallback className="text-[9px]">
-                        {task.assignee.full_name?.[0] || '?'}
-                      </AvatarFallback>
-                    </Avatar>
+                  {/* Stacked assignee avatars */}
+                  {task.assignees && task.assignees.length > 0 && (
+                    <div className="flex -space-x-1.5">
+                      {task.assignees.slice(0, 3).map((assignee) => (
+                        <Avatar key={assignee.id} className="h-5 w-5 border border-background">
+                          <AvatarImage src={assignee.avatar_url || undefined} />
+                          <AvatarFallback className="text-[9px]">
+                            {assignee.full_name?.[0] || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {task.assignees.length > 3 && (
+                        <div className="h-5 w-5 rounded-full bg-muted border border-background flex items-center justify-center text-[9px] font-medium">
+                          +{task.assignees.length - 3}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -435,7 +442,7 @@ const SortableColumn = ({
   onToggleComplete,
   onColorChange,
   onUpdateTitle,
-  onAssigneeChange,
+  onToggleAssignee,
   onDeleteTask,
   teamMembers,
   overTaskId,
@@ -449,7 +456,7 @@ const SortableColumn = ({
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onColorChange: (taskId: string, color: string | null) => void;
   onUpdateTitle: (taskId: string, title: string) => void;
-  onAssigneeChange: (taskId: string, assigneeId: string | null) => void;
+  onToggleAssignee: (taskId: string, userId: string, isAdding: boolean) => void;
   onDeleteTask: (taskId: string) => void;
   teamMembers: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
   overTaskId: string | null;
@@ -575,7 +582,7 @@ const SortableColumn = ({
                 onToggleComplete={() => onToggleComplete(task.id, !task.completed)}
                 onColorChange={(color) => onColorChange(task.id, color)}
                 onUpdateTitle={(title) => onUpdateTitle(task.id, title)}
-                onAssigneeChange={(assigneeId) => onAssigneeChange(task.id, assigneeId)}
+                onToggleAssignee={(userId, isAdding) => onToggleAssignee(task.id, userId, isAdding)}
                 teamMembers={teamMembers}
                 isOverBefore={showIndicator}
               />
@@ -705,23 +712,32 @@ export default function ProjectKanbanBoard() {
     enabled: !!projectId,
   });
 
-  // Fetch tasks for this project
+  // Fetch tasks for this project with multiple assignees from task_assignees
   const { data: tasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ['project-tasks', projectId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tasks')
         .select(`
-          id, title, description, status, list_id, priority, due_date, assigned_to, project_id, board_position, color, completed,
-          assignee:profiles!tasks_assigned_to_fkey(full_name, avatar_url)
+          id, title, description, status, list_id, priority, due_date, project_id, board_position, color, completed,
+          task_assignees(
+            user_id,
+            profiles:user_id(id, full_name, avatar_url)
+          )
         `)
         .eq('project_id', projectId)
         .order('board_position', { ascending: true, nullsFirst: false });
       
       if (error) throw error;
+      
+      // Map task_assignees to flat assignees array
       return (data || []).map((t: any) => ({
         ...t,
-        assignee: t.assignee?.[0] || null,
+        assignees: t.task_assignees?.map((ta: any) => ({
+          id: ta.profiles?.id,
+          full_name: ta.profiles?.full_name,
+          avatar_url: ta.profiles?.avatar_url,
+        })).filter((a: any) => a.id) || [],
       })) as Task[];
     },
     enabled: !!projectId,
@@ -825,20 +841,27 @@ export default function ProjectKanbanBoard() {
     },
   });
 
-  // Update task (general updates including assigned_to, description)
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) => {
-      const { error } = await supabase
-        .from('tasks')
-        .update(updates)
-        .eq('id', taskId);
-      if (error) throw error;
+  // Toggle assignee mutation (add/remove from task_assignees)
+  const toggleAssigneeMutation = useMutation({
+    mutationFn: async ({ taskId, userId, isAdding }: { taskId: string; userId: string; isAdding: boolean }) => {
+      if (isAdding) {
+        const { error } = await supabase
+          .from('task_assignees')
+          .insert({ task_id: taskId, user_id: userId, assigned_by: user?.id });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('task_assignees')
+          .delete()
+          .eq('task_id', taskId)
+          .eq('user_id', userId);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['project-tasks', projectId] });
-      toast.success('Task updated');
     },
-    onError: () => toast.error('Failed to update task'),
+    onError: () => toast.error('Failed to update assignee'),
   });
 
   // Update task positions mutation (batch)
@@ -1064,7 +1087,7 @@ export default function ProjectKanbanBoard() {
                   onToggleComplete={(taskId, completed) => toggleCompleteMutation.mutate({ taskId, completed })}
                   onColorChange={(taskId, color) => updateTaskColorMutation.mutate({ taskId, color })}
                   onUpdateTitle={(taskId, title) => updateTaskTitleMutation.mutate({ taskId, title })}
-                  onAssigneeChange={(taskId, assigneeId) => updateTaskMutation.mutate({ taskId, updates: { assigned_to: assigneeId } })}
+                  onToggleAssignee={(taskId, userId, isAdding) => toggleAssigneeMutation.mutate({ taskId, userId, isAdding })}
                   onDeleteTask={(taskId) => deleteTaskMutation.mutate(taskId)}
                   teamMembers={teamMembers}
                   overTaskId={overTaskId}
@@ -1081,12 +1104,14 @@ export default function ProjectKanbanBoard() {
             easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
           }}>
             {activeTask && (
-              <Card className="w-80 shadow-2xl rotate-3 scale-105 border-2 border-primary/30 bg-background">
-                <CardContent className="p-3">
-                  <p className="font-medium text-sm">{activeTask.title}</p>
-                  {activeTask.description && (
-                    <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{activeTask.description}</p>
-                  )}
+              <Card className="w-80 shadow-2xl rotate-3 scale-105 border-2 border-primary/30 bg-background overflow-hidden">
+                <CardContent className="px-2.5 py-2">
+                  <p 
+                    className="font-medium text-sm"
+                    style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
+                  >
+                    {activeTask.title}
+                  </p>
                 </CardContent>
               </Card>
             )}
