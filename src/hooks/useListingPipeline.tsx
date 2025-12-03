@@ -77,11 +77,11 @@ export const useListingPipeline = () => {
       if (error) throw error;
       setListings((data || []).map(d => ({
         ...d,
-        last_edited_by: d.created_by || '',
-        vendor_name: '',
-        likelihood: 50,
-        expected_month: '',
-        last_contact: '',
+        last_edited_by: d.last_edited_by || d.created_by || '',
+        vendor_name: d.vendor_name || '',
+        likelihood: d.likelihood ?? 50,
+        expected_month: d.expected_month || '',
+        last_contact: d.last_contact || '',
       })) as Listing[]);
     } catch (error) {
       logger.error('Error fetching listings:', error);
@@ -168,11 +168,11 @@ export const useListingPipeline = () => {
 
       const updatedListing = {
         ...data,
-        last_edited_by: data.created_by || user.id,
-        vendor_name: (updates.vendor_name !== undefined ? updates.vendor_name : '') || '',
-        likelihood: (updates.likelihood !== undefined ? updates.likelihood : 50) || 50,
-        expected_month: (updates.expected_month !== undefined ? updates.expected_month : '') || '',
-        last_contact: (updates.last_contact !== undefined ? updates.last_contact : '') || '',
+        last_edited_by: data.last_edited_by || user.id,
+        vendor_name: data.vendor_name || '',
+        likelihood: data.likelihood ?? 50,
+        expected_month: data.expected_month || '',
+        last_contact: data.last_contact || '',
       } as Listing;
 
       setListings(prev => prev.map(l => l.id === id ? updatedListing : l));
