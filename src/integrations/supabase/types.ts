@@ -1216,6 +1216,7 @@ export type Database = {
       }
       lead_sources: {
         Row: {
+          agency_id: string | null
           created_at: string
           id: string
           is_active: boolean
@@ -1226,6 +1227,7 @@ export type Database = {
           value: string
         }
         Insert: {
+          agency_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -1236,6 +1238,7 @@ export type Database = {
           value: string
         }
         Update: {
+          agency_id?: string | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -1245,7 +1248,15 @@ export type Database = {
           updated_at?: string
           value?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lead_sources_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       listing_comments: {
         Row: {
