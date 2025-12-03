@@ -125,8 +125,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Check for existing "View As" session in localStorage
-    const storedViewAs = localStorage.getItem('viewAsUserId');
+    // Check for existing "View As" session in sessionStorage
+    const storedViewAs = sessionStorage.getItem('viewAsUserId');
 
     // Set up auth state listener with a synchronous callback (no Supabase calls here)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -167,7 +167,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               await startViewingAs(storedViewAs);
             } catch (error) {
               console.error('Failed to restore view-as session:', error instanceof Error ? error.message : 'Unknown error');
-              localStorage.removeItem('viewAsUserId');
+              sessionStorage.removeItem('viewAsUserId');
+              sessionStorage.removeItem('viewAsStartTime');
               setUser(realUser);
             }
           } else {
@@ -236,9 +237,42 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         stopViewingAs();
       }
     };
-    
+
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
+  }, [isViewingAs]);
+
+  // Auto-timeout impersonation after 30 minutes
+  useEffect(() => {
+    if (!isViewingAs) return;
+
+    const TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+    const startTimeStr = sessionStorage.getItem('viewAsStartTime');
+
+    if (!startTimeStr) {
+      // If no start time, set it now
+      sessionStorage.setItem('viewAsStartTime', Date.now().toString());
+      return;
+    }
+
+    const startTime = parseInt(startTimeStr);
+    const elapsed = Date.now() - startTime;
+
+    if (elapsed >= TIMEOUT_MS) {
+      // Already expired, stop immediately
+      logger.warn('[useAuth] Impersonation session expired (30 minutes), auto-stopping');
+      stopViewingAs();
+      return;
+    }
+
+    // Set timeout for remaining time
+    const remainingTime = TIMEOUT_MS - elapsed;
+    const timeoutId = setTimeout(() => {
+      logger.warn('[useAuth] Impersonation session timeout reached, auto-stopping');
+      stopViewingAs();
+    }, remainingTime);
+
+    return () => clearTimeout(timeoutId);
   }, [isViewingAs]);
 
   const startViewingAs = async (userId: string, reason?: string) => {
@@ -285,8 +319,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Keep platform admin true for the actual admin viewing as another user
       setIsPlatformAdmin(true);
 
-      // Store in localStorage for persistence
-      localStorage.setItem('viewAsUserId', userId);
+      // Store in sessionStorage (only persists for current browser session)
+      sessionStorage.setItem('viewAsUserId', userId);
+      sessionStorage.setItem('viewAsStartTime', Date.now().toString());
       
       // Wait for React to process state updates before invalidating cache
       setTimeout(() => {
@@ -304,11 +339,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const stopViewingAs = async () => {
     if (!actualAdmin) return;
-    
+
+    const impersonatedUserId = viewAsUser?.id;
+
+    // Call edge function to log impersonation end
+    if (impersonatedUserId) {
+      try {
+        await supabase.functions.invoke('stop-impersonation', {
+          body: { impersonatedUserId },
+        });
+      } catch (error) {
+        console.error('Failed to log impersonation end:', error);
+        // Continue anyway - don't block the UI
+      }
+    }
+
     setViewAsUser(null);
     setUser(actualAdmin);
-    localStorage.removeItem('viewAsUserId');
-    
+    sessionStorage.removeItem('viewAsUserId');
+    sessionStorage.removeItem('viewAsStartTime');
+
     // Wait for React to process state updates before invalidating cache
     setTimeout(() => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
@@ -327,7 +377,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsPlatformAdmin(false);
     setViewAsUser(null);
     setActualAdmin(null);
-    localStorage.removeItem('viewAsUserId');
+    sessionStorage.removeItem('viewAsUserId');
+    sessionStorage.removeItem('viewAsStartTime');
     navigate('/auth');
   };
 
