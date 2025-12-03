@@ -188,14 +188,13 @@ serve(async (req) => {
         id: userId,
         email: invitation.email,
         full_name: fullName,
-        mobile_number: mobileNumber || null,
+        mobile: mobileNumber || null,
         birthday: birthday || null,
         office_id: invitation.office_id,
         // NOTE: primary_team_id will be set AFTER team membership is created
         password_set: true,
         onboarding_completed: true,
         status: 'active',
-        invited_by: invitation.invited_by,
       }, {
         onConflict: 'id'
       });
