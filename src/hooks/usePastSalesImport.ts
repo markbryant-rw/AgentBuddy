@@ -282,7 +282,7 @@ export const usePastSalesImport = () => {
       sale_price: salePrice,
       listing_price: listingPrice,
       commission_rate: commissionRate,
-      commission_amount: commissionAmount,
+      commission: commissionAmount,
       status,
       lead_source: leadSource,
       lead_source_detail: referralPartner || '',
