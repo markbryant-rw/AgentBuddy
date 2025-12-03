@@ -5,11 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectLists } from '@/hooks/useProjectLists';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
-import { TaskAssigneeSelector } from '@/components/tasks/TaskAssigneeSelector';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, MoreVertical, Trash2, Edit, Pencil, X, Clock, Check } from 'lucide-react';
+import { ArrowLeft, Plus, MoreVertical, Trash2, Pencil, X, Clock, Check } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -105,19 +104,21 @@ interface Project {
 // Sortable Task Card - Slimline Trello-style with full-card drag + inline editing
 const SortableTaskCard = ({ 
   task, 
-  onEdit, 
   onDelete,
   onToggleComplete,
   onColorChange,
   onUpdateTitle,
+  onAssigneeChange,
+  teamMembers,
   isOverBefore,
 }: { 
   task: Task; 
-  onEdit: () => void; 
   onDelete: () => void;
   onToggleComplete: () => void;
   onColorChange: (color: string | null) => void;
   onUpdateTitle: (title: string) => void;
+  onAssigneeChange: (assigneeId: string | null) => void;
+  teamMembers: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
   isOverBefore?: boolean;
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -145,7 +146,7 @@ const SortableTaskCard = ({
   const isDueToday = task.due_date && isToday(new Date(task.due_date));
   const isCompleted = task.completed;
 
-  const hasMetadata = task.priority || task.due_date || task.assignee;
+  const hasMetadata = task.due_date || task.assignee;
 
   const handleTitleSave = () => {
     if (editedTitle.trim() && editedTitle.trim() !== task.title) {
@@ -187,7 +188,7 @@ const SortableTaskCard = ({
       
       <Card 
         className={cn(
-          "group hover:shadow-md transition-all duration-200",
+          "group hover:shadow-md transition-all duration-200 overflow-hidden",
           !isEditingTitle && "cursor-grab active:cursor-grabbing",
           isCompleted && "opacity-60"
         )}
@@ -231,9 +232,10 @@ const SortableTaskCard = ({
                 ) : (
                   <p 
                     className={cn(
-                      "text-sm leading-tight whitespace-normal break-words flex-1 cursor-text hover:bg-muted/50 rounded px-1 -mx-1 transition-colors",
+                      "text-sm leading-tight flex-1 cursor-text hover:bg-muted/50 rounded px-1 -mx-1 transition-colors",
                       isCompleted && "line-through text-muted-foreground"
                     )}
+                    style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                     onClick={(e) => { e.stopPropagation(); setIsEditingTitle(true); }}
                   >
                     {task.title}
@@ -245,7 +247,7 @@ const SortableTaskCard = ({
                       <MoreVertical className="h-3 w-3" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="w-56">
                     {/* Color Picker */}
                     <div className="px-2 py-1.5">
                       <p className="text-xs text-muted-foreground mb-2">Card color</p>
@@ -266,13 +268,47 @@ const SortableTaskCard = ({
                       </div>
                     </div>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={onToggleComplete}>
-                      {isCompleted ? '↩ Mark incomplete' : '✓ Mark complete'}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={onEdit}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit details
-                    </DropdownMenuItem>
+                    {/* Assignee Section */}
+                    <div className="px-2 py-1.5">
+                      <p className="text-xs text-muted-foreground mb-2">Assignee</p>
+                      <div className="max-h-32 overflow-auto space-y-0.5">
+                        {/* Unassign option */}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); onAssigneeChange(null); }}
+                          className={cn(
+                            "flex items-center gap-2 w-full p-1.5 rounded hover:bg-muted text-left",
+                            !task.assigned_to && "bg-muted"
+                          )}
+                        >
+                          <div className="w-5 h-5 rounded-full bg-muted-foreground/20 flex items-center justify-center flex-shrink-0">
+                            <X className="h-3 w-3" />
+                          </div>
+                          <span className="text-sm">No one</span>
+                          {!task.assigned_to && <Check className="h-3 w-3 text-primary ml-auto" />}
+                        </button>
+                        {/* Team members */}
+                        {teamMembers.map((member) => (
+                          <button 
+                            key={member.id}
+                            onClick={(e) => { e.stopPropagation(); onAssigneeChange(member.id); }}
+                            className={cn(
+                              "flex items-center gap-2 w-full p-1.5 rounded hover:bg-muted text-left",
+                              task.assigned_to === member.id && "bg-primary/10"
+                            )}
+                          >
+                            <Avatar className="h-5 w-5 flex-shrink-0">
+                              <AvatarImage src={member.avatar_url || undefined} />
+                              <AvatarFallback className="text-[9px]">
+                                {member.full_name?.[0] || '?'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm truncate">{member.full_name || 'Unknown'}</span>
+                            {task.assigned_to === member.id && <Check className="h-3 w-3 text-primary ml-auto flex-shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={onDelete} className="text-destructive">
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
@@ -281,28 +317,9 @@ const SortableTaskCard = ({
                 </DropdownMenu>
               </div>
 
-              {/* Description - compact, indented */}
-              {task.description && (
-                <p className={cn(
-                  "text-xs text-muted-foreground mt-1 whitespace-normal break-words",
-                  isCompleted && "line-through"
-                )}>
-                  {task.description}
-                </p>
-              )}
-
               {/* Compact metadata row - right aligned */}
               {hasMetadata && (
                 <div className="flex items-center justify-end gap-1.5 mt-1.5">
-                  {task.priority && (
-                    <span className={cn(
-                      'w-2 h-2 rounded-full flex-shrink-0',
-                      task.priority === 'high' && 'bg-red-500',
-                      task.priority === 'medium' && 'bg-amber-500',
-                      task.priority === 'low' && 'bg-green-500',
-                    )} title={`${task.priority} priority`} />
-                  )}
-
                   {task.due_date && (
                     <span className={cn(
                       "text-[10px] flex items-center gap-0.5",
@@ -418,8 +435,9 @@ const SortableColumn = ({
   onToggleComplete,
   onColorChange,
   onUpdateTitle,
-  onEditTask,
+  onAssigneeChange,
   onDeleteTask,
+  teamMembers,
   overTaskId,
 }: {
   list: any; 
@@ -431,8 +449,9 @@ const SortableColumn = ({
   onToggleComplete: (taskId: string, completed: boolean) => void;
   onColorChange: (taskId: string, color: string | null) => void;
   onUpdateTitle: (taskId: string, title: string) => void;
-  onEditTask: (task: Task) => void;
+  onAssigneeChange: (taskId: string, assigneeId: string | null) => void;
   onDeleteTask: (taskId: string) => void;
+  teamMembers: Array<{ id: string; full_name: string | null; avatar_url: string | null }>;
   overTaskId: string | null;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -552,11 +571,12 @@ const SortableColumn = ({
               <SortableTaskCard
                 key={task.id}
                 task={task}
-                onEdit={() => onEditTask(task)}
                 onDelete={() => onDeleteTask(task.id)}
                 onToggleComplete={() => onToggleComplete(task.id, !task.completed)}
                 onColorChange={(color) => onColorChange(task.id, color)}
                 onUpdateTitle={(title) => onUpdateTitle(task.id, title)}
+                onAssigneeChange={(assigneeId) => onAssigneeChange(task.id, assigneeId)}
+                teamMembers={teamMembers}
                 isOverBefore={showIndicator}
               />
             );
@@ -662,10 +682,6 @@ export default function ProjectKanbanBoard() {
   const [listName, setListName] = useState('');
   const [listColor, setListColor] = useState('#3b82f6');
   
-  // Edit task dialog state
-  const [editTask, setEditTask] = useState<Task | null>(null);
-  const [editTaskDescription, setEditTaskDescription] = useState('');
-  const [editTaskAssignee, setEditTaskAssignee] = useState<string | null>(null);
 
   const { lists, isLoading: listsLoading, createList, updateList, deleteList, reorderLists, createDefaultLists } = useProjectLists(projectId);
   const { members: teamMembers } = useTeamMembers();
@@ -1048,12 +1064,9 @@ export default function ProjectKanbanBoard() {
                   onToggleComplete={(taskId, completed) => toggleCompleteMutation.mutate({ taskId, completed })}
                   onColorChange={(taskId, color) => updateTaskColorMutation.mutate({ taskId, color })}
                   onUpdateTitle={(taskId, title) => updateTaskTitleMutation.mutate({ taskId, title })}
-                  onEditTask={(task) => {
-                    setEditTask(task);
-                    setEditTaskDescription(task.description || '');
-                    setEditTaskAssignee(task.assigned_to);
-                  }}
+                  onAssigneeChange={(taskId, assigneeId) => updateTaskMutation.mutate({ taskId, updates: { assigned_to: assigneeId } })}
                   onDeleteTask={(taskId) => deleteTaskMutation.mutate(taskId)}
+                  teamMembers={teamMembers}
                   overTaskId={overTaskId}
                 />
               ))}
@@ -1155,76 +1168,6 @@ export default function ProjectKanbanBoard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Task Dialog */}
-      <Dialog open={!!editTask} onOpenChange={(open) => !open && setEditTask(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Task</DialogTitle>
-          </DialogHeader>
-          {editTask && (
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea
-                  value={editTaskDescription}
-                  onChange={(e) => setEditTaskDescription(e.target.value)}
-                  placeholder="Add a description..."
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Assignee</Label>
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="max-h-[200px] overflow-auto">
-                    {teamMembers.map((member) => (
-                      <div
-                        key={member.id}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-muted transition-colors",
-                          editTaskAssignee === member.id && "bg-primary/10"
-                        )}
-                        onClick={() => setEditTaskAssignee(editTaskAssignee === member.id ? null : member.id)}
-                      >
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={member.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {member.full_name?.[0] || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm flex-1">{member.full_name || 'Unknown'}</span>
-                        {editTaskAssignee === member.id && (
-                          <Check className="h-4 w-4 text-primary" />
-                        )}
-                      </div>
-                    ))}
-                    {teamMembers.length === 0 && (
-                      <p className="text-sm text-muted-foreground p-3">No team members found</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditTask(null)}>Cancel</Button>
-            <Button onClick={() => {
-              if (editTask) {
-                updateTaskMutation.mutate({
-                  taskId: editTask.id,
-                  updates: {
-                    description: editTaskDescription || null,
-                    assigned_to: editTaskAssignee,
-                  }
-                });
-                setEditTask(null);
-              }
-            }}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
