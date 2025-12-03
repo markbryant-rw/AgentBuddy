@@ -3250,6 +3250,7 @@ export type Database = {
           financial_year_start_month: number | null
           id: string
           is_archived: boolean | null
+          is_orphan_team: boolean | null
           is_personal_team: boolean | null
           logo_url: string | null
           name: string
@@ -3267,6 +3268,7 @@ export type Database = {
           financial_year_start_month?: number | null
           id?: string
           is_archived?: boolean | null
+          is_orphan_team?: boolean | null
           is_personal_team?: boolean | null
           logo_url?: string | null
           name: string
@@ -3284,6 +3286,7 @@ export type Database = {
           financial_year_start_month?: number | null
           id?: string
           is_archived?: boolean | null
+          is_orphan_team?: boolean | null
           is_personal_team?: boolean | null
           logo_url?: string | null
           name?: string
@@ -3676,6 +3679,10 @@ export type Database = {
       }
       get_or_create_direct_conversation: {
         Args: { user1_id: string; user2_id: string }
+        Returns: string
+      }
+      get_or_create_orphan_team: {
+        Args: { _agency_id: string }
         Returns: string
       }
       get_user_accessible_team_ids: {

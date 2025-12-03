@@ -37,6 +37,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { DeleteTeamWizard } from './DeleteTeamWizard';
 
 interface EditTeamDialogPlatformProps {
   team: {
@@ -56,7 +57,7 @@ export const EditTeamDialogPlatform = ({ team, open, onOpenChange }: EditTeamDia
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [memberToRemove, setMemberToRemove] = useState<{ id: string; name: string } | null>(null);
   
-  const { updateTeam, archiveTeam } = useTeamCRUD();
+  const { updateTeam } = useTeamCRUD();
   const { data: members, isLoading: membersLoading } = useTeamMembers(open ? team.id : undefined);
   const removeTeamMember = useRemoveTeamMember();
   const queryClient = useQueryClient();
@@ -136,11 +137,6 @@ export const EditTeamDialogPlatform = ({ team, open, onOpenChange }: EditTeamDia
     onOpenChange(false);
   };
 
-  const handleDelete = async () => {
-    await archiveTeam.mutateAsync(team.id);
-    setShowDeleteConfirm(false);
-    onOpenChange(false);
-  };
 
   const handleRemoveMember = async () => {
     if (!memberToRemove) return;
@@ -198,7 +194,6 @@ export const EditTeamDialogPlatform = ({ team, open, onOpenChange }: EditTeamDia
                     variant="destructive"
                     size="sm"
                     onClick={() => setShowDeleteConfirm(true)}
-                    disabled={archiveTeam.isPending}
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete Team
@@ -319,29 +314,13 @@ export const EditTeamDialogPlatform = ({ team, open, onOpenChange }: EditTeamDia
         </DialogContent>
       </Dialog>
 
-      {/* Delete Team Confirmation */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Team?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will archive the team "{team.name}". Team members will become solo agents. This action can be undone by a platform admin.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {archiveTeam.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : null}
-              Delete Team
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Delete Team Wizard */}
+      <DeleteTeamWizard
+        team={team}
+        open={showDeleteConfirm}
+        onOpenChange={setShowDeleteConfirm}
+        onDeleted={() => onOpenChange(false)}
+      />
 
       {/* Remove Member Confirmation */}
       <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>

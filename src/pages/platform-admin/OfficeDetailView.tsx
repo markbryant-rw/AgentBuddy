@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { CreateTeamDialog } from '@/components/platform/CreateTeamDialog';
 import { AddUserDialogPlatform } from '@/components/platform-admin/AddUserDialogPlatform';
 import { PlatformStatsCard } from '@/components/platform/PlatformStatsCard';
+import { OrphanDataSection } from '@/components/platform-admin/OrphanDataSection';
 
 export default function OfficeDetailView() {
   const { officeId } = useParams<{ officeId: string }>();
@@ -255,6 +256,14 @@ export default function OfficeDetailView() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Orphan Data Section */}
+        {officeId && (
+          <OrphanDataSection 
+            officeId={officeId} 
+            teams={teams.map(t => ({ id: t.id, name: t.name }))} 
+          />
+        )}
       </div>
 
       {/* Dialogs */}

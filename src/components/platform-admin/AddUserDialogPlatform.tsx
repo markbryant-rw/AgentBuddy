@@ -47,6 +47,8 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
         .select('id, name')
         .eq('agency_id', officeId)
         .eq('is_personal_team', false)
+        .eq('is_archived', false)
+        .eq('is_orphan_team', false)
         .order('name');
       
       if (error) throw error;

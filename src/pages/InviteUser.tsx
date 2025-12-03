@@ -64,6 +64,8 @@ export default function InviteUser() {
       const { data, error } = await supabase
         .from('teams')
         .select('id, name')
+        .eq('is_archived', false)
+        .eq('is_orphan_team', false)
         .order('name');
       if (error) throw error;
       return data;

@@ -33,6 +33,7 @@ export const usePlatformOfficeDetail = (officeId: string | undefined) => {
         .eq('agency_id', officeId)
         .eq('is_personal_team', false)
         .eq('is_archived', false)
+        .eq('is_orphan_team', false)
         .order('name');
       
       if (teamsError) throw teamsError;
