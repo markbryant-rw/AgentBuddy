@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, User, Users, Settings as SettingsIcon, Shield, Sparkles, CreditCard, HelpCircle, Layers, Share2 } from "lucide-react";
+import { Search, User, Users, Settings as SettingsIcon, Shield, Sparkles, CreditCard, HelpCircle, Layers, Share2, AlertCircle } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useUserRoles } from "@/hooks/useUserRoles";
 
 // Import existing setup components
 import { PreferencesCard } from "@/components/setup/PreferencesCard";
@@ -26,6 +28,9 @@ const Setup = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "profile";
   const [searchQuery, setSearchQuery] = useState("");
+  const { isOfficeManager, isPlatformAdmin } = useUserRoles();
+  
+  const canManageLeadSources = isOfficeManager || isPlatformAdmin;
 
   // Tab configuration with icons and descriptions
   const tabs = [
@@ -115,7 +120,16 @@ const Setup = () => {
 
         {/* Workspace Tab */}
         <TabsContent value="workspace" className="mt-6 space-y-6">
-          <LeadSourceManager />
+          {canManageLeadSources ? (
+            <LeadSourceManager />
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Lead sources are managed by your office manager. Contact them to request changes to lead source options.
+              </AlertDescription>
+            </Alert>
+          )}
           
           <Card>
             <CardHeader>
