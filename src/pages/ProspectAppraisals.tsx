@@ -1,19 +1,21 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Upload } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
+import { useTeam } from '@/hooks/useTeam';
 import AppraisalsList from '@/components/appraisals/AppraisalsList';
 import AppraisalDetailDialog from '@/components/appraisals/AppraisalDetailDialog';
+import { AppraisalsImportDialog } from '@/components/appraisals/AppraisalsImportDialog';
 import { LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 
 const ProspectAppraisals = () => {
-  const navigate = useNavigate();
-  const { appraisals, loading } = useLoggedAppraisals();
+  const { appraisals, loading, refreshAppraisals } = useLoggedAppraisals();
+  const { team } = useTeam();
   const [selectedAppraisal, setSelectedAppraisal] = useState<LoggedAppraisal | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
 
   const handleAppraisalClick = (appraisal: LoggedAppraisal) => {
     setSelectedAppraisal(appraisal);
@@ -32,6 +34,10 @@ const ProspectAppraisals = () => {
     setSelectedAppraisal(null);
   };
 
+  const handleImportComplete = () => {
+    refreshAppraisals();
+  };
+
   return (
     <div className="h-full flex flex-col">
       <WorkspaceHeader workspace="prospect" currentPage="Appraisals" />
@@ -45,26 +51,25 @@ const ProspectAppraisals = () => {
                 Manage all appraisals, track warmth, and plan follow-ups
               </p>
             </div>
-        <div className="flex gap-3">
-          <Button onClick={handleAddAppraisal} variant="secondary">
-            <Plus className="h-4 w-4 mr-2" />
-            Log Appraisal
-          </Button>
-          <Button onClick={() => navigate('/prospect-dashboard/appraisals/import')}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
-        </div>
-      </div>
+            <div className="flex gap-3">
+              <Button onClick={handleAddAppraisal} variant="secondary">
+                <Plus className="h-4 w-4 mr-2" />
+                Log Appraisal
+              </Button>
+              <Button onClick={() => setIsImportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </div>
+          </div>
 
-      {/* Appraisals List */}
-      <AppraisalsList 
-        appraisals={appraisals}
-        loading={loading}
-        onAppraisalClick={handleAppraisalClick}
-      />
+          {/* Appraisals List */}
+          <AppraisalsList 
+            appraisals={appraisals}
+            loading={loading}
+            onAppraisalClick={handleAppraisalClick}
+          />
 
-      {/* Detail Dialog */}
           {/* Detail Dialog */}
           <AppraisalDetailDialog
             appraisal={selectedAppraisal}
@@ -72,6 +77,16 @@ const ProspectAppraisals = () => {
             onOpenChange={handleDialogClose}
             isNew={isAddDialogOpen}
           />
+
+          {/* Import Dialog */}
+          {team && (
+            <AppraisalsImportDialog
+              open={isImportDialogOpen}
+              onOpenChange={setIsImportDialogOpen}
+              teamId={team.id}
+              onImportComplete={handleImportComplete}
+            />
+          )}
         </div>
       </div>
     </div>
