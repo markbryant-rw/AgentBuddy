@@ -127,15 +127,24 @@ export const PastSalesImportDialog = ({
     setParsing(false);
     setGoogleSheetUrl('');
     setImportMethod('csv');
+    setFilterMode('all');
     onOpenChange(false);
     if (step === 'complete') {
       onImportComplete();
     }
   };
 
+  const [filterMode, setFilterMode] = useState<'all' | 'warnings' | 'errors'>('all');
+
   const validCount = validatedRows.filter(r => r.valid).length;
   const errorCount = validatedRows.filter(r => !r.valid).length;
   const warningCount = validatedRows.filter(r => r.valid && r.warnings.length > 0).length;
+
+  const filteredRows = validatedRows.filter(row => {
+    if (filterMode === 'warnings') return row.valid && row.warnings.length > 0;
+    if (filterMode === 'errors') return !row.valid;
+    return true;
+  });
 
   const downloadTemplate = () => {
     const headers = [
@@ -390,11 +399,16 @@ export const PastSalesImportDialog = ({
               </Alert>
 
               {warningCount > 0 && (
-                <Alert>
+                <Alert 
+                  className={`cursor-pointer transition-all ${filterMode === 'warnings' ? 'ring-2 ring-warning' : 'hover:bg-warning/5'}`}
+                  onClick={() => setFilterMode(filterMode === 'warnings' ? 'all' : 'warnings')}
+                >
                   <AlertTriangle className="h-4 w-4 text-warning" />
                   <AlertDescription>
                     <div className="font-semibold">{warningCount} Warnings</div>
-                    <div className="text-sm text-muted-foreground">Can still import</div>
+                    <div className="text-sm text-muted-foreground">
+                      {filterMode === 'warnings' ? 'Click to show all' : 'Click to filter'}
+                    </div>
                   </AlertDescription>
                 </Alert>
               )}
@@ -412,7 +426,7 @@ export const PastSalesImportDialog = ({
 
             <ScrollArea className="h-[400px] rounded-md border">
               <div className="p-4 space-y-2">
-                {validatedRows.map((row, index) => (
+                {filteredRows.map((row, index) => (
                   <div
                     key={index}
                     className={`p-3 rounded-lg border ${
