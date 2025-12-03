@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Collapsible,
@@ -10,6 +9,7 @@ import {
 import { MapPin, ChevronDown, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { AddressAutocomplete, AddressResult } from './AddressAutocomplete';
 
 interface LocationFixSectionProps {
   entityId: string;
@@ -31,43 +31,12 @@ const LocationFixSection = ({
   latitude,
   longitude,
   geocodeError,
-  geocodedAt,
   onLocationUpdated,
 }: LocationFixSectionProps) => {
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(!!geocodeError);
-  const [correctedAddress, setCorrectedAddress] = useState('');
-  const [isGeocoding, setIsGeocoding] = useState(false);
-
-  // Build the full address for re-geocoding
-  const getDefaultAddress = () => {
-    const parts = [address, suburb].filter(Boolean);
-    return parts.join(', ');
-  };
-
-  // Get the edge function name based on entity type
-  const getEdgeFunctionName = () => {
-    switch (entityType) {
-      case 'appraisal':
-        return 'geocode-appraisal';
-      case 'listing':
-        return 'geocode-listing';
-      case 'past-sale':
-        return 'geocode-past-sale';
-    }
-  };
-
-  // Get the ID field name for the edge function
-  const getIdFieldName = () => {
-    switch (entityType) {
-      case 'appraisal':
-        return 'appraisalId';
-      case 'listing':
-        return 'listingId';
-      case 'past-sale':
-        return 'pastSaleId';
-    }
-  };
+  const [selectedAddress, setSelectedAddress] = useState<AddressResult | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Get the table name for updating address
   const getTableName = () => {
@@ -81,114 +50,60 @@ const LocationFixSection = ({
     }
   };
 
-  const handleReGeocode = async () => {
-    const addressToUse = correctedAddress.trim() || getDefaultAddress();
-    
-    if (!addressToUse) {
+  const handleAddressSelect = (result: AddressResult) => {
+    setSelectedAddress(result);
+  };
+
+  const handleUpdateLocation = async () => {
+    if (!selectedAddress) {
       toast({
-        title: 'Address Required',
-        description: 'Please enter an address to geocode',
+        title: 'Select an Address',
+        description: 'Please select an address from the suggestions',
         variant: 'destructive',
       });
       return;
     }
 
-    setIsGeocoding(true);
+    setIsUpdating(true);
 
     try {
-      // First update the address in the database if changed
-      if (correctedAddress.trim()) {
-        const tableName = getTableName();
-        const { error: updateError } = await supabase
-          .from(tableName)
-          .update({ 
-            address: correctedAddress.trim(),
-            geocode_error: null // Clear previous error
-          })
-          .eq('id', entityId);
-
-        if (updateError) {
-          throw new Error(`Failed to update address: ${updateError.message}`);
-        }
-      }
-
-      // Call the geocoding edge function
-      const functionName = getEdgeFunctionName();
-      const idFieldName = getIdFieldName();
+      const tableName = getTableName();
       
-      const { data, error } = await supabase.functions.invoke(functionName, {
-        body: { [idFieldName]: entityId },
-      });
+      // Update address, suburb, and coordinates directly from Photon result
+      const { error: updateError } = await supabase
+        .from(tableName)
+        .update({ 
+          address: selectedAddress.address,
+          suburb: selectedAddress.suburb || suburb,
+          latitude: selectedAddress.latitude,
+          longitude: selectedAddress.longitude,
+          geocode_error: null,
+          geocoded_at: new Date().toISOString(),
+        })
+        .eq('id', entityId);
 
-      // Handle edge function errors (including 404 "Address not found")
-      if (error) {
-        // Check if it's an "Address not found" error
-        const errorMessage = error.message || '';
-        if (errorMessage.includes('Address not found') || errorMessage.includes('404')) {
-          toast({
-            title: 'Address Not Found',
-            description: 'The geocoding service could not find this address. Try being more specific (e.g., include street number, suburb, and city).',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Geocoding Failed',
-            description: errorMessage || 'Failed to geocode address',
-            variant: 'destructive',
-          });
-        }
-        return;
-      }
-
-      if (data?.error) {
-        // Handle error in response data
-        if (data.error === 'Address not found') {
-          toast({
-            title: 'Address Not Found',
-            description: 'The geocoding service could not find this address. Try being more specific (e.g., include street number, suburb, and city).',
-            variant: 'destructive',
-          });
-        } else {
-          toast({
-            title: 'Geocoding Failed',
-            description: data.error,
-            variant: 'destructive',
-          });
-        }
-        return;
+      if (updateError) {
+        throw new Error(`Failed to update location: ${updateError.message}`);
       }
 
       toast({
         title: 'Location Updated',
-        description: data?.formatted 
-          ? `Found: ${data.formatted}`
-          : `Coordinates updated (${data?.latitude?.toFixed(4)}, ${data?.longitude?.toFixed(4)})`,
+        description: `Updated to: ${selectedAddress.fullDisplay}`,
       });
 
       // Notify parent to refresh data
       onLocationUpdated();
-      setCorrectedAddress('');
+      setSelectedAddress(null);
       
     } catch (error) {
-      console.error('Geocoding error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to geocode address';
-      
-      // Handle "Address not found" in catch block too
-      if (errorMessage.includes('Address not found')) {
-        toast({
-          title: 'Address Not Found',
-          description: 'Try a more specific address format: "123 Street Name, Suburb, Auckland, New Zealand"',
-          variant: 'destructive',
-        });
-      } else {
-        toast({
-          title: 'Geocoding Failed',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      }
+      console.error('Update error:', error);
+      toast({
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Failed to update location',
+        variant: 'destructive',
+      });
     } finally {
-      setIsGeocoding(false);
+      setIsUpdating(false);
     }
   };
 
@@ -251,39 +166,42 @@ const LocationFixSection = ({
           )}
         </div>
 
-        {/* Corrected Address Input */}
+        {/* Address Autocomplete */}
         <div className="space-y-2">
-          <Label htmlFor="corrected_address" className="text-sm font-medium">
-            Corrected Address
+          <Label className="text-sm font-medium">
+            Search for correct address
           </Label>
-          <Input
-            id="corrected_address"
-            value={correctedAddress}
-            onChange={(e) => setCorrectedAddress(e.target.value)}
-            placeholder={getDefaultAddress() || 'Enter full address...'}
-            className="h-10"
+          <AddressAutocomplete
+            placeholder={`${address}${suburb ? `, ${suburb}` : ''}`}
+            onSelect={handleAddressSelect}
           />
+          {selectedAddress && (
+            <p className="text-xs text-emerald-600 flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Selected: {selectedAddress.fullDisplay}
+            </p>
+          )}
           <p className="text-xs text-muted-foreground">
-            💡 Be specific - include suburb and city, e.g., "15 Example St, Sunnyvale, Auckland, New Zealand"
+            Start typing to search NZ addresses
           </p>
         </div>
 
-        {/* Re-geocode Button */}
+        {/* Update Location Button */}
         <Button
           type="button"
-          onClick={handleReGeocode}
-          disabled={isGeocoding}
+          onClick={handleUpdateLocation}
+          disabled={isUpdating || !selectedAddress}
           className="w-full"
         >
-          {isGeocoding ? (
+          {isUpdating ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Geocoding...
+              Updating...
             </>
           ) : (
             <>
               <MapPin className="h-4 w-4 mr-2" />
-              Re-geocode Address
+              Update Location
             </>
           )}
         </Button>
