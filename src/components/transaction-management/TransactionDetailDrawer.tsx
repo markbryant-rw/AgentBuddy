@@ -850,7 +850,7 @@ export const TransactionDetailDrawer = ({
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {transaction.assignees.map((assignee: any, index: number) => (
-                        <Badge key={index} variant="secondary">
+                        <Badge key={`${assignee.role || 'member'}-${index}`} variant="secondary">
                           {assignee.role || 'Team Member'}
                         </Badge>
                       ))}
@@ -954,7 +954,7 @@ export const TransactionDetailDrawer = ({
           <div className="my-4">
             <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
               {validationErrors.map((error, index) => (
-                <li key={index} className="text-destructive font-medium">{error}</li>
+                <li key={error} className="text-destructive font-medium">{error}</li>
               ))}
             </ul>
           </div>

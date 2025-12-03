@@ -119,12 +119,12 @@ export const TaskAnalyticsSnapshot = ({ activeTab, viewMode = 'detailed', isComp
       <div className={`grid grid-cols-2 md:grid-cols-5 ${isCompact ? 'gap-2' : 'gap-3'}`}>
         {metrics.map((metric, index) => (
           <div
-            key={index}
+            key={metric.label}
             className={`
               relative overflow-hidden rounded-xl ${isCompact ? 'p-3' : 'p-4'}
               bg-gradient-to-br ${metric.gradient}
               border-l-4 ${metric.borderColor}
-              transition-all duration-300 
+              transition-all duration-300
               hover:scale-105 hover:shadow-lg
               cursor-pointer
             `}

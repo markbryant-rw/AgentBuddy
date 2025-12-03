@@ -59,7 +59,7 @@ export const HowItWorksCarousel = () => {
             {modules.map((module, index) => {
               const Icon = module.icon;
               return (
-                <CarouselItem key={index} className="md:basis-1/2 lg:basis-1/3">
+                <CarouselItem key={module.title} className="md:basis-1/2 lg:basis-1/3">
                   <Card className="h-full border-2 hover:shadow-xl transition-all duration-300">
                     <CardContent className="p-6 space-y-4">
                       <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${module.color} flex items-center justify-center`}>

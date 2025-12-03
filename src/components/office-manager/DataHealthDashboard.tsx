@@ -228,7 +228,7 @@ export function DataHealthDashboard() {
                       <div className="space-y-2">
                         {typeIssues.map((issue, index) => (
                           <div
-                            key={index}
+                            key={issue.user_email}
                             className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                           >
                             <User className="h-4 w-4 text-muted-foreground mt-0.5" />

@@ -119,7 +119,7 @@ export const TransactionListingCard = ({ transaction, onClick }: TransactionList
         {transaction.assignees && Array.isArray(transaction.assignees) && transaction.assignees.length > 0 && (
           <div className="flex items-center gap-1">
             {transaction.assignees.slice(0, 3).map((assignee: any, index: number) => (
-              <Avatar key={index} className="h-6 w-6">
+              <Avatar key={`${assignee.role || 'assignee'}-${index}`} className="h-6 w-6">
                 <AvatarFallback className="text-xs">
                   {assignee.role?.charAt(0) || 'A'}
                 </AvatarFallback>
