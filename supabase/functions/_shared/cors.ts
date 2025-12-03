@@ -7,8 +7,9 @@ const ALLOWED_ORIGINS = [
 ];
 
 export const corsHeaders = {
-  'Access-Control-Allow-Origin': '*', // Fallback, should use getCorsHeaders instead
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Origin': ALLOWED_ORIGINS[0], // Default to production, should use getCorsHeaders instead
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
+  'Access-Control-Allow-Credentials': 'true',
 };
 
 /**
@@ -47,6 +48,7 @@ export function getCorsHeaders(origin: string | null): Record<string, string> {
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
+    'Access-Control-Allow-Credentials': 'true',
   };
 }
