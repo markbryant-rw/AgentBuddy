@@ -62,10 +62,11 @@ export const BugKanbanBoard = () => {
         .select("id, full_name, avatar_url")
         .in("id", userIds);
 
-      // Merge profiles with bugs
+      // Merge profiles with bugs using Map for O(n+m) complexity
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
       const bugsWithProfiles = data?.map((bug) => ({
         ...bug,
-        profiles: profiles?.find((p) => p.id === bug.user_id),
+        profiles: profilesMap.get(bug.user_id),
       })) || [];
 
       return bugsWithProfiles as BugReport[];

@@ -79,7 +79,7 @@ export function CreatePostForm() {
           {images.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {images.map((image, index) => (
-                <div key={index} className="relative group aspect-square rounded-lg overflow-hidden bg-muted">
+                <div key={image} className="relative group aspect-square rounded-lg overflow-hidden bg-muted">
                   <img 
                     src={image} 
                     alt={`Upload ${index + 1}`}

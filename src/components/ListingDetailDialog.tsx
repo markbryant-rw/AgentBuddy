@@ -60,7 +60,8 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
       if (userIds.length > 0) {
         const { data: profilesData } = await supabase.from('profiles').select('id, full_name, avatar_url').in('id', userIds);
         if (profilesData) {
-          const commentsWithProfiles = commentsData?.map((comment) => ({ ...comment, profiles: profilesData.find((p) => p.id === comment.user_id) }));
+          const profilesMap = new Map(profilesData.map(p => [p.id, p]));
+          const commentsWithProfiles = commentsData?.map((comment) => ({ ...comment, profiles: profilesMap.get(comment.user_id) }));
           setComments(commentsWithProfiles || []);
         } else {
           setComments(commentsData || []);

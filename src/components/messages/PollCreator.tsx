@@ -73,7 +73,7 @@ export const PollCreator = ({ open, onOpenChange, onCreatePoll }: PollCreatorPro
             <Label>Options</Label>
             <div className="space-y-2">
               {options.map((option, index) => (
-                <div key={index} className="flex gap-2">
+                <div key={`option-${index}-${option}`} className="flex gap-2">
                   <Input
                     placeholder={`Option ${index + 1}`}
                     value={option}
@@ -129,7 +129,7 @@ export const PollCreator = ({ open, onOpenChange, onCreatePoll }: PollCreatorPro
                 <p className="font-semibold">{question}</p>
                 {options.filter(opt => opt.trim()).map((option, index) => (
                   <div
-                    key={index}
+                    key={`preview-${index}-${option}`}
                     className={cn(
                       "p-2 rounded-lg border bg-background",
                       "text-sm"

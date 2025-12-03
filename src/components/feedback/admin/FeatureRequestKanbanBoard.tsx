@@ -62,10 +62,11 @@ export const FeatureRequestKanbanBoard = () => {
         .select("id, full_name, avatar_url")
         .in("id", userIds);
 
-      // Merge profiles with features
+      // Merge profiles with features using Map for O(n+m) complexity
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
       const featuresWithProfiles = data?.map((feature) => ({
         ...feature,
-        profiles: profiles?.find((p) => p.id === feature.user_id),
+        profiles: profilesMap.get(feature.user_id),
       })) || [];
 
       return featuresWithProfiles as FeatureRequest[];
