@@ -97,6 +97,26 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
     
     // Close the detail dialog immediately to prevent any map-related issues
     onOpenChange(false);
+
+    // If this opportunity came from an appraisal, mark it WON too
+    if ((editedListing as any)?.appraisal_id) {
+      try {
+        await supabase
+          .from('logged_appraisals')
+          .update({ 
+            outcome: 'WON',
+            stage: 'LAP',
+            intent: 'high',
+            converted_date: new Date().toISOString().split('T')[0],
+          })
+          .eq('id', (editedListing as any).appraisal_id);
+        
+        queryClient.invalidateQueries({ queryKey: ['logged_appraisals'] });
+      } catch (error) {
+        console.error('Failed to update linked appraisal:', error);
+        // Don't fail the main operation
+      }
+    }
     
     if (moveToTC) {
       // Create transaction in Transaction Coordinating

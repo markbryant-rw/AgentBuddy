@@ -255,6 +255,7 @@ export const useLoggedAppraisals = () => {
           estimated_value: opportunityData.estimated_value,
           expected_month: opportunityData.expected_month,
           notes: opportunityData.notes,
+          appraisal_id: appraisalId, // Link opportunity to source appraisal
         })
         .select()
         .single();
