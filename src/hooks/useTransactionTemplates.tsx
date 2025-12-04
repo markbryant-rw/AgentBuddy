@@ -184,6 +184,8 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transaction-documents'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-tasks-count'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast.success('Template applied successfully');
