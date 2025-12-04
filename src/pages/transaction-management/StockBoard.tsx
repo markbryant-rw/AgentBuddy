@@ -27,7 +27,11 @@ export default function StockBoard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
-  const activeTransactions = transactions.filter(t => !t.archived);
+  // Only show Signed, Live, and Under Contract - exclude Unconditional and Settled
+  const relevantStages = ['signed', 'live', 'under_contract'];
+  const activeTransactions = transactions.filter(t => 
+    !t.archived && relevantStages.includes(t.stage?.toLowerCase() || '')
+  );
 
   // Filter by search and alignment status
   const filteredTransactions = activeTransactions.filter((t) => {
