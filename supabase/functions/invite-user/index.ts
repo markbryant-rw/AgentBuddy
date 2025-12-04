@@ -26,6 +26,8 @@ const INVITATION_HIERARCHY: Record<string, string[]> = {
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  console.log('invite-user: Request received', { method: req.method });
+  
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -35,13 +37,17 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
     if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('invite-user: Missing environment variables');
       throw new Error("Missing environment variables");
     }
 
     const authHeader = req.headers.get("Authorization");
+    console.log('invite-user: Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.error('invite-user: No Authorization header');
       return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
+        JSON.stringify({ error: "Unauthorized - no auth header" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
