@@ -54,9 +54,7 @@ export const useFeatureRequests = (statusFilter: string = 'all') => {
     queryFn: async () => {
       let query = supabase
         .from('feature_requests')
-        .select('*, profiles(full_name)')
-        .order('vote_count', { ascending: false })
-        .order('created_at', { ascending: false });
+        .select('*, profiles(full_name)');
 
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
@@ -64,7 +62,29 @@ export const useFeatureRequests = (statusFilter: string = 'all') => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as FeatureRequest[];
+
+      // Smart sorting: status priority, then vote count, then recency
+      const statusPriority: Record<string, number> = {
+        'pending': 0,
+        'in_progress': 1,
+        'completed': 2,
+        'declined': 3,
+        'archived': 4
+      };
+
+      return (data || []).sort((a, b) => {
+        // Status priority first (pending/in_progress first, completed/declined/archived at bottom)
+        const statusDiff = (statusPriority[a.status] ?? 99) - (statusPriority[b.status] ?? 99);
+        if (statusDiff !== 0) return statusDiff;
+        
+        // Then by vote count (descending)
+        if ((b.vote_count || 0) !== (a.vote_count || 0)) {
+          return (b.vote_count || 0) - (a.vote_count || 0);
+        }
+        
+        // Then by recency (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }) as FeatureRequest[];
     },
     enabled: !!user,
   });

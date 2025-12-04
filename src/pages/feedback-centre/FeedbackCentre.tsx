@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,11 +13,12 @@ import { BugReportForm } from '@/components/feedback/BugReportForm';
 import { BugReportCard } from '@/components/feedback/BugReportCard';
 import { BugDetailDrawer } from '@/components/feedback/BugDetailDrawer';
 import { BugHunterLeaderboard } from '@/components/feedback/BugHunterLeaderboard';
-import { ArrowUp, Lightbulb, Users, Vote, Bug, AlertTriangle } from 'lucide-react';
+import { ArrowUp, Lightbulb, Users, Vote, Bug, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { format } from 'date-fns';
 import type { BugReport } from '@/hooks/useBugReports';
 
 const FeedbackCentre = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('features');
   const [statusFilter, setStatusFilter] = useState('pending');
   const [bugStatusFilter, setBugStatusFilter] = useState('triage');
@@ -99,16 +101,27 @@ const FeedbackCentre = () => {
     <div className="container mx-auto p-4 md:p-6 lg:p-8 max-w-7xl space-y-8">
       {/* Header */}
       <div className="bg-gradient-to-br from-indigo-50/30 to-white dark:from-indigo-900/5 dark:to-background p-6 rounded-xl">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900/30">
-            <Lightbulb className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900/30">
+              <Lightbulb className="h-8 w-8 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold">Feedback Centre</h1>
+              <p className="text-muted-foreground mt-1">
+                Help us improve AgentBuddy by suggesting features or reporting bugs
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-4xl font-bold">Feedback Centre</h1>
-            <p className="text-muted-foreground mt-1">
-              Help us improve AgentBuddy by suggesting features or reporting bugs
-            </p>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/grow-dashboard')}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to GROW
+          </Button>
         </div>
       </div>
 

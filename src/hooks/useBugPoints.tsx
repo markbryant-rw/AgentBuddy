@@ -31,24 +31,65 @@ export const useBugPoints = (userId?: string) => {
     enabled: !!userId,
   });
 
-  // Fetch leaderboard (top 10 users)
+  // Fetch leaderboard - calculate from actual bug reports data
   const { data: leaderboard = [], isLoading: isLoadingLeaderboard } = useQuery({
     queryKey: ['bug-points-leaderboard'],
     queryFn: async () => {
-      const { data: profiles, error } = await (supabase as any)
+      // First, fetch all bug reports with user_id
+      const { data: bugReports, error: bugError } = await supabase
+        .from('bug_reports')
+        .select('user_id, status');
+
+      if (bugError) throw bugError;
+
+      if (!bugReports || bugReports.length === 0) {
+        return [];
+      }
+
+      // Aggregate by user
+      const userStats: Record<string, { bugs_reported: number; bugs_fixed: number }> = {};
+      
+      bugReports.forEach((bug) => {
+        if (!userStats[bug.user_id]) {
+          userStats[bug.user_id] = { bugs_reported: 0, bugs_fixed: 0 };
+        }
+        userStats[bug.user_id].bugs_reported += 1;
+        if (bug.status === 'fixed') {
+          userStats[bug.user_id].bugs_fixed += 1;
+        }
+      });
+
+      // Get user IDs with bugs
+      const userIds = Object.keys(userStats);
+      
+      if (userIds.length === 0) {
+        return [];
+      }
+
+      // Fetch profiles for these users
+      const { data: profiles, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, total_bug_points')
-        .gt('total_bug_points', 0)
-        .order('total_bug_points', { ascending: false })
-        .limit(10);
+        .select('id, full_name, avatar_url')
+        .in('id', userIds);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      return (profiles || []).map((profile: any) => ({
-        ...profile,
-        bugs_reported: 0,
-        bugs_fixed: 0,
-      }));
+      // Combine stats with profiles and calculate points
+      const leaderboardEntries: LeaderboardEntry[] = (profiles || [])
+        .map((profile) => ({
+          id: profile.id,
+          full_name: profile.full_name || 'Anonymous',
+          avatar_url: profile.avatar_url,
+          bugs_reported: userStats[profile.id]?.bugs_reported || 0,
+          bugs_fixed: userStats[profile.id]?.bugs_fixed || 0,
+          // 10 points per bug reported
+          total_bug_points: (userStats[profile.id]?.bugs_reported || 0) * 10,
+        }))
+        .filter((entry) => entry.bugs_reported > 0)
+        .sort((a, b) => b.total_bug_points - a.total_bug_points)
+        .slice(0, 10);
+
+      return leaderboardEntries;
     },
   });
 
