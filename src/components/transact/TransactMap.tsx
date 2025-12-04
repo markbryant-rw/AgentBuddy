@@ -321,6 +321,15 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
     return STAGE_OPTIONS.find(s => s.value === stage)?.label || stage;
   };
 
+  // Stage gradients for header bands
+  const STAGE_GRADIENTS: Record<string, string> = {
+    signed: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+    live: 'linear-gradient(135deg, #22c55e 0%, #10b981 100%)',
+    contract: 'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+    unconditional: 'linear-gradient(135deg, #f59e0b 0%, #f97316 100%)',
+    settled: 'linear-gradient(135deg, #6b7280 0%, #71717a 100%)',
+  };
+
   const renderTransactionPopup = (transaction: Transaction) => {
     const assigneeId = getTransactionAssignee(transaction);
     const assignee = assigneeId ? getMemberById(assigneeId) : null;
@@ -338,117 +347,186 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
     const priceAlignment = calculatePriceAlignment(transaction.vendor_price, transaction.team_price);
     const hasTaskProgress = transaction.tasks_total > 0;
     const taskPercentage = hasTaskProgress ? Math.round((transaction.tasks_done / transaction.tasks_total) * 100) : 0;
+    
+    const priceDelta = transaction.vendor_price && transaction.team_price 
+      ? transaction.vendor_price - transaction.team_price 
+      : null;
+
+    const stageGradient = STAGE_GRADIENTS[transaction.stage] || STAGE_GRADIENTS.signed;
 
     return (
       <Popup>
-        <div className="min-w-[240px] max-w-[280px]">
-          {/* Header: Address */}
-          <div className="mb-3">
-            <h3 className="font-semibold text-sm leading-tight text-foreground">{transaction.address}</h3>
-            {transaction.suburb && (
-              <p className="text-xs text-muted-foreground mt-0.5">{transaction.suburb}</p>
-            )}
+        <div className="w-[320px] overflow-hidden">
+          {/* Colored Header Band */}
+          <div 
+            className="px-4 py-3 text-white"
+            style={{ background: stageGradient }}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0 pr-2">
+                <h3 className="font-bold text-base leading-tight truncate">{transaction.address}</h3>
+                {transaction.suburb && (
+                  <p className="text-white/80 text-sm mt-0.5">{transaction.suburb}</p>
+                )}
+              </div>
+              <span className="flex-shrink-0 px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded text-xs font-semibold uppercase">
+                {getStageLabel(transaction.stage)}
+              </span>
+            </div>
           </div>
 
-          {/* Salesperson */}
-          {assignee && (
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b">
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={assignee.avatar_url || ''} />
-                <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">
-                  {assignee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-xs font-medium text-foreground">{assignee.full_name}</p>
-                <p className="text-[10px] text-muted-foreground">Salesperson</p>
+          {/* Content Body */}
+          <div className="bg-card p-4">
+            {/* Salesperson Card */}
+            {assignee && (
+              <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-muted/50 border border-border/50">
+                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                  <AvatarImage src={assignee.avatar_url || ''} />
+                  <AvatarFallback className="text-sm bg-primary text-primary-foreground font-semibold">
+                    {assignee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{assignee.full_name}</p>
+                  <p className="text-xs text-muted-foreground">Lead Salesperson</p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Vendor */}
-          {vendorName && (
-            <div className="flex items-center gap-2 text-xs text-foreground mb-2">
-              <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">{vendorName}</span>
-            </div>
-          )}
-
-          {/* Price Section */}
-          {(transaction.team_price || transaction.vendor_price) && (
-            <div className="mb-3 p-2 rounded-md bg-muted/50">
+            {/* Vendor & Price Grid */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              {/* Vendor Card */}
+              {vendorName && (
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/30">
+                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                    <User className="h-3.5 w-3.5" />
+                    <span className="text-[10px] uppercase tracking-wide font-medium">Vendor</span>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground truncate">{vendorName}</p>
+                </div>
+              )}
+              
+              {/* Team Price Card */}
               {transaction.team_price && (
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">Team Price</span>
-                  <span className="text-sm font-semibold text-foreground">
-                    ${transaction.team_price.toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {transaction.vendor_price && (
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">Vendor Price</span>
-                  <span className="text-xs text-foreground">
-                    ${transaction.vendor_price.toLocaleString()}
-                  </span>
-                </div>
-              )}
-              {/* Price Alignment Indicator */}
-              {priceAlignment.status !== 'pending' && (
-                <div className={cn(
-                  "flex items-center gap-1.5 px-2 py-1 rounded text-[10px] font-medium",
-                  priceAlignment.status === 'aligned' 
-                    ? "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400"
-                    : "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400"
-                )}>
-                  {priceAlignment.status === 'aligned' ? (
-                    <CheckCircle className="h-3 w-3" />
-                  ) : (
-                    <AlertTriangle className="h-3 w-3" />
-                  )}
-                  <span>
-                    {priceAlignment.status === 'aligned' ? 'Aligned' : 'Misaligned'} ({priceAlignment.percentage}%)
-                  </span>
+                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/30">
+                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                    <DollarSign className="h-3.5 w-3.5" />
+                    <span className="text-[10px] uppercase tracking-wide font-medium">Team Price</span>
+                  </div>
+                  <p className="text-sm font-bold text-foreground">${transaction.team_price.toLocaleString()}</p>
                 </div>
               )}
             </div>
-          )}
 
-          {/* Stats Row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-            {daysOnMarket !== null && daysOnMarket >= 0 && (
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span className="font-medium text-foreground">{daysOnMarket}</span>
-                <span>DOM</span>
+            {/* Price Alignment Section */}
+            {priceAlignment.status !== 'pending' && (
+              <div className={cn(
+                "mb-4 p-3 rounded-xl border",
+                priceAlignment.status === 'aligned' 
+                  ? "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900"
+                  : "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900"
+              )}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {priceAlignment.status === 'aligned' ? (
+                      <div className="p-1 rounded-full bg-green-500">
+                        <CheckCircle className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    ) : (
+                      <div className="p-1 rounded-full bg-red-500">
+                        <AlertTriangle className="h-3.5 w-3.5 text-white" />
+                      </div>
+                    )}
+                    <span className={cn(
+                      "text-sm font-semibold",
+                      priceAlignment.status === 'aligned' ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
+                    )}>
+                      {priceAlignment.status === 'aligned' ? 'Price Aligned' : 'Price Gap'}
+                    </span>
+                  </div>
+                  <span className={cn(
+                    "text-xs font-medium px-2 py-0.5 rounded-full",
+                    priceAlignment.status === 'aligned' 
+                      ? "bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-300" 
+                      : "bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-300"
+                  )}>
+                    {priceAlignment.percentage}% diff
+                  </span>
+                </div>
+                
+                {/* Progress bar visualization */}
+                <div className="h-2 bg-white/60 dark:bg-black/20 rounded-full overflow-hidden mb-2">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      priceAlignment.status === 'aligned' ? "bg-green-500" : "bg-red-500"
+                    )}
+                    style={{ width: `${Math.min(100, 100 - priceAlignment.percentage)}%` }}
+                  />
+                </div>
+                
+                {priceDelta !== null && transaction.vendor_price && (
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Vendor: ${transaction.vendor_price.toLocaleString()}</span>
+                    <span className={cn(
+                      "font-medium",
+                      priceDelta > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                    )}>
+                      {priceDelta > 0 ? '+' : ''}${priceDelta.toLocaleString()}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
-            {transaction.expected_settlement && (
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>{format(parseISO(transaction.expected_settlement), 'MMM d')}</span>
+
+            {/* Stats Row - Mini Cards */}
+            <div className="grid grid-cols-3 gap-2">
+              {daysOnMarket !== null && daysOnMarket >= 0 && (
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+                  <div className="flex items-center justify-center gap-1 text-blue-600 dark:text-blue-400 mb-0.5">
+                    <Clock className="h-3.5 w-3.5" />
+                  </div>
+                  <p className="text-lg font-bold text-blue-700 dark:text-blue-300">{daysOnMarket}</p>
+                  <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wide">DOM</p>
+                </div>
+              )}
+              
+              {transaction.expected_settlement && (
+                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
+                  <div className="flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 mb-0.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                  </div>
+                  <p className="text-sm font-bold text-purple-700 dark:text-purple-300">{format(parseISO(transaction.expected_settlement), 'MMM d')}</p>
+                  <p className="text-[10px] text-purple-600/70 dark:text-purple-400/70 uppercase tracking-wide">Settle</p>
+                </div>
+              )}
+              
+              {hasTaskProgress && (
+                <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-center">
+                  <div className="flex items-center justify-center gap-1 text-amber-600 dark:text-amber-400 mb-0.5">
+                    <ListTodo className="h-3.5 w-3.5" />
+                  </div>
+                  <p className="text-lg font-bold text-amber-700 dark:text-amber-300">{transaction.tasks_done}/{transaction.tasks_total}</p>
+                  <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 uppercase tracking-wide">Tasks</p>
+                </div>
+              )}
+            </div>
+
+            {/* Task Progress Bar */}
+            {hasTaskProgress && (
+              <div className="mt-3">
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      taskPercentage === 100 ? "bg-green-500" : "bg-amber-500"
+                    )}
+                    style={{ width: `${taskPercentage}%` }}
+                  />
+                </div>
               </div>
             )}
           </div>
-
-          {/* Task Progress */}
-          {hasTaskProgress && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between text-xs mb-1">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <ListTodo className="h-3 w-3" />
-                  <span>Tasks</span>
-                </div>
-                <span className="font-medium text-foreground">{transaction.tasks_done}/{transaction.tasks_total}</span>
-              </div>
-              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-primary rounded-full transition-all"
-                  style={{ width: `${taskPercentage}%` }}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </Popup>
     );
@@ -519,74 +597,98 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
         : null
     );
 
+    const statusGradient = isSold 
+      ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)'
+      : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+
     return (
       <Popup>
-        <div className="min-w-[240px] max-w-[280px]">
-          {/* Header: Address with SOLD badge */}
-          <div className="mb-3">
-            <div className="flex items-start justify-between gap-2">
-              <h3 className="font-semibold text-sm leading-tight text-foreground">{sale.address}</h3>
-              {isSold && (
-                <span className="flex-shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400">
-                  <CheckCircle className="h-2.5 w-2.5" />
-                  SOLD
-                </span>
-              )}
-            </div>
-            {sale.suburb && (
-              <p className="text-xs text-muted-foreground mt-0.5">{sale.suburb}</p>
-            )}
-          </div>
-
-          {/* Salesperson */}
-          {salesperson && (
-            <div className="flex items-center gap-2 mb-3 pb-3 border-b">
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={salesperson.avatar_url || ''} />
-                <AvatarFallback className="text-[10px] bg-primary text-primary-foreground">
-                  {salesperson.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-xs font-medium text-foreground">{salesperson.full_name}</p>
-                <p className="text-[10px] text-muted-foreground">Salesperson</p>
+        <div className="w-[320px] overflow-hidden">
+          {/* Colored Header Band */}
+          <div 
+            className="px-4 py-3 text-white"
+            style={{ background: statusGradient }}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0 pr-2">
+                <h3 className="font-bold text-base leading-tight truncate">{sale.address}</h3>
+                {sale.suburb && (
+                  <p className="text-white/80 text-sm mt-0.5">{sale.suburb}</p>
+                )}
               </div>
-            </div>
-          )}
-
-          {/* Vendor */}
-          {vendorName && (
-            <div className="flex items-center gap-2 text-xs text-foreground mb-2">
-              <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-              <span className="font-medium">{vendorName}</span>
-            </div>
-          )}
-
-          {/* Sale Price */}
-          {sale.sale_price && (
-            <div className="flex items-center gap-2 mb-3 p-2 rounded-md bg-muted/50">
-              <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <span className="text-base font-bold text-foreground">
-                ${sale.sale_price.toLocaleString()}
+              <span className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded text-xs font-semibold uppercase">
+                {isSold && <CheckCircle className="h-3 w-3" />}
+                {isSold ? 'SOLD' : sale.status?.toUpperCase() || 'UNKNOWN'}
               </span>
             </div>
-          )}
+          </div>
 
-          {/* Stats Row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {daysOnMarket !== null && daysOnMarket >= 0 && (
-              <div className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                <span className="font-medium text-foreground">{daysOnMarket}</span>
-                <span>DOM</span>
+          {/* Content Body */}
+          <div className="bg-card p-4">
+            {/* Salesperson Card */}
+            {salesperson && (
+              <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-muted/50 border border-border/50">
+                <Avatar className="h-10 w-10 ring-2 ring-green-500/20">
+                  <AvatarImage src={salesperson.avatar_url || ''} />
+                  <AvatarFallback className="text-sm bg-green-600 text-white font-semibold">
+                    {salesperson.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">{salesperson.full_name}</p>
+                  <p className="text-xs text-muted-foreground">Lead Salesperson</p>
+                </div>
               </div>
             )}
-            {sale.settlement_date && (
-              <div className="flex items-center gap-1">
-                <Calendar className="h-3 w-3" />
-                <span>Settled {format(parseISO(sale.settlement_date), 'MMM d, yyyy')}</span>
+
+            {/* Vendor Card */}
+            {vendorName && (
+              <div className="mb-4 p-2.5 rounded-lg bg-muted/30 border border-border/30">
+                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                  <User className="h-3.5 w-3.5" />
+                  <span className="text-[10px] uppercase tracking-wide font-medium">Vendor</span>
+                </div>
+                <p className="text-sm font-semibold text-foreground">{vendorName}</p>
               </div>
             )}
+
+            {/* Sale Price Feature Card */}
+            {sale.sale_price && (
+              <div className="mb-4 p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 border border-green-200 dark:border-green-900 text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <div className="p-1.5 rounded-full bg-green-500">
+                    <DollarSign className="h-4 w-4 text-white" />
+                  </div>
+                </div>
+                <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+                  ${sale.sale_price.toLocaleString()}
+                </p>
+                <p className="text-xs text-green-600/70 dark:text-green-400/70 uppercase tracking-wide mt-1">Final Sale Price</p>
+              </div>
+            )}
+
+            {/* Stats Row - Mini Cards */}
+            <div className="grid grid-cols-2 gap-2">
+              {daysOnMarket !== null && daysOnMarket >= 0 && (
+                <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+                  <div className="flex items-center justify-center gap-1 text-blue-600 dark:text-blue-400 mb-0.5">
+                    <Clock className="h-3.5 w-3.5" />
+                  </div>
+                  <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{daysOnMarket}</p>
+                  <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wide">Days on Market</p>
+                </div>
+              )}
+              
+              {sale.settlement_date && (
+                <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
+                  <div className="flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 mb-0.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                  </div>
+                  <p className="text-sm font-bold text-purple-700 dark:text-purple-300">{format(parseISO(sale.settlement_date), 'MMM d')}</p>
+                  <p className="text-[10px] text-purple-600/70 dark:text-purple-400/70 uppercase tracking-wide">Settled</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </Popup>
