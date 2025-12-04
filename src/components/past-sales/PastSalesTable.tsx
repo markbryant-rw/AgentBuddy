@@ -106,6 +106,7 @@ const PastSalesTable = ({ pastSales, isLoading, onOpenDetail }: PastSalesTablePr
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { variant: any; label: string }> = {
       won_and_sold: { variant: "default", label: "SOLD" },
+      sold: { variant: "default", label: "SOLD" },
       withdrawn: { variant: "outline", label: "WITHDRAWN" },
     };
     const config = variants[status] || { variant: "outline", label: status };

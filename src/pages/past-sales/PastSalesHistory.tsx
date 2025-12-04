@@ -28,7 +28,7 @@ const PastSalesHistory = () => {
   const filteredPastSales = useMemo(() => {
     return pastSales.filter(sale => {
       if (hideWithdrawn && sale.status === 'withdrawn') return false;
-      if (hideSold && (sale.status === 'won_and_sold' || sale.status === 'settled')) return false;
+      if (hideSold && (sale.status === 'won_and_sold' || sale.status === 'sold' || sale.status === 'settled')) return false;
       return true;
     });
   }, [pastSales, hideWithdrawn, hideSold]);
