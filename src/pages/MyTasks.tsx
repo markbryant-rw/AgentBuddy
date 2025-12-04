@@ -126,14 +126,6 @@ export default function MyTasks() {
         <div className="container mx-auto px-4 py-6 max-w-5xl">
           {/* Header */}
           <div className="mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/operate-dashboard" className="flex items-center gap-1">
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Operate
-                </Link>
-              </Button>
-            </div>
             <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-teal-600 to-cyan-600 dark:from-teal-400 dark:to-cyan-400 bg-clip-text text-transparent">
               My Assignments
             </h1>
