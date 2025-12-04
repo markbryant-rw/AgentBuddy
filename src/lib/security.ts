@@ -1,7 +1,9 @@
 // Security utilities for input sanitization and token hashing
 // Phase 1: Security Hardening
+// Phase 4.4: Enhanced with secure storage for rate limiting
 
 import DOMPurify from 'dompurify';
+import { getSecureItem, setSecureItem, StorageType } from './secureStorage';
 
 /**
  * Sanitize HTML content to prevent XSS attacks
@@ -116,61 +118,79 @@ export const validateLength = (
 };
 
 /**
- * Rate limit check on client side (local storage based)
+ * Rate limit data structure
  */
-export const checkClientRateLimit = (
-  key: string, 
-  maxAttempts: number, 
+interface RateLimitData {
+  count: number;
+  windowStart: number;
+}
+
+/**
+ * Rate limit check on client side with secure storage
+ * Uses integrity checking to prevent tampering with rate limit counters
+ *
+ * @param key - Unique identifier for the rate limit (e.g., 'login', 'api-call')
+ * @param maxAttempts - Maximum number of attempts allowed in the time window
+ * @param windowMs - Time window in milliseconds
+ * @returns Promise with allowed status and optional retry time
+ */
+export const checkClientRateLimit = async (
+  key: string,
+  maxAttempts: number,
   windowMs: number
-): { allowed: boolean; retryAfter?: number } => {
+): Promise<{ allowed: boolean; retryAfter?: number }> => {
   const storageKey = `rate_limit_${key}`;
-  const stored = localStorage.getItem(storageKey);
 
-  if (!stored) {
-    localStorage.setItem(storageKey, JSON.stringify({
-      count: 1,
-      windowStart: Date.now()
-    }));
-    return { allowed: true };
-  }
-
-  let data;
   try {
-    data = JSON.parse(stored);
-  } catch (error) {
-    console.error('Failed to parse rate limit data:', error);
-    localStorage.removeItem(storageKey);
-    localStorage.setItem(storageKey, JSON.stringify({
-      count: 1,
-      windowStart: Date.now()
-    }));
-    return { allowed: true };
-  }
+    // Try to get existing rate limit data with integrity checking
+    const stored = await getSecureItem<RateLimitData>(storageKey, {
+      encrypt: false, // No need for encryption, just integrity checking
+      storageType: StorageType.LOCAL,
+    });
 
-  const elapsed = Date.now() - data.windowStart;
-  
-  // Reset window if expired
-  if (elapsed > windowMs) {
-    localStorage.setItem(storageKey, JSON.stringify({
-      count: 1,
-      windowStart: Date.now()
-    }));
+    const now = Date.now();
+
+    // No existing data, start new window
+    if (!stored) {
+      await setSecureItem<RateLimitData>(
+        storageKey,
+        { count: 1, windowStart: now },
+        { ttl: windowMs, storageType: StorageType.LOCAL }
+      );
+      return { allowed: true };
+    }
+
+    const elapsed = now - stored.windowStart;
+
+    // Reset window if expired
+    if (elapsed > windowMs) {
+      await setSecureItem<RateLimitData>(
+        storageKey,
+        { count: 1, windowStart: now },
+        { ttl: windowMs, storageType: StorageType.LOCAL }
+      );
+      return { allowed: true };
+    }
+
+    // Check if limit exceeded
+    if (stored.count >= maxAttempts) {
+      return {
+        allowed: false,
+        retryAfter: Math.ceil((windowMs - elapsed) / 1000)
+      };
+    }
+
+    // Increment count
+    await setSecureItem<RateLimitData>(
+      storageKey,
+      { count: stored.count + 1, windowStart: stored.windowStart },
+      { ttl: windowMs - elapsed, storageType: StorageType.LOCAL }
+    );
+
+    return { allowed: true };
+  } catch (error) {
+    console.error('Rate limit check failed:', error);
+    // On error, allow request but log it (fail open for availability)
     return { allowed: true };
   }
-  
-  // Check if limit exceeded
-  if (data.count >= maxAttempts) {
-    return { 
-      allowed: false, 
-      retryAfter: Math.ceil((windowMs - elapsed) / 1000)
-    };
-  }
-  
-  // Increment count
-  localStorage.setItem(storageKey, JSON.stringify({
-    count: data.count + 1,
-    windowStart: data.windowStart
-  }));
-  
-  return { allowed: true };
 };
