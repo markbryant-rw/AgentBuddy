@@ -531,7 +531,7 @@ const SortableColumn = ({
           backgroundColor: list.color || undefined,
         }}
         className={cn(
-          "w-10 flex-shrink-0 flex flex-col rounded-lg h-full cursor-pointer hover:opacity-80 transition-opacity",
+          "w-10 flex-shrink-0 flex flex-col rounded-lg h-full self-stretch cursor-pointer hover:opacity-80 transition-opacity",
           !list.color && "bg-muted/30",
           isDragging && 'opacity-50'
         )}
@@ -564,7 +564,7 @@ const SortableColumn = ({
         backgroundColor: list.color || undefined,
       }}
       className={cn(
-        "w-56 flex-shrink-0 flex flex-col rounded-lg max-h-full",
+        "w-56 flex-shrink-0 flex flex-col rounded-lg max-h-[calc(100vh-120px)]",
         !list.color && "bg-muted/30",
         isDragging && 'opacity-50'
       )}
@@ -1203,7 +1203,7 @@ export default function ProjectKanbanBoard() {
       </div>
 
       {/* Kanban Board */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -1211,7 +1211,7 @@ export default function ProjectKanbanBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 h-full min-w-max items-stretch">
+          <div className="flex gap-3 h-full min-w-max items-start">
             <SortableContext items={lists.map(l => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <SortableColumn
