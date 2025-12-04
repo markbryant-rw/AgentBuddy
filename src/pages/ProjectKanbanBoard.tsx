@@ -531,7 +531,7 @@ const SortableColumn = ({
           backgroundColor: list.color || undefined,
         }}
         className={cn(
-          "w-10 flex-shrink-0 flex flex-col rounded-lg h-full self-stretch cursor-pointer hover:opacity-80 transition-opacity",
+          "w-10 flex-shrink-0 flex flex-col rounded-lg self-stretch cursor-pointer hover:opacity-80 transition-opacity",
           !list.color && "bg-muted/30",
           isDragging && 'opacity-50'
         )}
