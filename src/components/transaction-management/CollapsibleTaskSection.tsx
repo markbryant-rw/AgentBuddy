@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -261,20 +260,27 @@ export function CollapsibleTaskSection({
                 </Select>
               </div>
 
-              {/* Due Days Input */}
-              <div className="w-20">
+              {/* Due Days Input - offset from stage date */}
+              <div className="w-24">
                 <Input
                   type="number"
-                  min="0"
-                  value={task.due_offset_days || ''}
-                  onChange={(e) => onUpdateTask(originalIndex, { due_offset_days: e.target.value ? parseInt(e.target.value) : undefined })}
+                  value={task.due_offset_days !== undefined && task.due_offset_days !== null ? task.due_offset_days : ''}
+                  onChange={(e) => onUpdateTask(originalIndex, { 
+                    due_offset_days: e.target.value !== '' ? parseInt(e.target.value) : undefined 
+                  })}
                   placeholder="Days"
-                  className="h-9 border-0 shadow-none focus-visible:ring-1 text-center"
+                  title="Days from stage date (negative = before, 0 = same day, positive = after)"
+                  className={cn(
+                    "h-9 border-0 shadow-none focus-visible:ring-1 text-center",
+                    task.due_offset_days !== undefined && task.due_offset_days < 0 && "text-red-600",
+                    task.due_offset_days === 0 && "text-blue-600",
+                    task.due_offset_days !== undefined && task.due_offset_days > 0 && "text-green-600"
+                  )}
                   disabled={disabled}
                 />
               </div>
 
-              {/* Description Popover */}
+              {/* Knowledge Base Article Link */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -283,7 +289,7 @@ export function CollapsibleTaskSection({
                     size="icon"
                     className={cn(
                       "h-9 w-9",
-                      task.description ? "text-primary" : "text-muted-foreground"
+                      task.knowledge_base_article_id ? "text-primary" : "text-muted-foreground"
                     )}
                     disabled={disabled}
                   >
@@ -291,17 +297,15 @@ export function CollapsibleTaskSection({
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent side="left" className="w-80" align="start">
-                  <div className="space-y-2">
-                    <h4 className="font-medium text-sm">Task Description</h4>
-                    <Textarea
-                      placeholder="Add an optional description for this task..."
-                      value={task.description || ''}
-                      onChange={(e) => onUpdateTask(originalIndex, { description: e.target.value })}
-                      className="min-h-[80px] resize-none"
-                      disabled={disabled}
-                    />
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm">Link to Knowledge Base</h4>
+                    <div className="p-3 bg-muted/50 rounded-md border border-dashed">
+                      <p className="text-sm text-muted-foreground text-center">
+                        Knowledge Base article selector coming soon
+                      </p>
+                    </div>
                     <p className="text-xs text-muted-foreground">
-                      This description will be shown when agents view the task.
+                      Link this task to a Knowledge Base article. Agents will be able to click through for detailed instructions.
                     </p>
                   </div>
                 </PopoverContent>

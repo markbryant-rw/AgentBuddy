@@ -3498,6 +3498,66 @@ export type Database = {
           },
         ]
       }
+      transaction_stage_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          documents: Json | null
+          id: string
+          is_default: boolean | null
+          is_system_template: boolean | null
+          name: string
+          stage: string
+          tasks: Json | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          documents?: Json | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          name: string
+          stage: string
+          tasks?: Json | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          documents?: Json | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          name?: string
+          stage?: string
+          tasks?: Json | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_stage_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_stage_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           address: string

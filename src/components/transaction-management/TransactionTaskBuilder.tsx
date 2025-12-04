@@ -24,6 +24,7 @@ export interface TransactionTask {
   due_offset_days?: number;
   assigned_to_user?: string;  // specific user ID
   assigned_to_role?: string;  // role name like "Lead Agent"
+  knowledge_base_article_id?: string;  // links to KB article for task instructions
 }
 
 interface TransactionTaskBuilderProps {
