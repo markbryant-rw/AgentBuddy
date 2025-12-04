@@ -22,20 +22,20 @@ export default function PlanDashboard() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-fluid-lg p-fluid-lg">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <Target className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">PLAN Dashboard</h1>
+          <div className="flex items-center gap-fluid-md">
+            <Target className="h-icon-lg w-icon-lg text-primary" />
+            <h1 className="text-fluid-3xl font-bold">PLAN Dashboard</h1>
           </div>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground mt-1 text-fluid-base">
             Your command center for goals, progress, and planning
           </p>
         </div>
         <Button size="lg" onClick={() => setCheckInOpen(true)}>
-          <Plus className="h-5 w-5 mr-2" />
+          <Plus className="h-icon-sm w-icon-sm mr-2" />
           Log Today's Activity
         </Button>
       </div>
@@ -44,7 +44,7 @@ export default function PlanDashboard() {
       <PlanHeroMetrics />
 
       {/* Four Planning Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-fluid-lg">
         <ReviewWidget />
         <CurrentWidget />
         <RoadmapWidget />

@@ -86,41 +86,41 @@ const TransactDashboard = () => {
   }).length;
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-fluid-lg p-fluid-lg">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2">
-          <FileText className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Transact Dashboard</h1>
+        <div className="flex items-center gap-fluid-md">
+          <FileText className="h-icon-lg w-icon-lg text-primary" />
+          <h1 className="text-fluid-3xl font-bold">Transact Dashboard</h1>
         </div>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground mt-1 text-fluid-base">
           Manage active listings and track your sales performance
         </p>
       </div>
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-card border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Active Transactions</div>
-          <div className="text-2xl font-bold mt-1">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-fluid-md">
+        <div className="bg-card border rounded-lg p-fluid-md">
+          <div className="text-fluid-sm text-muted-foreground">Active Transactions</div>
+          <div className="text-fluid-2xl font-bold mt-1">
             {transactionsLoading ? '...' : activeTransactions.length}
           </div>
         </div>
-        <div className="bg-card border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Pipeline Value</div>
-          <div className="text-2xl font-bold mt-1">
+        <div className="bg-card border rounded-lg p-fluid-md">
+          <div className="text-fluid-sm text-muted-foreground">Pipeline Value</div>
+          <div className="text-fluid-2xl font-bold mt-1">
             {transactionsLoading ? '...' : `$${(pipelineValue / 1000000).toFixed(1)}M`}
           </div>
         </div>
-        <div className="bg-card border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">This Month's Settlements</div>
-          <div className="text-2xl font-bold mt-1">
+        <div className="bg-card border rounded-lg p-fluid-md">
+          <div className="text-fluid-sm text-muted-foreground">This Month's Settlements</div>
+          <div className="text-fluid-2xl font-bold mt-1">
             {transactionsLoading ? '...' : thisMonthSettlements.length}
           </div>
         </div>
-        <div className="bg-card border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Avg Settlement Time</div>
-          <div className="text-2xl font-bold mt-1">
+        <div className="bg-card border rounded-lg p-fluid-md">
+          <div className="text-fluid-sm text-muted-foreground">Avg Settlement Time</div>
+          <div className="text-fluid-2xl font-bold mt-1">
             {transactionsLoading ? '...' : `${avgSettlementDays} days`}
           </div>
         </div>
@@ -142,8 +142,8 @@ const TransactDashboard = () => {
       />
 
       {/* Map View */}
-      <div className="mt-6">
-        <h2 className="text-2xl font-bold mb-4">Map View</h2>
+      <div className="mt-fluid-lg">
+        <h2 className="text-fluid-2xl font-bold mb-fluid-md">Map View</h2>
         <TransactMap
           transactions={transactions}
           pastSales={pastSales}
