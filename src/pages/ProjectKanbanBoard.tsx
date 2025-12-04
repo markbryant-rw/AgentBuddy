@@ -200,9 +200,8 @@ const SortableTaskCard = ({
       >
         <CardContent className="px-2.5 py-2">
           <div className="flex items-start gap-2">
-            {/* Left column: checkbox + avatars */}
-            <div className="flex flex-col items-center gap-1 flex-shrink-0">
-              {/* Completion checkbox */}
+            {/* Left: checkbox only */}
+            <div className="flex-shrink-0 pt-0.5">
               <button 
                 onClick={(e) => { e.stopPropagation(); e.preventDefault(); onToggleComplete(); }}
                 className={cn(
@@ -214,25 +213,6 @@ const SortableTaskCard = ({
               >
                 {isCompleted && <Check className="h-2.5 w-2.5 text-white" strokeWidth={3} />}
               </button>
-
-              {/* Stacked assignee avatars below checkbox */}
-              {task.assignees && task.assignees.length > 0 && (
-                <div className="flex flex-col -space-y-1 mt-0.5">
-                  {task.assignees.slice(0, 3).map((assignee) => (
-                    <Avatar key={assignee.id} className="h-5 w-5 border-2 border-background">
-                      <AvatarImage src={assignee.avatar_url || undefined} />
-                      <AvatarFallback className="text-[9px]">
-                        {assignee.full_name?.[0] || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {task.assignees.length > 3 && (
-                    <div className="h-5 w-5 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] font-medium">
-                      +{task.assignees.length - 3}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
             <div className="flex-1 min-w-0">
@@ -308,7 +288,6 @@ const SortableTaskCard = ({
                     <div className="px-2 py-1.5">
                       <p className="text-xs text-muted-foreground mb-2">Assignees</p>
                       <div className="max-h-32 overflow-auto space-y-0.5">
-                        {/* Team members */}
                         {teamMembers.map((member) => {
                           const isAssigned = task.assignees?.some(a => a.id === member.id);
                           return (
@@ -345,18 +324,37 @@ const SortableTaskCard = ({
                 </DropdownMenu>
               </div>
 
-              {/* Due date - right aligned */}
-              {task.due_date && (
-                <div className="flex items-center justify-end mt-1">
-                  <span className={cn(
-                    "text-[10px] flex items-center gap-0.5",
-                    isOverdue && 'text-destructive',
-                    isDueToday && 'text-amber-600',
-                    !isOverdue && !isDueToday && 'text-muted-foreground',
-                  )}>
-                    <Clock className="h-3 w-3" />
-                    {format(new Date(task.due_date), 'd MMM')}
-                  </span>
+              {/* Bottom row: due date + avatars (right-aligned) */}
+              {(task.due_date || (task.assignees && task.assignees.length > 0)) && (
+                <div className="flex items-center justify-end gap-2 mt-1.5">
+                  {task.due_date && (
+                    <span className={cn(
+                      "text-[10px] flex items-center gap-0.5",
+                      isOverdue && 'text-destructive',
+                      isDueToday && 'text-amber-600',
+                      !isOverdue && !isDueToday && 'text-muted-foreground',
+                    )}>
+                      <Clock className="h-3 w-3" />
+                      {format(new Date(task.due_date), 'd MMM')}
+                    </span>
+                  )}
+                  {task.assignees && task.assignees.length > 0 && (
+                    <div className="flex -space-x-1.5">
+                      {task.assignees.slice(0, 3).map((assignee) => (
+                        <Avatar key={assignee.id} className="h-5 w-5 border-2 border-background">
+                          <AvatarImage src={assignee.avatar_url || undefined} />
+                          <AvatarFallback className="text-[9px]">
+                            {assignee.full_name?.[0] || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                      ))}
+                      {task.assignees.length > 3 && (
+                        <div className="h-5 w-5 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] font-medium">
+                          +{task.assignees.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
