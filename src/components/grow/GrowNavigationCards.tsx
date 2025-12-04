@@ -2,57 +2,16 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, BookOpen, Mic2, ArrowRight, MessageSquarePlus, RotateCcw } from "lucide-react";
+import { MessageSquare, BookOpen, Mic2, ArrowRight, MessageSquarePlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useTeam } from "@/hooks/useTeam";
 
 export function GrowNavigationCards() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { team } = useTeam();
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
-
-  // Fetch knowledge base stats
-  const { data: knowledgeStats } = useQuery({
-    queryKey: ["knowledge-stats", team?.id, user?.id],
-    queryFn: async () => {
-      if (!team?.id || !user?.id) return { totalCategories: 0, totalPlaybooks: 0, completedCards: 0 };
-
-      // Get total categories
-      const { data: categories, error: catError } = await (supabase as any)
-        .from('knowledge_base_categories')
-        .select('id')
-        .eq('team_id', team.id);
-
-      if (catError) throw catError;
-
-      const { data: playbooks, error: pbError } = await (supabase as any)
-        .from('knowledge_base_playbooks')
-        .select('id')
-        .eq('team_id', team.id)
-        .eq('is_published', true);
-
-      if (pbError) throw pbError;
-
-      const { data: completedCards, error: ccError } = await (supabase as any)
-        .from('kb_card_views')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('completed', true);
-
-      if (ccError) throw ccError;
-
-      return {
-        totalCategories: categories?.length || 0,
-        totalPlaybooks: playbooks?.length || 0,
-        completedCards: completedCards?.length || 0,
-      };
-    },
-    enabled: !!team?.id && !!user?.id,
-  });
 
   // Fetch feedback stats
   const { data: feedbackStats } = useQuery({
@@ -99,11 +58,11 @@ export function GrowNavigationCards() {
       gradient: "from-purple-500/10 to-indigo-600/20 hover:from-purple-500/20 hover:to-indigo-600/30",
       iconBg: "bg-purple-100 dark:bg-purple-900/30",
       iconColor: "text-purple-600 dark:text-purple-400",
-      comingSoon: false,
+      comingSoon: true,
       stats: [
-        { label: "Categories", value: knowledgeStats?.totalCategories || 0 },
-        { label: "Playbooks", value: knowledgeStats?.totalPlaybooks || 0 },
-        { label: "Completed", value: knowledgeStats?.completedCards || 0 },
+        { label: "Categories", value: "—" },
+        { label: "Playbooks", value: "—" },
+        { label: "Completed", value: "—" },
       ],
     },
     {
@@ -229,14 +188,13 @@ export function GrowNavigationCards() {
                       <Icon className={`h-10 w-10 ${card.iconColor}`} />
                     </div>
                     <h3 className="text-2xl font-bold mb-2">{card.title}</h3>
-                    <p className="text-lg text-muted-foreground mb-6">Coming Soon</p>
-                    <p className="text-sm text-muted-foreground mb-6">
+                    <p className="text-lg text-muted-foreground mb-4">Coming Soon</p>
+                    <p className="text-sm text-muted-foreground">
                       We're working hard to bring you this feature. Stay tuned!
                     </p>
-                    <Button variant="outline" size="sm" className="gap-2">
-                      <RotateCcw className="h-4 w-4" />
-                      Flip Back
-                    </Button>
+                    <p className="text-xs text-muted-foreground/60 mt-6">
+                      Click anywhere to flip back
+                    </p>
                   </CardContent>
                 </Card>
               )}
