@@ -24,16 +24,26 @@ export default function MyTasks() {
   const [openSections, setOpenSections] = useState<string[]>(["overdue", "dueToday"]);
 
   const completeTask = useMutation({
-    mutationFn: async (taskId: string) => {
-      const { error } = await supabase
-        .from("tasks")
-        .update({ completed: true, completed_at: new Date().toISOString() })
-        .eq("id", taskId);
-
-      if (error) throw error;
+    mutationFn: async ({ taskId, source }: { taskId: string; source: 'transaction' | 'project' | 'planner' }) => {
+      if (source === 'planner') {
+        // Daily planner items are in daily_planner_items table
+        const { error } = await supabase
+          .from("daily_planner_items")
+          .update({ completed: true, completed_at: new Date().toISOString() })
+          .eq("id", taskId);
+        if (error) throw error;
+      } else {
+        // Transaction and project tasks are both in tasks table
+        const { error } = await supabase
+          .from("tasks")
+          .update({ completed: true, completed_at: new Date().toISOString() })
+          .eq("id", taskId);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-assigned-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-planner"] });
       toast.success("Task completed! 🎉");
     },
     onError: () => {
@@ -118,9 +128,9 @@ export default function MyTasks() {
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-4">
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/projects" className="flex items-center gap-1">
+                <Link to="/operate-dashboard" className="flex items-center gap-1">
                   <ArrowLeft className="h-4 w-4" />
-                  Back to Projects
+                  Back to Operate
                 </Link>
               </Button>
             </div>
@@ -217,7 +227,7 @@ export default function MyTasks() {
                               <AssignedTaskCard
                                 key={task.id}
                                 task={task}
-                                onComplete={completeTask.mutate}
+                                onComplete={(taskId, source) => completeTask.mutate({ taskId, source })}
                                 isCompleting={completeTask.isPending}
                               />
                             ))}

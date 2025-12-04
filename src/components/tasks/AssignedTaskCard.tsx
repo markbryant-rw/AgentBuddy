@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 
 interface AssignedTaskCardProps {
   task: AssignedTask;
-  onComplete: (taskId: string) => void;
+  onComplete: (taskId: string, source: AssignedTask['source']) => void;
   isCompleting?: boolean;
 }
 
@@ -115,7 +115,7 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
       <div className="flex items-start gap-3">
         <Checkbox
           checked={false}
-          onCheckedChange={() => onComplete(task.id)}
+          onCheckedChange={() => onComplete(task.id, task.source)}
           disabled={isCompleting}
           className="mt-1"
         />
