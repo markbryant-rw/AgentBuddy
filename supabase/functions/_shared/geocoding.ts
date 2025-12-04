@@ -1,6 +1,6 @@
 // Shared geocoding utilities for edge functions using Photon API (OpenStreetMap)
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from './cors.ts';
+import { getCorsHeaders } from './cors.ts';
 
 export interface PhotonResponse {
   type: string;
@@ -79,9 +79,11 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
 export async function geocodeEntity(
   supabaseClient: any,
   entityId: string,
-  config: GeocodeConfig
+  config: GeocodeConfig,
+  origin?: string | null
 ): Promise<Response> {
   const { tableName, idFieldName, entityName } = config;
+  const corsHeaders = getCorsHeaders(origin || null);
 
   if (!entityId) {
     return new Response(
@@ -255,8 +257,8 @@ export function createAuthenticatedClient(req: Request) {
 }
 
 /**
- * Handle CORS preflight request
+ * Handle CORS preflight request with dynamic origin
  */
-export function handleCorsPreFlight(): Response {
-  return new Response(null, { headers: corsHeaders });
+export function handleCorsPreFlight(origin?: string | null): Response {
+  return new Response(null, { headers: getCorsHeaders(origin || null) });
 }
