@@ -46,7 +46,7 @@ export const SortableTaskListColumn = ({
     <div
       style={style}
       className={cn(
-        'relative min-w-[350px]',
+        'relative min-w-[350px] max-h-full',
         isDragging && 'z-50 opacity-30'
       )}
     >
