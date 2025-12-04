@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
+import { CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -55,6 +55,9 @@ export const EditTaskDialog = ({
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [priority, setPriority] = useState('medium');
   const [assignedTo, setAssignedTo] = useState<string>('UNASSIGNED');
+  const [isAddingSection, setIsAddingSection] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Populate form when task changes
   useEffect(() => {
@@ -64,22 +67,46 @@ export const EditTaskDialog = ({
       setDueDate(task.due_date ? new Date(task.due_date) : undefined);
       setPriority(task.priority || 'medium');
       setAssignedTo(task.assigned_to || 'UNASSIGNED');
+      setIsAddingSection(false);
+      setNewSectionName('');
     }
   }, [task]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [title]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!task || !title.trim()) return;
 
+    const finalSection = isAddingSection && newSectionName.trim() 
+      ? newSectionName.trim().toUpperCase() 
+      : section;
+
     onSubmit(task.id, {
       title: title.trim(),
-      section: section || 'General',
+      section: finalSection || 'General',
       due_date: dueDate?.toISOString().split('T')[0] || null,
       priority,
       assigned_to: assignedTo === 'UNASSIGNED' ? null : assignedTo,
     });
 
     onOpenChange(false);
+  };
+
+  const handleSectionChange = (value: string) => {
+    if (value === '__ADD_NEW__') {
+      setIsAddingSection(true);
+      setNewSectionName('');
+    } else {
+      setIsAddingSection(false);
+      setSection(value);
+    }
   };
 
   if (!task) return null;
@@ -97,28 +124,56 @@ export const EditTaskDialog = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-title">Task Title *</Label>
-            <Input
+            <Textarea
+              ref={textareaRef}
               id="edit-title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Contact solicitor"
+              className="min-h-[60px] resize-none overflow-hidden"
               required
             />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="edit-section">Section</Label>
-            <Select value={section} onValueChange={setSection}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="General">General</SelectItem>
-                {existingSections.filter(s => s !== 'General').map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {isAddingSection ? (
+              <div className="flex gap-2">
+                <Input
+                  value={newSectionName}
+                  onChange={(e) => setNewSectionName(e.target.value.toUpperCase())}
+                  placeholder="NEW SECTION NAME"
+                  className="flex-1 uppercase"
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsAddingSection(false)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Select value={section} onValueChange={handleSectionChange}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="General">General</SelectItem>
+                  {existingSections.filter(s => s !== 'General').map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                  <SelectItem value="__ADD_NEW__" className="text-primary">
+                    <span className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add new section
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">
