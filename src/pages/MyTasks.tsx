@@ -96,6 +96,16 @@ export default function MyTasks() {
       bgColor: "bg-muted/50",
       borderColor: "border-muted",
     },
+    {
+      id: "noDueDate",
+      title: "NO DUE DATE",
+      icon: Clock,
+      count: stats.noDueDate,
+      tasks: filterTasks(tasks.noDueDate),
+      color: "text-muted-foreground",
+      bgColor: "bg-muted/30",
+      borderColor: "border-muted/50",
+    },
   ];
 
   return (
