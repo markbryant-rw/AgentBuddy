@@ -538,10 +538,6 @@ export const TransactionDetailDrawer = ({
                 <CheckSquare className="h-4 w-4 mr-2" />
                 Tasks ({taskCounts?.done || 0}/{taskCounts?.total || 0})
               </TabsTrigger>
-              <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-                <MessageSquare className="h-4 w-4 mr-2" />
-                Notes
-              </TabsTrigger>
               <TabsTrigger 
                 value="documents" 
                 className={cn(
@@ -560,6 +556,10 @@ export const TransactionDetailDrawer = ({
               <TabsTrigger value="reports" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
                 <ClipboardList className="h-4 w-4 mr-2" />
                 Vendor Reports
+              </TabsTrigger>
+              <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Notes
               </TabsTrigger>
             </TabsList>
 
