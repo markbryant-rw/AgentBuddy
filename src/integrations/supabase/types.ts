@@ -2194,6 +2194,7 @@ export type Database = {
           password_set: boolean | null
           presence_status: string | null
           primary_team_id: string | null
+          share_with_office: boolean
           status: string | null
           total_bug_points: number | null
           updated_at: string | null
@@ -2217,6 +2218,7 @@ export type Database = {
           password_set?: boolean | null
           presence_status?: string | null
           primary_team_id?: string | null
+          share_with_office?: boolean
           status?: string | null
           total_bug_points?: number | null
           updated_at?: string | null
@@ -2240,6 +2242,7 @@ export type Database = {
           password_set?: boolean | null
           presence_status?: string | null
           primary_team_id?: string | null
+          share_with_office?: boolean
           status?: string | null
           total_bug_points?: number | null
           updated_at?: string | null
