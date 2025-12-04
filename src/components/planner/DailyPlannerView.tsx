@@ -15,7 +15,6 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react';
 import { useDailyPlanner, DailyPlannerItem } from '@/hooks/useDailyPlanner';
 import { useTeam } from '@/hooks/useTeam';
-import { AssignmentDialog } from './AssignmentDialog';
 import { RollForwardDialog } from './RollForwardDialog';
 import { RollForwardBanner } from './RollForwardBanner';
 import { CategorySection } from './CategorySection';
@@ -31,9 +30,7 @@ type ViewType = 'day' | '3-day' | 'analytics';
 export function DailyPlannerView() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [view, setView] = useState<ViewType>('day');
-  const [assignmentDialogOpen, setAssignmentDialogOpen] = useState(false);
   const [rollForwardDialogOpen, setRollForwardDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<DailyPlannerItem | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const { team } = useTeam();
@@ -133,11 +130,6 @@ export function DailyPlannerView() {
     }
     
     setActiveId(null);
-  };
-
-  const handleAssignmentClick = (item: DailyPlannerItem) => {
-    setSelectedItem(item);
-    setAssignmentDialogOpen(true);
   };
 
   const handleSaveAssignments = (itemId: string, userIds: string[]) => {
@@ -269,7 +261,7 @@ export function DailyPlannerView() {
                   items={bigItems}
                   onToggleComplete={toggleComplete}
                   onDelete={deleteItem}
-                  onAssignmentClick={handleAssignmentClick}
+                  onSaveAssignments={handleSaveAssignments}
                   onAddTask={(title, category) => createItem({ title, sizeCategory: category })}
                 />
 
@@ -278,7 +270,7 @@ export function DailyPlannerView() {
                   items={mediumItems}
                   onToggleComplete={toggleComplete}
                   onDelete={deleteItem}
-                  onAssignmentClick={handleAssignmentClick}
+                  onSaveAssignments={handleSaveAssignments}
                   onAddTask={(title, category) => createItem({ title, sizeCategory: category })}
                 />
 
@@ -287,7 +279,7 @@ export function DailyPlannerView() {
                   items={littleItems}
                   onToggleComplete={toggleComplete}
                   onDelete={deleteItem}
-                  onAssignmentClick={handleAssignmentClick}
+                  onSaveAssignments={handleSaveAssignments}
                   onAddTask={(title, category) => createItem({ title, sizeCategory: category })}
                 />
 
@@ -306,7 +298,7 @@ export function DailyPlannerView() {
                       item={items.find(i => i.id === activeId)!}
                       onToggleComplete={() => {}}
                       onDelete={() => {}}
-                      onAssignmentClick={() => {}}
+                      onSaveAssignments={() => {}}
                       onUpdateTime={() => {}}
                     />
                   </div>
@@ -318,13 +310,6 @@ export function DailyPlannerView() {
       )}
 
       {/* Dialogs */}
-      <AssignmentDialog
-        open={assignmentDialogOpen}
-        onOpenChange={setAssignmentDialogOpen}
-        item={selectedItem}
-        onSave={handleSaveAssignments}
-      />
-
       <RollForwardDialog
         open={rollForwardDialogOpen}
         onOpenChange={setRollForwardDialogOpen}
