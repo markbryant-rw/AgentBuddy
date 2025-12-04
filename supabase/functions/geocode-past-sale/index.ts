@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.1';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { geocodeEntity, handleCorsPreFlight } from '../_shared/geocoding.ts';
 
 interface GeocodeRequest {
@@ -7,8 +7,10 @@ interface GeocodeRequest {
 }
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin');
+
   if (req.method === 'OPTIONS') {
-    return handleCorsPreFlight();
+    return handleCorsPreFlight(origin);
   }
 
   try {
@@ -26,7 +28,7 @@ Deno.serve(async (req) => {
       tableName: 'past_sales',
       idFieldName: 'pastSaleId',
       entityName: 'Past sale',
-    });
+    }, origin);
   } catch (error) {
     console.error('Geocoding error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -37,7 +39,7 @@ Deno.serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
       }
     );
   }

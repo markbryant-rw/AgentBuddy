@@ -40,7 +40,7 @@ export const useTransactionGeocoding = () => {
         setErrors(prev => [...prev, {
           transactionId: transaction.id,
           address: transaction.address,
-          error: error.message || 'Unknown error',
+          error: error.message || 'Geocoding failed',
         }]);
         return false;
       }
@@ -51,13 +51,22 @@ export const useTransactionGeocoding = () => {
         return true;
       }
 
+      // Handle address not found (success: false but not an error)
+      if (data?.error === 'Address not found') {
+        setErrors(prev => [...prev, {
+          transactionId: transaction.id,
+          address: transaction.address,
+          error: 'Address not found - use Fix Location tool',
+        }]);
+      }
+
       return false;
     } catch (error) {
       console.error('Geocoding error:', error);
       setErrors(prev => [...prev, {
         transactionId: transaction.id,
         address: transaction.address,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : 'Network error',
       }]);
       return false;
     }
@@ -105,9 +114,9 @@ export const useTransactionGeocoding = () => {
         });
       }
 
-      // Rate limiting: 1 request per second for OpenCage free tier
+      // Small delay between requests to be polite to the API
       if (i < ungeocodedTransactions.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 1100));
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
     }
 
@@ -121,9 +130,9 @@ export const useTransactionGeocoding = () => {
     if (successCount === ungeocodedTransactions.length) {
       toast.success(`Successfully geocoded ${successCount} ${successCount === 1 ? 'property' : 'properties'}`);
     } else if (successCount > 0) {
-      toast.warning(`Geocoded ${successCount} of ${ungeocodedTransactions.length} properties. ${errors.length} failed.`);
+      toast.warning(`Geocoded ${successCount} of ${ungeocodedTransactions.length} properties. ${errors.length} need manual location fix.`);
     } else {
-      toast.error('Failed to geocode properties. Please check your API key and try again.');
+      toast.error('Could not geocode properties. Try using the Fix Location tool for each property.');
     }
   };
 
