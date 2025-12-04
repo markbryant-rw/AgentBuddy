@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Select,
   SelectContent,
@@ -16,41 +15,39 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
-import { ChevronDown, ChevronRight, Plus, Trash2, Info, GripVertical } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, Trash2, Info, GripVertical, Pencil } from 'lucide-react';
 import { TransactionTask } from './TransactionTaskBuilder';
 
-const SECTION_COLORS: Record<string, string> = {
-  'GETTING STARTED': 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30',
-  'MARKETING': 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30',
-  'LEGAL': 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30',
-  'FINANCE': 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30',
-  'DUE DILIGENCE': 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30',
-  'SETTLEMENT': 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
-  'HANDOVER': 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/30',
-  'CLIENT CARE': 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/30',
-  'ADMIN': 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/30',
-  'COMPLIANCE': 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30',
-};
+// Color palette for sections - cycles through these
+const SECTION_COLOR_PALETTE = [
+  { bg: 'bg-blue-500/10', text: 'text-blue-700 dark:text-blue-400', border: 'border-l-blue-500' },
+  { bg: 'bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', border: 'border-l-purple-500' },
+  { bg: 'bg-red-500/10', text: 'text-red-700 dark:text-red-400', border: 'border-l-red-500' },
+  { bg: 'bg-green-500/10', text: 'text-green-700 dark:text-green-400', border: 'border-l-green-500' },
+  { bg: 'bg-orange-500/10', text: 'text-orange-700 dark:text-orange-400', border: 'border-l-orange-500' },
+  { bg: 'bg-emerald-500/10', text: 'text-emerald-700 dark:text-emerald-400', border: 'border-l-emerald-500' },
+  { bg: 'bg-teal-500/10', text: 'text-teal-700 dark:text-teal-400', border: 'border-l-teal-500' },
+  { bg: 'bg-pink-500/10', text: 'text-pink-700 dark:text-pink-400', border: 'border-l-pink-500' },
+  { bg: 'bg-yellow-500/10', text: 'text-yellow-700 dark:text-yellow-400', border: 'border-l-yellow-500' },
+  { bg: 'bg-indigo-500/10', text: 'text-indigo-700 dark:text-indigo-400', border: 'border-l-indigo-500' },
+  { bg: 'bg-cyan-500/10', text: 'text-cyan-700 dark:text-cyan-400', border: 'border-l-cyan-500' },
+  { bg: 'bg-rose-500/10', text: 'text-rose-700 dark:text-rose-400', border: 'border-l-rose-500' },
+];
 
-const SECTION_HEADER_COLORS: Record<string, string> = {
-  'GETTING STARTED': 'border-l-blue-500',
-  'MARKETING': 'border-l-purple-500',
-  'LEGAL': 'border-l-red-500',
-  'FINANCE': 'border-l-green-500',
-  'DUE DILIGENCE': 'border-l-orange-500',
-  'SETTLEMENT': 'border-l-emerald-500',
-  'HANDOVER': 'border-l-teal-500',
-  'CLIENT CARE': 'border-l-pink-500',
-  'ADMIN': 'border-l-gray-500',
-  'COMPLIANCE': 'border-l-yellow-500',
+// Get color based on section index
+const getSectionColor = (index: number) => {
+  return SECTION_COLOR_PALETTE[index % SECTION_COLOR_PALETTE.length];
 };
 
 interface CollapsibleTaskSectionProps {
   section: string;
+  sectionIndex: number;
   tasks: (TransactionTask & { _originalIndex?: number })[];
   onUpdateTask: (originalIndex: number, updates: Partial<TransactionTask>) => void;
   onRemoveTask: (originalIndex: number) => void;
   onAddTask: () => void;
+  onRenameSection: (oldName: string, newName: string) => void;
+  onDeleteSection: (section: string) => void;
   teamMembers?: Array<{
     user_id: string;
     profiles: {
@@ -65,15 +62,47 @@ interface CollapsibleTaskSectionProps {
 
 export function CollapsibleTaskSection({
   section,
+  sectionIndex,
   tasks,
   onUpdateTask,
   onRemoveTask,
   onAddTask,
+  onRenameSection,
+  onDeleteSection,
   teamMembers = [],
   isDefaultTemplate = false,
   disabled = false,
 }: CollapsibleTaskSectionProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(section);
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  const colors = getSectionColor(sectionIndex);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
+
+  const handleSaveRename = () => {
+    const trimmed = editValue.trim().toUpperCase();
+    if (trimmed && trimmed !== section) {
+      onRenameSection(section, trimmed);
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveRename();
+    } else if (e.key === 'Escape') {
+      setEditValue(section);
+      setIsEditing(false);
+    }
+  };
 
   return (
     <Collapsible 
@@ -85,38 +114,70 @@ export function CollapsibleTaskSection({
         id={`section-${section.replace(/\s/g, '-')}`}
         className={cn(
           'flex items-center justify-between p-3 rounded-lg border-l-4 bg-muted/50',
-          SECTION_HEADER_COLORS[section] || 'border-l-gray-400'
+          colors.border
         )}
       >
-        <CollapsibleTrigger asChild>
-          <button className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            {isOpen ? (
-              <ChevronDown className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            )}
-            <Badge 
-              variant="outline" 
-              className={cn('font-semibold', SECTION_COLORS[section] || 'bg-secondary')}
+        <div className="flex items-center gap-3">
+          <CollapsibleTrigger asChild>
+            <button className="hover:opacity-80 transition-opacity">
+              {isOpen ? (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              )}
+            </button>
+          </CollapsibleTrigger>
+          
+          {isEditing && !disabled ? (
+            <Input
+              ref={inputRef}
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value.toUpperCase())}
+              onBlur={handleSaveRename}
+              onKeyDown={handleKeyDown}
+              className="h-7 w-48 font-semibold uppercase"
+            />
+          ) : (
+            <button
+              onClick={() => !disabled && setIsEditing(true)}
+              className={cn(
+                'flex items-center gap-2 px-2.5 py-1 rounded-md font-semibold text-sm',
+                colors.bg, colors.text,
+                !disabled && 'hover:opacity-80 cursor-pointer'
+              )}
             >
               {section}
-            </Badge>
-            <span className="text-sm text-muted-foreground">
-              {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
-            </span>
-          </button>
-        </CollapsibleTrigger>
+              {!disabled && <Pencil className="h-3 w-3 opacity-50" />}
+            </button>
+          )}
+          
+          <span className="text-sm text-muted-foreground">
+            {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
+          </span>
+        </div>
         
         {!disabled && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onAddTask}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onAddTask}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Task
+            </Button>
+            {tasks.length === 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDeleteSection(section)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         )}
       </div>
 

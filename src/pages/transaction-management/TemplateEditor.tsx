@@ -39,31 +39,6 @@ const stageLabels: Record<TransactionStage, string> = {
   property_documents: 'Property Documents',
 };
 
-const TASK_SECTIONS = [
-  'GETTING STARTED',
-  'MARKETING',
-  'LEGAL',
-  'FINANCE',
-  'DUE DILIGENCE',
-  'SETTLEMENT',
-  'HANDOVER',
-  'CLIENT CARE',
-  'ADMIN',
-  'COMPLIANCE',
-  'STRATA',
-  'PLANNING',
-  'PRICING',
-  'VIEWINGS',
-  'PROSPECTING',
-  'TRACKING',
-  'PREPARATION',
-  'FOLLOW UP',
-  'SCHEDULING',
-  'SETUP',
-  'COMMUNICATION',
-  'REPORTING',
-  'FINANCIAL',
-];
 
 export default function TemplateEditor() {
   const navigate = useNavigate();
@@ -157,14 +132,17 @@ export default function TemplateEditor() {
     return grouped;
   }, [tasks]);
 
-  // Get sections that have tasks
+  // Get sections that have tasks (keep order of first appearance)
   const activeSections = useMemo(() => {
-    return Object.keys(tasksBySection).sort((a, b) => {
-      const indexA = TASK_SECTIONS.indexOf(a);
-      const indexB = TASK_SECTIONS.indexOf(b);
-      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    const seen: string[] = [];
+    tasks.forEach(task => {
+      const section = task.section || 'NEW SECTION';
+      if (!seen.includes(section)) {
+        seen.push(section);
+      }
     });
-  }, [tasksBySection]);
+    return seen;
+  }, [tasks]);
 
   const handleSave = async () => {
     if (!canEdit) return;
@@ -248,6 +226,38 @@ export default function TemplateEditor() {
 
   const removeTask = (originalIndex: number) => {
     setTasks(tasks.filter((_, i) => i !== originalIndex));
+  };
+
+  const addSection = () => {
+    const existingCount = activeSections.length;
+    const newSectionName = `SECTION ${existingCount + 1}`;
+    const newTask: TransactionTask = {
+      title: '',
+      section: newSectionName,
+      description: '',
+      due_offset_days: undefined,
+    };
+    setTasks([...tasks, newTask]);
+  };
+
+  const renameSection = (oldName: string, newName: string) => {
+    // Check if new name already exists
+    if (activeSections.includes(newName) && oldName !== newName) {
+      toast.error('A section with this name already exists');
+      return;
+    }
+    setTasks(tasks.map(t => 
+      t.section === oldName ? { ...t, section: newName } : t
+    ));
+  };
+
+  const deleteSection = (section: string) => {
+    // Only delete if section is empty
+    const sectionTasks = tasks.filter(t => t.section === section);
+    if (sectionTasks.length === 0) {
+      // Remove any empty tasks that might have been created for this section
+      setTasks(tasks.filter(t => t.section !== section));
+    }
   };
 
   const scrollToSection = (section: string) => {
@@ -417,14 +427,17 @@ export default function TemplateEditor() {
                       </Button>
                     </div>
                   ) : (
-                    activeSections.map((section) => (
+                    activeSections.map((section, idx) => (
                       <CollapsibleTaskSection
                         key={section}
                         section={section}
+                        sectionIndex={idx}
                         tasks={tasksBySection[section] || []}
                         onUpdateTask={updateTask}
                         onRemoveTask={removeTask}
                         onAddTask={() => addTask(section)}
+                        onRenameSection={renameSection}
+                        onDeleteSection={deleteSection}
                         teamMembers={teamMembers}
                         isDefaultTemplate={isSystemTemplate}
                         disabled={!canEdit}
@@ -433,23 +446,12 @@ export default function TemplateEditor() {
                   )}
 
                   {/* Add Section Button */}
-                  {tasks.length > 0 && (
-                    <div className="flex justify-center pt-4">
-                      <Select onValueChange={(section) => addTask(section)}>
-                        <SelectTrigger className="w-[250px]">
-                          <Plus className="h-4 w-4 mr-2" />
-                          <span>Add task to section...</span>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TASK_SECTIONS.map((section) => (
-                            <SelectItem key={section} value={section}>
-                              {section}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  <div className="flex justify-center pt-4">
+                    <Button variant="outline" onClick={addSection} disabled={!canEdit}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Section
+                    </Button>
+                  </div>
                 </div>
               </ScrollArea>
             </TabsContent>
