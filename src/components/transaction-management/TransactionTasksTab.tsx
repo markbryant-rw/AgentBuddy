@@ -75,6 +75,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transaction-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-tasks-count'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       onTasksUpdate?.();
     },
@@ -110,6 +111,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transaction-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-tasks-count'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast.success('Task added');
       onTasksUpdate?.();
@@ -136,6 +138,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transaction-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-tasks-count'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast.success('Task updated');
       onTasksUpdate?.();
@@ -153,6 +156,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transaction-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['transaction-tasks-count'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast.success('Task deleted');
       onTasksUpdate?.();
@@ -300,6 +304,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
               transactionId={transaction.id}
               onTemplateApplied={() => {
                 queryClient.invalidateQueries({ queryKey: ['transaction-tasks'] });
+                queryClient.invalidateQueries({ queryKey: ['transaction-tasks-count'] });
                 queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 onTasksUpdate?.();
               }}
