@@ -257,27 +257,7 @@ export function CollapsibleTaskSection({
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
-              </div>
-
-              {/* Due Days Input - offset from stage date */}
-              <div className="w-24">
-                <Input
-                  type="number"
-                  value={task.due_offset_days !== undefined && task.due_offset_days !== null ? task.due_offset_days : ''}
-                  onChange={(e) => onUpdateTask(originalIndex, { 
-                    due_offset_days: e.target.value !== '' ? parseInt(e.target.value) : undefined 
-                  })}
-                  placeholder="Days"
-                  title="Days from stage date (negative = before, 0 = same day, positive = after)"
-                  className={cn(
-                    "h-9 border-0 shadow-none focus-visible:ring-1 text-center",
-                    task.due_offset_days !== undefined && task.due_offset_days < 0 && "text-red-600",
-                    task.due_offset_days === 0 && "text-blue-600",
-                    task.due_offset_days !== undefined && task.due_offset_days > 0 && "text-green-600"
-                  )}
-                  disabled={disabled}
-                />
+              </Select>
               </div>
 
               {/* Knowledge Base Article Link */}

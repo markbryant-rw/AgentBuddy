@@ -158,8 +158,8 @@ export default function TemplateEditor() {
       toast.error('All tasks must have a title and section');
       return;
     }
-    if (documents.length > 0 && !documents.every(d => d.title.trim() && d.section)) {
-      toast.error('All documents must have a title and section');
+    if (documents.length > 0 && !documents.every(d => d.title.trim())) {
+      toast.error('All documents must have a title');
       return;
     }
 
@@ -171,7 +171,7 @@ export default function TemplateEditor() {
           description: description.trim() || undefined,
           stage,
           tasks: tasks.filter(t => t.title.trim()),
-          documents: documents.filter(d => d.title.trim()),
+          documents: documents.filter(d => d.title.trim()) as any,
           is_default: isDefault,
           team_id: profile?.primary_team_id || undefined,
         });
@@ -185,7 +185,7 @@ export default function TemplateEditor() {
             description: description.trim() || undefined,
             stage,
             tasks: tasks.filter(t => t.title.trim()),
-            documents: documents.filter(d => d.title.trim()),
+            documents: documents.filter(d => d.title.trim()) as any,
           },
         });
 

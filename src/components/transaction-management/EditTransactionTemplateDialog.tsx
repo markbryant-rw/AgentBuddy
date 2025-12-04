@@ -118,7 +118,7 @@ export function EditTransactionTemplateDialog({
       return;
     }
 
-    if (documents.length > 0 && !documents.every(d => d.title.trim() && d.section)) {
+    if (documents.length > 0 && !documents.every(d => d.title.trim())) {
       return;
     }
 
@@ -129,7 +129,7 @@ export function EditTransactionTemplateDialog({
           description: description.trim() || undefined,
           stage,
           tasks: tasks.filter(t => t.title.trim()),
-          documents: documents.filter(d => d.title.trim()),
+          documents: documents.filter(d => d.title.trim()) as any,
           is_default: isDefault,
           team_id: profile?.primary_team_id || undefined,
         });
@@ -141,7 +141,7 @@ export function EditTransactionTemplateDialog({
             description: description.trim() || undefined,
             stage,
             tasks: tasks.filter(t => t.title.trim()),
-            documents: documents.filter(d => d.title.trim()),
+            documents: documents.filter(d => d.title.trim()) as any,
           },
         });
 
@@ -164,7 +164,7 @@ export function EditTransactionTemplateDialog({
   const isValid = name.trim() && 
                   tasks.length > 0 && 
                   tasks.every(t => t.title.trim() && t.section) &&
-                  (documents.length === 0 || documents.every(d => d.title.trim() && d.section));
+                  (documents.length === 0 || documents.every(d => d.title.trim()));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
