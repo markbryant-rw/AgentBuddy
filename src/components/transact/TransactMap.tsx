@@ -1,4 +1,4 @@
-import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Marker, Tooltip, useMap } from 'react-leaflet';
 import { Transaction } from '@/hooks/useTransactions';
 import { PastSale } from '@/hooks/usePastSales';
 import { useEffect, useMemo, useState } from 'react';
@@ -395,6 +395,13 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
           position={[transaction.latitude!, transaction.longitude!]}
           icon={icon}
         >
+          <Tooltip 
+            direction="top" 
+            offset={[0, -20]} 
+            className="!bg-card !text-foreground !border-border !rounded-md !px-2 !py-1 !text-xs !font-medium !shadow-lg"
+          >
+            {transaction.address}
+          </Tooltip>
           {renderTransactionPopup(transaction)}
         </Marker>
       );
@@ -413,6 +420,13 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
           fillOpacity: 0.7,
         }}
       >
+        <Tooltip 
+          direction="top" 
+          offset={[0, -5]} 
+          className="!bg-card !text-foreground !border-border !rounded-md !px-2 !py-1 !text-xs !font-medium !shadow-lg"
+        >
+          {transaction.address}
+        </Tooltip>
         {renderTransactionPopup(transaction)}
       </CircleMarker>
     );
@@ -495,6 +509,13 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
           position={[sale.latitude!, sale.longitude!]}
           icon={icon}
         >
+          <Tooltip 
+            direction="top" 
+            offset={[0, -20]} 
+            className="!bg-card !text-foreground !border-border !rounded-md !px-2 !py-1 !text-xs !font-medium !shadow-lg"
+          >
+            {sale.address}
+          </Tooltip>
           {renderPastSalePopup(sale)}
         </Marker>
       );
@@ -513,6 +534,13 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
           fillOpacity: 0.6,
         }}
       >
+        <Tooltip 
+          direction="top" 
+          offset={[0, -5]} 
+          className="!bg-card !text-foreground !border-border !rounded-md !px-2 !py-1 !text-xs !font-medium !shadow-lg"
+        >
+          {sale.address}
+        </Tooltip>
         {renderPastSalePopup(sale)}
       </CircleMarker>
     );
