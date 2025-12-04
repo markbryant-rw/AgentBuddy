@@ -9,13 +9,13 @@ export interface Listing {
   id: string;
   team_id: string;
   created_by: string;
-  last_edited_by: string;
+  last_edited_by?: string | null;
   address: string;
-  vendor_name: string;
+  vendor_name?: string | null;
   warmth: 'cold' | 'warm' | 'hot';
-  likelihood: number;
-  expected_month: string;
-  last_contact: string;
+  likelihood?: number | null;
+  expected_month?: string | null;
+  last_contact?: string | null;
   stage?: 'call' | 'vap' | 'map' | 'lap'; // Pipeline progression stages
   outcome?: 'in_progress' | 'won' | 'lost'; // Final outcome status
   suburb?: string;
