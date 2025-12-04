@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, BookOpen, Mic2, ArrowRight, MessageSquarePlus } from "lucide-react";
+import { MessageSquare, BookOpen, Mic2, ArrowRight, MessageSquarePlus, RotateCcw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,27 +13,7 @@ export function GrowNavigationCards() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { team } = useTeam();
-
-  // Fetch coaching conversations count
-  const { data: coachingStats } = useQuery({
-    queryKey: ["coaching-stats", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { totalConversations: 0, starredConversations: 0 };
-
-      const { data, error } = await (supabase as any)
-        .from('coaching_conversations')
-        .select('id, is_starred')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
-      return {
-        totalConversations: data?.length || 0,
-        starredConversations: data?.filter(c => c.is_starred).length || 0,
-      };
-    },
-    enabled: !!user?.id,
-  });
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
 
   // Fetch knowledge base stats
   const { data: knowledgeStats } = useQuery({
@@ -73,30 +54,6 @@ export function GrowNavigationCards() {
     enabled: !!team?.id && !!user?.id,
   });
 
-  // Fetch roleplaying stats
-  const { data: roleplayStats } = useQuery({
-    queryKey: ["roleplay-stats", user?.id],
-    queryFn: async () => {
-      if (!user?.id) return { totalScenarios: 0, completedSessions: 0, avgRating: 0 };
-
-      const [scenarios, sessions] = await Promise.all([
-        (supabase as any).from('roleplay_scenarios').select('id').eq('is_active', true),
-        (supabase as any).from('roleplay_sessions').select('rating').eq('user_id', user.id).eq('completed', true),
-      ]);
-
-      const avgRating = sessions.data && sessions.data.length > 0
-        ? sessions.data.reduce((acc: number, s: any) => acc + (s.rating || 0), 0) / sessions.data.length
-        : 0;
-
-      return {
-        totalScenarios: scenarios.data?.length || 0,
-        completedSessions: sessions.data?.length || 0,
-        avgRating,
-      };
-    },
-    enabled: !!user?.id,
-  });
-
   // Fetch feedback stats
   const { data: feedbackStats } = useQuery({
     queryKey: ["feedback-stats", user?.id],
@@ -127,10 +84,11 @@ export function GrowNavigationCards() {
       gradient: "from-pink-500/10 to-rose-600/20 hover:from-pink-500/20 hover:to-rose-600/30",
       iconBg: "bg-pink-100 dark:bg-pink-900/30",
       iconColor: "text-pink-600 dark:text-pink-400",
+      comingSoon: true,
       stats: [
-        { label: "Total Conversations", value: coachingStats?.totalConversations || 0 },
-        { label: "Starred", value: coachingStats?.starredConversations || 0 },
-        { label: "Active Sessions", value: coachingStats?.totalConversations ? Math.min(3, coachingStats.totalConversations) : 0 },
+        { label: "Total Conversations", value: "—" },
+        { label: "Starred", value: "—" },
+        { label: "Active Sessions", value: "—" },
       ],
     },
     {
@@ -141,6 +99,7 @@ export function GrowNavigationCards() {
       gradient: "from-purple-500/10 to-indigo-600/20 hover:from-purple-500/20 hover:to-indigo-600/30",
       iconBg: "bg-purple-100 dark:bg-purple-900/30",
       iconColor: "text-purple-600 dark:text-purple-400",
+      comingSoon: false,
       stats: [
         { label: "Categories", value: knowledgeStats?.totalCategories || 0 },
         { label: "Playbooks", value: knowledgeStats?.totalPlaybooks || 0 },
@@ -155,10 +114,11 @@ export function GrowNavigationCards() {
       gradient: "from-emerald-500/10 to-teal-600/20 hover:from-emerald-500/20 hover:to-teal-600/30",
       iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
       iconColor: "text-emerald-600 dark:text-emerald-400",
+      comingSoon: true,
       stats: [
-        { label: "Scenarios", value: roleplayStats?.totalScenarios || 0 },
-        { label: "Completed", value: roleplayStats?.completedSessions || 0 },
-        { label: "Avg Rating", value: roleplayStats?.avgRating ? roleplayStats.avgRating.toFixed(1) : "—" },
+        { label: "Scenarios", value: "—" },
+        { label: "Completed", value: "—" },
+        { label: "Avg Rating", value: "—" },
       ],
     },
     {
@@ -169,6 +129,7 @@ export function GrowNavigationCards() {
       gradient: "from-amber-500/10 to-orange-600/20 hover:from-amber-500/20 hover:to-orange-600/30",
       iconBg: "bg-amber-100 dark:bg-amber-900/30",
       iconColor: "text-amber-600 dark:text-amber-400",
+      comingSoon: false,
       stats: [
         { label: "Your Bug Reports", value: feedbackStats?.bugReports || 0 },
         { label: "Feature Requests", value: feedbackStats?.featureRequests || 0 },
@@ -177,52 +138,109 @@ export function GrowNavigationCards() {
     },
   ];
 
+  const handleCardClick = (card: typeof cards[0]) => {
+    if (card.comingSoon) {
+      setFlippedCards(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(card.title)) {
+          newSet.delete(card.title);
+        } else {
+          newSet.add(card.title);
+        }
+        return newSet;
+      });
+    } else {
+      navigate(card.route);
+    }
+  };
+
   return (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
       {cards.map((card, index) => {
         const Icon = card.icon;
+        const isFlipped = flippedCards.has(card.title);
+        
         return (
           <motion.div
             key={card.title}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
+            className="perspective-1000"
+            style={{ perspective: "1000px" }}
           >
-            <Card 
-              className={`group cursor-pointer transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/20 bg-gradient-to-br ${card.gradient}`}
-              onClick={() => navigate(card.route)}
+            <motion.div
+              className="relative w-full h-full"
+              initial={false}
+              animate={{ rotateY: isFlipped ? 180 : 0 }}
+              transition={{ duration: 0.6, type: "spring", stiffness: 100 }}
+              style={{ transformStyle: "preserve-3d" }}
             >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-3 rounded-xl ${card.iconBg} group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className={`h-8 w-8 ${card.iconColor}`} />
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <ArrowRight className="h-5 w-5" />
-                  </Button>
-                </div>
-                
-                <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
-                  {card.title}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {card.description}
-                </p>
-
-                <div className="grid grid-cols-3 gap-2 pt-4 border-t">
-                  {card.stats.map((stat, idx) => (
-                    <div key={idx} className="text-center">
-                      <div className="text-2xl font-bold">{stat.value}</div>
-                      <div className="text-xs text-muted-foreground">{stat.label}</div>
+              {/* Front of card */}
+              <Card 
+                className={`group cursor-pointer transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/20 bg-gradient-to-br ${card.gradient} backface-hidden`}
+                onClick={() => handleCardClick(card)}
+                style={{ backfaceVisibility: "hidden" }}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`p-3 rounded-xl ${card.iconBg} group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className={`h-8 w-8 ${card.iconColor}`} />
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                  
+                  <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                    {card.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    {card.description}
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-2 pt-4 border-t">
+                    {card.stats.map((stat, idx) => (
+                      <div key={idx} className="text-center">
+                        <div className="text-2xl font-bold">{stat.value}</div>
+                        <div className="text-xs text-muted-foreground">{stat.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Back of card (Coming Soon) */}
+              {card.comingSoon && (
+                <Card 
+                  className={`absolute inset-0 cursor-pointer transition-all duration-300 hover:shadow-xl border-2 hover:border-primary/20 bg-gradient-to-br ${card.gradient}`}
+                  onClick={() => handleCardClick(card)}
+                  style={{ 
+                    backfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)"
+                  }}
+                >
+                  <CardContent className="p-6 h-full flex flex-col items-center justify-center text-center">
+                    <div className={`p-4 rounded-xl ${card.iconBg} mb-4`}>
+                      <Icon className={`h-10 w-10 ${card.iconColor}`} />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-2">{card.title}</h3>
+                    <p className="text-lg text-muted-foreground mb-6">Coming Soon</p>
+                    <p className="text-sm text-muted-foreground mb-6">
+                      We're working hard to bring you this feature. Stay tuned!
+                    </p>
+                    <Button variant="outline" size="sm" className="gap-2">
+                      <RotateCcw className="h-4 w-4" />
+                      Flip Back
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
           </motion.div>
         );
       })}
