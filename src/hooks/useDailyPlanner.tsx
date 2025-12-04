@@ -353,7 +353,7 @@ export function useDailyPlanner(date: Date = new Date()) {
         .from('daily_planner_items')
         .select('*')
         .eq('team_id', teamId)
-        .eq('scheduled_date', currentDateStr)
+        .eq('date', currentDateStr)
         .eq('completed', false);
 
       if (error) throw error;
