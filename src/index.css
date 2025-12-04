@@ -438,3 +438,32 @@ html {
     outline-offset: 4px;
   }
 }
+
+/* Custom scrollbar styling for Kanban boards */
+.kanban-scroll::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.kanban-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 5px;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.25);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.kanban-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+  background-clip: padding-box;
+}
+
+/* Firefox scrollbar */
+.kanban-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
+}
