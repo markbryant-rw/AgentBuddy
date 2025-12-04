@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Calendar, MapPin, DollarSign, Users, CheckSquare, FileText, MessageSquare, ArrowRight, X, Pencil, Plus, Trash2, RefreshCw, ClipboardList, XCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -80,6 +81,34 @@ export const TransactionDetailDrawer = ({
   const [pendingStageChange, setPendingStageChange] = useState<TransactionStage | null>(null);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+
+  // Fetch actual task counts
+  const { data: taskCounts } = useQuery({
+    queryKey: ['transaction-tasks-count', transaction?.id],
+    queryFn: async () => {
+      if (!transaction?.id) return { done: 0, total: 0 };
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('id, completed')
+        .eq('transaction_id', transaction.id)
+        .is('list_id', null)
+        .is('project_id', null);
+      
+      if (error) throw error;
+      const total = data?.length || 0;
+      const done = data?.filter(t => t.completed).length || 0;
+      return { done, total };
+    },
+    enabled: !!transaction?.id,
+  });
+
+  // Get document counts
+  const { documents } = useTransactionDocuments(transaction?.id);
+  const docCounts = useMemo(() => ({
+    total: documents.length,
+    reviewed: documents.filter(d => d.status === 'reviewed').length,
+    pendingRequired: documents.filter(d => d.status === 'pending' && d.required).length,
+  }), [documents]);
 
   if (!transaction) return null;
 
@@ -500,15 +529,26 @@ export const TransactionDetailDrawer = ({
               </TabsTrigger>
               <TabsTrigger value="tasks" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
                 <CheckSquare className="h-4 w-4 mr-2" />
-                Tasks ({transaction.tasks_done}/{transaction.tasks_total})
+                Tasks ({taskCounts?.done || 0}/{taskCounts?.total || 0})
               </TabsTrigger>
               <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Notes
               </TabsTrigger>
-              <TabsTrigger value="documents" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+              <TabsTrigger 
+                value="documents" 
+                className={cn(
+                  "data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none",
+                  docCounts.pendingRequired > 0 && "text-amber-600 dark:text-amber-400"
+                )}
+              >
                 <FileText className="h-4 w-4 mr-2" />
-                Documents
+                Documents ({docCounts.reviewed}/{docCounts.total})
+                {docCounts.pendingRequired > 0 && (
+                  <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1.5 text-xs rounded-full">
+                    {docCounts.pendingRequired}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="reports" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
                 <ClipboardList className="h-4 w-4 mr-2" />
