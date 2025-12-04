@@ -1,6 +1,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { resizeImage, RESIZE_PRESETS } from "@/lib/imageResize";
+import {
+  validateImageFile,
+  validateDocumentFile,
+  validateAudioFile,
+  sanitizeFilename,
+} from "@/lib/fileValidation";
 
 interface UploadFileParams {
   file: File | Blob;
@@ -10,7 +16,7 @@ interface UploadFileParams {
 
 export async function uploadFile({ file, conversationId, filename }: UploadFileParams) {
   const timestamp = Date.now();
-  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, "_");
+  const sanitizedFilename = sanitizeFilename(filename);
   const path = `${conversationId}/${timestamp}-${sanitizedFilename}`;
 
   const { data, error } = await supabase.storage
@@ -36,24 +42,21 @@ export async function uploadFile({ file, conversationId, filename }: UploadFileP
 export function useFileUpload() {
   const uploadImage = async (file: File, conversationId: string) => {
     try {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        throw new Error("File must be an image");
-      }
+      // Comprehensive validation with magic byte checking
+      const validation = await validateImageFile(file);
 
-      // Validate file size (10MB max before resizing)
-      if (file.size > 10 * 1024 * 1024) {
-        throw new Error("Image must be less than 10MB");
+      if (!validation.valid) {
+        throw new Error(validation.error || "Invalid image file");
       }
 
       // Resize image using message preset
       const resizedBlob = await resizeImage(file, RESIZE_PRESETS.message);
-      const resizedFile = new File([resizedBlob], file.name, { type: resizedBlob.type });
+      const resizedFile = new File([resizedBlob], validation.sanitizedFilename!, { type: resizedBlob.type });
 
       const url = await uploadFile({
         file: resizedFile,
         conversationId,
-        filename: file.name,
+        filename: validation.sanitizedFilename!,
       });
 
       // Get image dimensions from resized file
@@ -65,7 +68,7 @@ export function useFileUpload() {
 
       return {
         url,
-        filename: file.name,
+        filename: validation.sanitizedFilename!,
         fileType: resizedFile.type,
         size: resizedFile.size,
         width: dimensions.width,
@@ -79,21 +82,27 @@ export function useFileUpload() {
 
   const uploadAudio = async (blob: Blob, conversationId: string) => {
     try {
-      // Validate file size (20MB max)
-      if (blob.size > 20 * 1024 * 1024) {
-        throw new Error("Audio must be less than 20MB");
+      // Create File object for validation
+      const audioFile = new File([blob], `voice-note-${Date.now()}.webm`, {
+        type: blob.type || 'audio/webm',
+      });
+
+      // Validate audio file
+      const validation = await validateAudioFile(audioFile);
+
+      if (!validation.valid) {
+        throw new Error(validation.error || "Invalid audio file");
       }
 
-      const filename = `voice-note-${Date.now()}.webm`;
       const url = await uploadFile({
         file: blob,
         conversationId,
-        filename,
+        filename: validation.sanitizedFilename!,
       });
 
       return {
         url,
-        filename,
+        filename: validation.sanitizedFilename!,
         fileType: blob.type,
         size: blob.size,
       };
@@ -105,29 +114,22 @@ export function useFileUpload() {
 
   const uploadDocument = async (file: File, conversationId: string) => {
     try {
-      const validTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword'
-      ];
-      
-      if (!validTypes.includes(file.type)) {
-        throw new Error("Unsupported document type");
+      // Comprehensive validation with magic byte checking
+      const validation = await validateDocumentFile(file);
+
+      if (!validation.valid) {
+        throw new Error(validation.error || "Invalid document file");
       }
-      
-      if (file.size > 20 * 1024 * 1024) {
-        throw new Error("Document must be less than 20MB");
-      }
-      
+
       const url = await uploadFile({
         file,
         conversationId,
-        filename: file.name,
+        filename: validation.sanitizedFilename!,
       });
-      
+
       return {
         url,
-        filename: file.name,
+        filename: validation.sanitizedFilename!,
         fileType: file.type,
         size: file.size,
       };
