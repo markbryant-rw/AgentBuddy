@@ -6,17 +6,27 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Maximize2, X } from 'lucide-react';
+import { Maximize2, X, RefreshCw } from 'lucide-react';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { cn } from '@/lib/utils';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-const STAGE_COLORS = {
+const STAGE_COLORS: Record<string, string> = {
   signed: '#3b82f6',
-  under_contract: '#8b5cf6',
+  live: '#22c55e',
+  contract: '#8b5cf6',
   unconditional: '#f59e0b',
-  settled: '#22c55e',
+  settled: '#6b7280',
 };
+
+const STAGE_OPTIONS = [
+  { value: 'signed', label: 'Signed', color: 'bg-blue-500' },
+  { value: 'live', label: 'Live', color: 'bg-green-500' },
+  { value: 'contract', label: 'Contract', color: 'bg-purple-500' },
+  { value: 'unconditional', label: 'Unconditional', color: 'bg-amber-500' },
+  { value: 'settled', label: 'Settled', color: 'bg-gray-500' },
+];
 
 const WARMTH_COLORS = {
   hot: '#ef4444',
@@ -94,9 +104,18 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [salespersonFilter, setSalespersonFilter] = useState<string[]>([]);
   
-  const [transactionStageFilter, setTransactionStageFilter] = useState<string>('all');
+  // Multi-select stage filter
+  const [selectedStages, setSelectedStages] = useState<string[]>([]);
   const [transactionWarmthFilter, setTransactionWarmthFilter] = useState<string>('all');
   const [pastSalesStatusFilter, setPastSalesStatusFilter] = useState<string>('all');
+
+  const toggleStage = (stage: string) => {
+    setSelectedStages(prev => 
+      prev.includes(stage) 
+        ? prev.filter(s => s !== stage)
+        : [...prev, stage]
+    );
+  };
 
   const getRadiusByWarmth = (warmth: string) => {
     switch (warmth) {
@@ -111,7 +130,6 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
   const getTransactionAssignee = (transaction: Transaction): string | null => {
     if (!transaction.assignees) return null;
     const assignees = transaction.assignees as any;
-    // Handle both array and object formats
     if (Array.isArray(assignees) && assignees.length > 0) {
       return assignees[0];
     }
@@ -120,11 +138,17 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
     return null;
   };
 
+  // Count ungeo'd transactions
+  const ungeocodedCount = useMemo(() => {
+    return transactions.filter(t => !t.latitude || !t.longitude).length;
+  }, [transactions]);
+
   const filteredTransactions = useMemo(() => {
     return transactions.filter(transaction => {
       if (!transaction.latitude || !transaction.longitude) return false;
       if (transaction.archived) return false;
-      if (transactionStageFilter !== 'all' && transaction.stage !== transactionStageFilter) return false;
+      // Multi-select stage filter
+      if (selectedStages.length > 0 && !selectedStages.includes(transaction.stage)) return false;
       if (transactionWarmthFilter !== 'all' && transaction.warmth !== transactionWarmthFilter) return false;
       
       // Salesperson filter
@@ -135,7 +159,7 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
       
       return true;
     });
-  }, [transactions, transactionStageFilter, transactionWarmthFilter, salespersonFilter]);
+  }, [transactions, selectedStages, transactionWarmthFilter, salespersonFilter]);
 
   const filteredPastSales = useMemo(() => {
     return pastSales.filter(sale => {
@@ -156,100 +180,114 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
   // Get member info by ID
   const getMemberById = (id: string) => members.find(m => m.id === id);
 
-  const renderSalespersonFilter = () => {
-    if (members.length <= 1) return null;
-
-    return (
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="text-sm text-muted-foreground">Filter by:</span>
-        {members.map((member) => {
-          const isSelected = salespersonFilter.includes(member.id);
-          return (
-            <button
-              key={member.id}
-              onClick={() => {
-                setSalespersonFilter(prev => 
-                  isSelected 
-                    ? prev.filter(id => id !== member.id)
-                    : [...prev, member.id]
-                );
-              }}
-              className={`relative transition-all ${isSelected ? 'ring-2 ring-primary ring-offset-2 rounded-full' : 'opacity-60 hover:opacity-100'}`}
-              title={member.full_name || member.email}
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={member.avatar_url || ''} />
-                <AvatarFallback className="text-xs">
-                  {member.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
-                </AvatarFallback>
-              </Avatar>
-            </button>
-          );
-        })}
-        {salespersonFilter.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSalespersonFilter([])}
-            className="h-8 px-2"
-          >
-            <X className="h-4 w-4 mr-1" />
-            Clear
-          </Button>
-        )}
-      </div>
-    );
-  };
-
   const renderMapControls = () => (
-    <div className="relative z-[1000] bg-card rounded-lg border p-4 mb-4 space-y-3">
-      <div className="flex flex-wrap items-center gap-4">
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={showTransactions} onChange={(e) => setShowTransactions(e.target.checked)} className="w-4 h-4" />
-          <span className="text-sm">Show Current Listings ({filteredTransactions.length})</span>
+    <div className="relative z-[1000] bg-card rounded-lg border p-3 mb-3 space-y-2">
+      {/* Row 1: Main toggles, avatars, actions */}
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Show/Hide toggles */}
+        <label className="flex items-center gap-1.5 cursor-pointer text-sm">
+          <input type="checkbox" checked={showTransactions} onChange={(e) => setShowTransactions(e.target.checked)} className="w-3.5 h-3.5" />
+          <span>Listings ({filteredTransactions.length})</span>
         </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={showPastSales} onChange={(e) => setShowPastSales(e.target.checked)} className="w-4 h-4" />
-          <span className="text-sm">Show Past Sales ({filteredPastSales.length})</span>
+        <label className="flex items-center gap-1.5 cursor-pointer text-sm">
+          <input type="checkbox" checked={showPastSales} onChange={(e) => setShowPastSales(e.target.checked)} className="w-3.5 h-3.5" />
+          <span>Past Sales ({filteredPastSales.length})</span>
         </label>
-        
-        {onAutoGeocode && (
-          <Button onClick={onAutoGeocode} disabled={isGeocoding} size="sm" variant="outline">
-            {isGeocoding ? 'Geocoding...' : 'Auto-Geocode All'}
+
+        <div className="h-5 w-px bg-border" />
+
+        {/* Salesperson avatars */}
+        {members.length > 1 && (
+          <div className="flex items-center gap-1">
+            {members.map((member) => {
+              const isSelected = salespersonFilter.includes(member.id);
+              return (
+                <button
+                  key={member.id}
+                  onClick={() => {
+                    setSalespersonFilter(prev => 
+                      isSelected 
+                        ? prev.filter(id => id !== member.id)
+                        : [...prev, member.id]
+                    );
+                  }}
+                  className={cn(
+                    "relative transition-all rounded-full",
+                    isSelected ? 'ring-2 ring-primary ring-offset-1' : 'opacity-50 hover:opacity-100'
+                  )}
+                  title={member.full_name || member.email}
+                >
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={member.avatar_url || ''} />
+                    <AvatarFallback className="text-[10px]">
+                      {member.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
+              );
+            })}
+            {salespersonFilter.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={() => setSalespersonFilter([])} className="h-7 px-1.5 text-xs">
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        )}
+
+        <div className="flex-1" />
+
+        {/* Actions */}
+        {onAutoGeocode && ungeocodedCount > 0 && (
+          <Button onClick={onAutoGeocode} disabled={isGeocoding} size="sm" variant="outline" className="h-7 text-xs">
+            <RefreshCw className={cn("h-3 w-3 mr-1", isGeocoding && "animate-spin")} />
+            {isGeocoding ? 'Geocoding...' : `Geocode (${ungeocodedCount})`}
           </Button>
         )}
         
         {!isFullscreen && (
-          <Button onClick={() => setIsFullscreen(true)} size="sm" variant="outline" className="ml-auto">
-            <Maximize2 className="h-4 w-4 mr-2" />
+          <Button onClick={() => setIsFullscreen(true)} size="sm" variant="outline" className="h-7 text-xs">
+            <Maximize2 className="h-3 w-3 mr-1" />
             Fullscreen
           </Button>
         )}
       </div>
 
-      {/* Salesperson Filter */}
-      {renderSalespersonFilter()}
-
-      {/* Advanced Filters */}
-      <div className="flex flex-wrap gap-3">
+      {/* Row 2: Stage filters + dropdowns */}
+      <div className="flex flex-wrap items-center gap-2">
         {showTransactions && (
           <>
-            <Select value={transactionStageFilter} onValueChange={setTransactionStageFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Transaction Stage" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stages</SelectItem>
-                <SelectItem value="signed">Signed</SelectItem>
-                <SelectItem value="under_contract">Under Contract</SelectItem>
-                <SelectItem value="unconditional">Unconditional</SelectItem>
-                <SelectItem value="settled">Settled</SelectItem>
-              </SelectContent>
-            </Select>
+            <span className="text-xs text-muted-foreground">Stages:</span>
+            <div className="flex items-center gap-1">
+              {STAGE_OPTIONS.map((stage) => {
+                const isSelected = selectedStages.includes(stage.value);
+                return (
+                  <button
+                    key={stage.value}
+                    onClick={() => toggleStage(stage.value)}
+                    className={cn(
+                      "px-2 py-0.5 text-xs rounded-full border transition-all",
+                      isSelected 
+                        ? "bg-primary text-primary-foreground border-primary" 
+                        : "bg-muted/50 text-muted-foreground border-transparent hover:border-border"
+                    )}
+                  >
+                    <span className={cn("inline-block w-2 h-2 rounded-full mr-1", stage.color)} />
+                    {stage.label}
+                  </button>
+                );
+              })}
+              {selectedStages.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedStages([])} className="h-6 px-1.5 text-xs">
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            <div className="h-4 w-px bg-border" />
 
             <Select value={transactionWarmthFilter} onValueChange={setTransactionWarmthFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Transaction Warmth" />
+              <SelectTrigger className="w-[110px] h-7 text-xs">
+                <SelectValue placeholder="Warmth" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Warmth</SelectItem>
@@ -263,8 +301,8 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
 
         {showPastSales && (
           <Select value={pastSalesStatusFilter} onValueChange={setPastSalesStatusFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Past Sales Status" />
+            <SelectTrigger className="w-[120px] h-7 text-xs">
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
@@ -281,7 +319,7 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
   const renderTransactionMarker = (transaction: Transaction) => {
     const assigneeId = getTransactionAssignee(transaction);
     const member = assigneeId ? getMemberById(assigneeId) : null;
-    const stageColor = STAGE_COLORS[transaction.stage as keyof typeof STAGE_COLORS] || '#gray';
+    const stageColor = STAGE_COLORS[transaction.stage] || '#6b7280';
 
     if (showAvatars && member) {
       const icon = createAvatarIcon(member.avatar_url, member.full_name || '', stageColor);
@@ -426,7 +464,7 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-2">
         {renderMapControls()}
         {renderMap()}
       </div>
