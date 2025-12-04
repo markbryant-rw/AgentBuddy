@@ -62,6 +62,7 @@ interface TransactMapProps {
   transactions: Transaction[];
   pastSales: PastSale[];
   onTransactionClick?: (transaction: Transaction) => void;
+  onPastSaleClick?: (pastSale: PastSale) => void;
   onAutoGeocode?: () => void;
   isGeocoding?: boolean;
 }
@@ -97,7 +98,7 @@ const createAvatarIcon = (avatarUrl: string | null, name: string, borderColor: s
   });
 };
 
-const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocode, isGeocoding }: TransactMapProps) => {
+const TransactMap = ({ transactions, pastSales, onTransactionClick, onPastSaleClick, onAutoGeocode, isGeocoding }: TransactMapProps) => {
   const { members } = useTeamMembers();
   const [showTransactions, setShowTransactions] = useState(true);
   const [showPastSales, setShowPastSales] = useState(true);
@@ -393,6 +394,9 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
           key={`sale-${sale.id}`}
           position={[sale.latitude!, sale.longitude!]}
           icon={icon}
+          eventHandlers={{
+            click: () => onPastSaleClick?.(sale),
+          }}
         >
           <Popup>
             <div className="p-2">
@@ -423,6 +427,9 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onAutoGeocod
           weight: 2,
           opacity: 1,
           fillOpacity: 0.6,
+        }}
+        eventHandlers={{
+          click: () => onPastSaleClick?.(sale),
         }}
       >
         <Popup>
