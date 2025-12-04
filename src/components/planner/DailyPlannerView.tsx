@@ -22,6 +22,7 @@ import { PlannerItem } from './PlannerItem';
 import { ViewToggle } from './ViewToggle';
 import { ThreeDayView } from './ThreeDayView';
 import { WeeklyAnalytics } from './WeeklyAnalytics';
+import { TriageQueueSection } from './TriageQueueSection';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
@@ -240,6 +241,9 @@ export function DailyPlannerView() {
 
       {view === 'day' && (
         <>
+          {/* Triage Queue - Tasks due today that need sorting */}
+          <TriageQueueSection date={selectedDate} />
+
           {/* Roll Forward Banner - Keep this for important notifications */}
           {team?.id && <RollForwardBanner teamId={team.id} currentDate={selectedDate} />}
 
