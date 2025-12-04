@@ -122,8 +122,9 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     mutationFn: async ({ taskId, updates }: { 
       taskId: string; 
       updates: {
-        title: string;
+        title?: string;
         description?: string;
+        section?: string;
         due_date?: string | null;
         priority?: string;
         assigned_to?: string | null;
@@ -144,6 +145,35 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
       onTasksUpdate?.();
     },
   });
+
+  const reorderTasks = useMutation({
+    mutationFn: async (taskIds: string[]) => {
+      const updates = taskIds.map((id, index) => ({
+        id,
+        daily_position: index + 1,
+      }));
+      
+      for (const update of updates) {
+        const { error } = await (supabase as any)
+          .from('tasks')
+          .update({ daily_position: update.daily_position })
+          .eq('id', update.id);
+        
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transaction-tasks'] });
+    },
+  });
+
+  const handleInlineEdit = (taskId: string, newTitle: string) => {
+    updateTask.mutate({ taskId, updates: { title: newTitle } });
+  };
+
+  const handleReorder = (taskIds: string[]) => {
+    reorderTasks.mutate(taskIds);
+  };
 
   const deleteTask = useMutation({
     mutationFn: async (taskId: string) => {
@@ -320,6 +350,8 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
                 onToggle={(id) => toggleTask.mutate(id)}
                 onEdit={handleEdit}
                 onDelete={(id) => setDeleteTaskId(id)}
+                onReorder={handleReorder}
+                onInlineEdit={handleInlineEdit}
               />
             ))}
           </div>
