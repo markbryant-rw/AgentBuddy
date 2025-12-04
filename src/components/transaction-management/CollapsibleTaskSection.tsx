@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -9,7 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Collapsible,
   CollapsibleContent,
@@ -269,30 +274,38 @@ export function CollapsibleTaskSection({
                 />
               </div>
 
-              {/* Description Info Icon */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 text-muted-foreground"
-                      onClick={() => {
-                        if (disabled) return;
-                        const desc = prompt('Task Description (optional):', task.description || '');
-                        if (desc !== null) onUpdateTask(originalIndex, { description: desc });
-                      }}
+              {/* Description Popover */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-9 w-9",
+                      task.description ? "text-primary" : "text-muted-foreground"
+                    )}
+                    disabled={disabled}
+                  >
+                    <Info className="w-4 h-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent side="left" className="w-80" align="start">
+                  <div className="space-y-2">
+                    <h4 className="font-medium text-sm">Task Description</h4>
+                    <Textarea
+                      placeholder="Add an optional description for this task..."
+                      value={task.description || ''}
+                      onChange={(e) => onUpdateTask(originalIndex, { description: e.target.value })}
+                      className="min-h-[80px] resize-none"
                       disabled={disabled}
-                    >
-                      <Info className="w-4 h-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left" className="max-w-xs">
-                    <p className="text-xs">{task.description || 'Click to add description'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This description will be shown when agents view the task.
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               {/* Delete Button */}
               {!disabled && (
