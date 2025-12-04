@@ -3877,6 +3877,14 @@ export type Database = {
               tables_count: number
             }[]
           }
+      check_invitation_rate_limit: {
+        Args: { _user_id: string }
+        Returns: {
+          allowed: boolean
+          message: string
+          retry_after: number
+        }[]
+      }
       create_default_lists_for_team: {
         Args: { p_team_id: string }
         Returns: undefined
