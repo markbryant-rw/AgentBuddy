@@ -99,11 +99,35 @@ export const useBugReports = (statusFilter: string = 'all') => {
         
         const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
         
-        return data.map(bug => ({
+        const bugsWithProfiles = data.map(bug => ({
           ...bug,
-          environment: bug.environment || {}, // Ensure it's an object
+          environment: bug.environment || {},
           profiles: profileMap.get(bug.user_id) as { full_name: string; email: string } | undefined
-        })) as any[];
+        }));
+
+        // Smart sorting: status priority, then vote count, then recency
+        const statusPriority: Record<string, number> = {
+          'triage': 0,
+          'investigating': 1,
+          'in_progress': 2,
+          'needs_review': 3,
+          'fixed': 4,
+          'archived': 5
+        };
+
+        return bugsWithProfiles.sort((a, b) => {
+          // Status priority first (active statuses first, archived/fixed at bottom)
+          const statusDiff = (statusPriority[a.status] || 99) - (statusPriority[b.status] || 99);
+          if (statusDiff !== 0) return statusDiff;
+          
+          // Then by vote count (descending)
+          if ((b.vote_count || 0) !== (a.vote_count || 0)) {
+            return (b.vote_count || 0) - (a.vote_count || 0);
+          }
+          
+          // Then by recency (newest first)
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }) as any[];
       }
       
       return [] as BugReport[];

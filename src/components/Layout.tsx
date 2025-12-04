@@ -66,7 +66,8 @@ const Layout = () => {
     return path.includes('/grow-dashboard') || 
            path.includes('/coaches-corner') || 
            path.includes('/knowledge-base') ||
-           path.includes('/review-roadmap');
+           path.includes('/review-roadmap') ||
+           path.includes('/feedback-centre');
   };
 
   const isInEngageWorkspace = (path: string) => {
