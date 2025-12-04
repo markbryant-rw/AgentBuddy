@@ -3178,10 +3178,12 @@ export type Database = {
           priority: string | null
           project_id: string | null
           project_related_id: string | null
+          section: string | null
           status: string | null
           team_id: string | null
           title: string
           transaction_id: string | null
+          transaction_stage: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3208,10 +3210,12 @@ export type Database = {
           priority?: string | null
           project_id?: string | null
           project_related_id?: string | null
+          section?: string | null
           status?: string | null
           team_id?: string | null
           title: string
           transaction_id?: string | null
+          transaction_stage?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3238,10 +3242,12 @@ export type Database = {
           priority?: string | null
           project_id?: string | null
           project_related_id?: string | null
+          section?: string | null
           status?: string | null
           team_id?: string | null
           title?: string
           transaction_id?: string | null
+          transaction_stage?: string | null
           updated_at?: string | null
         }
         Relationships: [
