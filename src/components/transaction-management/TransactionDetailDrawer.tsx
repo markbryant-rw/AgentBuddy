@@ -29,6 +29,8 @@ import { TransactionNotesTab } from './TransactionNotesTab';
 import { TransactionTasksTab } from './TransactionTasksTab';
 import { TransactionLinksSection } from './TransactionLinksSection';
 import { TransactionVendorReportsTab } from './TransactionVendorReportsTab';
+import { TransactionDocumentsTab } from './TransactionDocumentsTab';
+import { useTransactionDocuments } from '@/hooks/useTransactionDocuments';
 import { PriceAlignmentIndicator } from './PriceAlignmentIndicator';
 import { InlineEditablePrice } from './InlineEditablePrice';
 import type { TransactionLink } from '@/hooks/useTransactions';
@@ -877,11 +879,8 @@ export const TransactionDetailDrawer = ({
                 <TransactionNotesTab transactionId={transaction.id} />
               </TabsContent>
 
-              <TabsContent value="documents" className="p-6 mt-0">
-                <div className="text-center py-12 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Documents coming soon</p>
-                </div>
+              <TabsContent value="documents" className="mt-0 h-full">
+                <TransactionDocumentsTab transactionId={transaction.id} />
               </TabsContent>
 
               <TabsContent value="reports" className="mt-0">
