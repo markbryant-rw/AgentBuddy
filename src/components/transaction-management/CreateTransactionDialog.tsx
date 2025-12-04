@@ -339,7 +339,7 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
                 <SelectContent className="bg-background">
                   {assignableMembers.map(member => (
                     <SelectItem key={member.user_id} value={member.user_id}>
-                      {member.full_name || member.email}
+                      {member.full_name || member.profiles?.full_name || member.email || member.profiles?.email || 'Unknown'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -365,7 +365,7 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
                   <SelectItem value="NONE">None</SelectItem>
                   {assignableMembers.map(member => (
                     <SelectItem key={member.user_id} value={member.user_id}>
-                      {member.full_name || member.email}
+                      {member.full_name || member.profiles?.full_name || member.email || member.profiles?.email || 'Unknown'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -393,7 +393,7 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
                 <SelectContent className="bg-background">
                   {assignableMembers.map(member => (
                     <SelectItem key={member.user_id} value={member.user_id}>
-                      {member.full_name || member.email}
+                      {member.full_name || member.profiles?.full_name || member.email || member.profiles?.email || 'Unknown'}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -419,7 +419,7 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
                   <SelectItem value="NONE">None</SelectItem>
                   {assignableMembers.map(member => (
                     <SelectItem key={member.user_id} value={member.user_id}>
-                      {member.full_name || member.email}
+                      {member.full_name || member.profiles?.full_name || member.email || member.profiles?.email || 'Unknown'}
                     </SelectItem>
                   ))}
                 </SelectContent>
