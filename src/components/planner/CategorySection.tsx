@@ -17,7 +17,7 @@ interface CategorySectionProps {
   maxItems?: number;
   onToggleComplete: (id: string) => void;
   onDelete: (id: string) => void;
-  onAssignmentClick: (item: DailyPlannerItem) => void;
+  onSaveAssignments: (itemId: string, userIds: string[]) => void;
   onAddTask: (title: string, category: 'big' | 'medium' | 'little') => void;
 }
 
@@ -62,7 +62,7 @@ export function CategorySection({
   items,
   onToggleComplete,
   onDelete,
-  onAssignmentClick,
+  onSaveAssignments,
   onAddTask,
 }: CategorySectionProps) {
   const config = categoryConfig[category];
@@ -212,7 +212,7 @@ export function CategorySection({
               item={item}
               onToggleComplete={onToggleComplete}
               onDelete={onDelete}
-              onAssignmentClick={onAssignmentClick}
+              onSaveAssignments={onSaveAssignments}
               onUpdateTime={handleUpdateTime}
               onUpdateTitle={(id, title) => updateItem({ id, updates: { title } })}
               onUpdateNotes={(id, notes) => updateItem({ id, updates: { notes } })}
@@ -233,7 +233,7 @@ export function CategorySection({
                 item={item}
                 onToggleComplete={onToggleComplete}
                 onDelete={onDelete}
-                onAssignmentClick={onAssignmentClick}
+                onSaveAssignments={onSaveAssignments}
                 onUpdateTime={handleUpdateTime}
                 onUpdateTitle={(id, title) => updateItem({ id, updates: { title } })}
                 onUpdateNotes={(id, notes) => updateItem({ id, updates: { notes } })}

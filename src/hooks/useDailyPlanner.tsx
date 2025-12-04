@@ -40,20 +40,28 @@ export function useDailyPlanner(date: Date = new Date()) {
     queryFn: async () => {
       if (!team?.id) return [];
 
+      // Fetch items with assignments
       const { data, error } = await supabase
         .from('daily_planner_items')
-        .select('*')
+        .select(`
+          *,
+          assignments:daily_planner_assignments(
+            user_id,
+            profiles:user_id(id, full_name, avatar_url)
+          )
+        `)
         .eq('team_id', team.id)
         .eq('date', dateStr)
         .order('position', { ascending: true });
 
       if (error) throw error;
 
+      // Transform assignments into assigned_users array
       return (data || []).map((item: any) => ({
         ...item,
         scheduled_date: item.date,
         order_within_category: item.position,
-        assigned_users: [], // No assignments table, stub empty array
+        assigned_users: (item.assignments || []).map((a: any) => a.profiles).filter(Boolean),
       }));
     },
     enabled: !!team?.id && !!user,
@@ -310,8 +318,24 @@ export function useDailyPlanner(date: Date = new Date()) {
       itemId: string; 
       userIds: string[];
     }) => {
-      // No assignments table, stub this out
-      console.log("Assignments not implemented - daily_planner_assignments table doesn't exist");
+      // Delete existing assignments
+      const { error: deleteError } = await supabase
+        .from('daily_planner_assignments')
+        .delete()
+        .eq('planner_item_id', itemId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert new assignments
+      if (userIds.length > 0) {
+        const { error: insertError } = await supabase
+          .from('daily_planner_assignments')
+          .insert(userIds.map(userId => ({
+            planner_item_id: itemId,
+            user_id: userId,
+          })));
+        if (insertError) throw insertError;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['daily-planner'] });

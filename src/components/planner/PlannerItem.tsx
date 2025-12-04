@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Check, GripVertical, Trash2, User, Clock, Pencil, FileText } from 'lucide-react';
+import { Check, GripVertical, Trash2, Clock, Pencil, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { DailyPlannerItem } from '@/hooks/useDailyPlanner';
 import { motion } from 'framer-motion';
 import { TimeEstimateSelector } from '@/components/tasks/daily/TimeEstimateSelector';
+import { CompactAssigner } from './CompactAssigner';
 import confetti from 'canvas-confetti';
 
 interface PlannerItemProps {
   item: DailyPlannerItem;
   onToggleComplete: (id: string) => void;
   onDelete: (id: string) => void;
-  onAssignmentClick: (item: DailyPlannerItem) => void;
+  onSaveAssignments: (itemId: string, userIds: string[]) => void;
   onUpdateTime: (id: string, minutes: number) => void;
   onUpdateTitle?: (id: string, title: string) => void;
   onUpdateNotes?: (id: string, notes: string) => void;
@@ -41,7 +41,7 @@ export function PlannerItem({
   item, 
   onToggleComplete, 
   onDelete,
-  onAssignmentClick,
+  onSaveAssignments,
   onUpdateTime,
   onUpdateTitle,
   onUpdateNotes
@@ -210,41 +210,7 @@ export function PlannerItem({
           {/* Bottom row: Avatars & Time */}
           <div className="flex items-center justify-between">
             <div onClick={(e) => e.stopPropagation()}>
-              {item.assigned_users.length > 0 ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAssignmentClick(item);
-                  }}
-                  className="flex -space-x-2 hover:opacity-80 transition-opacity"
-                >
-                  {item.assigned_users.slice(0, 3).map((user) => (
-                    <Avatar key={user.id} className="h-7 w-7 border-2 border-background">
-                      <AvatarImage src={user.avatar_url || undefined} />
-                      <AvatarFallback className="text-xs">
-                        {user.full_name?.charAt(0) || '?'}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
-                  {item.assigned_users.length > 3 && (
-                    <div className="h-7 w-7 rounded-full border-2 border-background bg-muted flex items-center justify-center text-xs font-medium">
-                      +{item.assigned_users.length - 3}
-                    </div>
-                  )}
-                </button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAssignmentClick(item);
-                  }}
-                >
-                  <User className="h-4 w-4" />
-                </Button>
-              )}
+              <CompactAssigner item={item} onSave={onSaveAssignments} />
             </div>
 
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>

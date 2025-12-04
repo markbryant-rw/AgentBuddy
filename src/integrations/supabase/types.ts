@@ -586,6 +586,42 @@ export type Database = {
           },
         ]
       }
+      daily_planner_assignments: {
+        Row: {
+          created_at: string | null
+          id: string
+          planner_item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          planner_item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          planner_item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_planner_assignments_planner_item_id_fkey"
+            columns: ["planner_item_id"]
+            isOneToOne: false
+            referencedRelation: "daily_planner_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_planner_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_planner_items: {
         Row: {
           completed: boolean | null
