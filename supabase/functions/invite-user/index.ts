@@ -293,15 +293,16 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check rate limits
+    // Check rate limits (RPC returns array of rows)
     const { data: rateLimitCheck } = await supabase
       .rpc('check_invitation_rate_limit', { _user_id: user.id });
 
-    if (rateLimitCheck && !rateLimitCheck.allowed) {
+    const rateLimitResult = rateLimitCheck?.[0];
+    if (rateLimitResult && !rateLimitResult.allowed) {
       return new Response(
         JSON.stringify({ 
-          error: rateLimitCheck.message || "Rate limit exceeded",
-          retry_after: rateLimitCheck.retry_after,
+          error: rateLimitResult.message || "Rate limit exceeded",
+          retry_after: rateLimitResult.retry_after,
         }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
