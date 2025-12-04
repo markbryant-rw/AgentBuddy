@@ -37,25 +37,25 @@ const NavigationCard = ({
         "border-l-4 group min-h-[200px]"
       )}
     >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between mb-4">
+      <CardContent className="p-fluid-lg">
+        <div className="flex items-start justify-between mb-fluid-md">
           <div className={cn("p-3 rounded-lg", gradient)}>
-            <Icon className="h-7 w-7 text-primary" />
+            <Icon className="h-icon-md w-icon-md text-primary" />
           </div>
-          <ArrowRight className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+          <ArrowRight className="h-icon-sm w-icon-sm text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-        <h3 className="text-xl font-bold mb-2">{title}</h3>
-        <p className="text-sm text-muted-foreground mb-4">{description}</p>
+        <h3 className="text-fluid-xl font-bold mb-2">{title}</h3>
+        <p className="text-fluid-sm text-muted-foreground mb-fluid-md">{description}</p>
         
         {/* Primary Stat */}
         <div className="space-y-1 mb-3">
-          <div className="text-4xl font-bold text-primary">{primaryStat}</div>
-          <div className="text-xs text-muted-foreground uppercase tracking-wide">{primaryLabel}</div>
+          <div className="text-fluid-4xl font-bold text-primary">{primaryStat}</div>
+          <div className="text-fluid-xs text-muted-foreground uppercase tracking-wide">{primaryLabel}</div>
         </div>
 
         {/* Secondary Stats */}
         {secondaryStats && secondaryStats.length > 0 && (
-          <div className="flex gap-4 text-sm">
+          <div className="flex gap-fluid-md text-fluid-sm">
             {secondaryStats.map((stat, index) => (
               <div key={stat.label}>
                 <span className="font-semibold text-foreground">{stat.value}</span>
@@ -106,7 +106,7 @@ const ProspectNavigationCards = ({
   }, [listings]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-fluid-lg">
       <NavigationCard
         title="View Appraisals"
         description="Manage all appraisals, track warmth and follow-ups"

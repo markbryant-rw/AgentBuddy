@@ -83,7 +83,7 @@ export function EngageNavigationCards() {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-fluid-lg">
       {cards.map((card) => {
         const Icon = card.icon;
         const isFlipped = flippedCards.has(card.route);
@@ -111,26 +111,26 @@ export function EngageNavigationCards() {
               >
                 <div className={cn('absolute inset-0 bg-gradient-to-br opacity-50', card.gradient)} />
                 
-                <div className="relative p-6 space-y-4">
+                <div className="relative p-fluid-lg space-y-fluid-md">
                   {/* Icon & Title */}
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-fluid-md">
                       <div className={cn('p-3 rounded-lg', card.iconBg)}>
-                        <Icon className={cn('h-6 w-6', card.iconColor)} />
+                        <Icon className={cn('h-icon-md w-icon-md', card.iconColor)} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold">{card.title}</h3>
-                        <p className="text-sm text-muted-foreground">{card.description}</p>
+                        <h3 className="text-fluid-xl font-bold">{card.title}</h3>
+                        <p className="text-fluid-sm text-muted-foreground">{card.description}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-3 pt-4 border-t">
+                  <div className="grid grid-cols-3 gap-fluid-sm pt-fluid-md border-t">
                     {card.stats.map((stat, idx) => (
                       <div key={idx} className="space-y-1">
-                        <div className="text-xs text-muted-foreground">{stat.label}</div>
-                        <div className="text-lg font-bold">
+                        <div className="text-fluid-xs text-muted-foreground">{stat.label}</div>
+                        <div className="text-fluid-lg font-bold">
                           {stat.value}
                         </div>
                       </div>
@@ -138,9 +138,9 @@ export function EngageNavigationCards() {
                   </div>
 
                   {/* View Indicator */}
-                  <div className="flex items-center justify-center text-sm text-muted-foreground group-hover:text-primary transition-colors">
+                  <div className="flex items-center justify-center text-fluid-sm text-muted-foreground group-hover:text-primary transition-colors">
                     <span>{card.comingSoon ? 'Coming Soon' : 'Click to view'}</span>
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="ml-2 h-icon-sm w-icon-sm group-hover:translate-x-1 transition-transform" />
                   </div>
                 </div>
               </Card>
@@ -159,16 +159,16 @@ export function EngageNavigationCards() {
                   onClick={() => handleCardClick(card.route, card.comingSoon)}
                 >
                   <div className={cn('absolute inset-0 bg-gradient-to-br opacity-50', card.gradient)} />
-                  <CardContent className="relative h-full flex flex-col items-center justify-center text-center p-6">
-                    <div className={cn('p-4 rounded-xl mb-4', card.iconBg)}>
-                      <Icon className={cn('h-10 w-10', card.iconColor)} />
+                  <CardContent className="relative h-full flex flex-col items-center justify-center text-center p-fluid-lg">
+                    <div className={cn('p-fluid-md rounded-xl mb-fluid-md', card.iconBg)}>
+                      <Icon className={cn('h-icon-xl w-icon-xl', card.iconColor)} />
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">{card.title}</h3>
-                    <p className="text-lg text-muted-foreground mb-4">Coming Soon</p>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-fluid-2xl font-bold mb-2">{card.title}</h3>
+                    <p className="text-fluid-lg text-muted-foreground mb-fluid-md">Coming Soon</p>
+                    <p className="text-fluid-sm text-muted-foreground">
                       We're working hard to bring you this feature. Stay tuned!
                     </p>
-                    <p className="text-xs text-muted-foreground/60 mt-6">
+                    <p className="text-fluid-xs text-muted-foreground/60 mt-fluid-lg">
                       Click anywhere to flip back
                     </p>
                   </CardContent>

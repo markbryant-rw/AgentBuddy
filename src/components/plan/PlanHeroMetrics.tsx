@@ -83,14 +83,14 @@ export const PlanHeroMetrics = () => {
   const cchStatusConfig = getStatusConfig(cchStatus);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-fluid-lg mb-8">
       {/* Appraisals Progress */}
       <Card className="overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
+        <CardContent className="p-fluid-lg">
+          <div className="flex items-start justify-between mb-fluid-md">
             <div>
-              <h3 className="text-lg font-semibold">Team Appraisals This Quarter</h3>
-              <p className="text-sm text-muted-foreground">Q{currentQuarter} {new Date().getFullYear()}</p>
+              <h3 className="text-fluid-lg font-semibold">Team Appraisals This Quarter</h3>
+              <p className="text-fluid-sm text-muted-foreground">Q{currentQuarter} {new Date().getFullYear()}</p>
             </div>
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${appraisalsStatusConfig.bg}`}>
               <appraisalsStatusConfig.icon className={`h-4 w-4 ${appraisalsStatusConfig.color}`} />
@@ -100,19 +100,19 @@ export const PlanHeroMetrics = () => {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-fluid-md">
             <div>
               <div className="flex items-baseline justify-between mb-2">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">{appraisalsProgress}</span>
-                  <span className="text-muted-foreground">/ {quarterlyAppraisalsTarget}</span>
+                  <span className="text-fluid-4xl font-bold">{appraisalsProgress}</span>
+                  <span className="text-muted-foreground text-fluid-base">/ {quarterlyAppraisalsTarget}</span>
                 </div>
-                <span className="text-sm font-medium">{appraisalsPercentage.toFixed(0)}%</span>
+                <span className="text-fluid-sm font-medium">{appraisalsPercentage.toFixed(0)}%</span>
               </div>
               <Progress value={appraisalsPercentage} className="h-3" />
             </div>
 
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-fluid-sm">
               <span className="text-muted-foreground">Days remaining in quarter</span>
               <span className="font-medium">{daysRemainingInQuarter}</span>
             </div>
@@ -122,11 +122,11 @@ export const PlanHeroMetrics = () => {
 
       {/* CCH Performance */}
       <Card className="overflow-hidden">
-        <CardContent className="p-6">
-          <div className="flex items-start justify-between mb-4">
+        <CardContent className="p-fluid-lg">
+          <div className="flex items-start justify-between mb-fluid-md">
             <div>
-              <h3 className="text-lg font-semibold">Team CCH This Week</h3>
-              <p className="text-sm text-muted-foreground">Team Customer Contact Hours</p>
+              <h3 className="text-fluid-lg font-semibold">Team CCH This Week</h3>
+              <p className="text-fluid-sm text-muted-foreground">Team Customer Contact Hours</p>
             </div>
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${cchStatusConfig.bg}`}>
               <cchStatusConfig.icon className={`h-4 w-4 ${cchStatusConfig.color}`} />
@@ -136,19 +136,19 @@ export const PlanHeroMetrics = () => {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-fluid-md">
             <div>
               <div className="flex items-baseline justify-between mb-2">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold">{weeklyCCH.toFixed(1)}</span>
-                  <span className="text-muted-foreground">/ {weeklyCCHTarget.toFixed(1)} hrs</span>
+                  <span className="text-fluid-4xl font-bold">{weeklyCCH.toFixed(1)}</span>
+                  <span className="text-muted-foreground text-fluid-base">/ {weeklyCCHTarget.toFixed(1)} hrs</span>
                 </div>
-                <span className="text-sm font-medium">{cchPercentage.toFixed(0)}%</span>
+                <span className="text-fluid-sm font-medium">{cchPercentage.toFixed(0)}%</span>
               </div>
               <Progress value={cchPercentage} className="h-3" />
             </div>
 
-            <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center justify-between text-fluid-sm">
               <span className="text-muted-foreground">Average daily CCH</span>
               <span className="font-medium">{(weeklyCCH / 5).toFixed(1)} hrs</span>
             </div>

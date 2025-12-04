@@ -5,7 +5,7 @@ import { GrowQuickStats } from "@/components/grow/GrowQuickStats";
 
 export default function GrowDashboard() {
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-fluid-lg space-y-fluid-lg">
       <PageHeader
         icon={Rocket}
         title="GROW Workspace"

@@ -114,7 +114,7 @@ export function GrowNavigationCards() {
   };
 
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-fluid-lg">
       {cards.map((card, index) => {
         const Icon = card.icon;
         const isFlipped = flippedCards.has(card.title);
@@ -141,32 +141,32 @@ export function GrowNavigationCards() {
                 onClick={() => handleCardClick(card)}
                 style={{ backfaceVisibility: "hidden" }}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
+                <CardContent className="p-fluid-lg">
+                  <div className="flex items-start justify-between mb-fluid-md">
                     <div className={`p-3 rounded-xl ${card.iconBg} group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className={`h-8 w-8 ${card.iconColor}`} />
+                      <Icon className={`h-icon-lg w-icon-lg ${card.iconColor}`} />
                     </div>
                     <Button 
                       variant="ghost" 
                       size="icon"
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <ArrowRight className="h-5 w-5" />
+                      <ArrowRight className="h-icon-sm w-icon-sm" />
                     </Button>
                   </div>
                   
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">
+                  <h3 className="text-fluid-xl font-bold mb-2 group-hover:text-primary transition-colors">
                     {card.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <p className="text-fluid-sm text-muted-foreground mb-fluid-md">
                     {card.description}
                   </p>
 
-                  <div className="grid grid-cols-3 gap-2 pt-4 border-t">
+                  <div className="grid grid-cols-3 gap-fluid-sm pt-fluid-md border-t">
                     {card.stats.map((stat, idx) => (
                       <div key={idx} className="text-center">
-                        <div className="text-2xl font-bold">{stat.value}</div>
-                        <div className="text-xs text-muted-foreground">{stat.label}</div>
+                        <div className="text-fluid-2xl font-bold">{stat.value}</div>
+                        <div className="text-fluid-xs text-muted-foreground">{stat.label}</div>
                       </div>
                     ))}
                   </div>
@@ -183,16 +183,16 @@ export function GrowNavigationCards() {
                     transform: "rotateY(180deg)"
                   }}
                 >
-                  <CardContent className="p-6 h-full flex flex-col items-center justify-center text-center">
-                    <div className={`p-4 rounded-xl ${card.iconBg} mb-4`}>
-                      <Icon className={`h-10 w-10 ${card.iconColor}`} />
+                  <CardContent className="p-fluid-lg h-full flex flex-col items-center justify-center text-center">
+                    <div className={`p-fluid-md rounded-xl ${card.iconBg} mb-fluid-md`}>
+                      <Icon className={`h-icon-xl w-icon-xl ${card.iconColor}`} />
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">{card.title}</h3>
-                    <p className="text-lg text-muted-foreground mb-4">Coming Soon</p>
-                    <p className="text-sm text-muted-foreground">
+                    <h3 className="text-fluid-2xl font-bold mb-2">{card.title}</h3>
+                    <p className="text-fluid-lg text-muted-foreground mb-fluid-md">Coming Soon</p>
+                    <p className="text-fluid-sm text-muted-foreground">
                       We're working hard to bring you this feature. Stay tuned!
                     </p>
-                    <p className="text-xs text-muted-foreground/60 mt-6">
+                    <p className="text-fluid-xs text-muted-foreground/60 mt-fluid-lg">
                       Click anywhere to flip back
                     </p>
                   </CardContent>

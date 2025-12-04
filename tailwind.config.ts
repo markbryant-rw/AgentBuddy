@@ -13,6 +13,35 @@ export default {
       },
     },
     extend: {
+      fontSize: {
+        'fluid-xs': 'var(--text-xs)',
+        'fluid-sm': 'var(--text-sm)',
+        'fluid-base': 'var(--text-base)',
+        'fluid-lg': 'var(--text-lg)',
+        'fluid-xl': 'var(--text-xl)',
+        'fluid-2xl': 'var(--text-2xl)',
+        'fluid-3xl': 'var(--text-3xl)',
+        'fluid-4xl': 'var(--text-4xl)',
+        'fluid-5xl': 'var(--text-5xl)',
+      },
+      spacing: {
+        'fluid-sm': 'var(--space-sm)',
+        'fluid-md': 'var(--space-md)',
+        'fluid-lg': 'var(--space-lg)',
+        'fluid-xl': 'var(--space-xl)',
+      },
+      width: {
+        'icon-sm': 'var(--icon-sm)',
+        'icon-md': 'var(--icon-md)',
+        'icon-lg': 'var(--icon-lg)',
+        'icon-xl': 'var(--icon-xl)',
+      },
+      height: {
+        'icon-sm': 'var(--icon-sm)',
+        'icon-md': 'var(--icon-md)',
+        'icon-lg': 'var(--icon-lg)',
+        'icon-xl': 'var(--icon-xl)',
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

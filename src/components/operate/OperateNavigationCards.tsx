@@ -100,7 +100,7 @@ const OperateNavigationCards = ({
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-lg">
       {cards.map((card) => {
         const Icon = card.icon;
         return (
@@ -116,27 +116,27 @@ const OperateNavigationCards = ({
           >
             <div className={cn('absolute inset-0 bg-gradient-to-br opacity-50', card.gradient)} />
             
-            <div className="relative p-6 space-y-4">
+            <div className="relative p-fluid-lg space-y-fluid-md">
               {/* Icon & Title */}
               <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-fluid-md">
                   <div className={cn('p-3 rounded-lg', card.iconBg)}>
-                    <Icon className={cn('h-6 w-6', card.iconColor)} />
+                    <Icon className={cn('h-icon-md w-icon-md', card.iconColor)} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold">{card.title}</h3>
-                    <p className="text-sm text-muted-foreground">{card.description}</p>
+                    <h3 className="text-fluid-xl font-bold">{card.title}</h3>
+                    <p className="text-fluid-sm text-muted-foreground">{card.description}</p>
                   </div>
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t">
+              <div className="grid grid-cols-3 gap-fluid-sm pt-fluid-md border-t">
                 {card.stats.map((stat, idx) => (
                   <div key={idx} className="space-y-1">
-                    <div className="text-xs text-muted-foreground">{stat.label}</div>
+                    <div className="text-fluid-xs text-muted-foreground">{stat.label}</div>
                     <div className={cn(
-                      'text-lg font-bold',
+                      'text-fluid-lg font-bold',
                       stat.alert && 'text-orange-600 dark:text-orange-400'
                     )}>
                       {stat.value}
@@ -146,9 +146,9 @@ const OperateNavigationCards = ({
               </div>
 
               {/* View Indicator */}
-              <div className="flex items-center justify-center text-sm text-muted-foreground group-hover:text-primary transition-colors">
+              <div className="flex items-center justify-center text-fluid-sm text-muted-foreground group-hover:text-primary transition-colors">
                 <span>Click to view</span>
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="ml-2 h-icon-sm w-icon-sm group-hover:translate-x-1 transition-transform" />
               </div>
             </div>
           </Card>
