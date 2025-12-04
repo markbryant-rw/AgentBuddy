@@ -11,23 +11,25 @@ export const useTeamQuarterlyAppraisals = (teamId: string | undefined) => {
       const quarterStart = format(startOfQuarter(new Date()), 'yyyy-MM-dd');
       const quarterEnd = format(endOfQuarter(new Date()), 'yyyy-MM-dd');
 
-      // Count appraisals from logged_appraisals table by team
+      // Count appraisals from logged_appraisals table by team (MAP and LAP only, excluding VAP)
       const { count, error } = await supabase
         .from('logged_appraisals')
         .select('*', { count: 'exact', head: true })
         .eq('team_id', teamId)
         .gte('appraisal_date', quarterStart)
-        .lte('appraisal_date', quarterEnd);
+        .lte('appraisal_date', quarterEnd)
+        .in('stage', ['MAP', 'LAP']);
 
       if (error) throw error;
 
-      // Count by intent
+      // Count by intent (MAP and LAP only)
       const { data: intentData } = await supabase
         .from('logged_appraisals')
         .select('intent')
         .eq('team_id', teamId)
         .gte('appraisal_date', quarterStart)
-        .lte('appraisal_date', quarterEnd);
+        .lte('appraisal_date', quarterEnd)
+        .in('stage', ['MAP', 'LAP']);
 
       const highCount = intentData?.filter(item => item.intent === 'high').length || 0;
       const mediumCount = intentData?.filter(item => item.intent === 'medium').length || 0;
