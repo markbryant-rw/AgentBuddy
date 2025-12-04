@@ -3430,6 +3430,88 @@ export type Database = {
           },
         ]
       }
+      transaction_documents: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          id: string
+          notes: string | null
+          order_index: number | null
+          required: boolean | null
+          section: string | null
+          stage: string
+          status: string | null
+          title: string
+          transaction_id: string
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          notes?: string | null
+          order_index?: number | null
+          required?: boolean | null
+          section?: string | null
+          stage: string
+          status?: string | null
+          title: string
+          transaction_id: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          id?: string
+          notes?: string | null
+          order_index?: number | null
+          required?: boolean | null
+          section?: string | null
+          stage?: string
+          status?: string | null
+          title?: string
+          transaction_id?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_documents_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transaction_links: {
         Row: {
           id: string
