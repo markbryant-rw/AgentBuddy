@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, MapPin, DollarSign, Users, CheckSquare, FileText, MessageSquare, ArrowRight, X, Pencil, Plus, Trash2, RefreshCw, ClipboardList, XCircle } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Users, CheckSquare, FileText, MessageSquare, ArrowRight, X, Pencil, Plus, Trash2, RefreshCw, ClipboardList, XCircle, AlertTriangle } from 'lucide-react';
+import { ProgressRing } from '@/components/ProgressRing';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -82,22 +83,24 @@ export const TransactionDetailDrawer = ({
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
 
-  // Fetch actual task counts
+  // Fetch actual task counts including overdue
   const { data: taskCounts } = useQuery({
     queryKey: ['transaction-tasks-count', transaction?.id],
     queryFn: async () => {
-      if (!transaction?.id) return { done: 0, total: 0 };
+      if (!transaction?.id) return { done: 0, total: 0, overdue: 0 };
       const { data, error } = await supabase
         .from('tasks')
-        .select('id, completed')
+        .select('id, completed, due_date')
         .eq('transaction_id', transaction.id)
         .is('list_id', null)
         .is('project_id', null);
       
       if (error) throw error;
+      const today = new Date().toISOString().split('T')[0];
       const total = data?.length || 0;
       const done = data?.filter(t => t.completed).length || 0;
-      return { done, total };
+      const overdue = data?.filter(t => !t.completed && t.due_date && t.due_date < today).length || 0;
+      return { done, total, overdue };
     },
     enabled: !!transaction?.id,
   });
@@ -365,8 +368,12 @@ export const TransactionDetailDrawer = ({
     }
   };
 
-  const progress = transaction.tasks_total > 0
-    ? Math.round((transaction.tasks_done / transaction.tasks_total) * 100)
+  const taskProgress = (taskCounts?.total || 0) > 0
+    ? Math.round(((taskCounts?.done || 0) / taskCounts!.total) * 100)
+    : 0;
+    
+  const docProgress = docCounts.total > 0
+    ? Math.round((docCounts.reviewed / docCounts.total) * 100)
     : 0;
 
   return (
@@ -558,40 +565,46 @@ export const TransactionDetailDrawer = ({
 
             <div className="flex-1 overflow-y-auto">
               <TabsContent value="overview" className="p-6 space-y-6 mt-0">
-                {/* Progress Ring */}
-                <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
-                  <div className="relative w-20 h-20">
-                    <svg className="transform -rotate-90 w-20 h-20">
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="36"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="transparent"
-                        className="text-muted"
-                      />
-                      <circle
-                        cx="40"
-                        cy="40"
-                        r="36"
-                        stroke="currentColor"
-                        strokeWidth="8"
-                        fill="transparent"
-                        strokeDasharray={`${2 * Math.PI * 36}`}
-                        strokeDashoffset={`${2 * Math.PI * 36 * (1 - progress / 100)}`}
-                        className="text-primary transition-all"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-lg font-bold">{progress}%</span>
+                {/* Progress Section - Tasks & Documents */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-lg">
+                  {/* Task Progress */}
+                  <div className="flex flex-col items-center gap-2">
+                    <ProgressRing progress={taskProgress} size={72} strokeWidth={6} />
+                    <div className="text-center">
+                      <p className="text-sm font-medium flex items-center justify-center gap-1">
+                        <CheckSquare className="h-3.5 w-3.5" />
+                        Tasks
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {taskCounts?.done || 0} of {taskCounts?.total || 0} complete
+                      </p>
+                      {(taskCounts?.overdue || 0) > 0 && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1 mt-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {taskCounts!.overdue} overdue
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">Transaction Progress</p>
-                    <p className="text-sm text-muted-foreground">
-                      {transaction.tasks_done} of {transaction.tasks_total} tasks complete
-                    </p>
+                  
+                  {/* Document Progress */}
+                  <div className="flex flex-col items-center gap-2">
+                    <ProgressRing progress={docProgress} size={72} strokeWidth={6} />
+                    <div className="text-center">
+                      <p className="text-sm font-medium flex items-center justify-center gap-1">
+                        <FileText className="h-3.5 w-3.5" />
+                        Documents
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {docCounts.reviewed} of {docCounts.total} reviewed
+                      </p>
+                      {docCounts.pendingRequired > 0 && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center justify-center gap-1 mt-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {docCounts.pendingRequired} pending required
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
 
