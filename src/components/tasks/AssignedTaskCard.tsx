@@ -79,9 +79,9 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
   const getActionLink = () => {
     switch (task.source) {
       case 'transaction':
-        return task.transaction_id ? `/transactions/${task.transaction_id}` : null;
+        return task.transaction_id ? `/transaction-coordinating` : null;
       case 'project':
-        return task.project_id ? `/tasks/projects/${task.project_id}` : null;
+        return task.project_id ? `/projects/${task.project_id}` : null;
       case 'planner':
         return '/daily-planner';
       default:
