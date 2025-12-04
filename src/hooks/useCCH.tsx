@@ -90,9 +90,9 @@ export const useCCH = () => {
       // Fetch weekly goals to calculate CCH targets with timeout
       const goalsPromise = (supabase as any)
         .from('goals')
-        .select('goal_type, target_value')
+        .select('kpi_type, target_value')
         .eq('user_id', user.id)
-        .in('goal_type', ['calls', 'appraisals', 'open_homes']);
+        .in('kpi_type', ['calls', 'appraisals', 'open_homes']);
       const { data: goalsData } = await Promise.race([goalsPromise, timeoutPromise]) as any;
 
       // Calculate today's breakdown
