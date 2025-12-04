@@ -3432,8 +3432,11 @@ export type Database = {
       }
       transaction_documents: {
         Row: {
+          assignees: string[] | null
+          attachments: Json | null
           created_at: string | null
           created_by: string | null
+          due_date: string | null
           file_name: string | null
           file_path: string | null
           file_size: number | null
@@ -3451,8 +3454,11 @@ export type Database = {
           uploaded_by: string | null
         }
         Insert: {
+          assignees?: string[] | null
+          attachments?: Json | null
           created_at?: string | null
           created_by?: string | null
+          due_date?: string | null
           file_name?: string | null
           file_path?: string | null
           file_size?: number | null
@@ -3470,8 +3476,11 @@ export type Database = {
           uploaded_by?: string | null
         }
         Update: {
+          assignees?: string[] | null
+          attachments?: Json | null
           created_at?: string | null
           created_by?: string | null
+          due_date?: string | null
           file_name?: string | null
           file_path?: string | null
           file_size?: number | null

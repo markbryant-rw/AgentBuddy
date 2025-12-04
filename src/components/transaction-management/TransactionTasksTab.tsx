@@ -179,7 +179,10 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     const sections: Record<string, typeof tasks> = { 'General': [] };
     
     visibleTasks.forEach(task => {
-      const section = 'General'; // All tasks in General since 'section' column doesn't exist
+      const section = task.section || 'General';
+      if (!sections[section]) {
+        sections[section] = [];
+      }
       sections[section].push(task);
     });
     
