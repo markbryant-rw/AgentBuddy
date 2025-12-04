@@ -69,7 +69,6 @@ const COLUMN_COLORS = [
 
 // Card background colors - 8 darker/solid colors for card backgrounds
 const CARD_COLORS = [
-  { name: 'None', value: null },
   { name: 'Slate', value: '#cbd5e1' },   // slate-300
   { name: 'Blue', value: '#93c5fd' },    // blue-300
   { name: 'Green', value: '#86efac' },   // green-300
@@ -279,14 +278,24 @@ const SortableTaskCard = ({
                     <div className="px-2 py-1.5">
                       <p className="text-xs text-muted-foreground mb-2">Card color</p>
                       <div className="flex gap-1 flex-wrap">
+                        {/* Clear color button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onColorChange(null); }}
+                          className={cn(
+                            "w-5 h-5 rounded-full border-2 border-dashed border-muted-foreground/50 transition-all hover:scale-110 flex items-center justify-center",
+                            !task.color && "ring-2 ring-primary ring-offset-1"
+                          )}
+                          title="No color"
+                        >
+                          <X className="h-3 w-3 text-muted-foreground" />
+                        </button>
                         {CARD_COLORS.map((color) => (
                           <button
                             key={color.name}
                             onClick={(e) => { e.stopPropagation(); onColorChange(color.value); }}
                             className={cn(
                               "w-5 h-5 rounded-full border-2 transition-all hover:scale-110",
-                              task.color === color.value && "ring-2 ring-primary ring-offset-1",
-                              !color.value && "bg-muted"
+                              task.color === color.value && "ring-2 ring-primary ring-offset-1"
                             )}
                             style={{ backgroundColor: color.value || undefined }}
                             title={color.name}
@@ -788,7 +797,20 @@ export default function ProjectKanbanBoard() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [activeType, setActiveType] = useState<'task' | 'column' | null>(null);
   const [overTaskId, setOverTaskId] = useState<string | null>(null);
-  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set());
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(() => {
+    if (projectId) {
+      const stored = localStorage.getItem(`kanban-collapsed-${projectId}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    }
+    return new Set();
+  });
+  
+  // Persist collapsed columns to localStorage
+  useEffect(() => {
+    if (projectId) {
+      localStorage.setItem(`kanban-collapsed-${projectId}`, JSON.stringify([...collapsedColumns]));
+    }
+  }, [collapsedColumns, projectId]);
   
   // List management dialogs
   const [editListId, setEditListId] = useState<string | null>(null);
@@ -1191,7 +1213,7 @@ export default function ProjectKanbanBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 h-full min-w-max items-start">
+          <div className="flex gap-3 h-full min-w-max items-stretch">
             <SortableContext items={lists.map(l => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <SortableColumn
