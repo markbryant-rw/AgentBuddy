@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { 
   FileText, 
   Upload, 
@@ -12,7 +13,9 @@ import {
   Clock, 
   Eye,
   ChevronDown,
-  ChevronRight 
+  ChevronRight,
+  Plus,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -32,8 +35,11 @@ const STATUS_CONFIG = {
 };
 
 export const TransactionDocumentsTab = ({ transactionId }: TransactionDocumentsTabProps) => {
-  const { documents, isLoading, progress, updateDocument } = useTransactionDocuments(transactionId);
+  const { documents, isLoading, progress, updateDocument, createDocument } = useTransactionDocuments(transactionId);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['all']));
+  const [isAddingDocument, setIsAddingDocument] = useState(false);
+  const [newDocTitle, setNewDocTitle] = useState('');
+  const [newDocRequired, setNewDocRequired] = useState(false);
 
   const documentsBySection = useMemo(() => {
     const sections: Record<string, TransactionDocument[]> = {};
@@ -69,20 +75,38 @@ export const TransactionDocumentsTab = ({ transactionId }: TransactionDocumentsT
     updateDocument.mutate({ id: docId, updates: { status: nextStatus } });
   };
 
+  const handleAddDocument = () => {
+    if (!newDocTitle.trim()) return;
+    
+    createDocument.mutate({
+      transaction_id: transactionId,
+      title: newDocTitle.trim(),
+      required: newDocRequired,
+      status: 'pending',
+      section: 'General',
+      assignees: [],
+      attachments: [],
+      order_index: documents.length,
+    });
+    
+    setNewDocTitle('');
+    setNewDocRequired(false);
+    setIsAddingDocument(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleAddDocument();
+    } else if (e.key === 'Escape') {
+      setIsAddingDocument(false);
+      setNewDocTitle('');
+      setNewDocRequired(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center text-muted-foreground">Loading documents...</div>;
-  }
-
-  if (documents.length === 0) {
-    return (
-      <div className="p-8 text-center">
-        <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-        <p className="text-muted-foreground mb-2">No documents yet</p>
-        <p className="text-sm text-muted-foreground">
-          Apply a template to add document checklists for this transaction
-        </p>
-      </div>
-    );
   }
 
   const reviewedCount = documents.filter(d => d.status === 'reviewed').length;
@@ -95,106 +119,181 @@ export const TransactionDocumentsTab = ({ transactionId }: TransactionDocumentsT
           <div className="text-sm text-muted-foreground">
             {reviewedCount} of {documents.length} documents reviewed
           </div>
-        </div>
-
-        <div className="space-y-1">
-          <Progress value={progress} className="h-2" />
-          {progress === 100 && (
-            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-              <CheckCircle2 className="h-4 w-4" />
-              All documents reviewed!
-            </div>
+          {!isAddingDocument && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsAddingDocument(true)}
+              className="text-primary hover:text-primary"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Document
+            </Button>
           )}
         </div>
+
+        {documents.length > 0 && (
+          <div className="space-y-1">
+            <Progress value={progress} className="h-2" />
+            {progress === 100 && (
+              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                <CheckCircle2 className="h-4 w-4" />
+                All documents reviewed!
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Document List */}
-      <ScrollArea className="flex-1">
-        <div className="p-4 space-y-4">
-          {Object.entries(documentsBySection).map(([section, sectionDocs]) => {
-            const isExpanded = expandedSections.has(section) || expandedSections.has('all');
-            const sectionReviewedCount = sectionDocs.filter(d => d.status === 'reviewed').length;
-
-            return (
-              <Collapsible
-                key={section}
-                open={isExpanded}
-                onOpenChange={() => toggleSection(section)}
-              >
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
-                  <div className="flex items-center gap-2">
-                    {isExpanded ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                    <span className="font-semibold text-sm uppercase tracking-wide">
-                      {section}
-                    </span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {sectionReviewedCount}/{sectionDocs.length}
-                  </span>
-                </CollapsibleTrigger>
-
-                <CollapsibleContent className="mt-2 space-y-2">
-                  {sectionDocs.map(doc => {
-                    const StatusIcon = STATUS_CONFIG[doc.status].icon;
-                    
-                    return (
-                      <div
-                        key={doc.id}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                          doc.status === 'reviewed' && "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
-                          doc.status === 'received' && "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
-                          doc.status === 'pending' && "bg-background border-border"
-                        )}
-                      >
-                        <Checkbox
-                          checked={doc.status === 'reviewed'}
-                          onCheckedChange={() => handleStatusChange(doc.id, doc.status)}
-                          className="h-5 w-5"
-                        />
-
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className={cn(
-                              "font-medium text-sm",
-                              doc.status === 'reviewed' && "line-through text-muted-foreground"
-                            )}>
-                              {doc.title}
-                            </span>
-                            {doc.required && (
-                              <Badge variant="outline" className="text-xs">
-                                Required
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-
-                        <Badge 
-                          variant="secondary" 
-                          className={cn("text-xs", STATUS_CONFIG[doc.status].color)}
-                        >
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {STATUS_CONFIG[doc.status].label}
-                        </Badge>
-
-                        {doc.attachments && doc.attachments.length > 0 && (
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </CollapsibleContent>
-              </Collapsible>
-            );
-          })}
+      {/* Add Document Inline Form */}
+      {isAddingDocument && (
+        <div className="p-4 border-b bg-muted/30">
+          <div className="space-y-3">
+            <Input
+              placeholder="Document name..."
+              value={newDocTitle}
+              onChange={(e) => setNewDocTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className="bg-background"
+            />
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox
+                  checked={newDocRequired}
+                  onCheckedChange={(checked) => setNewDocRequired(checked as boolean)}
+                />
+                <span>Required document</span>
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setIsAddingDocument(false);
+                    setNewDocTitle('');
+                    setNewDocRequired(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleAddDocument}
+                  disabled={!newDocTitle.trim() || createDocument.isPending}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
-      </ScrollArea>
+      )}
+
+      {/* Empty State */}
+      {documents.length === 0 && !isAddingDocument && (
+        <div className="p-8 text-center">
+          <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <p className="text-muted-foreground mb-2">No documents yet</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            Add documents to track for this transaction
+          </p>
+          <Button variant="outline" onClick={() => setIsAddingDocument(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Document
+          </Button>
+        </div>
+      )}
+
+      {/* Document List */}
+      {documents.length > 0 && (
+        <ScrollArea className="flex-1">
+          <div className="p-4 space-y-4">
+            {Object.entries(documentsBySection).map(([section, sectionDocs]) => {
+              const isExpanded = expandedSections.has(section) || expandedSections.has('all');
+              const sectionReviewedCount = sectionDocs.filter(d => d.status === 'reviewed').length;
+
+              return (
+                <Collapsible
+                  key={section}
+                  open={isExpanded}
+                  onOpenChange={() => toggleSection(section)}
+                >
+                  <CollapsibleTrigger className="flex items-center justify-between w-full p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
+                    <div className="flex items-center gap-2">
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                      <span className="font-semibold text-sm uppercase tracking-wide">
+                        {section}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {sectionReviewedCount}/{sectionDocs.length}
+                    </span>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent className="mt-2 space-y-2">
+                    {sectionDocs.map(doc => {
+                      const StatusIcon = STATUS_CONFIG[doc.status].icon;
+                      
+                      return (
+                        <div
+                          key={doc.id}
+                          className={cn(
+                            "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                            doc.status === 'reviewed' && "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
+                            doc.status === 'received' && "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
+                            doc.status === 'pending' && "bg-background border-border"
+                          )}
+                        >
+                          <Checkbox
+                            checked={doc.status === 'reviewed'}
+                            onCheckedChange={() => handleStatusChange(doc.id, doc.status)}
+                            className="h-5 w-5"
+                          />
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "font-medium text-sm",
+                                doc.status === 'reviewed' && "line-through text-muted-foreground"
+                              )}>
+                                {doc.title}
+                              </span>
+                              {doc.required && (
+                                <Badge variant="outline" className="text-xs">
+                                  Required
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+
+                          <Badge 
+                            variant="secondary" 
+                            className={cn("text-xs", STATUS_CONFIG[doc.status].color)}
+                          >
+                            <StatusIcon className="h-3 w-3 mr-1" />
+                            {STATUS_CONFIG[doc.status].label}
+                          </Badge>
+
+                          {doc.attachments && doc.attachments.length > 0 && (
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
+              );
+            })}
+          </div>
+        </ScrollArea>
+      )}
     </div>
   );
 };
