@@ -78,14 +78,38 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
       const template = templates.find(t => t.id === templateId);
       if (!template) throw new Error('Template not found');
 
-      // Get transaction to access team_id and assignees
+      // Get transaction to access team_id, assignees, and timeline dates
       const { data: transaction, error: txError } = await supabase
         .from('transactions')
-        .select('team_id, assignees')
+        .select('team_id, assignees, settlement_date, expected_settlement, unconditional_date, live_date')
         .eq('id', transactionId)
         .single();
 
       if (txError || !transaction) throw new Error('Transaction not found');
+
+      // Calculate anchor date for due date offsets based on settlement timeline
+      const getAnchorDate = (): Date => {
+        // Settlement is the primary anchor
+        const settlement = transaction.settlement_date || transaction.expected_settlement;
+        if (settlement) {
+          return new Date(settlement);
+        }
+        
+        // Fallback to unconditional date
+        if (transaction.unconditional_date) {
+          return new Date(transaction.unconditional_date);
+        }
+        
+        // Fallback to live date
+        if (transaction.live_date) {
+          return new Date(transaction.live_date);
+        }
+        
+        // Default to today
+        return new Date();
+      };
+
+      const anchorDate = getAnchorDate();
 
       // Role resolution function
       const resolveRoleToUser = (roleName: string): string | null => {
@@ -166,8 +190,8 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
             team_id: transaction.team_id,
             created_by: user?.id,
             order_position: index,
-            due_date: task.due_offset_days
-              ? new Date(Date.now() + task.due_offset_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            due_date: task.due_offset_days != null
+              ? new Date(anchorDate.getTime() + task.due_offset_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
               : null,
             assigned_to: assignedTo,
           };
