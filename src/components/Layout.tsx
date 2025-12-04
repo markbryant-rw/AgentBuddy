@@ -119,10 +119,17 @@ const Layout = () => {
   const currentModuleId = getModuleIdFromPath(location.pathname);
   useModuleUsageTracking(currentModuleId);
 
+  // Check if we're on a full-height page (projects/kanban boards)
+  const isFullHeightPage = location.pathname.startsWith('/projects/') || 
+                           location.pathname.startsWith('/tasks/');
+
   return (
     // Phase 3: Wrap with PomodoroProvider to share session data across components
     <PomodoroProvider date={new Date()}>
-      <div className="min-h-screen bg-background">
+      <div className={cn(
+        "bg-background flex flex-col",
+        isFullHeightPage ? "h-screen overflow-hidden" : "min-h-screen"
+      )}>
       <ViewAsBanner />
       <ImpersonationAlertBanner />
       <nav className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -191,8 +198,10 @@ const Layout = () => {
       </nav>
 
       <main className={cn(
-        "px-4 md:px-6",
-        location.pathname === '/messages' ? '' : 'py-8 pb-20 md:pb-8'
+        isFullHeightPage 
+          ? "flex-1 min-h-0 overflow-hidden" 
+          : "px-4 md:px-6",
+        !isFullHeightPage && location.pathname !== '/messages' && 'py-8 pb-20 md:pb-8'
       )}>
         <Outlet />
       </main>
