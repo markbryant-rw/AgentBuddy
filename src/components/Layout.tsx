@@ -21,9 +21,14 @@ import { RoleModeBadge } from '@/components/RoleModeBadge';
 import { FloatingBugReportButton } from '@/components/feedback/FloatingBugReportButton';
 
 const Layout = () => {
-  const { roles, activeRole } = useAuth();
+  const { roles, activeRole, loading } = useAuth();
   const location = useLocation();
-  const workspaceItems = getWorkspaceItemsForActiveRole(activeRole, roles);
+  
+  // Get workspace items, but ensure we have items during initial load
+  // This prevents the navigation from being empty while auth is loading
+  const workspaceItems = loading 
+    ? getWorkspaceItemsForActiveRole('salesperson', ['salesperson']) // Show default nav while loading
+    : getWorkspaceItemsForActiveRole(activeRole, roles);
   
   // Automatically sync active role when navigating to role-specific routes
   useRouteRoleSync();
