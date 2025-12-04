@@ -10,7 +10,7 @@ import { TransactionKanbanBoard } from '@/components/transaction-management/Tran
 import { TransactionDetailDrawer } from '@/components/transaction-management/TransactionDetailDrawer';
 import { CreateTransactionDialog } from '@/components/transaction-management/CreateTransactionDialog';
 import { EditTransactionDialog } from '@/components/transaction-management/EditTransactionDialog';
-import { TemplateLibraryDialog } from '@/components/transaction-management/TemplateLibraryDialog';
+
 import { TerritoryMapModal } from '@/components/transaction-management/TerritoryMapModal';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,7 +25,6 @@ export default function TransactionCoordinating() {
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [templateLibraryOpen, setTemplateLibraryOpen] = useState(false);
   const [mapModalOpen, setMapModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showArchived, setShowArchived] = useState(false);
@@ -174,7 +173,7 @@ export default function TransactionCoordinating() {
           </Button>
           <Button 
             variant="outline" 
-            onClick={() => setTemplateLibraryOpen(true)}
+            onClick={() => navigate('/transaction-templates')}
           >
             <Settings className="h-4 w-4 mr-2" />
             Manage Templates
@@ -233,11 +232,6 @@ export default function TransactionCoordinating() {
         />
       )}
 
-      {/* Template Library Dialog */}
-      <TemplateLibraryDialog
-        open={templateLibraryOpen}
-        onOpenChange={setTemplateLibraryOpen}
-      />
 
       {/* Territory Map Modal */}
           {/* Territory Map Modal */}

@@ -93,6 +93,8 @@ const VendorReporting = lazy(() => import("./pages/vendor-reporting/VendorReport
 const NurtureCalculator = lazy(() => import("./pages/nurture-calculator/NurtureCalculator"));
 const TransactionManagement = lazy(() => import("./pages/transaction-management/TransactionManagement"));
 const TransactionCoordinating = lazy(() => import("./pages/transaction-management/TransactionCoordinating"));
+const TemplateLibrary = lazy(() => import("./pages/transaction-management/TemplateLibrary"));
+const TemplateEditor = lazy(() => import("./pages/transaction-management/TemplateEditor"));
 const StockBoard = lazy(() => import("./pages/transaction-management/StockBoard"));
 const ListingExpiryReport = lazy(() => import("./pages/ListingExpiryReport"));
 const ReviewRoadmap = lazy(() => import("./pages/ReviewRoadmap"));
@@ -207,6 +209,8 @@ const AppContent = () => {
                   <Route path="/nurture-calculator" element={<NurtureCalculator />} />
                   <Route path="/transaction-management" element={<TransactionManagement />} />
               <Route path="/transaction-coordinating" element={<TransactionCoordinating />} />
+              <Route path="/transaction-templates" element={<TemplateLibrary />} />
+              <Route path="/transaction-templates/:templateId" element={<TemplateEditor />} />
               <Route path="/stock-board" element={<StockBoard />} />
               <Route path="/listing-expiry-report" element={<ListingExpiryReport />} />
               <Route path="/past-sales-history" element={<PastSalesHistory />} />
