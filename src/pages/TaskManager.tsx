@@ -278,7 +278,7 @@ export default function TaskManager({ boardId }: TaskManagerProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background to-muted/20">
+    <div className="h-full flex flex-col overflow-hidden bg-gradient-to-b from-background to-muted/20">
       {/* Enhanced Board Header */}
       {selectedBoard && (
         <EnhancedBoardHeader
@@ -289,8 +289,8 @@ export default function TaskManager({ boardId }: TaskManagerProps) {
         />
       )}
 
-      {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto p-4">
+      {/* Kanban Board - fills remaining height */}
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden p-4">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -298,7 +298,7 @@ export default function TaskManager({ boardId }: TaskManagerProps) {
           onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
         >
-          <div className="flex gap-4 pb-4">
+          <div className="flex gap-4 pb-4 h-full items-start">
             <SortableContext items={lists.map(l => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <SortableTaskListColumn

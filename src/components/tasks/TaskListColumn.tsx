@@ -60,7 +60,7 @@ export const TaskListColumn = ({
     <div 
       ref={dragRef}
       className={cn(
-        "flex flex-col w-[350px] shrink-0 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200",
+        "flex flex-col w-[350px] shrink-0 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 max-h-full",
         isOver && "ring-2 ring-primary shadow-xl scale-[1.02]"
       )}
     >
@@ -123,8 +123,8 @@ export const TaskListColumn = ({
         </Button>
       )}
 
-      {/* Tasks - Natural Scrolling */}
-      <div className="p-4 pt-2">
+      {/* Tasks - Internal scrolling when needed */}
+      <div className="p-4 pt-2 overflow-y-auto flex-1 min-h-0">
         {activeTasks.length === 0 && !showInput ? (
           <EmptyTaskState />
         ) : (
