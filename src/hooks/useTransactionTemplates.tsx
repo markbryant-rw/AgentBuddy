@@ -21,6 +21,7 @@ export interface TransactionTemplate {
     due_offset_days?: number;
     assigned_to_user?: string;
     assigned_to_role?: string;
+    knowledge_base_article_id?: string;
   }>;
   documents: Array<{
     title: string;
