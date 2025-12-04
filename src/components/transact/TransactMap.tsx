@@ -61,8 +61,6 @@ const FitBounds = ({ items }: FitBoundsProps) => {
 interface TransactMapProps {
   transactions: Transaction[];
   pastSales: PastSale[];
-  onTransactionClick?: (transaction: Transaction) => void;
-  onPastSaleClick?: (pastSale: PastSale) => void;
   onAutoGeocode?: () => void;
   isGeocoding?: boolean;
 }
@@ -98,7 +96,7 @@ const createAvatarIcon = (avatarUrl: string | null, name: string, borderColor: s
   });
 };
 
-const TransactMap = ({ transactions, pastSales, onTransactionClick, onPastSaleClick, onAutoGeocode, isGeocoding }: TransactMapProps) => {
+const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: TransactMapProps) => {
   const { members } = useTeamMembers();
   const [showTransactions, setShowTransactions] = useState(true);
   const [showPastSales, setShowPastSales] = useState(true);
@@ -317,6 +315,73 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onPastSaleCl
     </div>
   );
 
+  const getStageLabel = (stage: string) => {
+    return STAGE_OPTIONS.find(s => s.value === stage)?.label || stage;
+  };
+
+  const renderTransactionPopup = (transaction: Transaction) => {
+    const stageColor = STAGE_COLORS[transaction.stage] || '#6b7280';
+    const vendorName = transaction.vendor_names?.[0] 
+      ? `${transaction.vendor_names[0].first_name || ''} ${transaction.vendor_names[0].last_name || ''}`.trim()
+      : null;
+
+    return (
+      <Popup>
+        <div className="min-w-[200px] p-1">
+          {/* Address & Suburb */}
+          <div className="flex items-start gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: stageColor }} />
+            <div>
+              <p className="font-semibold text-sm leading-tight">{transaction.address}</p>
+              {transaction.suburb && (
+                <p className="text-xs text-gray-500">{transaction.suburb}</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Stage Badge */}
+          <div className="mb-2">
+            <span 
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-white"
+              style={{ backgroundColor: stageColor }}
+            >
+              {getStageLabel(transaction.stage)}
+            </span>
+            {transaction.warmth && (
+              <span 
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-white ml-1"
+                style={{ backgroundColor: WARMTH_COLORS[transaction.warmth as keyof typeof WARMTH_COLORS] || '#6b7280' }}
+              >
+                {transaction.warmth}
+              </span>
+            )}
+          </div>
+
+          {/* Vendor */}
+          {vendorName && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 mb-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>{vendorName}</span>
+            </div>
+          )}
+
+          {/* Price */}
+          {transaction.team_price && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 mb-2">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">${transaction.team_price.toLocaleString()}</span>
+            </div>
+          )}
+
+        </div>
+      </Popup>
+    );
+  };
+
   const renderTransactionMarker = (transaction: Transaction) => {
     const assigneeId = getTransactionAssignee(transaction);
     const member = assigneeId ? getMemberById(assigneeId) : null;
@@ -329,23 +394,8 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onPastSaleCl
           key={`transaction-${transaction.id}`}
           position={[transaction.latitude!, transaction.longitude!]}
           icon={icon}
-          eventHandlers={{
-            click: () => onTransactionClick?.(transaction),
-          }}
         >
-          <Popup>
-            <div className="p-2">
-              <p className="font-semibold">{transaction.address}</p>
-              <p className="text-sm text-muted-foreground">
-                Vendor: {transaction.vendor_names?.[0]?.first_name} {transaction.vendor_names?.[0]?.last_name}
-              </p>
-              <p className="text-sm">Stage: <span className="font-medium capitalize">{transaction.stage.replace('_', ' ')}</span></p>
-              <p className="text-sm">Warmth: <span className="font-medium capitalize">{transaction.warmth}</span></p>
-              {transaction.team_price && (
-                <p className="text-sm">Price: ${transaction.team_price.toLocaleString()}</p>
-              )}
-            </div>
-          </Popup>
+          {renderTransactionPopup(transaction)}
         </Marker>
       );
     }
@@ -362,24 +412,74 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onPastSaleCl
           opacity: 1,
           fillOpacity: 0.7,
         }}
-        eventHandlers={{
-          click: () => onTransactionClick?.(transaction),
-        }}
       >
-        <Popup>
-          <div className="p-2">
-            <p className="font-semibold">{transaction.address}</p>
-            <p className="text-sm text-muted-foreground">
-              Vendor: {transaction.vendor_names?.[0]?.first_name} {transaction.vendor_names?.[0]?.last_name}
-            </p>
-            <p className="text-sm">Stage: <span className="font-medium capitalize">{transaction.stage.replace('_', ' ')}</span></p>
-            <p className="text-sm">Warmth: <span className="font-medium capitalize">{transaction.warmth}</span></p>
-            {transaction.team_price && (
-              <p className="text-sm">Price: ${transaction.team_price.toLocaleString()}</p>
-            )}
-          </div>
-        </Popup>
+        {renderTransactionPopup(transaction)}
       </CircleMarker>
+    );
+  };
+
+  const renderPastSalePopup = (sale: PastSale) => {
+    const isSold = sale.status === 'sold' || sale.status === 'won_and_sold';
+    const statusColor = isSold ? '#22c55e' : '#ef4444';
+    const vendorName = sale.vendor_details?.primary 
+      ? `${sale.vendor_details.primary.first_name || ''} ${sale.vendor_details.primary.last_name || ''}`.trim()
+      : null;
+
+    return (
+      <Popup>
+        <div className="min-w-[200px] p-1">
+          {/* Address & Suburb */}
+          <div className="flex items-start gap-2 mb-2">
+            <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: statusColor }} />
+            <div>
+              <p className="font-semibold text-sm leading-tight">{sale.address}</p>
+              {sale.suburb && (
+                <p className="text-xs text-gray-500">{sale.suburb}</p>
+              )}
+            </div>
+          </div>
+          
+          {/* Status Badge */}
+          <div className="mb-2">
+            <span 
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium text-white capitalize"
+              style={{ backgroundColor: statusColor }}
+            >
+              {isSold ? 'Sold' : sale.status?.replace('_', ' ') || 'Unknown'}
+            </span>
+          </div>
+
+          {/* Vendor */}
+          {vendorName && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 mb-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              <span>{vendorName}</span>
+            </div>
+          )}
+
+          {/* Sale Price */}
+          {sale.sale_price && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 mb-1">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="font-medium">${sale.sale_price.toLocaleString()}</span>
+            </div>
+          )}
+
+          {/* Settlement Date */}
+          {sale.settlement_date && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span>Settled {new Date(sale.settlement_date).toLocaleDateString()}</span>
+            </div>
+          )}
+        </div>
+      </Popup>
     );
   };
 
@@ -394,24 +494,8 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onPastSaleCl
           key={`sale-${sale.id}`}
           position={[sale.latitude!, sale.longitude!]}
           icon={icon}
-          eventHandlers={{
-            click: () => onPastSaleClick?.(sale),
-          }}
         >
-          <Popup>
-            <div className="p-2">
-              <p className="font-semibold">{sale.address}</p>
-              <p className="text-sm text-muted-foreground">
-                Vendor: {sale.vendor_details?.primary?.first_name} {sale.vendor_details?.primary?.last_name}
-              </p>
-              {sale.sale_price && (
-                <p className="text-sm">Sold: ${sale.sale_price.toLocaleString()}</p>
-              )}
-              {sale.settlement_date && (
-                <p className="text-sm">Settled: {new Date(sale.settlement_date).toLocaleDateString()}</p>
-              )}
-            </div>
-          </Popup>
+          {renderPastSalePopup(sale)}
         </Marker>
       );
     }
@@ -422,30 +506,14 @@ const TransactMap = ({ transactions, pastSales, onTransactionClick, onPastSaleCl
         center={[sale.latitude!, sale.longitude!]}
         radius={8}
         pathOptions={{
-          fillColor: '#22c55e',
+          fillColor: statusColor,
           color: '#fff',
           weight: 2,
           opacity: 1,
           fillOpacity: 0.6,
         }}
-        eventHandlers={{
-          click: () => onPastSaleClick?.(sale),
-        }}
       >
-        <Popup>
-          <div className="p-2">
-            <p className="font-semibold">{sale.address}</p>
-            <p className="text-sm text-muted-foreground">
-              Vendor: {sale.vendor_details?.primary?.first_name} {sale.vendor_details?.primary?.last_name}
-            </p>
-            {sale.sale_price && (
-              <p className="text-sm">Sold: ${sale.sale_price.toLocaleString()}</p>
-            )}
-            {sale.settlement_date && (
-              <p className="text-sm">Settled: {new Date(sale.settlement_date).toLocaleDateString()}</p>
-            )}
-          </div>
-        </Popup>
+        {renderPastSalePopup(sale)}
       </CircleMarker>
     );
   };
