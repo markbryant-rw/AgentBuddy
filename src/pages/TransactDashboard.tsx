@@ -1,13 +1,10 @@
-import { useState } from 'react';
 import { FileText } from 'lucide-react';
-import { useTransactions, Transaction } from '@/hooks/useTransactions';
-import { usePastSales, PastSale } from '@/hooks/usePastSales';
+import { useTransactions } from '@/hooks/useTransactions';
+import { usePastSales } from '@/hooks/usePastSales';
 import { useTeam } from '@/hooks/useTeam';
 import { useTransactionGeocoding } from '@/hooks/useTransactionGeocoding';
 import TransactNavigationCards from '@/components/transact/TransactNavigationCards';
 import TransactMap from '@/components/transact/TransactMap';
-import { TransactionDetailDrawer } from '@/components/transaction-management/TransactionDetailDrawer';
-import PastSaleDetailDialog from '@/components/past-sales/PastSaleDetailDialog';
 import { calculatePriceAlignment } from '@/lib/priceAlignmentUtils';
 import { calculateDaysUntilExpiry, getExpiryStatus } from '@/lib/listingExpiryUtils';
 
@@ -16,12 +13,6 @@ const TransactDashboard = () => {
   const { transactions, isLoading: transactionsLoading } = useTransactions();
   const { pastSales, isLoading: pastSalesLoading } = usePastSales(team?.id);
   const { geocodeAll, isGeocoding } = useTransactionGeocoding();
-
-  // Detail drawer/dialog state
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [transactionDrawerOpen, setTransactionDrawerOpen] = useState(false);
-  const [selectedPastSale, setSelectedPastSale] = useState<PastSale | null>(null);
-  const [pastSaleDialogOpen, setPastSaleDialogOpen] = useState(false);
 
   // Active transactions stats
   const activeTransactions = transactions.filter(t => t.stage !== 'settled' && !t.archived);
@@ -94,17 +85,6 @@ const TransactDashboard = () => {
     return daysUntil !== null && daysUntil >= 0 && daysUntil <= 30;
   }).length;
 
-  // Click handlers
-  const handleTransactionClick = (transaction: Transaction) => {
-    setSelectedTransaction(transaction);
-    setTransactionDrawerOpen(true);
-  };
-
-  const handlePastSaleClick = (pastSale: PastSale) => {
-    setSelectedPastSale(pastSale);
-    setPastSaleDialogOpen(true);
-  };
-
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
@@ -167,32 +147,10 @@ const TransactDashboard = () => {
         <TransactMap
           transactions={transactions}
           pastSales={pastSales}
-          onTransactionClick={handleTransactionClick}
-          onPastSaleClick={handlePastSaleClick}
           onAutoGeocode={() => geocodeAll(transactions)}
           isGeocoding={isGeocoding}
         />
       </div>
-
-      {/* Transaction Detail Drawer */}
-      <TransactionDetailDrawer
-        transaction={selectedTransaction}
-        open={transactionDrawerOpen}
-        onOpenChange={(open) => {
-          setTransactionDrawerOpen(open);
-          if (!open) setSelectedTransaction(null);
-        }}
-      />
-
-      {/* Past Sale Detail Dialog */}
-      <PastSaleDetailDialog
-        pastSale={selectedPastSale || undefined}
-        isOpen={pastSaleDialogOpen}
-        onClose={() => {
-          setPastSaleDialogOpen(false);
-          setSelectedPastSale(null);
-        }}
-      />
     </div>
   );
 };
