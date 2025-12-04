@@ -27,7 +27,7 @@ export const calculatePriceAlignment = (
   const isAligned = percentage <= 10;
 
   return {
-    percentage: Math.round(percentage * 10) / 10,
+    percentage: Math.round(percentage),
     difference,
     status: isAligned ? 'aligned' : 'misaligned',
     color: isAligned ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400',
