@@ -8,7 +8,7 @@ import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Plus, MoreVertical, Trash2, Pencil, X, Clock, Check, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { ArrowLeft, Plus, MoreVertical, Trash2, Pencil, X, Clock, Check, ChevronDown, ChevronRight, PanelLeftClose, PanelLeft, Palette } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -54,6 +54,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { BackgroundPicker } from '@/components/projects/BackgroundPicker';
 
 // Column colors - 8 faint colors for column backgrounds
 const COLUMN_COLORS = [
@@ -105,6 +106,7 @@ interface Project {
   title: string;
   icon: string;
   color: string;
+  background: string | null;
 }
 
 // Sortable Task Card - Slimline Trello-style with full-card drag + inline editing
@@ -564,7 +566,7 @@ const SortableColumn = ({
         backgroundColor: list.color || undefined,
       }}
       className={cn(
-        "w-56 flex-shrink-0 flex flex-col rounded-lg max-h-[calc(100vh-120px)]",
+        "w-56 flex-shrink-0 flex flex-col rounded-lg h-full shadow-sm",
         !list.color && "bg-muted/30",
         isDragging && 'opacity-50'
       )}
@@ -841,7 +843,7 @@ export default function ProjectKanbanBoard() {
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('projects')
-        .select('id, title, icon, color')
+        .select('id, title, icon, color, background')
         .eq('id', projectId)
         .single();
       if (error) throw error;
@@ -1183,9 +1185,9 @@ export default function ProjectKanbanBoard() {
   const activeList = activeType === 'column' ? lists.find(l => l.id === activeId) : null;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4">
           <div className="flex items-center gap-4 py-3">
             <Button variant="ghost" size="sm" onClick={() => navigate('/projects')}>
@@ -1193,17 +1195,43 @@ export default function ProjectKanbanBoard() {
               Back to Projects
             </Button>
             {project && (
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{project.icon}</span>
-                <h1 className="text-xl font-semibold">{project.title}</h1>
-              </div>
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{project.icon}</span>
+                  <h1 className="text-xl font-semibold">{project.title}</h1>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Palette className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-72 p-0" align="start">
+                    <BackgroundPicker 
+                      currentBackground={project.background}
+                      onSelect={async (bg) => {
+                        await supabase
+                          .from('projects')
+                          .update({ background: bg })
+                          .eq('id', projectId);
+                        queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+                      }}
+                    />
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             )}
           </div>
         </div>
       </div>
 
       {/* Kanban Board */}
-      <div className="flex-1 overflow-x-auto overflow-y-hidden p-4">
+      <div 
+        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden kanban-scroll px-4 pb-2 pt-4"
+        style={{ 
+          background: project?.background || undefined,
+        }}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -1211,7 +1239,7 @@ export default function ProjectKanbanBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 h-full min-w-max items-start">
+          <div className="flex gap-3 h-full min-w-max items-stretch pb-2">
             <SortableContext items={lists.map(l => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <SortableColumn
