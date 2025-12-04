@@ -3,7 +3,7 @@ import { PastSale } from "./usePastSales";
 
 export const usePastSalesAnalytics = (pastSales: PastSale[]) => {
   const analytics = useMemo(() => {
-    const soldSales = pastSales.filter((s) => s.status === "won_and_sold" && s.sale_price);
+    const soldSales = pastSales.filter((s) => (s.status === "won_and_sold" || s.status === "sold") && s.sale_price);
 
     // Total sales value
     const totalSalesValue = soldSales.reduce((sum, sale) => sum + (sale.sale_price || 0), 0);
