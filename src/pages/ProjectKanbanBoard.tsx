@@ -55,28 +55,29 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy, horizontalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Column colors - 8 colors with faint (top row) and solid (bottom row) variants
+// Column colors - 8 faint colors for column backgrounds
 const COLUMN_COLORS = [
-  { name: 'Slate', faint: '#f1f5f9', solid: '#cbd5e1' },
-  { name: 'Blue', faint: '#dbeafe', solid: '#93c5fd' },
-  { name: 'Green', faint: '#dcfce7', solid: '#86efac' },
-  { name: 'Yellow', faint: '#fef9c3', solid: '#fde047' },
-  { name: 'Red', faint: '#fee2e2', solid: '#fca5a5' },
-  { name: 'Purple', faint: '#f3e8ff', solid: '#d8b4fe' },
-  { name: 'Pink', faint: '#fce7f3', solid: '#f9a8d4' },
-  { name: 'Teal', faint: '#ccfbf1', solid: '#5eead4' },
+  { name: 'Slate', value: '#f1f5f9' },   // slate-100
+  { name: 'Blue', value: '#dbeafe' },    // blue-100
+  { name: 'Green', value: '#dcfce7' },   // green-100
+  { name: 'Yellow', value: '#fef9c3' },  // yellow-100
+  { name: 'Red', value: '#fee2e2' },     // red-100
+  { name: 'Purple', value: '#f3e8ff' },  // purple-100
+  { name: 'Pink', value: '#fce7f3' },    // pink-100
+  { name: 'Teal', value: '#ccfbf1' },    // teal-100
 ];
 
-// Card background colors (pastel)
+// Card background colors - 8 darker/solid colors for card backgrounds
 const CARD_COLORS = [
   { name: 'None', value: null },
-  { name: 'Pink', value: '#fce7f3' },
-  { name: 'Yellow', value: '#fef9c3' },
-  { name: 'Blue', value: '#dbeafe' },
-  { name: 'Green', value: '#dcfce7' },
-  { name: 'Purple', value: '#f3e8ff' },
-  { name: 'Orange', value: '#ffedd5' },
-  { name: 'Cyan', value: '#cffafe' },
+  { name: 'Slate', value: '#cbd5e1' },   // slate-300
+  { name: 'Blue', value: '#93c5fd' },    // blue-300
+  { name: 'Green', value: '#86efac' },   // green-300
+  { name: 'Yellow', value: '#fde047' },  // yellow-300
+  { name: 'Red', value: '#fca5a5' },     // red-300
+  { name: 'Purple', value: '#d8b4fe' },  // purple-300
+  { name: 'Pink', value: '#f9a8d4' },    // pink-300
+  { name: 'Teal', value: '#5eead4' },    // teal-300
 ];
 
 interface Assignee {
@@ -400,7 +401,7 @@ const InlineAddCard = ({
     return (
       <button
         onClick={onExpand}
-        className="w-full p-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-lg text-left flex items-center gap-2 transition-colors"
+        className="w-full p-2 text-sm text-foreground/70 hover:text-foreground hover:bg-black/10 rounded-lg text-left flex items-center gap-2 transition-colors"
       >
         <Plus className="h-4 w-4" />
         Add a card
@@ -513,7 +514,7 @@ const SortableColumn = ({
     transition,
   };
 
-  // Collapsed column view
+  // Collapsed column view - stretches to full height like a barrier
   if (isCollapsed) {
     return (
       <div 
@@ -523,13 +524,13 @@ const SortableColumn = ({
           backgroundColor: list.color || undefined,
         }}
         className={cn(
-          "w-10 flex-shrink-0 flex flex-col rounded-lg max-h-full cursor-pointer hover:opacity-80 transition-opacity",
+          "w-10 flex-shrink-0 flex flex-col rounded-lg h-full cursor-pointer hover:opacity-80 transition-opacity",
           !list.color && "bg-muted/30",
           isDragging && 'opacity-50'
         )}
         onClick={onToggleCollapse}
       >
-        <div className="p-2 flex flex-col items-center gap-2 h-full">
+        <div className="p-2 flex flex-col items-center gap-2">
           <Badge variant="secondary" className="text-[10px] px-1 py-0">
             {tasks.length}
           </Badge>
@@ -597,34 +598,19 @@ const SortableColumn = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            {/* Color Picker Section */}
+            {/* Color Picker Section - Single row of 8 faint colors */}
             <div className="p-2">
               <p className="text-xs text-muted-foreground mb-2">Column color</p>
-              {/* Top Row - Faint colors */}
-              <div className="flex gap-1 mb-1">
-                {COLUMN_COLORS.map((c) => (
-                  <button
-                    key={c.faint}
-                    onClick={(e) => { e.stopPropagation(); onColumnColorChange(c.faint); }}
-                    className={cn(
-                      "w-5 h-5 rounded border border-black/10 hover:scale-110 transition-transform",
-                      list.color === c.faint && "ring-2 ring-primary ring-offset-1"
-                    )}
-                    style={{ backgroundColor: c.faint }}
-                  />
-                ))}
-              </div>
-              {/* Bottom Row - Solid colors */}
               <div className="flex gap-1">
                 {COLUMN_COLORS.map((c) => (
                   <button
-                    key={c.solid}
-                    onClick={(e) => { e.stopPropagation(); onColumnColorChange(c.solid); }}
+                    key={c.value}
+                    onClick={(e) => { e.stopPropagation(); onColumnColorChange(c.value); }}
                     className={cn(
                       "w-5 h-5 rounded border border-black/10 hover:scale-110 transition-transform",
-                      list.color === c.solid && "ring-2 ring-primary ring-offset-1"
+                      list.color === c.value && "ring-2 ring-primary ring-offset-1"
                     )}
-                    style={{ backgroundColor: c.solid }}
+                    style={{ backgroundColor: c.value }}
                   />
                 ))}
               </div>
@@ -1285,7 +1271,7 @@ export default function ProjectKanbanBoard() {
             <div className="space-y-2">
               <Label>Color</Label>
               <div className="flex gap-2 flex-wrap">
-                {[...COLUMN_COLORS.map(c => ({ name: c.name + ' Light', value: c.faint })), ...COLUMN_COLORS.map(c => ({ name: c.name, value: c.solid }))].map((option) => (
+                {COLUMN_COLORS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
