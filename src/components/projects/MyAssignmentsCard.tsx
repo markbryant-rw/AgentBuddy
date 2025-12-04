@@ -154,7 +154,9 @@ export const MyAssignmentsCard = () => {
               </div>
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  {task.list?.board?.icon || "📋"} {task.list?.board?.title}
+                  {task.source === 'transaction' && `🏠 ${task.transaction?.address || 'Transaction'}`}
+                  {task.source === 'project' && `${task.project?.icon || '📁'} ${task.project?.title || 'Project'}`}
+                  {task.source === 'planner' && '🗓️ Daily Planner'}
                 </span>
                 <span>•</span>
                 <span className={cn("flex items-center gap-1", getDueDateColor(task.due_date))}>

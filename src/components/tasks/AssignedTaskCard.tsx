@@ -4,7 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AssignedTask } from "@/hooks/useMyAssignedTasks";
 import { format } from "date-fns";
-import { Calendar, ExternalLink, AlertCircle } from "lucide-react";
+import { Calendar, ExternalLink, AlertCircle, Home, FolderKanban, CalendarDays, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 
@@ -28,7 +28,8 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
     }
   };
 
-  const getDueDateColor = (dueDate: string) => {
+  const getDueDateColor = (dueDate: string | null) => {
+    if (!dueDate) return "text-muted-foreground";
     const now = new Date();
     const due = new Date(dueDate);
     const diffDays = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -39,7 +40,70 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
     return "text-muted-foreground";
   };
 
-  const isOverdue = new Date(task.due_date) < new Date();
+  const getSourceBadge = () => {
+    switch (task.source) {
+      case 'transaction':
+        return (
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1">
+            <Home className="h-3 w-3" />
+            {task.transaction?.address || 'Transaction'}
+          </Badge>
+        );
+      case 'project':
+        return (
+          <Badge 
+            variant="outline" 
+            className="gap-1"
+            style={{ 
+              backgroundColor: task.project?.color ? `${task.project.color}20` : undefined,
+              borderColor: task.project?.color || undefined,
+              color: task.project?.color || undefined,
+            }}
+          >
+            <span>{task.project?.icon || '📁'}</span>
+            {task.project?.title || 'Project'}
+          </Badge>
+        );
+      case 'planner':
+        return (
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 gap-1">
+            <CalendarDays className="h-3 w-3" />
+            Daily Planner
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getActionLink = () => {
+    switch (task.source) {
+      case 'transaction':
+        return task.transaction_id ? `/transactions/${task.transaction_id}` : null;
+      case 'project':
+        return task.project_id ? `/tasks/projects/${task.project_id}` : null;
+      case 'planner':
+        return '/daily-planner';
+      default:
+        return null;
+    }
+  };
+
+  const getActionLabel = () => {
+    switch (task.source) {
+      case 'transaction':
+        return 'View Transaction';
+      case 'project':
+        return 'View Project';
+      case 'planner':
+        return 'View Planner';
+      default:
+        return 'View';
+    }
+  };
+
+  const isOverdue = task.due_date ? new Date(task.due_date) < new Date() : false;
+  const actionLink = getActionLink();
 
   return (
     <div
@@ -75,23 +139,34 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
           )}
 
           {/* Metadata */}
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            {/* Board */}
-            <span className="flex items-center gap-1.5 font-medium">
-              <span className="text-base">{task.list?.board?.icon || "📋"}</span>
-              <span>{task.list?.board?.title}</span>
-            </span>
-
-            <span className="text-muted-foreground">•</span>
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            {/* Source Badge */}
+            {getSourceBadge()}
 
             {/* Due Date */}
-            <span className={cn("flex items-center gap-1.5 font-medium", getDueDateColor(task.due_date))}>
-              <Calendar className="h-3.5 w-3.5" />
-              {format(new Date(task.due_date), "MMM d, yyyy")}
-              {isOverdue && <AlertCircle className="h-3.5 w-3.5" />}
-            </span>
+            {task.due_date && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <span className={cn("flex items-center gap-1 font-medium", getDueDateColor(task.due_date))}>
+                  <Calendar className="h-3.5 w-3.5" />
+                  {format(new Date(task.due_date), "MMM d, yyyy")}
+                  {isOverdue && <AlertCircle className="h-3.5 w-3.5" />}
+                </span>
+              </>
+            )}
 
-            {/* Assigned By */}
+            {/* Time for planner items */}
+            {task.source === 'planner' && task.planner_time && (
+              <>
+                <span className="text-muted-foreground">•</span>
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  <Clock className="h-3.5 w-3.5" />
+                  {task.planner_time}
+                </span>
+              </>
+            )}
+
+            {/* Creator (for transaction tasks) */}
             {task.creator && (
               <>
                 <span className="text-muted-foreground">•</span>
@@ -111,17 +186,16 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="outline" size="sm" asChild>
-              <Link
-                to={`/tasks/projects/${task.list?.board_id}`}
-                className="flex items-center gap-1.5"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                View Board
-              </Link>
-            </Button>
-          </div>
+          {actionLink && (
+            <div className="flex items-center gap-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="outline" size="sm" asChild>
+                <Link to={actionLink} className="flex items-center gap-1.5">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  {getActionLabel()}
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>
