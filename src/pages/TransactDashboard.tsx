@@ -2,6 +2,7 @@ import { FileText } from 'lucide-react';
 import { useTransactions } from '@/hooks/useTransactions';
 import { usePastSales } from '@/hooks/usePastSales';
 import { useTeam } from '@/hooks/useTeam';
+import { useTransactionGeocoding } from '@/hooks/useTransactionGeocoding';
 import TransactNavigationCards from '@/components/transact/TransactNavigationCards';
 import TransactMap from '@/components/transact/TransactMap';
 import { calculatePriceAlignment } from '@/lib/priceAlignmentUtils';
@@ -11,6 +12,7 @@ const TransactDashboard = () => {
   const { team } = useTeam();
   const { transactions, isLoading: transactionsLoading } = useTransactions();
   const { pastSales, isLoading: pastSalesLoading } = usePastSales(team?.id);
+  const { geocodeAll, isGeocoding } = useTransactionGeocoding();
 
   // Active transactions stats
   const activeTransactions = transactions.filter(t => t.stage !== 'settled' && !t.archived);
@@ -145,6 +147,8 @@ const TransactDashboard = () => {
         <TransactMap
           transactions={transactions}
           pastSales={pastSales}
+          onAutoGeocode={() => geocodeAll(transactions)}
+          isGeocoding={isGeocoding}
         />
       </div>
     </div>
