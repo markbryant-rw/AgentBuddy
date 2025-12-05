@@ -135,6 +135,60 @@ export type Database = {
           },
         ]
       }
+      appraisal_stage_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          stage: string
+          tasks: Json | null
+          team_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          stage: string
+          tasks?: Json | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          stage?: string
+          tasks?: Json | null
+          team_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appraisal_stage_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appraisal_stage_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bug_report_categories: {
         Row: {
           created_at: string | null
@@ -3197,6 +3251,8 @@ export type Database = {
       }
       tasks: {
         Row: {
+          appraisal_id: string | null
+          appraisal_stage: string | null
           assigned_to: string | null
           board_position: number | null
           color: string | null
@@ -3232,6 +3288,8 @@ export type Database = {
           weekly_template_id: string | null
         }
         Insert: {
+          appraisal_id?: string | null
+          appraisal_stage?: string | null
           assigned_to?: string | null
           board_position?: number | null
           color?: string | null
@@ -3267,6 +3325,8 @@ export type Database = {
           weekly_template_id?: string | null
         }
         Update: {
+          appraisal_id?: string | null
+          appraisal_stage?: string | null
           assigned_to?: string | null
           board_position?: number | null
           color?: string | null
@@ -3302,6 +3362,13 @@ export type Database = {
           weekly_template_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_appraisal_id_fkey"
+            columns: ["appraisal_id"]
+            isOneToOne: false
+            referencedRelation: "logged_appraisals"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_assigned_to_fkey"
             columns: ["assigned_to"]
