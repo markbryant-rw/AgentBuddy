@@ -45,6 +45,8 @@ import { DealCollapseDialog } from './DealCollapseDialog';
 import { DealHistorySection } from './DealHistorySection';
 import { isForwardTransition, isBackwardTransition } from '@/lib/stageTransitionConfig';
 import { WithdrawPropertyDialog } from './WithdrawPropertyDialog';
+import { TaskRolloverDialog } from './TaskRolloverDialog';
+import { useTaskRollover } from '@/hooks/useTaskRollover';
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -83,6 +85,10 @@ export const TransactionDetailDrawer = ({
   const [pendingStageChange, setPendingStageChange] = useState<TransactionStage | null>(null);
   const [showExtendDialog, setShowExtendDialog] = useState(false);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [taskRolloverDialogOpen, setTaskRolloverDialogOpen] = useState(false);
+  const [incompleteTaskCount, setIncompleteTaskCount] = useState(0);
+  
+  const { getIncompleteTasksForTransaction } = useTaskRollover();
 
   // Fetch actual task counts including overdue
   const { data: taskCounts } = useQuery({
@@ -138,16 +144,33 @@ export const TransactionDetailDrawer = ({
     }
   };
 
-  const handleMoveStage = () => {
+  const handleMoveStage = async () => {
     if (!nextStage) return;
     
     const targetStage = currentStage.next!;
     
-    // Check if forward or backward transition
+    // Check if forward transition - need to check for incomplete tasks
     if (isForwardTransition(transaction.stage, targetStage)) {
-      // Open forward transition dialog
-      setPendingStageChange(targetStage);
-      setStageTransitionDialogOpen(true);
+      try {
+        // Check for incomplete tasks first
+        const incompleteTasks = await getIncompleteTasksForTransaction(transaction.id);
+        
+        if (incompleteTasks.length > 0) {
+          // Show task rollover dialog first
+          setIncompleteTaskCount(incompleteTasks.length);
+          setPendingStageChange(targetStage);
+          setTaskRolloverDialogOpen(true);
+        } else {
+          // No incomplete tasks, proceed directly to stage transition
+          setPendingStageChange(targetStage);
+          setStageTransitionDialogOpen(true);
+        }
+      } catch (error) {
+        console.error('Error checking incomplete tasks:', error);
+        // On error, proceed without rollover check
+        setPendingStageChange(targetStage);
+        setStageTransitionDialogOpen(true);
+      }
     } else if (isBackwardTransition(transaction.stage, targetStage)) {
       // Open deal collapse dialog
       setPendingStageChange(targetStage);
@@ -156,6 +179,12 @@ export const TransactionDetailDrawer = ({
       // Direct stage change (shouldn't happen)
       onStageChange?.(transaction.id, targetStage);
     }
+  };
+
+  const handleTaskRolloverComplete = () => {
+    setTaskRolloverDialogOpen(false);
+    // After task rollover choice is made, proceed to stage transition dialog
+    setStageTransitionDialogOpen(true);
   };
 
   const handleStageTransitionConfirm = async (updates: Partial<Transaction>) => {
@@ -998,6 +1027,21 @@ export const TransactionDetailDrawer = ({
             setPendingStageChange(null);
           }}
           onConfirm={handleDealCollapseConfirm}
+        />
+      )}
+
+      {/* Task Rollover Dialog */}
+      {pendingStageChange && (
+        <TaskRolloverDialog
+          isOpen={taskRolloverDialogOpen}
+          onClose={() => {
+            setTaskRolloverDialogOpen(false);
+            setPendingStageChange(null);
+          }}
+          onComplete={handleTaskRolloverComplete}
+          transactionId={transaction.id}
+          currentStage={transaction.stage}
+          targetStage={pendingStageChange}
         />
       )}
 

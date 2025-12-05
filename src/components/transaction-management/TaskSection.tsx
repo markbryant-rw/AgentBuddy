@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, ReactNode } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -16,6 +16,8 @@ import {
 } from '@dnd-kit/sortable';
 import { TaskItem } from './TaskItem';
 import { SortableTaskItem } from './SortableTaskItem';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -41,6 +43,8 @@ interface TaskSectionProps {
   onDelete: (taskId: string) => void;
   onReorder?: (taskIds: string[]) => void;
   onInlineEdit?: (taskId: string, newTitle: string) => void;
+  defaultCollapsed?: boolean;
+  badge?: ReactNode;
 }
 
 export const TaskSection = ({ 
@@ -50,8 +54,11 @@ export const TaskSection = ({
   onEdit, 
   onDelete,
   onReorder,
-  onInlineEdit 
+  onInlineEdit,
+  defaultCollapsed = false,
+  badge,
 }: TaskSectionProps) => {
+  const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
   const completedCount = tasks.filter(t => t.completed).length;
 
   // Split tasks into dated (sorted by date, not draggable) and undated (draggable)
@@ -93,55 +100,69 @@ export const TaskSection = ({
   };
   
   return (
-    <div className="mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
-          {title}
-        </h3>
-        <span className="text-xs text-muted-foreground">
-          {completedCount}/{tasks.length}
-        </span>
-      </div>
-      
-      <div className="space-y-1">
-        {/* Dated tasks - sorted by date, not draggable */}
-        {dateTasks.map(task => (
-          <TaskItem
-            key={task.id}
-            task={task}
-            onToggle={onToggle}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onInlineEdit={onInlineEdit}
-            isDraggable={false}
-          />
-        ))}
+    <Collapsible open={!isCollapsed} onOpenChange={(open) => setIsCollapsed(!open)}>
+      <div className="mb-6">
+        <CollapsibleTrigger asChild>
+          <div className="flex items-center justify-between mb-3 cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2">
+            <div className="flex items-center gap-1">
+              {isCollapsed ? (
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+              <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
+                {title}
+              </h3>
+              {badge}
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {completedCount}/{tasks.length}
+            </span>
+          </div>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <div className="space-y-1">
+            {/* Dated tasks - sorted by date, not draggable */}
+            {dateTasks.map(task => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                onToggle={onToggle}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onInlineEdit={onInlineEdit}
+                isDraggable={false}
+              />
+            ))}
 
-        {/* Undated tasks - draggable */}
-        {undatedTasks.length > 0 && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext
-              items={undatedTasks.map(t => t.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              {undatedTasks.map(task => (
-                <SortableTaskItem
-                  key={task.id}
-                  task={task}
-                  onToggle={onToggle}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onInlineEdit={onInlineEdit}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        )}
+            {/* Undated tasks - draggable */}
+            {undatedTasks.length > 0 && (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={undatedTasks.map(t => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {undatedTasks.map(task => (
+                    <SortableTaskItem
+                      key={task.id}
+                      task={task}
+                      onToggle={onToggle}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onInlineEdit={onInlineEdit}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
+        </CollapsibleContent>
       </div>
-    </div>
+    </Collapsible>
   );
 };
