@@ -28,8 +28,8 @@ export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCa
   };
 
   const getOutcomeStyle = (outcome?: string) => {
-    if (outcome === 'WON') return 'bg-emerald-50/50 dark:bg-emerald-950/20';
-    if (outcome === 'LOST') return 'bg-red-50/50 dark:bg-red-950/20';
+    if (outcome === 'WON') return 'bg-emerald-100 dark:bg-emerald-950/40';
+    if (outcome === 'LOST') return 'bg-red-100 dark:bg-red-950/40';
     return '';
   };
 
