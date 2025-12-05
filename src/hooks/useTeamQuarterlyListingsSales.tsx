@@ -49,7 +49,7 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
       // Fetch transactions for the team (include live_date for fallback)
       const { data: transactions, error: txError } = await supabase
         .from('transactions')
-        .select('id, address, listing_signed_date, live_date, stage, settlement_date')
+        .select('id, address, listing_signed_date, live_date, stage, unconditional_date')
         .eq('team_id', teamId);
 
       if (txError) throw txError;
@@ -57,7 +57,7 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
       // Fetch past_sales for the team (include listing_live_date for fallback)
       const { data: pastSales, error: psError } = await supabase
         .from('past_sales')
-        .select('id, address, listing_signed_date, listing_live_date, settlement_date, status')
+        .select('id, address, listing_signed_date, listing_live_date, unconditional_date, status')
         .eq('team_id', teamId);
 
       if (psError) throw psError;
@@ -81,12 +81,12 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
             listingDates.push(new Date(listingDate));
           }
         }
-        // Sales: settled transactions with settlement_date in quarter
-        if (t.stage === 'settled' && t.settlement_date && isWithinQuarter(t.settlement_date)) {
-          const key = `${t.address}|${t.settlement_date}`;
+        // Sales: unconditional or settled transactions with unconditional_date in quarter
+        if (['unconditional', 'settled'].includes(t.stage) && t.unconditional_date && isWithinQuarter(t.unconditional_date)) {
+          const key = `${t.address}|${t.unconditional_date}`;
           if (!saleKeys.has(key)) {
             saleKeys.add(key);
-            saleDates.push(new Date(t.settlement_date));
+            saleDates.push(new Date(t.unconditional_date));
           }
         }
       });
@@ -102,15 +102,15 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
             listingDates.push(new Date(listingDate));
           }
         }
-        // Sales: only WON/SOLD statuses (exclude WITHDRAWN and LOST)
-        if (ps.settlement_date && isWithinQuarter(ps.settlement_date)) {
+        // Sales: only WON/SOLD statuses (exclude WITHDRAWN and LOST), use unconditional_date
+        if (ps.unconditional_date && isWithinQuarter(ps.unconditional_date)) {
           const status = ps.status?.toUpperCase();
           if (status === null || status === undefined || 
               status === 'WON' || status === 'SOLD' || status === 'WON_AND_SOLD') {
-            const key = `${ps.address}|${ps.settlement_date}`;
+            const key = `${ps.address}|${ps.unconditional_date}`;
             if (!saleKeys.has(key)) {
               saleKeys.add(key);
-              saleDates.push(new Date(ps.settlement_date));
+              saleDates.push(new Date(ps.unconditional_date));
             }
           }
         }
