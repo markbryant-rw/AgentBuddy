@@ -140,12 +140,38 @@ export const oceanTheme: ThemePack = {
   },
 };
 
+// Cyberpunk Theme - Extreme neon aesthetic
+export const cyberpunkTheme: ThemePack = {
+  id: 'cyberpunk',
+  name: 'Cyberpunk',
+  description: 'Neon-soaked Tron/synthwave aesthetic',
+  colors: {
+    primary: '185 100% 50%',        // Electric cyan
+    primaryLight: '185 100% 65%',
+    primaryDark: '185 100% 35%',
+    accent: '320 100% 60%',          // Hot pink/magenta
+    accentLight: '320 100% 75%',
+    success: '150 100% 45%',         // Neon green
+    warning: '35 100% 55%',          // Electric orange
+    danger: '350 100% 60%',          // Neon red
+    info: '210 100% 60%',            // Bright blue
+    background: '230 30% 8%',        // Near black with blue tint
+    foreground: '185 50% 95%',       // Cyan-tinted white
+    card: '230 35% 12%',             // Dark panel
+    cardForeground: '185 50% 95%',
+    muted: '230 30% 18%',
+    mutedForeground: '185 40% 60%',
+    border: '185 80% 30%',           // Glowing cyan border
+  },
+};
+
 // Available theme packs
 export const themePacks: ThemePack[] = [
   defaultTheme,
   rayWhiteTheme,
   christmasTheme,
   oceanTheme,
+  cyberpunkTheme,
 ];
 
 interface BrandThemeContextValue {
