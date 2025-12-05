@@ -1,15 +1,7 @@
 import { motion } from 'framer-motion';
-import { Target, Flame, Info, Home } from 'lucide-react';
+import { Target, Flame, Info, Home, FileText, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
-import { ListingsSalesChart } from '@/components/plan/ListingsSalesChart';
-
-interface WeeklyDataPoint {
-  week: string;
-  weekNum: number;
-  listings: number;
-  sales: number;
-}
 
 interface HeroMetricsProps {
   quarterlyAppraisals: number;
@@ -20,7 +12,6 @@ interface HeroMetricsProps {
   // Listings & Sales data
   totalListings: number;
   totalSales: number;
-  listingsSalesWeeklyData: WeeklyDataPoint[];
   listingsTarget?: number | null;
   salesTarget?: number | null;
 }
@@ -33,7 +24,6 @@ export const HeroMetrics = ({
   lowAppraisals,
   totalListings,
   totalSales,
-  listingsSalesWeeklyData,
   listingsTarget,
   salesTarget,
 }: HeroMetricsProps) => {
@@ -252,46 +242,47 @@ export const HeroMetrics = ({
                 <h3 className="text-sm font-medium text-white/80 uppercase tracking-wide">Listings & Sales This Quarter</h3>
               </div>
               
-              {/* Stats row */}
-              <div className="flex items-baseline gap-4 mb-4">
-                <div className="flex items-baseline gap-1">
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.2, type: 'spring' }}
-                    className="text-5xl font-bold text-white"
-                  >
-                    {totalListings}
-                  </motion.span>
-                  <span className="text-lg text-white/60">Listings</span>
-                </div>
-                <span className="text-white/40 text-2xl">•</span>
-                <div className="flex items-baseline gap-1">
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.3, type: 'spring' }}
-                    className="text-5xl font-bold text-white"
-                  >
-                    {totalSales}
-                  </motion.span>
-                  <span className="text-lg text-white/60">Sales</span>
-                </div>
+              {/* Listings Progress */}
+              <div className="flex items-baseline gap-3 mb-3">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: 'spring' }}
+                  className="text-5xl font-bold text-white"
+                >
+                  {totalListings}
+                </motion.div>
+                <div className="text-xl text-white/60">/ {listingsTarget || '–'} goal listings</div>
+              </div>
+              <div className="relative h-3 bg-white/20 rounded-full overflow-hidden mb-6">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${listingsTarget ? Math.min((totalListings / listingsTarget) * 100, 100) : 0}%` }}
+                  transition={{ delay: 0.3, duration: 0.8, ease: 'easeOut' }}
+                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-blue-400 to-blue-500"
+                  style={{ boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)' }}
+                />
               </div>
 
-              {/* Target line if targets exist */}
-              {(listingsTarget || salesTarget) && (
-                <div className="text-sm text-white/60 mb-3">
-                  Target: {listingsTarget || '-'}L / {salesTarget || '-'}S
-                </div>
-              )}
-
-              {/* Chart */}
-              <div className="bg-white/10 rounded-xl p-3">
-                <ListingsSalesChart 
-                  data={listingsSalesWeeklyData}
-                  listingsTarget={listingsTarget}
-                  salesTarget={salesTarget}
+              {/* Sales Progress */}
+              <div className="flex items-baseline gap-3 mb-3">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3, type: 'spring' }}
+                  className="text-5xl font-bold text-white"
+                >
+                  {totalSales}
+                </motion.div>
+                <div className="text-xl text-white/60">/ {salesTarget || '–'} goal sales</div>
+              </div>
+              <div className="relative h-3 bg-white/20 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${salesTarget ? Math.min((totalSales / salesTarget) * 100, 100) : 0}%` }}
+                  transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
+                  className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-green-400 to-green-500"
+                  style={{ boxShadow: '0 0 20px rgba(255, 255, 255, 0.4)' }}
                 />
               </div>
             </div>
