@@ -46,18 +46,18 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
         return !isBefore(date, quarterStart) && !isAfter(date, quarterEnd);
       };
 
-      // Fetch transactions for the team
+      // Fetch transactions for the team (include live_date for fallback)
       const { data: transactions, error: txError } = await supabase
         .from('transactions')
-        .select('id, address, listing_signed_date, stage, settlement_date')
+        .select('id, address, listing_signed_date, live_date, stage, settlement_date')
         .eq('team_id', teamId);
 
       if (txError) throw txError;
 
-      // Fetch past_sales for the team (all statuses - we filter appropriately below)
+      // Fetch past_sales for the team (include listing_live_date for fallback)
       const { data: pastSales, error: psError } = await supabase
         .from('past_sales')
-        .select('id, address, listing_signed_date, settlement_date, status')
+        .select('id, address, listing_signed_date, listing_live_date, settlement_date, status')
         .eq('team_id', teamId);
 
       if (psError) throw psError;
@@ -72,12 +72,13 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
 
       // Process transactions
       (transactions || []).forEach(t => {
-        // Listings: any with listing_signed_date in quarter
-        if (t.listing_signed_date && isWithinQuarter(t.listing_signed_date)) {
-          const key = `${t.address}|${t.listing_signed_date}`;
+        // Listings: use listing_signed_date, fallback to live_date
+        const listingDate = t.listing_signed_date || t.live_date;
+        if (listingDate && isWithinQuarter(listingDate)) {
+          const key = `${t.address}|${listingDate}`;
           if (!listingKeys.has(key)) {
             listingKeys.add(key);
-            listingDates.push(new Date(t.listing_signed_date));
+            listingDates.push(new Date(listingDate));
           }
         }
         // Sales: settled transactions with settlement_date in quarter
@@ -90,17 +91,15 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
         }
       });
 
-      // Statuses that count as a SALE (not WITHDRAWN or LOST)
-      const soldStatuses = ['WON', 'SOLD', 'won_and_sold', null];
-
       // Process past_sales
       (pastSales || []).forEach(ps => {
-        // Listings: ALL statuses count (including WITHDRAWN)
-        if (ps.listing_signed_date && isWithinQuarter(ps.listing_signed_date)) {
-          const key = `${ps.address}|${ps.listing_signed_date}`;
+        // Listings: use listing_signed_date, fallback to listing_live_date (ALL statuses count)
+        const listingDate = ps.listing_signed_date || ps.listing_live_date;
+        if (listingDate && isWithinQuarter(listingDate)) {
+          const key = `${ps.address}|${listingDate}`;
           if (!listingKeys.has(key)) {
             listingKeys.add(key);
-            listingDates.push(new Date(ps.listing_signed_date));
+            listingDates.push(new Date(listingDate));
           }
         }
         // Sales: only WON/SOLD statuses (exclude WITHDRAWN and LOST)
