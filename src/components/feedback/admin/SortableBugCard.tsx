@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ImageIcon } from 'lucide-react';
 
 interface BugReport {
   id: string;
@@ -17,6 +18,7 @@ interface BugReport {
   user_id: string;
   module?: string;
   archived_reason?: string;
+  attachments?: string[];
   profiles?: {
     full_name: string;
     avatar_url?: string;
@@ -161,12 +163,20 @@ export const SortableBugCard = ({ bug, onClick }: SortableBugCardProps) => {
             </span>
           </div>
 
-          {/* Votes (only if > 0) */}
-          {bug.vote_count > 0 && (
-            <div className="text-[10px] text-muted-foreground">
-              👍 {bug.vote_count}
-            </div>
-          )}
+          {/* Votes + Attachments */}
+          <div className="flex items-center gap-3">
+            {bug.vote_count > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                👍 {bug.vote_count}
+              </span>
+            )}
+            {bug.attachments && bug.attachments.length > 0 && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <ImageIcon className="h-3 w-3" />
+                {bug.attachments.length}
+              </span>
+            )}
+          </div>
 
           {/* Archived Reason (subtle, at bottom) */}
           {isArchived && bug.archived_reason && (
