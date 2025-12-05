@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import SocialSettingsTab from "@/components/settings/SocialSettingsTab";
+import PreferencesTab from "@/components/settings/PreferencesTab";
 
 const Settings = () => {
   return (
@@ -21,12 +22,17 @@ const Settings = () => {
         </AlertDescription>
       </Alert>
 
-      <Tabs defaultValue="social" className="w-full">
+      <Tabs defaultValue="preferences" className="w-full">
         <TabsList>
+          <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="social">Social</TabsTrigger>
           <TabsTrigger value="general" disabled>General</TabsTrigger>
           <TabsTrigger value="team" disabled>Team</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="preferences" className="mt-6">
+          <PreferencesTab />
+        </TabsContent>
 
         <TabsContent value="social" className="mt-6">
           <SocialSettingsTab />
