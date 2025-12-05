@@ -669,3 +669,328 @@ html {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted-foreground) / 0.25) transparent;
 }
+
+/* ==========================================================================
+   ⚡ CYBERPUNK THEME - EXTREME EFFECTS ⚡
+   These effects ONLY activate when theme-cyberpunk class is on <html>
+   ========================================================================== */
+
+/* Base cyberpunk mode with CRT scanlines */
+.theme-cyberpunk {
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 255, 255, 0.015) 2px,
+      rgba(0, 255, 255, 0.015) 4px
+    );
+  background-attachment: fixed;
+}
+
+/* ========== NEON PULSE ON CARDS ========== */
+.theme-cyberpunk [data-slot="card"],
+.theme-cyberpunk .card {
+  box-shadow: 
+    0 0 10px hsl(185 100% 50% / 0.2),
+    0 0 30px hsl(185 100% 50% / 0.1),
+    inset 0 0 15px hsl(185 100% 50% / 0.03);
+  border-color: hsl(185 100% 50% / 0.4);
+  animation: neonPulse 3s ease-in-out infinite;
+}
+
+@keyframes neonPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 0 10px hsl(185 100% 50% / 0.2),
+      0 0 30px hsl(185 100% 50% / 0.1);
+    border-color: hsl(185 100% 50% / 0.4);
+  }
+  50% { 
+    box-shadow: 
+      0 0 20px hsl(185 100% 50% / 0.4),
+      0 0 50px hsl(185 100% 50% / 0.15),
+      0 0 80px hsl(320 100% 60% / 0.1);
+    border-color: hsl(185 100% 50% / 0.6);
+  }
+}
+
+/* ========== GLITCH TEXT EFFECT ON HEADINGS ========== */
+.theme-cyberpunk h1,
+.theme-cyberpunk h2 {
+  position: relative;
+  text-shadow: 
+    2px 0 hsl(320 100% 60%),
+    -2px 0 hsl(185 100% 50%);
+  animation: glitch 4s infinite;
+}
+
+@keyframes glitch {
+  0%, 85%, 100% {
+    text-shadow: 
+      2px 0 hsl(320 100% 60%),
+      -2px 0 hsl(185 100% 50%);
+  }
+  86% {
+    text-shadow: 
+      -3px 0 hsl(320 100% 60%),
+      3px 0 hsl(185 100% 50%);
+  }
+  88% {
+    text-shadow: 
+      3px 2px hsl(320 100% 60%),
+      -3px -2px hsl(185 100% 50%);
+  }
+  90% {
+    text-shadow: 
+      -2px 3px hsl(320 100% 60%),
+      2px -3px hsl(185 100% 50%);
+  }
+  92% {
+    text-shadow: 
+      2px 0 hsl(320 100% 60%),
+      -2px 0 hsl(185 100% 50%);
+  }
+}
+
+/* ========== RGB CYCLING BORDERS ON BUTTONS ========== */
+.theme-cyberpunk button:not([disabled]):not(.no-glow) {
+  position: relative;
+  overflow: visible;
+  z-index: 1;
+}
+
+.theme-cyberpunk button:not([disabled]):not(.no-glow)::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(
+    45deg,
+    hsl(185 100% 50%),
+    hsl(280 100% 60%),
+    hsl(320 100% 60%),
+    hsl(185 100% 50%)
+  );
+  background-size: 400% 400%;
+  animation: rgbCycle 3s linear infinite;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0.7;
+  filter: blur(3px);
+}
+
+@keyframes rgbCycle {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ========== FLICKERING NEON BADGES ========== */
+.theme-cyberpunk .badge,
+.theme-cyberpunk [data-slot="badge"] {
+  animation: flicker 5s infinite;
+  text-shadow: 0 0 8px currentColor;
+}
+
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 8px currentColor, 0 0 15px currentColor;
+  }
+  20%, 24%, 55% {
+    opacity: 0.85;
+    text-shadow: none;
+  }
+}
+
+/* ========== MASSIVE HOVER GLOW ========== */
+.theme-cyberpunk .hover-lift:hover {
+  box-shadow: 
+    0 0 30px hsl(185 100% 50% / 0.5),
+    0 0 60px hsl(320 100% 60% / 0.25),
+    0 0 90px hsl(185 100% 50% / 0.1);
+  transform: translateY(-4px);
+  border-color: hsl(185 100% 60%);
+}
+
+/* ========== TRON GRID BACKGROUND ========== */
+.theme-cyberpunk main {
+  background-image: 
+    linear-gradient(hsl(185 100% 50% / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(185 100% 50% / 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ========== ELECTRIC FLOW PROGRESS BARS ========== */
+.theme-cyberpunk .progress > div,
+.theme-cyberpunk [role="progressbar"] > div {
+  background: linear-gradient(
+    90deg, 
+    hsl(185 100% 50%), 
+    hsl(320 100% 60%), 
+    hsl(185 100% 50%)
+  ) !important;
+  background-size: 200% 100%;
+  animation: electricFlow 1.5s linear infinite;
+  box-shadow: 0 0 20px hsl(185 100% 50% / 0.6);
+}
+
+@keyframes electricFlow {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+/* ========== MONO/DATA TEXT GLOW ========== */
+.theme-cyberpunk .font-mono,
+.theme-cyberpunk .tabular-nums,
+.theme-cyberpunk code {
+  color: hsl(185 100% 70%);
+  text-shadow: 0 0 8px hsl(185 100% 50% / 0.4);
+}
+
+/* ========== INPUT FIELDS - ELECTRIC BORDERS ========== */
+.theme-cyberpunk input,
+.theme-cyberpunk textarea,
+.theme-cyberpunk select,
+.theme-cyberpunk [role="combobox"] {
+  border-color: hsl(185 100% 35%) !important;
+  background: hsl(230 35% 10%) !important;
+  color: hsl(185 80% 90%);
+}
+
+.theme-cyberpunk input:focus,
+.theme-cyberpunk textarea:focus,
+.theme-cyberpunk select:focus {
+  box-shadow: 
+    0 0 0 2px hsl(185 100% 50% / 0.4),
+    0 0 20px hsl(185 100% 50% / 0.2),
+    0 0 40px hsl(320 100% 60% / 0.1) !important;
+  border-color: hsl(185 100% 50%) !important;
+}
+
+/* ========== AVATAR NEON RINGS ========== */
+.theme-cyberpunk .avatar,
+.theme-cyberpunk [data-slot="avatar"],
+.theme-cyberpunk img[class*="rounded-full"] {
+  box-shadow: 
+    0 0 10px hsl(320 100% 60% / 0.4),
+    0 0 20px hsl(185 100% 50% / 0.2);
+  border: 2px solid hsl(185 100% 50% / 0.6) !important;
+}
+
+/* ========== SIDEBAR ELECTRIC ACCENTS ========== */
+.theme-cyberpunk [data-sidebar],
+.theme-cyberpunk aside {
+  border-right-color: hsl(185 100% 50% / 0.3);
+  box-shadow: 5px 0 30px hsl(185 100% 50% / 0.08);
+}
+
+/* ========== LINKS WITH NEON UNDERLINE ========== */
+.theme-cyberpunk a:hover {
+  text-shadow: 0 0 10px currentColor;
+}
+
+/* ========== SCROLLBAR NEON STYLING ========== */
+.theme-cyberpunk ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.theme-cyberpunk ::-webkit-scrollbar-track {
+  background: hsl(230 30% 8%);
+}
+
+.theme-cyberpunk ::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, hsl(185 100% 50%), hsl(320 100% 60%));
+  border-radius: 4px;
+}
+
+.theme-cyberpunk ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, hsl(185 100% 60%), hsl(320 100% 70%));
+  box-shadow: 0 0 10px hsl(185 100% 50% / 0.5);
+}
+
+/* ========== TABLES WITH GRID LINES ========== */
+.theme-cyberpunk table {
+  border-color: hsl(185 100% 40% / 0.3);
+}
+
+.theme-cyberpunk th,
+.theme-cyberpunk td {
+  border-color: hsl(185 100% 40% / 0.2);
+}
+
+.theme-cyberpunk tr:hover {
+  background: hsl(185 100% 50% / 0.05);
+}
+
+/* ========== DIALOGS/MODALS NEON FRAME ========== */
+.theme-cyberpunk [role="dialog"],
+.theme-cyberpunk [data-radix-popper-content-wrapper] > div {
+  box-shadow: 
+    0 0 30px hsl(185 100% 50% / 0.3),
+    0 0 60px hsl(320 100% 60% / 0.15),
+    inset 0 0 30px hsl(185 100% 50% / 0.05);
+  border: 1px solid hsl(185 100% 50% / 0.5);
+}
+
+/* ========== SPECIAL EFFECTS FOR THEME PREVIEW CARDS ========== */
+.cyberpunk-card-preview {
+  animation: cyberpunkBorder 2s linear infinite;
+}
+
+@keyframes cyberpunkBorder {
+  0%, 100% {
+    box-shadow: 
+      0 0 5px hsl(185 100% 50% / 0.5),
+      0 0 15px hsl(185 100% 50% / 0.3),
+      0 0 30px hsl(320 100% 60% / 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 10px hsl(320 100% 60% / 0.5),
+      0 0 25px hsl(320 100% 60% / 0.3),
+      0 0 45px hsl(185 100% 50% / 0.2);
+  }
+}
+
+.cyberpunk-preview-strip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    hsl(185 100% 50% / 0.2) 50%,
+    transparent 100%
+  );
+  animation: scanline 2s linear infinite;
+}
+
+@keyframes scanline {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.neon-swatch {
+  animation: swatchGlow 2s ease-in-out infinite;
+  border-color: transparent !important;
+}
+
+@keyframes swatchGlow {
+  0%, 100% { box-shadow: 0 0 5px currentColor; }
+  50% { box-shadow: 0 0 15px currentColor, 0 0 25px currentColor; }
+}
+
+/* ========== LOADING SPINNERS - NEON ========== */
+.theme-cyberpunk .animate-spin {
+  filter: drop-shadow(0 0 5px hsl(185 100% 50%));
+}
+
+/* ========== TOAST NOTIFICATIONS ========== */
+.theme-cyberpunk [data-sonner-toast] {
+  box-shadow: 
+    0 0 20px hsl(185 100% 50% / 0.3),
+    0 0 40px hsl(320 100% 60% / 0.15);
+  border: 1px solid hsl(185 100% 50% / 0.5);
+}

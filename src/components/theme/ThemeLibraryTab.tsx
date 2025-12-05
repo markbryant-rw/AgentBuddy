@@ -2,7 +2,7 @@ import { useTheme, ThemePack } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Palette, Sparkles, Plus } from 'lucide-react';
+import { Check, Palette, Sparkles, Plus, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function ThemeCard({ theme, isActive, onSelect }: { 
@@ -10,16 +10,30 @@ function ThemeCard({ theme, isActive, onSelect }: {
   isActive: boolean; 
   onSelect: () => void;
 }) {
+  const isCyberpunk = theme.id === 'cyberpunk';
+  
   return (
     <Card 
       className={cn(
         "relative cursor-pointer transition-all duration-300 hover-lift overflow-hidden",
-        isActive && "ring-2 ring-primary ring-offset-2"
+        isActive && "ring-2 ring-primary ring-offset-2",
+        isCyberpunk && "cyberpunk-card-preview"
       )}
       onClick={onSelect}
     >
-      {/* Color preview strip */}
-      <div className="h-20 flex">
+      {/* EXTREME badge for Cyberpunk */}
+      {isCyberpunk && (
+        <Badge 
+          className="absolute top-2 right-2 z-10 bg-gradient-to-r from-pink-500 to-cyan-400 text-white border-0 animate-pulse shadow-lg"
+          style={{ boxShadow: '0 0 20px rgba(236, 72, 153, 0.5)' }}
+        >
+          <Zap className="h-3 w-3 mr-1" />
+          EXTREME
+        </Badge>
+      )}
+      
+      {/* Color preview strip - special for cyberpunk */}
+      <div className={cn("h-20 flex relative", isCyberpunk && "cyberpunk-preview-strip")}>
         <div 
           className="flex-1" 
           style={{ backgroundColor: `hsl(${theme.colors.primary})` }} 
@@ -36,21 +50,38 @@ function ThemeCard({ theme, isActive, onSelect }: {
           className="flex-1" 
           style={{ backgroundColor: `hsl(${theme.colors.background})` }} 
         />
+        {/* Cyberpunk scanlines overlay */}
+        {isCyberpunk && (
+          <div className="absolute inset-0 pointer-events-none opacity-30" 
+            style={{
+              backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,255,0.1) 2px, rgba(0,255,255,0.1) 4px)'
+            }}
+          />
+        )}
       </div>
       
-      <CardContent className="p-4">
+      <CardContent className={cn("p-4", isCyberpunk && "bg-slate-900")}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold">{theme.name}</h3>
-            <p className="text-sm text-muted-foreground">{theme.description}</p>
+            <h3 className={cn("font-semibold", isCyberpunk && "text-cyan-400")}>
+              {isCyberpunk ? '⚡ ' : ''}{theme.name}
+            </h3>
+            <p className={cn("text-sm text-muted-foreground", isCyberpunk && "text-pink-300/70")}>
+              {theme.description}
+            </p>
           </div>
           {isActive ? (
-            <Badge variant="default" className="bg-primary">
+            <Badge variant="default" className={cn("bg-primary", isCyberpunk && "bg-cyan-500 animate-pulse")}>
               <Check className="h-3 w-3 mr-1" />
               Active
             </Badge>
           ) : (
-            <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onSelect(); }}>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={(e) => { e.stopPropagation(); onSelect(); }}
+              className={cn(isCyberpunk && "border-cyan-400 text-cyan-400 hover:bg-cyan-400/20")}
+            >
               Apply
             </Button>
           )}
@@ -59,27 +90,27 @@ function ThemeCard({ theme, isActive, onSelect }: {
         {/* Color swatches */}
         <div className="flex gap-1.5 mt-3">
           <div 
-            className="h-6 w-6 rounded-full border-2 border-background shadow-sm" 
+            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
             style={{ backgroundColor: `hsl(${theme.colors.primary})` }}
             title="Primary"
           />
           <div 
-            className="h-6 w-6 rounded-full border-2 border-background shadow-sm" 
+            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
             style={{ backgroundColor: `hsl(${theme.colors.accent})` }}
             title="Accent"
           />
           <div 
-            className="h-6 w-6 rounded-full border-2 border-background shadow-sm" 
+            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
             style={{ backgroundColor: `hsl(${theme.colors.success})` }}
             title="Success"
           />
           <div 
-            className="h-6 w-6 rounded-full border-2 border-background shadow-sm" 
+            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
             style={{ backgroundColor: `hsl(${theme.colors.warning})` }}
             title="Warning"
           />
           <div 
-            className="h-6 w-6 rounded-full border-2 border-background shadow-sm" 
+            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
             style={{ backgroundColor: `hsl(${theme.colors.danger})` }}
             title="Danger"
           />
