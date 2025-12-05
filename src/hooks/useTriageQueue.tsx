@@ -12,6 +12,7 @@ export interface TriageTask {
   due_date: string;
   priority: string | null;
   source: 'transaction' | 'project';
+  is_weekly_recurring?: boolean;
   transaction?: {
     id: string;
     address: string;
@@ -54,7 +55,7 @@ export function useTriageQueue(date: Date) {
       const { data: transactionTasks } = await (supabase as any)
         .from('tasks')
         .select(`
-          id, title, description, due_date, priority, completed,
+          id, title, description, due_date, priority, completed, is_weekly_recurring,
           transaction_id,
           transaction:transaction_id(id, address, stage)
         `)
@@ -72,6 +73,7 @@ export function useTriageQueue(date: Date) {
             due_date: task.due_date,
             priority: task.priority,
             source: 'transaction',
+            is_weekly_recurring: task.is_weekly_recurring,
             transaction: task.transaction,
           });
         }

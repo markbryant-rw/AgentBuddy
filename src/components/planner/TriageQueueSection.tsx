@@ -16,6 +16,7 @@ import {
   Zap,
   Building2,
   FolderKanban,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -93,7 +94,7 @@ function TriageTaskCard({ task, onTriage, isTriaging }: TriageTaskCardProps) {
     <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-background border">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Source Badge */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 flex items-center gap-1.5">
           {task.source === 'transaction' ? (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
               <Building2 className="h-3.5 w-3.5" />
@@ -103,6 +104,13 @@ function TriageTaskCard({ task, onTriage, isTriaging }: TriageTaskCardProps) {
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <FolderKanban className="h-3.5 w-3.5" />
               <span className="text-xs font-medium">Project</span>
+            </div>
+          )}
+          {/* Weekly Recurring Badge */}
+          {task.is_weekly_recurring && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400">
+              <RefreshCw className="h-3 w-3" />
+              <span className="text-xs font-medium">Weekly</span>
             </div>
           )}
         </div>

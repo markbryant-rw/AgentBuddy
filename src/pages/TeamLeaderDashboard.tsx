@@ -141,6 +141,9 @@ export default function TeamLeaderDashboard() {
           </Card>
         </div>
 
+        {/* Weekly Tasks Performance */}
+        <WeeklyTasksPerformanceCard />
+
         {/* Help Requests & Team Members */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
