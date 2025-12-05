@@ -2,6 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+export interface TaskAssignee {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+}
+
 export interface AppraisalTask {
   id: string;
   title: string;
@@ -16,6 +22,7 @@ export interface AppraisalTask {
   assigned_to: string | null;
   created_by: string | null;
   created_at: string;
+  assignee?: TaskAssignee | null;
 }
 
 export const useAppraisalTasks = (appraisalId: string | null) => {
@@ -28,7 +35,10 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
 
       const { data, error } = await supabase
         .from('tasks')
-        .select('*')
+        .select(`
+          *,
+          assignee:profiles!tasks_assigned_to_fkey(id, full_name, avatar_url)
+        `)
         .eq('appraisal_id', appraisalId)
         .order('section', { ascending: true })
         .order('created_at', { ascending: true });
@@ -66,6 +76,7 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
       due_date?: string;
       priority?: string;
       appraisal_stage?: string;
+      assigned_to?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -80,7 +91,7 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
           priority: task.priority || 'medium',
           appraisal_id: appraisalId,
           appraisal_stage: task.appraisal_stage,
-          assigned_to: user.id,
+          assigned_to: task.assigned_to ?? user.id,
           created_by: user.id,
           completed: false,
         })
@@ -97,6 +108,27 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
     },
     onError: (error) => {
       toast.error('Failed to add task');
+      console.error(error);
+    },
+  });
+
+  // Update task assignee
+  const updateAssignee = useMutation({
+    mutationFn: async ({ taskId, assignedTo }: { taskId: string; assignedTo: string | null }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ assigned_to: assignedTo })
+        .eq('id', taskId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appraisal-tasks', appraisalId] });
+      queryClient.invalidateQueries({ queryKey: ['my-assigned-tasks'] });
+      toast.success('Assignee updated');
+    },
+    onError: (error) => {
+      toast.error('Failed to update assignee');
       console.error(error);
     },
   });
@@ -144,6 +176,7 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
     refetch,
     toggleComplete,
     addTask,
+    updateAssignee,
     deleteTask,
   };
 };

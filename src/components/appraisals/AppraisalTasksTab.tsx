@@ -15,6 +15,7 @@ import { useAppraisalTasks } from '@/hooks/useAppraisalTasks';
 import { useAppraisalTemplates, AppraisalStage, APPRAISAL_STAGE_DISPLAY_NAMES } from '@/hooks/useAppraisalTemplates';
 import { AppraisalTemplatePromptDialog } from './AppraisalTemplatePromptDialog';
 import { isAppraisalRolloverSection } from '@/hooks/useAppraisalTaskRollover';
+import { AppraisalTaskAssignee } from './AppraisalTaskAssignee';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
@@ -33,7 +34,7 @@ export const AppraisalTasksTab = ({
   agentId 
 }: AppraisalTasksTabProps) => {
   const navigate = useNavigate();
-  const { tasks, tasksBySection, stats, isLoading, toggleComplete, addTask } = useAppraisalTasks(appraisalId);
+  const { tasks, tasksBySection, stats, isLoading, toggleComplete, addTask, updateAssignee } = useAppraisalTasks(appraisalId);
   const { templates, getDefaultTemplate } = useAppraisalTemplates();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(Object.keys(tasksBySection)));
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
@@ -55,7 +56,8 @@ export const AppraisalTasksTab = ({
     addTask.mutate({ 
       title: newTaskTitle, 
       section, 
-      appraisal_stage: stage 
+      appraisal_stage: stage,
+      assigned_to: agentId || undefined
     });
     setNewTaskTitle('');
     setAddingToSection(null);
@@ -188,7 +190,7 @@ export const AppraisalTasksTab = ({
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="px-3 pb-3 space-y-2">
-                  {sectionTasks.map((task) => (
+                {sectionTasks.map((task) => (
                     <div
                       key={task.id}
                       className={cn(
@@ -218,6 +220,11 @@ export const AppraisalTasksTab = ({
                           </span>
                         )}
                       </div>
+                      <AppraisalTaskAssignee
+                        assignee={task.assignee}
+                        onAssign={(userId) => updateAssignee.mutate({ taskId: task.id, assignedTo: userId })}
+                        disabled={task.completed}
+                      />
                     </div>
                   ))}
 
