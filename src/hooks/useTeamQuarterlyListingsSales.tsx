@@ -62,8 +62,8 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
 
       if (psError) throw psError;
 
-      // Deduplication sets using address + date as key
-      const listingKeys = new Set<string>();
+      // Deduplication sets - listings use address-only, sales use address+date
+      const listingAddresses = new Set<string>();
       const saleKeys = new Set<string>();
 
       // Track listings and sales with dates for weekly cumulative data
@@ -73,11 +73,12 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
       // Process transactions
       (transactions || []).forEach(t => {
         // Listings: use listing_signed_date, fallback to live_date
+        // Dedupe by address only (same property shouldn't count twice)
         const listingDate = t.listing_signed_date || t.live_date;
         if (listingDate && isWithinQuarter(listingDate)) {
-          const key = `${t.address}|${listingDate}`;
-          if (!listingKeys.has(key)) {
-            listingKeys.add(key);
+          const addressKey = t.address?.toLowerCase().trim();
+          if (addressKey && !listingAddresses.has(addressKey)) {
+            listingAddresses.add(addressKey);
             listingDates.push(new Date(listingDate));
           }
         }
@@ -94,11 +95,12 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
       // Process past_sales
       (pastSales || []).forEach(ps => {
         // Listings: use listing_signed_date, fallback to listing_live_date (ALL statuses count)
+        // Dedupe by address only (same property shouldn't count twice)
         const listingDate = ps.listing_signed_date || ps.listing_live_date;
         if (listingDate && isWithinQuarter(listingDate)) {
-          const key = `${ps.address}|${listingDate}`;
-          if (!listingKeys.has(key)) {
-            listingKeys.add(key);
+          const addressKey = ps.address?.toLowerCase().trim();
+          if (addressKey && !listingAddresses.has(addressKey)) {
+            listingAddresses.add(addressKey);
             listingDates.push(new Date(listingDate));
           }
         }
@@ -172,7 +174,7 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
       const FALLBACK_SALES_TARGET = 6;
 
       return {
-        totalListings: listingKeys.size,
+        totalListings: listingAddresses.size,
         totalSales: saleKeys.size,
         weeklyData,
         listingsTarget: listingsGoal?.target_value ?? FALLBACK_LISTINGS_TARGET,
