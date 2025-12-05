@@ -29,7 +29,7 @@ export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCa
 
   const getOutcomeStyle = (outcome?: string) => {
     if (outcome === 'WON') return 'bg-emerald-50/50 dark:bg-emerald-950/20';
-    if (outcome === 'LOST') return 'bg-gray-100/50 dark:bg-gray-800/30';
+    if (outcome === 'LOST') return 'bg-red-50/50 dark:bg-red-950/20';
     return '';
   };
 
