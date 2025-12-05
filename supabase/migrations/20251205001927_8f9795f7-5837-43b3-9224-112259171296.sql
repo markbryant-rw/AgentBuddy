@@ -1,0 +1,31 @@
+UPDATE transaction_stage_templates 
+SET documents = '[
+  {"title": "Document Suite – Create & add to relevant folders", "section": "SETUP", "required": false},
+  {"title": "01. Useful Links.pdf", "section": "LINKS", "required": false},
+  {"title": "01. Disclosure Document", "section": "LINKS", "required": true},
+  {"title": "02. Title", "section": "PROPERTY DOCUMENTS", "required": true},
+  {"title": "02. Floorplan", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Associated Caveats [TITLE]", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Memorandum of Lease [CROSS-LEASE]", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Pre-Contract Disclosure Document [UNIT TITLE]", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. LIM Report", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Building Inspection Report – check with Mark first", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Rental Appraisal", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Property File [ZIP]", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Recent Sale Data", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "02. Portal Value Data", "section": "PROPERTY DOCUMENTS", "required": false},
+  {"title": "03. Expression of Interest", "section": "CONTRACTS", "required": false},
+  {"title": "03. Auction Registration", "section": "CONTRACTS", "required": false},
+  {"title": "03. Auction Agreement [DRAFT]", "section": "CONTRACTS", "required": false},
+  {"title": "03. Auction Agreement [FINAL]", "section": "CONTRACTS", "required": false},
+  {"title": "03. Sale & Purchase Agreement", "section": "CONTRACTS", "required": true},
+  {"title": "03. Sale & Purchase Agreement [BUNDLE]", "section": "CONTRACTS", "required": false},
+  {"title": "04. Overseas Information Act", "section": "COMPLIANCE", "required": false},
+  {"title": "04. ENGLISH Sales and Purchase Guide", "section": "COMPLIANCE", "required": false},
+  {"title": "04. Austar Complaints Procedure", "section": "COMPLIANCE", "required": false},
+  {"title": "04. REA Code of Conduct", "section": "COMPLIANCE", "required": false},
+  {"title": "05. Concierge Welcome Experience for Buyers", "section": "BUYER EXPERIENCE", "required": false},
+  {"title": "Conjunctional Agreement [BLANK]", "section": "OTHER", "required": false}
+]'::jsonb,
+updated_at = now()
+WHERE id = 'a13475fa-f6fc-4a36-814a-4a6bc5cc7ce7';
