@@ -1,27 +1,28 @@
-import { ListChecks } from 'lucide-react';
+import { ListChecks, Calendar, FolderKanban, MessageSquare, ClipboardList } from 'lucide-react';
 import { useHubData } from '@/hooks/useHubData';
 import { useProjects } from '@/hooks/useProjects';
 import OperateNavigationCards from '@/components/operate/OperateNavigationCards';
 import { useNotes } from '@/hooks/useNotes';
 import { MyAssignmentsCard } from '@/components/projects/MyAssignmentsCard';
 import { subDays } from 'date-fns';
+import { StatCard } from '@/components/ui/stat-card';
 
 const OperateDashboard = () => {
   const hubData = useHubData();
   const { projects } = useProjects();
 
-  const activeProjects = projects.filter(p => p.status !== 'archived' && p.status !== 'completed');
-  const overdueProjects: any[] = []; // Stubbed - due_date not on Project type
+  const activeProjects = projects.filter((p) => p.status !== 'archived' && p.status !== 'completed');
+  const overdueProjects: any[] = [];
 
   const { notes } = useNotes();
-  
+
   const notesStats = {
     totalNotes: notes.length,
-    recentNotes: notes.filter(n => {
+    recentNotes: notes.filter((n) => {
       const updated = new Date(n.updated_at || '');
       return updated >= subDays(new Date(), 7);
     }).length,
-    pinnedNotes: 0, // Stubbed - is_pinned not on Note type
+    pinnedNotes: 0,
   };
 
   return (
@@ -37,32 +38,38 @@ const OperateDashboard = () => {
         </p>
       </div>
 
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-fluid-md">
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">Today's Tasks</div>
-          <div className="text-fluid-2xl font-bold mt-1">
-            {hubData.tasks.myTasksToday.length}
-          </div>
-        </div>
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">Active Projects</div>
-          <div className="text-fluid-2xl font-bold mt-1">{activeProjects.length}</div>
-        </div>
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">Unread Messages</div>
-          <div className="text-fluid-2xl font-bold mt-1">{hubData.messages.unreadCount}</div>
-        </div>
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">Pending Tasks</div>
-          <div className="text-fluid-2xl font-bold mt-1">{hubData.tasks.pending.length}</div>
-        </div>
+      {/* Quick Stats Row - Using StatCard component */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-md">
+        <StatCard
+          workspace="operate"
+          icon={Calendar}
+          label="Today's Tasks"
+          value={hubData.tasks.myTasksToday.length}
+        />
+        <StatCard
+          workspace="operate"
+          icon={FolderKanban}
+          label="Active Projects"
+          value={activeProjects.length}
+        />
+        <StatCard
+          workspace="operate"
+          icon={MessageSquare}
+          label="Unread Messages"
+          value={hubData.messages.unreadCount}
+        />
+        <StatCard
+          workspace="operate"
+          icon={ClipboardList}
+          label="Pending Tasks"
+          value={hubData.tasks.pending.length}
+        />
       </div>
 
       {/* Navigation Cards */}
       <OperateNavigationCards
         todaysTasks={hubData.tasks.myTasksToday.length}
-        completedToday={hubData.tasks.myTasksToday.filter(t => t.completed).length}
+        completedToday={hubData.tasks.myTasksToday.filter((t) => t.completed).length}
         activeProjects={activeProjects.length}
         overdueProjects={overdueProjects.length}
         unreadMessages={hubData.messages.unreadCount}
