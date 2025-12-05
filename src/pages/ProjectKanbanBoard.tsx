@@ -195,13 +195,13 @@ const SortableTaskCard = ({
       
       <Card 
         className={cn(
-          "group hover:shadow-md transition-all duration-200 overflow-hidden",
+          "group hover:shadow-md transition-all duration-200 overflow-hidden shadow-sm border border-border/50",
           !isEditingTitle && "cursor-grab active:cursor-grabbing",
           isCompleted && "opacity-60"
         )}
         style={{ backgroundColor: task.color || undefined }}
       >
-        <CardContent className="p-kanban">
+        <CardContent className="pt-2.5 px-2.5 pb-2">
           <div className="flex items-start gap-2">
             {/* Left: checkbox only */}
             <div className="flex-shrink-0 pt-0.5">
@@ -219,7 +219,7 @@ const SortableTaskCard = ({
             </div>
 
             <div className="flex-1 min-w-0">
-              {/* Title row with dropdown */}
+              {/* Title row with avatars and dropdown */}
               <div className="flex items-start justify-between gap-1">
                 {isEditingTitle ? (
                   <textarea
@@ -250,6 +250,26 @@ const SortableTaskCard = ({
                     {task.title}
                   </p>
                 )}
+                
+                {/* Inline avatars */}
+                {task.assignees && task.assignees.length > 0 && (
+                  <div className="flex -space-x-1 flex-shrink-0">
+                    {task.assignees.slice(0, 2).map((assignee) => (
+                      <Avatar key={assignee.id} className="h-4 w-4 border border-background">
+                        <AvatarImage src={assignee.avatar_url || undefined} />
+                        <AvatarFallback className="text-[8px]">
+                          {assignee.full_name?.[0] || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                    ))}
+                    {task.assignees.length > 2 && (
+                      <div className="h-4 w-4 rounded-full bg-muted border border-background flex items-center justify-center text-[8px] font-medium">
+                        +{task.assignees.length - 2}
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="icon" className="h-5 w-5 opacity-0 group-hover:opacity-100 flex-shrink-0 -mr-1 -mt-0.5">
@@ -327,37 +347,18 @@ const SortableTaskCard = ({
                 </DropdownMenu>
               </div>
 
-              {/* Bottom row: due date + avatars (right-aligned) */}
-              {(task.due_date || (task.assignees && task.assignees.length > 0)) && (
-                <div className="flex items-center justify-end gap-2 mt-1.5">
-                  {task.due_date && (
-                    <span className={cn(
-                      "text-[10px] flex items-center gap-0.5",
-                      isOverdue && 'text-destructive',
-                      isDueToday && 'text-amber-600',
-                      !isOverdue && !isDueToday && 'text-muted-foreground',
-                    )}>
-                      <Clock className="h-3 w-3" />
-                      {format(new Date(task.due_date), 'd MMM')}
-                    </span>
-                  )}
-                  {task.assignees && task.assignees.length > 0 && (
-                    <div className="flex -space-x-1.5">
-                      {task.assignees.slice(0, 3).map((assignee) => (
-                        <Avatar key={assignee.id} className="h-5 w-5 border-2 border-background">
-                          <AvatarImage src={assignee.avatar_url || undefined} />
-                          <AvatarFallback className="text-[9px]">
-                            {assignee.full_name?.[0] || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                      ))}
-                      {task.assignees.length > 3 && (
-                        <div className="h-5 w-5 rounded-full bg-muted border-2 border-background flex items-center justify-center text-[9px] font-medium">
-                          +{task.assignees.length - 3}
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {/* Bottom row: due date only */}
+              {task.due_date && (
+                <div className="flex items-center mt-1.5">
+                  <span className={cn(
+                    "text-[10px] flex items-center gap-0.5",
+                    isOverdue && 'text-destructive',
+                    isDueToday && 'text-amber-600',
+                    !isOverdue && !isDueToday && 'text-muted-foreground',
+                  )}>
+                    <Clock className="h-3 w-3" />
+                    {format(new Date(task.due_date), 'd MMM')}
+                  </span>
                 </div>
               )}
             </div>
