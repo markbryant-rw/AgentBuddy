@@ -72,6 +72,7 @@ const OfficeManagerOffice = lazy(() => import('./pages/office-manager/OfficeMana
 const OfficeManagerMonitor = lazy(() => import('./pages/office-manager/OfficeManagerMonitor'));
 const OfficeManagerSupport = lazy(() => import('./pages/office-manager/OfficeManagerSupport'));
 const TeamManagement = lazy(() => import('./pages/TeamManagement'));
+const WeeklyTasksSetup = lazy(() => import('./pages/team/WeeklyTasksSetup'));
 const SalespersonDashboard = lazy(() => import('./pages/SalespersonDashboard'));
 const AssistantDashboard = lazy(() => import('./pages/AssistantDashboard'));
 const WeeklyLogs = lazy(() => import("./pages/WeeklyLogs"));
@@ -173,6 +174,7 @@ const AppContent = () => {
                  <Route path="/settings" element={<Settings />} />
                 <Route path="/team-leader" element={<TeamLeaderDashboard />} />
                   <Route path="/team-management" element={<TeamManagement />} />
+                  <Route path="/team/weekly-tasks" element={<WeeklyTasksSetup />} />
                   <Route path="/salesperson" element={<SalespersonDashboard />} />
                   <Route path="/assistant" element={<AssistantDashboard />} />
                   

@@ -164,3 +164,9 @@ verify_jwt = true
 
 [functions.sync-transaction-status]
 verify_jwt = true
+
+[functions.generate-weekly-listing-tasks]
+verify_jwt = false
+
+[functions.send-weekly-task-summary]
+verify_jwt = false
