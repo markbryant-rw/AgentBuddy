@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -12,15 +13,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Save, 
   Plus, 
-  Trash2, 
-  ChevronDown,
-  ChevronRight,
-  GripVertical,
+  ArrowLeft,
+  ListTodo,
+  Settings,
 } from 'lucide-react';
+import { arrayMove } from '@dnd-kit/sortable';
 import { 
   useAppraisalTemplates, 
   AppraisalStage, 
@@ -29,6 +29,8 @@ import {
   APPRAISAL_STAGE_DISPLAY_NAMES 
 } from '@/hooks/useAppraisalTemplates';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
+import { AppraisalTemplateSidebar } from '@/components/appraisals/templates/AppraisalTemplateSidebar';
+import { AppraisalCollapsibleTaskSection } from '@/components/appraisals/templates/AppraisalCollapsibleTaskSection';
 import { toast } from 'sonner';
 
 const AppraisalTemplateEditor = () => {
@@ -37,7 +39,7 @@ const AppraisalTemplateEditor = () => {
   const location = useLocation();
   const isNew = templateId === 'new';
   
-  const { templates, createTemplate, updateTemplate, isLoading } = useAppraisalTemplates();
+  const { templates, createTemplate, updateTemplate } = useAppraisalTemplates();
   
   // Form state
   const [name, setName] = useState('');
@@ -46,15 +48,16 @@ const AppraisalTemplateEditor = () => {
   const [tasks, setTasks] = useState<AppraisalTemplateTask[]>([]);
   const [isDefault, setIsDefault] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('tasks');
   
-  // Section state
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  // New section input
   const [newSectionName, setNewSectionName] = useState('');
 
   // Load existing template or duplicate
   useEffect(() => {
     if (isNew) {
-      // Check for duplicate state or preset stage
       const state = location.state as { duplicate?: typeof templates[0]; stage?: AppraisalStage } | null;
       if (state?.duplicate) {
         setName(`${state.duplicate.name} (Copy)`);
@@ -72,22 +75,35 @@ const AppraisalTemplateEditor = () => {
         setStage(template.stage);
         setTasks(template.tasks);
         setIsDefault(template.is_default);
-        // Expand all sections by default
-        const sections = new Set(template.tasks.map(t => t.section));
-        setExpandedSections(sections);
       }
     }
   }, [isNew, templateId, templates, location.state]);
 
-  // Group tasks by section
+  // Group tasks by section with original indices
   const tasksBySection = tasks.reduce((acc, task, index) => {
-    const section = task.section || 'General';
+    const section = task.section || 'GENERAL';
     if (!acc[section]) acc[section] = [];
-    acc[section].push({ ...task, originalIndex: index });
+    acc[section].push({ ...task, _originalIndex: index });
     return acc;
-  }, {} as Record<string, (AppraisalTemplateTask & { originalIndex: number })[]>);
+  }, {} as Record<string, (AppraisalTemplateTask & { _originalIndex: number })[]>);
 
   const sections = Object.keys(tasksBySection);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+      if (e.key === 'Escape') {
+        navigate('/appraisal-templates');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [name, description, stage, tasks, isDefault]);
 
   const handleSave = async () => {
     if (!name.trim()) {
@@ -104,7 +120,7 @@ const AppraisalTemplateEditor = () => {
           stage,
           tasks,
           is_default: isDefault,
-          team_id: null, // Will be set in the hook
+          team_id: null,
           created_by: null,
         });
         toast.success('Template created');
@@ -115,6 +131,7 @@ const AppraisalTemplateEditor = () => {
         });
         toast.success('Template saved');
       }
+      setHasChanges(false);
       navigate('/appraisal-templates');
     } catch (error) {
       console.error('Error saving template:', error);
@@ -123,105 +140,229 @@ const AppraisalTemplateEditor = () => {
     }
   };
 
-  const addTask = (section: string) => {
-    setTasks([...tasks, {
+  const updateTask = useCallback((index: number, updates: Partial<AppraisalTemplateTask>) => {
+    setTasks(prev => {
+      const newTasks = [...prev];
+      newTasks[index] = { ...newTasks[index], ...updates };
+      return newTasks;
+    });
+    setHasChanges(true);
+  }, []);
+
+  const removeTask = useCallback((index: number) => {
+    setTasks(prev => prev.filter((_, i) => i !== index));
+    setHasChanges(true);
+  }, []);
+
+  const addTaskToSection = useCallback((section: string) => {
+    setTasks(prev => [...prev, {
       title: '',
       section,
       due_offset_days: 0,
       priority: 'medium',
     }]);
-  };
-
-  const updateTask = (index: number, updates: Partial<AppraisalTemplateTask>) => {
-    const newTasks = [...tasks];
-    newTasks[index] = { ...newTasks[index], ...updates };
-    setTasks(newTasks);
-  };
-
-  const removeTask = (index: number) => {
-    setTasks(tasks.filter((_, i) => i !== index));
-  };
+    setHasChanges(true);
+  }, []);
 
   const addSection = () => {
     if (!newSectionName.trim()) return;
-    // Add an empty task to create the section
-    setTasks([...tasks, {
+    const sectionName = newSectionName.trim().toUpperCase();
+    setTasks(prev => [...prev, {
       title: '',
-      section: newSectionName.toUpperCase(),
+      section: sectionName,
       due_offset_days: 0,
       priority: 'medium',
     }]);
-    setExpandedSections(new Set([...expandedSections, newSectionName.toUpperCase()]));
     setNewSectionName('');
+    setHasChanges(true);
   };
 
-  const toggleSection = (section: string) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(section)) {
-      newExpanded.delete(section);
-    } else {
-      newExpanded.add(section);
-    }
-    setExpandedSections(newExpanded);
-  };
+  const renameSection = useCallback((oldName: string, newName: string) => {
+    setTasks(prev => prev.map(task => 
+      task.section === oldName ? { ...task, section: newName } : task
+    ));
+    setHasChanges(true);
+  }, []);
 
-  const handleTaskKeyDown = (e: React.KeyboardEvent, index: number, section: string) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      // Add new task after current one in same section
-      const newTask: AppraisalTemplateTask = {
-        title: '',
-        section,
-        due_offset_days: 0,
-        priority: 'medium',
-      };
-      const newTasks = [...tasks];
-      newTasks.splice(index + 1, 0, newTask);
-      setTasks(newTasks);
+  const deleteSection = useCallback((section: string) => {
+    setTasks(prev => prev.filter(task => task.section !== section));
+    setHasChanges(true);
+  }, []);
+
+  const reorderTasks = useCallback((oldIndex: number, newIndex: number, section: string) => {
+    const sectionTasks = tasksBySection[section];
+    if (!sectionTasks) return;
+    
+    const oldTaskOriginalIndex = sectionTasks[oldIndex]._originalIndex;
+    const newTaskOriginalIndex = sectionTasks[newIndex]._originalIndex;
+    
+    setTasks(prev => {
+      const newTasks = [...prev];
+      const [movedTask] = newTasks.splice(oldTaskOriginalIndex, 1);
+      // Adjust target index if moving from before to after
+      const adjustedNewIndex = oldTaskOriginalIndex < newTaskOriginalIndex 
+        ? newTaskOriginalIndex - 1 
+        : newTaskOriginalIndex;
+      newTasks.splice(adjustedNewIndex, 0, movedTask);
+      return newTasks;
+    });
+    setHasChanges(true);
+  }, [tasksBySection]);
+
+  const scrollToSection = (section: string) => {
+    setActiveSection(section);
+    const element = document.getElementById(`section-${section.replace(/\s/g, '-')}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <WorkspaceHeader workspace="prospect" currentPage={isNew ? 'New Template' : name || 'Edit Template'} />
       
-      <div className="container mx-auto p-6 space-y-6">
+      {/* Top Info Bar */}
+      <div className="border-b bg-card px-6 py-3">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{isNew ? 'Create Template' : 'Edit Template'}</h1>
-            <p className="text-muted-foreground">{isNew ? 'Create a new appraisal task template' : `Editing: ${name}`}</p>
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/appraisal-templates')}>
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <Input
+              value={name}
+              onChange={(e) => { setName(e.target.value); setHasChanges(true); }}
+              placeholder="Template name..."
+              className="text-lg font-semibold border-0 shadow-none focus-visible:ring-0 w-64 px-0"
+            />
+            <Select value={stage} onValueChange={(v) => { setStage(v as AppraisalStage); setHasChanges(true); }}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {APPRAISAL_STAGES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {APPRAISAL_STAGE_DISPLAY_NAMES[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Default</span>
+              <Switch 
+                checked={isDefault} 
+                onCheckedChange={(v) => { setIsDefault(v); setHasChanges(true); }} 
+              />
+            </div>
+            {hasChanges && (
+              <Badge variant="secondary" className="text-xs">Unsaved changes</Badge>
+            )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">⌘S to save</span>
             <Button variant="outline" onClick={() => navigate('/appraisal-templates')}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={isSaving}>
               <Save className="h-4 w-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save Template'}
+              {isSaving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>
+      </div>
 
-        <div className="grid gap-6 lg:grid-cols-[300px_1fr]">
-          {/* Sidebar - Template Details */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Template Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <AppraisalTemplateSidebar
+          sections={sections}
+          tasksBySection={tasksBySection}
+          activeSection={activeSection}
+          onSectionClick={scrollToSection}
+          totalTasks={tasks.length}
+        />
+
+        {/* Main Editor */}
+        <div className="flex-1 overflow-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <div className="border-b px-6 py-2">
+              <TabsList>
+                <TabsTrigger value="tasks" className="gap-2">
+                  <ListTodo className="h-4 w-4" />
+                  Tasks
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="gap-2">
+                  <Settings className="h-4 w-4" />
+                  Settings
+                </TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="tasks" className="flex-1 overflow-auto p-6 space-y-6">
+              {/* Summary */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  {tasks.length} tasks across {sections.length} sections
+                </p>
+              </div>
+
+              {/* Sections */}
+              {sections.length === 0 ? (
+                <div className="border-2 border-dashed rounded-lg p-12 text-center">
+                  <ListTodo className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                  <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Add a section to get started building your template
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {sections.map((section, index) => (
+                    <AppraisalCollapsibleTaskSection
+                      key={section}
+                      section={section}
+                      sectionIndex={index}
+                      tasks={tasksBySection[section]}
+                      onUpdateTask={updateTask}
+                      onRemoveTask={removeTask}
+                      onAddTask={() => addTaskToSection(section)}
+                      onRenameSection={renameSection}
+                      onDeleteSection={deleteSection}
+                      onReorderTasks={reorderTasks}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Add Section */}
+              <div className="flex items-center gap-2 pt-4 border-t">
+                <Input
+                  value={newSectionName}
+                  onChange={(e) => setNewSectionName(e.target.value.toUpperCase())}
+                  placeholder="New section name..."
+                  className="max-w-xs"
+                  onKeyDown={(e) => e.key === 'Enter' && addSection()}
+                />
+                <Button onClick={addSection} disabled={!newSectionName.trim()}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Section
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="settings" className="flex-1 overflow-auto p-6">
+              <div className="max-w-xl space-y-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Name</label>
+                  <label className="text-sm font-medium">Template Name</label>
                   <Input
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => { setName(e.target.value); setHasChanges(true); }}
                     placeholder="e.g., Standard VAP Tasks"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Stage</label>
-                  <Select value={stage} onValueChange={(v) => setStage(v as AppraisalStage)}>
+                  <Select value={stage} onValueChange={(v) => { setStage(v as AppraisalStage); setHasChanges(true); }}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -233,155 +374,36 @@ const AppraisalTemplateEditor = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    This template will be available for appraisals in the {APPRAISAL_STAGE_DISPLAY_NAMES[stage]} stage
+                  </p>
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Description</label>
                   <Textarea
                     value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Optional description..."
-                    rows={3}
+                    onChange={(e) => { setDescription(e.target.value); setHasChanges(true); }}
+                    placeholder="Optional description for this template..."
+                    rows={4}
                   />
                 </div>
 
-                <div className="pt-2 border-t">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Badge variant="secondary">{tasks.length} tasks</Badge>
-                    <Badge variant="outline">{sections.length} sections</Badge>
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium">Default Template</p>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically apply this template when appraisals enter the {stage} stage
+                    </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Add Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Add Section</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-2">
-                  <Input
-                    value={newSectionName}
-                    onChange={(e) => setNewSectionName(e.target.value)}
-                    placeholder="Section name..."
-                    onKeyDown={(e) => e.key === 'Enter' && addSection()}
+                  <Switch 
+                    checked={isDefault} 
+                    onCheckedChange={(v) => { setIsDefault(v); setHasChanges(true); }} 
                   />
-                  <Button size="icon" onClick={addSection}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content - Tasks */}
-          <div className="space-y-4">
-            {sections.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground mb-4">
-                    No tasks yet. Add a section to get started.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              sections.map((section) => (
-                <Collapsible 
-                  key={section}
-                  open={expandedSections.has(section)}
-                  onOpenChange={() => toggleSection(section)}
-                >
-                  <Card>
-                    <CollapsibleTrigger asChild>
-                      <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            {expandedSections.has(section) ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                            <CardTitle className="text-base">{section}</CardTitle>
-                            <Badge variant="secondary" className="text-xs">
-                              {tasksBySection[section].length}
-                            </Badge>
-                          </div>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              addTask(section);
-                            }}
-                          >
-                            <Plus className="h-4 w-4 mr-1" />
-                            Add Task
-                          </Button>
-                        </div>
-                      </CardHeader>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <CardContent className="space-y-3 pt-0">
-                        {tasksBySection[section].map((task) => (
-                          <div 
-                            key={task.originalIndex}
-                            className="flex items-start gap-2 p-3 bg-muted/30 rounded-lg"
-                          >
-                            <GripVertical className="h-5 w-5 text-muted-foreground mt-2 cursor-grab" />
-                            <div className="flex-1 space-y-2">
-                              <Input
-                                value={task.title}
-                                onChange={(e) => updateTask(task.originalIndex, { title: e.target.value })}
-                                placeholder="Task title..."
-                                onKeyDown={(e) => handleTaskKeyDown(e, task.originalIndex, section)}
-                              />
-                              <div className="flex gap-2 items-center">
-                                <div className="flex items-center gap-1">
-                                  <Input
-                                    type="number"
-                                    value={task.due_offset_days ?? 0}
-                                    onChange={(e) => updateTask(task.originalIndex, { 
-                                      due_offset_days: parseInt(e.target.value) || 0 
-                                    })}
-                                    className="w-20"
-                                  />
-                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    days
-                                  </span>
-                                </div>
-                                <Select
-                                  value={task.priority || 'medium'}
-                                  onValueChange={(v) => updateTask(task.originalIndex, { priority: v })}
-                                >
-                                  <SelectTrigger className="w-28">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="low">Low</SelectItem>
-                                    <SelectItem value="medium">Medium</SelectItem>
-                                    <SelectItem value="high">High</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => removeTask(task.originalIndex)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </CardContent>
-                    </CollapsibleContent>
-                  </Card>
-                </Collapsible>
-              ))
-            )}
-          </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
