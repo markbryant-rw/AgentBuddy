@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { ImageIcon } from 'lucide-react';
 
 interface FeatureRequest {
   id: string;
@@ -17,6 +18,7 @@ interface FeatureRequest {
   module?: string;
   priority?: string;
   archived_reason?: string;
+  attachments?: string[];
   profiles?: {
     full_name: string;
     avatar_url?: string;
@@ -160,12 +162,20 @@ export const SortableFeatureCard = ({ feature, onClick }: SortableFeatureCardPro
             </span>
           </div>
 
-          {/* Votes (only if > 0) */}
-          {feature.vote_count > 0 && (
-            <div className="text-[10px] text-muted-foreground">
-              👍 {feature.vote_count}
-            </div>
-          )}
+          {/* Votes + Attachments */}
+          <div className="flex items-center gap-3">
+            {feature.vote_count > 0 && (
+              <span className="text-[10px] text-muted-foreground">
+                👍 {feature.vote_count}
+              </span>
+            )}
+            {feature.attachments && feature.attachments.length > 0 && (
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <ImageIcon className="h-3 w-3" />
+                {feature.attachments.length}
+              </span>
+            )}
+          </div>
 
           {/* Archived Reason (subtle, at bottom) */}
           {isArchived && feature.archived_reason && (

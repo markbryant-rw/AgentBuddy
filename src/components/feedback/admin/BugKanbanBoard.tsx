@@ -20,6 +20,7 @@ interface BugReport {
   ai_impact?: string;
   module?: string;
   archived_reason?: string;
+  attachments?: string[];
   profiles?: {
     full_name: string;
     avatar_url?: string;

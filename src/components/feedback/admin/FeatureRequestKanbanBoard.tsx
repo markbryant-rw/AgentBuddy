@@ -20,6 +20,7 @@ interface FeatureRequest {
   module?: string;
   priority?: string;
   archived_reason?: string;
+  attachments?: string[];
   profiles?: {
     full_name: string;
     avatar_url?: string;

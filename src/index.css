@@ -1005,3 +1005,14 @@ html {
     0 0 40px hsl(320 100% 60% / 0.15);
   border: 1px solid hsl(185 100% 50% / 0.5);
 }
+
+/* ========== SCREENSHOT/ATTACHMENT IMAGES ========== */
+/* Ensure screenshot thumbnails and lightbox images are not affected by avatar styling */
+.theme-cyberpunk .screenshot-thumbnail,
+.theme-cyberpunk img[class*="screenshot"],
+.theme-cyberpunk [role="dialog"] img:not([class*="avatar"]):not([class*="Avatar"]) {
+  border-radius: 0.5rem;
+  border: 1px solid hsl(185 100% 50% / 0.3);
+  box-shadow: none;
+  animation: none;
+}
