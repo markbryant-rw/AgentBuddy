@@ -30,7 +30,7 @@ import ConvertToOpportunityDialog from './ConvertToOpportunityDialog';
 import LocationFixSection from '@/components/shared/LocationFixSection';
 import { VisitTimeline } from './VisitTimeline';
 import { AppraisalTasksTab } from './AppraisalTasksTab';
-import { Trash2, Plus, ListTodo, FileText } from "lucide-react";
+import { Trash2, Plus, ListTodo, FileText, TrendingUp } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -268,10 +268,14 @@ const AppraisalDetailDialog = ({
           {/* Tabs for existing appraisals */}
           {!isNew && appraisal ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="details" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Details
+                </TabsTrigger>
+                <TabsTrigger value="tracking" className="flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  Tracking
                 </TabsTrigger>
                 <TabsTrigger value="tasks" className="flex items-center gap-2">
                   <ListTodo className="h-4 w-4" />
@@ -279,6 +283,7 @@ const AppraisalDetailDialog = ({
                 </TabsTrigger>
               </TabsList>
 
+              {/* Details Tab - Property, Appraisal Info, Notes */}
               <TabsContent value="details" className="mt-4 space-y-6">
                 {/* Property Details */}
                 <div className="space-y-4 p-4 rounded-lg bg-muted/50">
@@ -364,10 +369,19 @@ const AppraisalDetailDialog = ({
                   </div>
                 </div>
 
-                {/* Tracking */}
+                {/* Notes */}
                 <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Tracking</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
+                  <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
+                </div>
+              </TabsContent>
+
+              {/* Tracking Tab - Progress, Visit Timeline, Location Fix */}
+              <TabsContent value="tracking" className="mt-4 space-y-6">
+                {/* Progress */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Progress</h3>
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="stage" className="text-sm font-medium">Stage <span className="text-destructive">*</span></Label>
                       <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
@@ -395,12 +409,19 @@ const AppraisalDetailDialog = ({
                       <Select value={formData.intent || 'medium'} onValueChange={(value: any) => setFormData({ ...formData, intent: value })}>
                         <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="low">Low - Exploring options</SelectItem>
-                          <SelectItem value="medium">Medium - Seriously considering</SelectItem>
-                          <SelectItem value="high">High - Ready to list soon</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+                </div>
+
+                {/* Contact Tracking */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Contact</h3>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="last_contact" className="text-sm font-medium">Last Contact</Label>
                       <Input id="last_contact" type="date" value={formData.last_contact || ''} onChange={(e) => setFormData({ ...formData, last_contact: e.target.value })} className="h-10" />
@@ -412,19 +433,13 @@ const AppraisalDetailDialog = ({
                   </div>
                 </div>
 
-                {/* Notes */}
-                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
-                  <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
-                </div>
-
-                {/* Fix Location Section */}
-                <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
-
                 {/* Visit Timeline */}
                 {allVisitsAtAddress.length > 0 && (
                   <VisitTimeline visits={allVisitsAtAddress} currentVisitId={appraisal?.id} />
                 )}
+
+                {/* Fix Location Section */}
+                <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
 
                 {/* Sync contact details option */}
                 {hasMultipleVisits && (
@@ -435,6 +450,7 @@ const AppraisalDetailDialog = ({
                 )}
               </TabsContent>
 
+              {/* Tasks Tab */}
               <TabsContent value="tasks" className="mt-4">
                 <AppraisalTasksTab
                   appraisalId={appraisal.id}
