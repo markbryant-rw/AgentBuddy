@@ -226,6 +226,32 @@ export default function TemplateEditor() {
     setTasks(tasks.filter((_, i) => i !== originalIndex));
   };
 
+  const reorderTasks = (oldIndex: number, newIndex: number, section: string) => {
+    // Get tasks for this section with their original indices
+    const sectionTasks = tasksBySection[section] || [];
+    if (oldIndex < 0 || newIndex < 0 || oldIndex >= sectionTasks.length || newIndex >= sectionTasks.length) {
+      return;
+    }
+
+    // Get the original indices from the task objects
+    const oldOriginalIndex = (sectionTasks[oldIndex] as any)._originalIndex;
+    const newOriginalIndex = (sectionTasks[newIndex] as any)._originalIndex;
+
+    // Create new tasks array
+    const newTasks = [...tasks];
+    
+    // Remove the task from old position
+    const [movedTask] = newTasks.splice(oldOriginalIndex, 1);
+    
+    // Calculate the new insertion index (accounting for the removed item)
+    const adjustedNewIndex = newOriginalIndex > oldOriginalIndex ? newOriginalIndex - 1 : newOriginalIndex;
+    
+    // Insert at new position
+    newTasks.splice(adjustedNewIndex, 0, movedTask);
+    
+    setTasks(newTasks);
+  };
+
   const addSection = () => {
     const existingCount = activeSections.length;
     const newSectionName = `SECTION ${existingCount + 1}`;
@@ -436,6 +462,7 @@ export default function TemplateEditor() {
                         onAddTask={() => addTask(section)}
                         onRenameSection={renameSection}
                         onDeleteSection={deleteSection}
+                        onReorderTasks={reorderTasks}
                         teamMembers={teamMembers}
                         isDefaultTemplate={isSystemTemplate}
                         disabled={!canEdit}
