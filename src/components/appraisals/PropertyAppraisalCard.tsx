@@ -1,8 +1,8 @@
 import { GroupedProperty, LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, RotateCcw, MapPin } from 'lucide-react';
-import { format, differenceInMonths } from 'date-fns';
+import { MapPin, RotateCcw } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface PropertyAppraisalCardProps {
@@ -11,7 +11,7 @@ interface PropertyAppraisalCardProps {
 }
 
 export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCardProps) => {
-  const { latestAppraisal, visits, visitCount, firstVisitDate, durationMonths } = property;
+  const { latestAppraisal, visitCount } = property;
 
   const getIntentColor = (intent?: string) => {
     switch (intent) {
@@ -36,103 +36,81 @@ export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCa
   return (
     <div
       className={cn(
-        "p-4 rounded-lg border cursor-pointer hover:bg-muted/50 transition-colors",
+        "py-2 px-3 rounded-md border cursor-pointer hover:bg-muted/50 transition-colors",
         getOutcomeStyle(latestAppraisal.outcome)
       )}
       onClick={() => onClick(latestAppraisal)}
     >
-      <div className="flex items-start justify-between gap-4">
-        {/* Left: Property info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <MapPin className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-            <h3 className="font-semibold truncate">{latestAppraisal.address}</h3>
-          </div>
+      <div className="flex items-center justify-between gap-3">
+        {/* Left: Property info - single line */}
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <MapPin className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-sm font-medium truncate">{latestAppraisal.address}</span>
           {latestAppraisal.suburb && (
-            <p className="text-sm text-muted-foreground ml-6">{latestAppraisal.suburb}</p>
+            <span className="text-xs text-muted-foreground truncate hidden sm:inline">
+              {latestAppraisal.suburb}
+            </span>
           )}
-          
-          {/* Vendor and value */}
-          <div className="flex items-center gap-4 mt-2 text-sm">
-            {latestAppraisal.vendor_name && (
-              <span className="text-muted-foreground">{latestAppraisal.vendor_name}</span>
-            )}
-            {latestAppraisal.estimated_value && (
-              <span className="font-medium">${latestAppraisal.estimated_value.toLocaleString()}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Center: Visit timeline visualization */}
-        <div className="flex flex-col items-center gap-1">
-          {visitCount > 1 ? (
+          {latestAppraisal.vendor_name && (
             <>
-              <div className="flex items-center gap-1">
-                {visits.slice(0, 5).map((visit, idx) => (
-                  <div
-                    key={visit.id}
-                    className={cn(
-                      "w-2.5 h-2.5 rounded-full",
-                      idx === 0 ? "bg-primary" : "bg-muted-foreground/30"
-                    )}
-                    title={format(new Date(visit.appraisal_date), 'dd MMM yyyy')}
-                  />
-                ))}
-                {visitCount > 5 && (
-                  <span className="text-xs text-muted-foreground ml-1">+{visitCount - 5}</span>
-                )}
-              </div>
-              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
-                <RotateCcw className="h-3 w-3 mr-1" />
-                {visitCount} visits
-              </Badge>
-              {durationMonths > 0 && (
-                <span className="text-xs text-muted-foreground">
-                  {durationMonths} month{durationMonths > 1 ? 's' : ''} nurturing
-                </span>
-              )}
+              <span className="text-muted-foreground hidden md:inline">•</span>
+              <span className="text-xs text-muted-foreground truncate hidden md:inline">
+                {latestAppraisal.vendor_name}
+              </span>
             </>
-          ) : (
-            <span className="text-xs text-muted-foreground">First visit</span>
           )}
         </div>
 
-        {/* Right: Status and agent */}
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
-            {latestAppraisal.intent && (
-              <Badge variant="outline" className={cn("text-xs", getIntentColor(latestAppraisal.intent))}>
-                {latestAppraisal.intent}
-              </Badge>
-            )}
-            {latestAppraisal.stage && (
-              <Badge variant="secondary" className="text-xs">
-                {latestAppraisal.stage}
-              </Badge>
-            )}
-            {latestAppraisal.outcome && latestAppraisal.outcome !== 'In Progress' && (
-              <Badge 
-                variant={latestAppraisal.outcome === 'WON' ? 'default' : 'outline'}
-                className={cn(
-                  "text-xs",
-                  latestAppraisal.outcome === 'WON' && "bg-emerald-500 text-white",
-                  latestAppraisal.outcome === 'LOST' && "bg-gray-500/10 text-gray-500"
-                )}
-              >
-                {latestAppraisal.outcome}
-              </Badge>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            {format(new Date(latestAppraisal.appraisal_date), 'dd MMM yyyy')}
-          </div>
+        {/* Right: All metadata on one line */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Visit count */}
+          {visitCount > 1 ? (
+            <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs px-1.5 py-0">
+              <RotateCcw className="h-3 w-3 mr-1" />
+              {visitCount}
+            </Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground hidden lg:inline">1st</span>
+          )}
 
+          {/* Intent */}
+          {latestAppraisal.intent && (
+            <Badge variant="outline" className={cn("text-xs px-1.5 py-0", getIntentColor(latestAppraisal.intent))}>
+              {latestAppraisal.intent}
+            </Badge>
+          )}
+
+          {/* Stage */}
+          {latestAppraisal.stage && (
+            <Badge variant="secondary" className="text-xs px-1.5 py-0">
+              {latestAppraisal.stage}
+            </Badge>
+          )}
+
+          {/* Outcome */}
+          {latestAppraisal.outcome && latestAppraisal.outcome !== 'In Progress' && (
+            <Badge 
+              variant={latestAppraisal.outcome === 'WON' ? 'default' : 'outline'}
+              className={cn(
+                "text-xs px-1.5 py-0",
+                latestAppraisal.outcome === 'WON' && "bg-emerald-500 text-white",
+                latestAppraisal.outcome === 'LOST' && "bg-gray-500/10 text-gray-500"
+              )}
+            >
+              {latestAppraisal.outcome}
+            </Badge>
+          )}
+
+          {/* Date */}
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {format(new Date(latestAppraisal.appraisal_date), 'dd MMM')}
+          </span>
+
+          {/* Agent avatar */}
           {latestAppraisal.agent && (
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-5 w-5">
               <AvatarImage src={latestAppraisal.agent.avatar_url} />
-              <AvatarFallback className="text-xs">
+              <AvatarFallback className="text-[10px]">
                 {getInitials(latestAppraisal.agent.full_name)}
               </AvatarFallback>
             </Avatar>
