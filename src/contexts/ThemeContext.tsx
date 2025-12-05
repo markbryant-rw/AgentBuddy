@@ -90,28 +90,28 @@ export const rayWhiteTheme: ThemePack = {
   },
 };
 
-// Christmas Theme Example
+// 🎄 Christmas Theme - EXTREME FESTIVE IMMERSION
 export const christmasTheme: ThemePack = {
   id: 'christmas',
-  name: 'Christmas',
-  description: 'Festive holiday theme',
+  name: '🎄 Christmas',
+  description: 'HO HO HO! Full festive immersion with snow & lights!',
   colors: {
-    primary: '350 70% 45%',      // Christmas red
-    primaryLight: '350 75% 55%',
-    primaryDark: '350 70% 35%',
-    accent: '140 60% 35%',       // Christmas green
-    accentLight: '140 55% 45%',
-    success: '140 60% 35%',
-    warning: '45 93% 47%',
-    danger: '0 84% 60%',
-    info: '199 89% 48%',
-    background: '0 0% 99%',
-    foreground: '350 60% 15%',
-    card: '0 0% 100%',
-    cardForeground: '350 60% 15%',
-    muted: '350 10% 95%',
-    mutedForeground: '350 20% 40%',
-    border: '350 15% 90%',
+    primary: '0 72% 51%',           // Rich Christmas Red #DC2626
+    primaryLight: '0 84% 60%',      // Bright holly red
+    primaryDark: '0 72% 40%',       // Deep crimson
+    accent: '142 71% 29%',          // Evergreen #15803D
+    accentLight: '142 76% 36%',     // Lighter pine
+    success: '142 76% 36%',         // Christmas green
+    warning: '43 96% 56%',          // Golden star #FACC15
+    danger: '0 84% 60%',            // Holly berry red
+    info: '199 89% 48%',            // Ice blue
+    background: '0 0% 99%',         // Snow white
+    foreground: '0 50% 15%',        // Dark crimson text
+    card: '0 0% 100%',              // Pure white (snow)
+    cardForeground: '0 50% 15%',
+    muted: '142 15% 94%',           // Soft pine tint
+    mutedForeground: '142 20% 40%',
+    border: '0 30% 88%',            // Subtle red tint
   },
 };
 
