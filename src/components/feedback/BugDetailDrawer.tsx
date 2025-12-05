@@ -10,7 +10,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { Calendar, User, AlertCircle, Trash2, Loader2, UserCheck, CheckCircle2, Archive, ImageOff, Pencil, Check, X as XIcon } from "lucide-react";
+import { Calendar, User, AlertCircle, Trash2, Loader2, UserCheck, CheckCircle2, Archive, ImageOff, Pencil, Check, X as XIcon, Maximize2 } from "lucide-react";
 import { format } from "date-fns";
 import { AIBugAnalysisPanel } from "./admin/AIBugAnalysisPanel";
 import { useBugReports } from "@/hooks/useBugReports";
@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { BugReportCommentsSection } from "./BugReportCommentsSection";
 import { useBugVotes } from "@/hooks/useBugVotes";
 import { cn } from "@/lib/utils";
+import { ScreenshotLightbox } from "./ScreenshotLightbox";
 
 interface BugDetailDrawerProps {
   bugId: string;
@@ -37,6 +38,8 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
   const [archiveReason, setArchiveReason] = useState('');
   const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
   const [imageLoading, setImageLoading] = useState<Record<number, boolean>>({});
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   // Individual editing states for inline editing
   const [editingSummary, setEditingSummary] = useState(false);
@@ -587,14 +590,24 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
           {/* Screenshots */}
           {(() => {
             const attachments = Array.isArray(bug.attachments) ? bug.attachments : [];
-            return attachments.length > 0 && (
+            // Filter out invalid URLs
+            const validAttachments = attachments.filter((url: string) => 
+              url && typeof url === 'string' && url.trim().length > 0 && url.startsWith('http')
+            );
+            return validAttachments.length > 0 && (
               <div className="space-y-2">
-                <Label>Screenshots ({attachments.length})</Label>
+                <Label>Screenshots ({validAttachments.length})</Label>
                 <div className="grid grid-cols-2 gap-3">
-                  {attachments.map((url: string, idx: number) => (
+                  {validAttachments.map((url: string, idx: number) => (
                     <div
                       key={idx}
-                      className="group relative block rounded-lg overflow-hidden border hover:border-primary transition-colors"
+                      className="group relative block rounded-lg overflow-hidden border hover:border-primary transition-colors cursor-pointer"
+                      onClick={() => {
+                        if (!imageErrors[idx]) {
+                          setLightboxIndex(idx);
+                          setLightboxOpen(true);
+                        }
+                      }}
                     >
                       {imageLoading[idx] && !imageErrors[idx] && (
                         <div className="w-full h-40 flex items-center justify-center bg-muted">
@@ -610,30 +623,38 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-primary hover:underline mt-1"
+                            onClick={(e) => e.stopPropagation()}
                           >
                             Open in new tab
                           </a>
                         </div>
                       ) : (
-                        <a
-                          href={url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
+                        <>
                           <img
                             src={url}
                             alt={`Screenshot ${idx + 1}`}
-                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform"
+                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform screenshot-thumbnail"
                             onLoad={() => handleImageLoad(idx)}
                             onError={() => handleImageError(idx)}
                             style={{ display: imageLoading[idx] ? 'none' : 'block' }}
                           />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                        </a>
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <Maximize2 className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </>
                       )}
                     </div>
                   ))}
                 </div>
+                
+                {/* Screenshot Lightbox */}
+                {lightboxOpen && (
+                  <ScreenshotLightbox
+                    images={validAttachments}
+                    initialIndex={lightboxIndex}
+                    onClose={() => setLightboxOpen(false)}
+                  />
+                )}
               </div>
             );
           })()}
