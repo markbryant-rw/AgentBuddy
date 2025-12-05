@@ -253,7 +253,7 @@ export function useDailyPlanner(date: Date = new Date()) {
           completed: !item.completed,
           completed_at: !item.completed ? new Date().toISOString() : null,
           completed_by: !item.completed ? user?.id : null,
-          order_within_category: newOrder,
+          position: newOrder,
         })
         .eq('id', id);
 
