@@ -1,64 +1,98 @@
+/**
+ * Module Color System
+ * Aligned with the AgentBuddy Design System
+ * Uses semantic color tokens for consistency
+ */
+
 export const MODULE_COLORS = {
   performance: {
-    primary: '#3B82F6', // Blue
-    light: '#DBEAFE',
-    dark: '#1E40AF',
-    gradient: 'from-blue-500 to-blue-600',
-    bg: 'bg-blue-50 dark:bg-blue-900/10',
-    border: 'border-blue-500',
-    text: 'text-blue-600 dark:text-blue-400',
-    iconBg: 'bg-blue-100 dark:bg-blue-900/30',
+    primary: 'hsl(199, 89%, 48%)',     // Info blue
+    light: 'hsl(201, 94%, 96%)',
+    dark: 'hsl(199, 89%, 35%)',
+    gradient: 'from-info to-info/80',
+    bg: 'bg-info-light',
+    border: 'border-info',
+    text: 'text-info',
+    iconBg: 'bg-info/10',
   },
   listings: {
-    primary: '#10B981', // Green
-    light: '#D1FAE5',
-    dark: '#047857',
-    gradient: 'from-green-500 to-emerald-600',
-    bg: 'bg-green-50 dark:bg-green-900/10',
-    border: 'border-green-500',
-    text: 'text-green-600 dark:text-green-400',
-    iconBg: 'bg-green-100 dark:bg-green-900/30',
+    primary: 'hsl(160, 84%, 39%)',     // Success emerald
+    light: 'hsl(152, 76%, 95%)',
+    dark: 'hsl(160, 84%, 30%)',
+    gradient: 'from-success to-success/80',
+    bg: 'bg-success-light',
+    border: 'border-success',
+    text: 'text-success',
+    iconBg: 'bg-success/10',
   },
   communication: {
-    primary: '#FACC15', // Yellow
-    light: '#FEF3C7',
-    dark: '#CA8A04',
-    gradient: 'from-yellow-400 to-amber-500',
-    bg: 'bg-yellow-50 dark:bg-yellow-900/10',
-    border: 'border-yellow-500',
-    text: 'text-yellow-600 dark:text-yellow-400',
-    iconBg: 'bg-yellow-100 dark:bg-yellow-900/30',
+    primary: 'hsl(45, 93%, 47%)',      // Warning amber
+    light: 'hsl(48, 96%, 95%)',
+    dark: 'hsl(45, 93%, 35%)',
+    gradient: 'from-warning to-accent',
+    bg: 'bg-warning-light',
+    border: 'border-warning',
+    text: 'text-warning',
+    iconBg: 'bg-warning/10',
   },
   systems: {
-    primary: '#6366F1', // Indigo
-    light: '#E0E7FF',
-    dark: '#4338CA',
-    gradient: 'from-indigo-500 to-purple-600',
-    bg: 'bg-indigo-50 dark:bg-indigo-900/10',
-    border: 'border-indigo-500',
-    text: 'text-indigo-600 dark:text-indigo-400',
-    iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
+    primary: 'hsl(270, 70%, 65%)',     // Purple (custom)
+    light: 'hsl(270, 60%, 95%)',
+    dark: 'hsl(270, 70%, 45%)',
+    gradient: 'from-[hsl(270,70%,65%)] to-[hsl(280,70%,55%)]',
+    bg: 'bg-[hsl(270,60%,95%)]',
+    border: 'border-[hsl(270,70%,65%)]',
+    text: 'text-[hsl(270,70%,65%)]',
+    iconBg: 'bg-[hsl(270,70%,65%)]/10',
   },
   explore: {
-    primary: '#14B8A6', // Teal
-    light: '#CCFBF1',
-    dark: '#0F766E',
-    gradient: 'from-teal-500 to-cyan-600',
-    bg: 'bg-teal-50 dark:bg-teal-900/10',
-    border: 'border-teal-500',
-    text: 'text-teal-600 dark:text-teal-400',
-    iconBg: 'bg-teal-100 dark:bg-teal-900/30',
+    primary: 'hsl(174, 62%, 47%)',     // Primary teal
+    light: 'hsl(174, 62%, 95%)',
+    dark: 'hsl(174, 62%, 35%)',
+    gradient: 'from-primary to-primary-light',
+    bg: 'bg-primary/5',
+    border: 'border-primary',
+    text: 'text-primary',
+    iconBg: 'bg-primary/10',
   },
   grow: {
-    primary: '#EC4899', // Pink
-    light: '#FCE7F3',
-    dark: '#BE185D',
-    gradient: 'from-pink-500 to-rose-600',
-    bg: 'bg-pink-50 dark:bg-pink-900/10',
-    border: 'border-pink-500',
-    text: 'text-pink-600 dark:text-pink-400',
-    iconBg: 'bg-pink-100 dark:bg-pink-900/30',
+    primary: 'hsl(340, 75%, 70%)',     // Pink
+    light: 'hsl(340, 75%, 95%)',
+    dark: 'hsl(340, 75%, 50%)',
+    gradient: 'from-[hsl(340,75%,70%)] to-[hsl(350,80%,60%)]',
+    bg: 'bg-[hsl(340,75%,95%)]',
+    border: 'border-[hsl(340,75%,70%)]',
+    text: 'text-[hsl(340,75%,70%)]',
+    iconBg: 'bg-[hsl(340,75%,70%)]/10',
   },
 } as const;
 
 export type ModuleCategoryColor = keyof typeof MODULE_COLORS;
+
+/**
+ * Get gradient classes for a module
+ */
+export function getModuleGradient(module: ModuleCategoryColor): string {
+  return `bg-gradient-to-r ${MODULE_COLORS[module].gradient}`;
+}
+
+/**
+ * Get text color class for a module
+ */
+export function getModuleTextColor(module: ModuleCategoryColor): string {
+  return MODULE_COLORS[module].text;
+}
+
+/**
+ * Get background color class for a module
+ */
+export function getModuleBgColor(module: ModuleCategoryColor): string {
+  return MODULE_COLORS[module].bg;
+}
+
+/**
+ * Get icon background class for a module
+ */
+export function getModuleIconBg(module: ModuleCategoryColor): string {
+  return MODULE_COLORS[module].iconBg;
+}
