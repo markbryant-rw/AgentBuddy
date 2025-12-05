@@ -1,16 +1,17 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { BookOpen, MessageSquare, TrendingUp, Target } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/hooks/useAuth";
-import { useTeam } from "@/hooks/useTeam";
+import { BookOpen, MessageSquare, TrendingUp, Target } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useTeam } from '@/hooks/useTeam';
+import { StatCard } from '@/components/ui/stat-card';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function GrowQuickStats() {
   const { user } = useAuth();
   const { team } = useTeam();
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["grow-quick-stats", user?.id, team?.id],
+    queryKey: ['grow-quick-stats', user?.id, team?.id],
     queryFn: async () => {
       if (!user?.id || !team?.id) {
         return {
@@ -51,7 +52,7 @@ export function GrowQuickStats() {
       const skillProgress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
       return {
-        learningPathsActive: 0, // Placeholder for future feature
+        learningPathsActive: 0,
         knowledgeBaseItems: playbooks?.length || 0,
         coachingSessions: conversations?.length || 0,
         skillProgress,
@@ -60,72 +61,50 @@ export function GrowQuickStats() {
     enabled: !!user?.id && !!team?.id,
   });
 
-  // Using Grow workspace theme colors (emerald/green)
   const quickStats = [
     {
-      title: "Active Learning Paths",
+      label: 'Active Learning Paths',
       value: stats?.learningPathsActive || 0,
       icon: Target,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
     {
-      title: "Knowledge Base Items",
+      label: 'Knowledge Base Items',
       value: stats?.knowledgeBaseItems || 0,
       icon: BookOpen,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
     {
-      title: "Coaching Sessions",
+      label: 'Coaching Sessions',
       value: stats?.coachingSessions || 0,
       icon: MessageSquare,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
     {
-      title: "Skill Progress",
+      label: 'Skill Progress',
       value: `${stats?.skillProgress || 0}%`,
       icon: TrendingUp,
-      color: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
   ];
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-md">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
-              <div className="h-20 bg-muted rounded" />
-            </CardContent>
-          </Card>
+          <Skeleton key={i} className="h-24 w-full" />
         ))}
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      {quickStats.map((stat, index) => {
-        const Icon = stat.icon;
-        return (
-          <Card key={stat.title} className="hover:shadow-lg transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground mb-1">{stat.title}</p>
-                  <p className="text-3xl font-bold">{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-xl ${stat.bg}`}>
-                  <Icon className={`h-6 w-6 ${stat.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-md">
+      {quickStats.map((stat) => (
+        <StatCard
+          key={stat.label}
+          workspace="grow"
+          icon={stat.icon}
+          label={stat.label}
+          value={stat.value}
+        />
+      ))}
     </div>
   );
 }
