@@ -98,7 +98,7 @@ export const HeroMetrics = ({
                 >
                   {quarterlyAppraisals}
                 </motion.div>
-                <div className="text-2xl text-white/60">/ {quarterlyAppraisalsTarget} goal</div>
+                <div className="text-2xl text-white/60">/ {quarterlyAppraisalsTarget} appraisals</div>
               </div>
 
               <div className="relative h-3 bg-white/20 rounded-full overflow-hidden mb-6">
@@ -163,10 +163,10 @@ export const HeroMetrics = ({
           >
             <div className="h-full flex flex-col justify-center items-center text-center px-4">
               <Target className="h-12 w-12 mb-4" style={{ color: 'hsl(280, 40%, 55%)' }} />
-              <h4 className="text-xl font-bold text-gray-900 mb-4">Quarterly Appraisal Goals</h4>
+              <h4 className="text-xl font-bold text-gray-900 mb-4">Quarterly Appraisal Targets</h4>
               <div className="text-gray-700 text-base leading-relaxed max-w-md space-y-3">
-                <p className="font-medium">Tracking Your Progress</p>
-                <p>Your quarterly target keeps you focused on building your pipeline. Monitor intent levels to prioritize follow-ups.</p>
+                <p className="font-medium">Where do targets come from?</p>
+                <p>Targets are set by your quarterly plan. If you haven't set a plan yet, we use platform-wide benchmarks to keep you on track.</p>
                 <p className="text-sm text-gray-600">High • Medium • Low Intent</p>
               </div>
               <button
@@ -252,7 +252,7 @@ export const HeroMetrics = ({
                 >
                   {totalListings}
                 </motion.div>
-                <div className="text-xl text-white/60">/ {listingsTarget || '–'} goal listings</div>
+                <div className="text-xl text-white/60">/ {listingsTarget || '–'} listings</div>
               </div>
               <div className="relative h-3 bg-white/20 rounded-full overflow-hidden mb-6">
                 <motion.div
@@ -274,7 +274,7 @@ export const HeroMetrics = ({
                 >
                   {totalSales}
                 </motion.div>
-                <div className="text-xl text-white/60">/ {salesTarget || '–'} goal sales</div>
+                <div className="text-xl text-white/60">/ {salesTarget || '–'} sales</div>
               </div>
               <div className="relative h-3 bg-white/20 rounded-full overflow-hidden">
                 <motion.div
@@ -307,11 +307,11 @@ export const HeroMetrics = ({
           >
             <div className="h-full flex flex-col justify-center items-center text-center px-4">
               <Home className="h-12 w-12 mb-4" style={{ color: 'hsl(220, 30%, 45%)' }} />
-              <h4 className="text-xl font-bold text-gray-900 mb-4">Listings & Sales Tracking</h4>
+              <h4 className="text-xl font-bold text-gray-900 mb-4">Listings & Sales Targets</h4>
               <div className="text-gray-700 text-base leading-relaxed max-w-md space-y-3">
-                <p className="font-medium">Auto-tracked from Transact</p>
-                <p>Listings are counted when you sign a new property. Sales are counted when transactions settle.</p>
-                <p className="text-sm text-gray-600">Signed → Listed → Sold</p>
+                <p className="font-medium">Where do targets come from?</p>
+                <p>Targets are set by your quarterly plan. Without a plan, we use platform benchmarks (8 listings, 6 sales per quarter).</p>
+                <p className="text-sm text-gray-600">Auto-tracked: Signed → Listed → Sold</p>
               </div>
               <button
                 onClick={(e) => {
