@@ -192,6 +192,12 @@ export function BrandThemeProvider({ children }: { children: React.ReactNode }) 
   const applyTheme = useCallback((theme: ThemePack) => {
     const root = document.documentElement;
     
+    // Remove all theme-specific classes first
+    root.classList.remove('theme-default', 'theme-raywhite', 'theme-christmas', 'theme-ocean', 'theme-cyberpunk');
+    
+    // Add current theme class (enables theme-specific CSS effects)
+    root.classList.add(`theme-${theme.id}`);
+    
     // Apply all color tokens
     root.style.setProperty('--primary', theme.colors.primary);
     root.style.setProperty('--primary-light', theme.colors.primaryLight);
