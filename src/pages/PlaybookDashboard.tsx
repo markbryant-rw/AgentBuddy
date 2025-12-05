@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useWeeklyCCH } from '@/hooks/useWeeklyCCH';
 import { usePlaybookQuarterlyGoals } from '@/hooks/usePlaybookQuarterlyGoals';
 import { useQuarterlyAppraisals } from '@/hooks/useQuarterlyAppraisals';
+import { useTeamQuarterlyListingsSales } from '@/hooks/useTeamQuarterlyListingsSales';
+import { useTeam } from '@/hooks/useTeam';
 import { HeroMetrics } from '@/components/playbook/HeroMetrics';
 import { DailyCheckIn } from '@/components/playbook/DailyCheckIn';
 import { Button } from '@/components/ui/button';
@@ -14,22 +15,19 @@ import { format } from 'date-fns';
 
 export default function PlaybookDashboard() {
   const { user } = useAuth();
+  const { team } = useTeam();
   const navigate = useNavigate();
   const [checkInOpen, setCheckInOpen] = useState(false);
 
-  const { data: weeklyCCH, refetch: refetchCCH } = useWeeklyCCH(user?.id || '');
   const { data: playbookGoals } = usePlaybookQuarterlyGoals(user?.id || '');
   const { data: quarterlyAppraisals, refetch: refetchAppraisals } = useQuarterlyAppraisals(user?.id || '');
+  const { data: listingsSalesData } = useTeamQuarterlyListingsSales(team?.id);
 
-  const weeklyTarget = (playbookGoals && typeof playbookGoals === 'object' && 'cch_weekly_target' in playbookGoals)
-    ? playbookGoals.cch_weekly_target || 10
-    : 10;
   const quarterlyTarget = (playbookGoals && typeof playbookGoals === 'object' && 'appraisals_target' in playbookGoals)
     ? playbookGoals.appraisals_target || 40
     : 40;
 
   const handleCheckInSuccess = () => {
-    refetchCCH();
     refetchAppraisals();
   };
 
@@ -56,20 +54,16 @@ export default function PlaybookDashboard() {
 
         {/* Hero Metrics */}
         <HeroMetrics
-          weeklyCCH={weeklyCCH?.cch || 0}
-          weeklyCCHTarget={weeklyTarget}
           quarterlyAppraisals={quarterlyAppraisals?.total || 0}
           quarterlyAppraisalsTarget={quarterlyTarget}
           highAppraisals={quarterlyAppraisals?.high || 0}
           mediumAppraisals={quarterlyAppraisals?.medium || 0}
           lowAppraisals={quarterlyAppraisals?.low || 0}
-          monthlyPace={quarterlyAppraisals?.monthlyPace || 0}
-          paceMetrics={null}
-          breakdown={{
-            calls: weeklyCCH?.calls || 0,
-            appraisals: weeklyCCH?.appraisals || 0,
-            openHomes: weeklyCCH?.openHomes || 0,
-          }}
+          totalListings={listingsSalesData?.totalListings || 0}
+          totalSales={listingsSalesData?.totalSales || 0}
+          listingsSalesWeeklyData={listingsSalesData?.weeklyData || []}
+          listingsTarget={listingsSalesData?.listingsTarget}
+          salesTarget={listingsSalesData?.salesTarget}
         />
 
         {/* Action Items Row */}

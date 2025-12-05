@@ -9,12 +9,13 @@ import { DailyCheckIn } from '@/components/playbook/DailyCheckIn';
 import { MotivationalQuote } from '@/components/hub/MotivationalQuote';
 import { WeatherWidget } from '@/components/hub/WeatherWidget';
 import { DashboardQuickAccess } from '@/components/hub/DashboardQuickAccess';
-import { useCCH } from '@/hooks/useCCH';
 import { useQuarterlyAppraisals } from '@/hooks/useQuarterlyAppraisals';
+import { useTeamQuarterlyListingsSales } from '@/hooks/useTeamQuarterlyListingsSales';
 import { usePlaybookQuarterlyGoals } from '@/hooks/usePlaybookQuarterlyGoals';
 import { useWorkspaceStatuses } from '@/hooks/useWorkspaceStatuses';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { useTeam } from '@/hooks/useTeam';
 import { useAppReadiness, AppReadinessGuard } from '@/contexts/AppReadinessContext';
 import { NoOfficeConfigured } from '@/components/states/NoOfficeConfigured';
 import { useState, useEffect, useTransition } from 'react';
@@ -90,6 +91,7 @@ export default function Home() {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
   const { profile } = useProfile();
+  const { team } = useTeam();
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [clickedCard, setClickedCard] = useState<string | null>(null);
@@ -97,14 +99,13 @@ export default function Home() {
   const { isReady } = useAppReadiness();
   const { shouldShow, handleDismiss, handleSnooze, handleOptOut } = useDailyDigest();
   
-
-  // Optimize: Only fetch CCH data if ready and user is viewing metrics (Phase 2)
-  const cchData = useCCH();
-  
-  // Defer non-critical queries - these hooks use default stale times (Phase 2 optimization)
+  // Fetch quarterly appraisals
   const { data: quarterlyAppraisals } = useQuarterlyAppraisals(user?.id || '');
   const { data: quarterlyGoals } = usePlaybookQuarterlyGoals(user?.id || '');
   const { data: workspaceStatuses } = useWorkspaceStatuses();
+  
+  // Fetch listings & sales data
+  const { data: listingsSalesData } = useTeamQuarterlyListingsSales(team?.id);
 
   // Prefetch key workspaces so navigation feels instant
   useEffect(() => {
@@ -126,7 +127,6 @@ export default function Home() {
     return 'Good evening';
   };
 
-  const weeklyCCHTarget = cchData.weeklyCCHTarget || 20;
   const quarterlyAppraisalsTarget = quarterlyGoals?.appraisal_target || 65;
 
   const handleCardClick = (route: string, id: string) => {
@@ -183,20 +183,16 @@ export default function Home() {
             className="mb-16"
           >
             <HeroMetrics
-              weeklyCCH={cchData.weeklyCCH}
-              weeklyCCHTarget={weeklyCCHTarget}
               quarterlyAppraisals={quarterlyAppraisals?.total || 0}
               quarterlyAppraisalsTarget={quarterlyAppraisalsTarget}
               highAppraisals={quarterlyAppraisals?.high || 0}
               mediumAppraisals={quarterlyAppraisals?.medium || 0}
               lowAppraisals={quarterlyAppraisals?.low || 0}
-              monthlyPace={quarterlyAppraisals?.monthlyPace || 0}
-              paceMetrics={cchData.paceMetrics}
-              breakdown={{
-                calls: cchData.weeklyBreakdown.calls,
-                appraisals: cchData.weeklyBreakdown.appraisals,
-                openHomes: cchData.weeklyBreakdown.open_homes,
-              }}
+              totalListings={listingsSalesData?.totalListings || 0}
+              totalSales={listingsSalesData?.totalSales || 0}
+              listingsSalesWeeklyData={listingsSalesData?.weeklyData || []}
+              listingsTarget={listingsSalesData?.listingsTarget}
+              salesTarget={listingsSalesData?.salesTarget}
             />
           </motion.div>
         )}
@@ -325,7 +321,6 @@ export default function Home() {
           onOpenChange={setCheckInOpen}
           userId={user?.id || ''}
           onSuccess={() => {
-            cchData.refetch();
             setCheckInOpen(false);
           }}
         />
