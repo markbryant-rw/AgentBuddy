@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { queryClient } from "@/lib/queryClient";
 import { ThemeProvider } from "next-themes";
+import { BrandThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TeamProvider } from "@/hooks/useTeam";
 import { AgencyProvider } from "@/hooks/useAgency";
@@ -132,6 +133,7 @@ const KnowledgeBaseAnalytics = lazy(() => import("./pages/KnowledgeBaseAnalytics
 const LibraryManagement = lazy(() => import("./pages/LibraryManagement"));
 const AppraisalTemplateLibrary = lazy(() => import("./pages/appraisal-templates/AppraisalTemplateLibrary"));
 const AppraisalTemplateEditor = lazy(() => import("./pages/appraisal-templates/AppraisalTemplateEditor"));
+const DesignSystem = lazy(() => import("./pages/DesignSystem"));
 
 const AppContent = () => {
   useEffect(() => {
@@ -263,6 +265,7 @@ const AppContent = () => {
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
+                <Route path="/design-system" element={<DesignSystem />} />
               </Routes>
       </Suspense>
     </>
@@ -273,22 +276,24 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-            <AuthProvider>
-              <TeamProvider>
-                <AppReadinessProvider>
-                  <AgencyProvider>
-                    <RadixDropdownDebugger />
-                    <AppContent />
-                  </AgencyProvider>
-                </AppReadinessProvider>
-              </TeamProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
+        <BrandThemeProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <AuthProvider>
+                <TeamProvider>
+                  <AppReadinessProvider>
+                    <AgencyProvider>
+                      <RadixDropdownDebugger />
+                      <AppContent />
+                    </AgencyProvider>
+                  </AppReadinessProvider>
+                </TeamProvider>
+              </AuthProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </BrandThemeProvider>
       </ThemeProvider>
     </QueryClientProvider>
   </ErrorBoundary>
