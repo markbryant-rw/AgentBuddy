@@ -10,7 +10,7 @@ import { getRoleBasedRedirect } from '@/lib/roleRedirect';
 export const useRoleSwitcher = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, setActiveRoleState } = useAuth();
 
   // Fetch user's available roles
   const { data: availableRoles = [], isLoading: rolesLoading } = useQuery({
@@ -71,8 +71,10 @@ export const useRoleSwitcher = () => {
       console.log('[RoleSwitcher] Success! Result:', result);
       const role = result.role;
       
-      // Update the query cache immediately with the new role (optimistic)
+      // CRITICAL: Update both React Query cache AND AuthContext state
+      // This ensures useAuth().activeRole is immediately correct
       queryClient.setQueryData(['active-role', user?.id], role);
+      setActiveRoleState(role);
       
       // Then invalidate to refetch fresh data in background
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
