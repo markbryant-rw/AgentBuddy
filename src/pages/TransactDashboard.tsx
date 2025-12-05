@@ -1,10 +1,13 @@
 import { FileText } from 'lucide-react';
-import { useTransactions } from '@/hooks/useTransactions';
-import { usePastSales } from '@/hooks/usePastSales';
+import { useState } from 'react';
+import { useTransactions, Transaction } from '@/hooks/useTransactions';
+import { usePastSales, PastSale } from '@/hooks/usePastSales';
 import { useTeam } from '@/hooks/useTeam';
 import { useTransactionGeocoding } from '@/hooks/useTransactionGeocoding';
 import TransactNavigationCards from '@/components/transact/TransactNavigationCards';
 import TransactMap from '@/components/transact/TransactMap';
+import { TransactionDetailDrawer } from '@/components/transaction-management/TransactionDetailDrawer';
+import PastSaleDetailDialog from '@/components/past-sales/PastSaleDetailDialog';
 import { calculatePriceAlignment } from '@/lib/priceAlignmentUtils';
 import { calculateDaysUntilExpiry, getExpiryStatus } from '@/lib/listingExpiryUtils';
 
@@ -13,6 +16,29 @@ const TransactDashboard = () => {
   const { transactions, isLoading: transactionsLoading } = useTransactions();
   const { pastSales, isLoading: pastSalesLoading } = usePastSales(team?.id);
   const { geocodeAll, isGeocoding } = useTransactionGeocoding();
+
+  // Detail drawer/dialog state
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [transactionDrawerOpen, setTransactionDrawerOpen] = useState(false);
+  const [selectedPastSale, setSelectedPastSale] = useState<PastSale | null>(null);
+  const [pastSaleDialogOpen, setPastSaleDialogOpen] = useState(false);
+
+  // Handlers for map clicks
+  const handleTransactionClick = (transactionId: string) => {
+    const transaction = transactions.find(t => t.id === transactionId);
+    if (transaction) {
+      setSelectedTransaction(transaction);
+      setTransactionDrawerOpen(true);
+    }
+  };
+
+  const handlePastSaleClick = (pastSaleId: string) => {
+    const sale = pastSales.find(s => s.id === pastSaleId);
+    if (sale) {
+      setSelectedPastSale(sale);
+      setPastSaleDialogOpen(true);
+    }
+  };
 
   // Active transactions stats
   const activeTransactions = transactions.filter(t => t.stage !== 'settled' && !t.archived);
@@ -62,7 +88,6 @@ const TransactDashboard = () => {
     return settlementDate >= quarterStart;
   });
 
-  const totalSalesValue = soldSales.reduce((sum, s) => sum + (s.sale_price || 0), 0);
   const conversionRate = pastSales.length > 0 
     ? Math.round((soldSales.length / pastSales.length) * 100)
     : 0;
@@ -149,8 +174,24 @@ const TransactDashboard = () => {
           pastSales={pastSales}
           onAutoGeocode={() => geocodeAll(transactions)}
           isGeocoding={isGeocoding}
+          onTransactionClick={handleTransactionClick}
+          onPastSaleClick={handlePastSaleClick}
         />
       </div>
+
+      {/* Transaction Detail Drawer */}
+      <TransactionDetailDrawer
+        transaction={selectedTransaction}
+        open={transactionDrawerOpen}
+        onOpenChange={setTransactionDrawerOpen}
+      />
+
+      {/* Past Sale Detail Dialog */}
+      <PastSaleDetailDialog
+        pastSale={selectedPastSale || undefined}
+        isOpen={pastSaleDialogOpen}
+        onClose={() => setPastSaleDialogOpen(false)}
+      />
     </div>
   );
 };

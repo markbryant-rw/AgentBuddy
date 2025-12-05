@@ -1,7 +1,7 @@
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Pencil, FileText, CheckSquare } from 'lucide-react';
+import { Calendar, Pencil, FileText, CheckSquare, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Transaction } from '@/hooks/useTransactions';
 import { useMemo, useState } from 'react';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { VendorReportingDialog } from '@/components/vendor-reporting/VendorReportingDialog';
 import { DealHistoryBadge } from './DealHistoryBadge';
 import { useTransactionDocuments } from '@/hooks/useTransactionDocuments';
-
+import { calculateDaysUntilExpiry, getExpiryStatus } from '@/lib/listingExpiryUtils';
 interface TransactionKanbanCardProps {
   transaction: Transaction;
   onClick: () => void;
@@ -226,12 +226,30 @@ export const TransactionKanbanCard = ({ transaction, onClick, onEdit }: Transact
           
           {transaction.stage === 'live' && (
             <>
-              {transaction.listing_expires_date && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span className="truncate">Expires: {format(new Date(transaction.listing_expires_date), 'dd MMM')}</span>
-                </div>
-              )}
+              {transaction.listing_expires_date && (() => {
+                const daysUntilExpiry = calculateDaysUntilExpiry(transaction.listing_expires_date);
+                const expiryStatus = getExpiryStatus(daysUntilExpiry);
+                return (
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span className="truncate">Expires: {format(new Date(transaction.listing_expires_date), 'dd MMM')}</span>
+                    </div>
+                    <Badge className={cn(
+                      "h-5 px-1.5 text-[10px] font-semibold",
+                      expiryStatus.status === 'critical' && "bg-red-500 hover:bg-red-500 text-white",
+                      expiryStatus.status === 'expired' && "bg-red-700 hover:bg-red-700 text-white",
+                      expiryStatus.status === 'warning' && "bg-orange-500 hover:bg-orange-500 text-white",
+                      expiryStatus.status === 'watch' && "bg-yellow-500 hover:bg-yellow-500 text-black",
+                      expiryStatus.status === 'good' && "bg-green-500 hover:bg-green-500 text-white",
+                      expiryStatus.status === 'unknown' && "bg-muted text-muted-foreground"
+                    )}>
+                      {expiryStatus.status === 'critical' && <AlertTriangle className="h-3 w-3 mr-0.5" />}
+                      {expiryStatus.status === 'expired' ? 'EXPIRED' : daysUntilExpiry !== null ? `${daysUntilExpiry}d` : '-'}
+                    </Badge>
+                  </div>
+                );
+              })()}
               {transaction.auction_deadline_date && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Calendar className="h-3 w-3" />

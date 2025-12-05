@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Maximize2, X, RefreshCw, User, DollarSign, Calendar, CheckCircle, AlertTriangle, Clock, ListTodo } from 'lucide-react';
+import { Maximize2, X, RefreshCw, User, DollarSign, Calendar, CheckCircle, AlertTriangle, Clock, ExternalLink } from 'lucide-react';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { cn } from '@/lib/utils';
 import { calculatePriceAlignment } from '@/lib/priceAlignmentUtils';
+import { calculateDaysUntilExpiry, getExpiryStatus } from '@/lib/listingExpiryUtils';
 import { differenceInDays, parseISO, format } from 'date-fns';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -65,6 +66,8 @@ interface TransactMapProps {
   pastSales: PastSale[];
   onAutoGeocode?: () => void;
   isGeocoding?: boolean;
+  onTransactionClick?: (transactionId: string) => void;
+  onPastSaleClick?: (pastSaleId: string) => void;
 }
 
 // Helper to create avatar icon for map markers
@@ -98,7 +101,7 @@ const createAvatarIcon = (avatarUrl: string | null, name: string, borderColor: s
   });
 };
 
-const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: TransactMapProps) => {
+const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding, onTransactionClick, onPastSaleClick }: TransactMapProps) => {
   const { members } = useTeamMembers();
   const [showTransactions, setShowTransactions] = useState(true);
   const [showPastSales, setShowPastSales] = useState(true);
@@ -338,15 +341,12 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
       ? `${transaction.vendor_names[0].first_name || ''} ${transaction.vendor_names[0].last_name || ''}`.trim()
       : null;
     
-    // Calculate Days on Market
-    const daysOnMarket = transaction.live_date 
-      ? differenceInDays(new Date(), parseISO(transaction.live_date))
-      : null;
+    // Calculate expiry
+    const daysUntilExpiry = calculateDaysUntilExpiry(transaction.listing_expires_date);
+    const expiryStatus = getExpiryStatus(daysUntilExpiry);
     
     // Calculate price alignment
     const priceAlignment = calculatePriceAlignment(transaction.vendor_price, transaction.team_price);
-    const hasTaskProgress = transaction.tasks_total > 0;
-    const taskPercentage = hasTaskProgress ? Math.round((transaction.tasks_done / transaction.tasks_total) * 100) : 0;
     
     const priceDelta = transaction.vendor_price && transaction.team_price 
       ? transaction.vendor_price - transaction.team_price 
@@ -354,123 +354,111 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
 
     const stageGradient = STAGE_GRADIENTS[transaction.stage] || STAGE_GRADIENTS.signed;
 
+    const getExpiryBgClass = () => {
+      switch (expiryStatus.status) {
+        case 'critical':
+        case 'expired': return 'bg-red-50 dark:bg-red-950/30';
+        case 'warning': return 'bg-orange-50 dark:bg-orange-950/30';
+        case 'watch': return 'bg-yellow-50 dark:bg-yellow-950/30';
+        case 'good': return 'bg-green-50 dark:bg-green-950/30';
+        default: return 'bg-muted/30';
+      }
+    };
+
+    const getExpiryTextClass = () => {
+      switch (expiryStatus.status) {
+        case 'critical':
+        case 'expired': return 'text-red-700 dark:text-red-300';
+        case 'warning': return 'text-orange-700 dark:text-orange-300';
+        case 'watch': return 'text-yellow-700 dark:text-yellow-300';
+        case 'good': return 'text-green-700 dark:text-green-300';
+        default: return 'text-muted-foreground';
+      }
+    };
+
     return (
       <Popup>
-        <div className="w-[320px] overflow-hidden">
+        <div className="w-[260px] overflow-hidden">
           {/* Colored Header Band */}
           <div 
-            className="px-4 py-3 text-white"
+            className="px-3 py-2 text-white"
             style={{ background: stageGradient }}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0 pr-2">
-                <h3 className="font-bold text-base leading-tight truncate">{transaction.address}</h3>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-sm leading-tight truncate">{transaction.address}</h3>
                 {transaction.suburb && (
-                  <p className="text-white/80 text-sm mt-0.5">{transaction.suburb}</p>
+                  <p className="text-white/80 text-xs mt-0.5">{transaction.suburb}</p>
                 )}
               </div>
-              <span className="flex-shrink-0 px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded text-xs font-semibold uppercase">
+              <span className="flex-shrink-0 px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-semibold uppercase">
                 {getStageLabel(transaction.stage)}
               </span>
             </div>
           </div>
 
           {/* Content Body */}
-          <div className="bg-card p-4">
-            {/* Salesperson Card */}
+          <div className="bg-card p-3 space-y-2">
+            {/* Salesperson Row - Compact */}
             {assignee && (
-              <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-muted/50 border border-border/50">
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+                <Avatar className="h-7 w-7 ring-1 ring-primary/20">
                   <AvatarImage src={assignee.avatar_url || ''} />
-                  <AvatarFallback className="text-sm bg-primary text-primary-foreground font-semibold">
+                  <AvatarFallback className="text-[10px] bg-primary text-primary-foreground font-semibold">
                     {assignee.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{assignee.full_name}</p>
-                  <p className="text-xs text-muted-foreground">Lead Salesperson</p>
+                  <p className="text-xs font-semibold text-foreground truncate">{assignee.full_name}</p>
                 </div>
               </div>
             )}
 
-            {/* Vendor & Price Grid */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              {/* Vendor Card */}
-              {vendorName && (
-                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/30">
-                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                    <User className="h-3.5 w-3.5" />
-                    <span className="text-[10px] uppercase tracking-wide font-medium">Vendor</span>
-                  </div>
-                  <p className="text-sm font-semibold text-foreground truncate">{vendorName}</p>
-                </div>
-              )}
-              
-              {/* Team Price Card */}
-              {transaction.team_price && (
-                <div className="p-2.5 rounded-lg bg-muted/30 border border-border/30">
-                  <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    <span className="text-[10px] uppercase tracking-wide font-medium">Team Price</span>
-                  </div>
-                  <p className="text-sm font-bold text-foreground">${transaction.team_price.toLocaleString()}</p>
-                </div>
-              )}
-            </div>
+            {/* Vendor Row - Compact */}
+            {vendorName && (
+              <div className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30">
+                <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="text-xs text-foreground truncate">{vendorName}</span>
+              </div>
+            )}
 
-            {/* Price Alignment Section */}
+            {/* Price Alignment - Compact */}
             {priceAlignment.status !== 'pending' && (
               <div className={cn(
-                "mb-4 p-3 rounded-xl border",
+                "p-2 rounded-lg border",
                 priceAlignment.status === 'aligned' 
                   ? "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-900"
                   : "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900"
               )}>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
                     {priceAlignment.status === 'aligned' ? (
-                      <div className="p-1 rounded-full bg-green-500">
-                        <CheckCircle className="h-3.5 w-3.5 text-white" />
-                      </div>
+                      <CheckCircle className="h-3 w-3 text-green-600" />
                     ) : (
-                      <div className="p-1 rounded-full bg-red-500">
-                        <AlertTriangle className="h-3.5 w-3.5 text-white" />
-                      </div>
+                      <AlertTriangle className="h-3 w-3 text-red-600" />
                     )}
                     <span className={cn(
-                      "text-sm font-semibold",
+                      "text-xs font-medium",
                       priceAlignment.status === 'aligned' ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"
                     )}>
-                      {priceAlignment.status === 'aligned' ? 'Price Aligned' : 'Price Gap'}
+                      {priceAlignment.status === 'aligned' ? 'Aligned' : 'Gap'}
                     </span>
                   </div>
                   <span className={cn(
-                    "text-xs font-medium px-2 py-0.5 rounded-full",
+                    "text-[10px] font-medium px-1.5 py-0.5 rounded",
                     priceAlignment.status === 'aligned' 
                       ? "bg-green-200 text-green-800 dark:bg-green-900 dark:text-green-300" 
                       : "bg-red-200 text-red-800 dark:bg-red-900 dark:text-red-300"
                   )}>
-                    {priceAlignment.percentage}% diff
+                    {priceAlignment.percentage}%
                   </span>
                 </div>
-                
-                {/* Progress bar visualization */}
-                <div className="h-2 bg-white/60 dark:bg-black/20 rounded-full overflow-hidden mb-2">
-                  <div 
-                    className={cn(
-                      "h-full rounded-full transition-all",
-                      priceAlignment.status === 'aligned' ? "bg-green-500" : "bg-red-500"
-                    )}
-                    style={{ width: `${Math.min(100, 100 - priceAlignment.percentage)}%` }}
-                  />
-                </div>
-                
                 {priceDelta !== null && transaction.vendor_price && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">Vendor: ${transaction.vendor_price.toLocaleString()}</span>
+                  <div className="flex items-center justify-between text-[10px] mt-1">
+                    <span className="text-muted-foreground">${transaction.vendor_price.toLocaleString()}</span>
                     <span className={cn(
                       "font-medium",
-                      priceDelta > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                      priceDelta > 0 ? "text-green-600" : "text-red-600"
                     )}>
                       {priceDelta > 0 ? '+' : ''}${priceDelta.toLocaleString()}
                     </span>
@@ -479,52 +467,47 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
               </div>
             )}
 
-            {/* Stats Row - Mini Cards */}
-            <div className="grid grid-cols-3 gap-2">
-              {daysOnMarket !== null && daysOnMarket >= 0 && (
-                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
-                  <div className="flex items-center justify-center gap-1 text-blue-600 dark:text-blue-400 mb-0.5">
-                    <Clock className="h-3.5 w-3.5" />
-                  </div>
-                  <p className="text-lg font-bold text-blue-700 dark:text-blue-300">{daysOnMarket}</p>
-                  <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wide">DOM</p>
+            {/* Stats Row - Expiry + Settlement */}
+            <div className="grid grid-cols-2 gap-2">
+              {/* Expiry */}
+              <div className={cn("p-1.5 rounded-lg text-center", getExpiryBgClass())}>
+                <div className="flex items-center justify-center gap-1 mb-0.5">
+                  <Clock className="h-3 w-3" />
                 </div>
-              )}
+                <p className={cn("text-sm font-bold", getExpiryTextClass())}>
+                  {expiryStatus.status === 'expired' ? 'EXP' : daysUntilExpiry !== null ? `${daysUntilExpiry}d` : '-'}
+                </p>
+                <p className="text-[9px] text-muted-foreground uppercase">
+                  {transaction.listing_expires_date ? format(parseISO(transaction.listing_expires_date), 'MMM d') : 'Expiry'}
+                </p>
+              </div>
               
-              {transaction.expected_settlement && (
-                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
-                  <div className="flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 mb-0.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                  </div>
-                  <p className="text-sm font-bold text-purple-700 dark:text-purple-300">{format(parseISO(transaction.expected_settlement), 'MMM d')}</p>
-                  <p className="text-[10px] text-purple-600/70 dark:text-purple-400/70 uppercase tracking-wide">Settle</p>
+              {/* Settlement */}
+              <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
+                <div className="flex items-center justify-center gap-1 mb-0.5">
+                  <Calendar className="h-3 w-3 text-purple-600 dark:text-purple-400" />
                 </div>
-              )}
-              
-              {hasTaskProgress && (
-                <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 text-center">
-                  <div className="flex items-center justify-center gap-1 text-amber-600 dark:text-amber-400 mb-0.5">
-                    <ListTodo className="h-3.5 w-3.5" />
-                  </div>
-                  <p className="text-lg font-bold text-amber-700 dark:text-amber-300">{transaction.tasks_done}/{transaction.tasks_total}</p>
-                  <p className="text-[10px] text-amber-600/70 dark:text-amber-400/70 uppercase tracking-wide">Tasks</p>
-                </div>
-              )}
+                <p className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                  {transaction.expected_settlement ? format(parseISO(transaction.expected_settlement), 'MMM d') : '-'}
+                </p>
+                <p className="text-[9px] text-purple-600/70 dark:text-purple-400/70 uppercase">Settle</p>
+              </div>
             </div>
 
-            {/* Task Progress Bar */}
-            {hasTaskProgress && (
-              <div className="mt-3">
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div 
-                    className={cn(
-                      "h-full rounded-full transition-all",
-                      taskPercentage === 100 ? "bg-green-500" : "bg-amber-500"
-                    )}
-                    style={{ width: `${taskPercentage}%` }}
-                  />
-                </div>
-              </div>
+            {/* View Details Button */}
+            {onTransactionClick && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full h-7 text-xs gap-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTransactionClick(transaction.id);
+                }}
+              >
+                View Details
+                <ExternalLink className="h-3 w-3" />
+              </Button>
             )}
           </div>
         </div>
@@ -603,92 +586,93 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
 
     return (
       <Popup>
-        <div className="w-[320px] overflow-hidden">
+        <div className="w-[260px] overflow-hidden">
           {/* Colored Header Band */}
           <div 
-            className="px-4 py-3 text-white"
+            className="px-3 py-2 text-white"
             style={{ background: statusGradient }}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0 pr-2">
-                <h3 className="font-bold text-base leading-tight truncate">{sale.address}</h3>
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-sm leading-tight truncate">{sale.address}</h3>
                 {sale.suburb && (
-                  <p className="text-white/80 text-sm mt-0.5">{sale.suburb}</p>
+                  <p className="text-white/80 text-xs mt-0.5">{sale.suburb}</p>
                 )}
               </div>
-              <span className="flex-shrink-0 flex items-center gap-1 px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded text-xs font-semibold uppercase">
-                {isSold && <CheckCircle className="h-3 w-3" />}
-                {isSold ? 'SOLD' : sale.status?.toUpperCase() || 'UNKNOWN'}
+              <span className="flex-shrink-0 flex items-center gap-1 px-1.5 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[10px] font-semibold uppercase">
+                {isSold && <CheckCircle className="h-2.5 w-2.5" />}
+                {isSold ? 'SOLD' : sale.status?.toUpperCase() || '?'}
               </span>
             </div>
           </div>
 
           {/* Content Body */}
-          <div className="bg-card p-4">
-            {/* Salesperson Card */}
+          <div className="bg-card p-3 space-y-2">
+            {/* Salesperson Row - Compact */}
             {salesperson && (
-              <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-muted/50 border border-border/50">
-                <Avatar className="h-10 w-10 ring-2 ring-green-500/20">
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-border/50">
+                <Avatar className="h-7 w-7 ring-1 ring-green-500/20">
                   <AvatarImage src={salesperson.avatar_url || ''} />
-                  <AvatarFallback className="text-sm bg-green-600 text-white font-semibold">
+                  <AvatarFallback className="text-[10px] bg-green-600 text-white font-semibold">
                     {salesperson.full_name?.split(' ').map(n => n[0]).join('').toUpperCase() || '??'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{salesperson.full_name}</p>
-                  <p className="text-xs text-muted-foreground">Lead Salesperson</p>
+                  <p className="text-xs font-semibold text-foreground truncate">{salesperson.full_name}</p>
                 </div>
               </div>
             )}
 
-            {/* Vendor Card */}
+            {/* Vendor Row - Compact inline */}
             {vendorName && (
-              <div className="mb-4 p-2.5 rounded-lg bg-muted/30 border border-border/30">
-                <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                  <User className="h-3.5 w-3.5" />
-                  <span className="text-[10px] uppercase tracking-wide font-medium">Vendor</span>
-                </div>
-                <p className="text-sm font-semibold text-foreground">{vendorName}</p>
+              <div className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30">
+                <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                <span className="text-xs text-foreground truncate">{vendorName}</span>
               </div>
             )}
 
-            {/* Sale Price Feature Card */}
+            {/* Sale Price - Compact */}
             {sale.sale_price && (
-              <div className="mb-4 p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 border border-green-200 dark:border-green-900 text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <div className="p-1.5 rounded-full bg-green-500">
-                    <DollarSign className="h-4 w-4 text-white" />
-                  </div>
-                </div>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-400">
+              <div className="p-2.5 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 border border-green-200 dark:border-green-900 text-center">
+                <p className="text-xl font-bold text-green-700 dark:text-green-400">
                   ${sale.sale_price.toLocaleString()}
                 </p>
-                <p className="text-xs text-green-600/70 dark:text-green-400/70 uppercase tracking-wide mt-1">Final Sale Price</p>
+                <p className="text-[9px] text-green-600/70 dark:text-green-400/70 uppercase tracking-wide">Sale Price</p>
               </div>
             )}
 
             {/* Stats Row - Mini Cards */}
             <div className="grid grid-cols-2 gap-2">
               {daysOnMarket !== null && daysOnMarket >= 0 && (
-                <div className="p-2.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
-                  <div className="flex items-center justify-center gap-1 text-blue-600 dark:text-blue-400 mb-0.5">
-                    <Clock className="h-3.5 w-3.5" />
-                  </div>
-                  <p className="text-xl font-bold text-blue-700 dark:text-blue-300">{daysOnMarket}</p>
-                  <p className="text-[10px] text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wide">Days on Market</p>
+                <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-center">
+                  <p className="text-lg font-bold text-blue-700 dark:text-blue-300">{daysOnMarket}</p>
+                  <p className="text-[9px] text-blue-600/70 dark:text-blue-400/70 uppercase">DOM</p>
                 </div>
               )}
               
               {sale.settlement_date && (
-                <div className="p-2.5 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
-                  <div className="flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 mb-0.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                  </div>
+                <div className="p-1.5 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-center">
                   <p className="text-sm font-bold text-purple-700 dark:text-purple-300">{format(parseISO(sale.settlement_date), 'MMM d')}</p>
-                  <p className="text-[10px] text-purple-600/70 dark:text-purple-400/70 uppercase tracking-wide">Settled</p>
+                  <p className="text-[9px] text-purple-600/70 dark:text-purple-400/70 uppercase">Settled</p>
                 </div>
               )}
             </div>
+
+            {/* View Details Button */}
+            {onPastSaleClick && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full h-7 text-xs gap-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPastSaleClick(sale.id);
+                }}
+              >
+                View Details
+                <ExternalLink className="h-3 w-3" />
+              </Button>
+            )}
           </div>
         </div>
       </Popup>
