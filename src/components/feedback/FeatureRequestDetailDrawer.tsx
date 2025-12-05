@@ -8,11 +8,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Calendar, User, Lightbulb, ArrowUp, Trash2, Loader2 } from "lucide-react";
+import { Calendar, User, Lightbulb, ArrowUp, Trash2, Loader2, AlertCircle, Maximize2 } from "lucide-react";
 import { format } from "date-fns";
 import { useFeatureRequestComments } from "@/hooks/useFeatureRequestComments";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureRequests } from "@/hooks/useFeatureRequests";
+import { ScreenshotLightbox } from "./ScreenshotLightbox";
 
 interface FeatureRequestDetailDrawerProps {
   requestId: string;
@@ -30,6 +31,10 @@ export function FeatureRequestDetailDrawer({ requestId, open, onClose, isAdmin }
   const [newPriority, setNewPriority] = useState('');
   const [newComment, setNewComment] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
+  const [imageLoading, setImageLoading] = useState<Record<number, boolean>>({});
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -62,10 +67,30 @@ export function FeatureRequestDetailDrawer({ requestId, open, onClose, isAdmin }
       
       setNewStatus(data.status);
       setNewPriority(data.priority || 'medium');
+      
+      // Initialize loading states for images
+      const attachments = Array.isArray(data.attachments) ? data.attachments : [];
+      if (attachments.length > 0) {
+        const loadingStates: Record<number, boolean> = {};
+        attachments.forEach((_: string, idx: number) => {
+          loadingStates[idx] = true;
+        });
+        setImageLoading(loadingStates);
+      }
+      
       return data;
     },
     enabled: !!requestId && open,
   });
+
+  const handleImageLoad = (idx: number) => {
+    setImageLoading(prev => ({ ...prev, [idx]: false }));
+  };
+
+  const handleImageError = (idx: number) => {
+    setImageErrors(prev => ({ ...prev, [idx]: true }));
+    setImageLoading(prev => ({ ...prev, [idx]: false }));
+  };
 
   const { comments, addComment, deleteComment } = useFeatureRequestComments(requestId);
 
@@ -198,6 +223,76 @@ export function FeatureRequestDetailDrawer({ requestId, open, onClose, isAdmin }
             <h4 className="font-medium mb-2">Description</h4>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap">{request.description}</p>
           </div>
+
+          {/* Attachments/Screenshots */}
+          {(() => {
+            const attachments = Array.isArray(request.attachments) ? request.attachments : [];
+            const validAttachments = attachments.filter((url: string) => 
+              url && typeof url === 'string' && url.trim().length > 0 && url.startsWith('http')
+            );
+            return validAttachments.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium">Screenshots ({validAttachments.length})</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {validAttachments.map((url: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="group relative block rounded-lg overflow-hidden border hover:border-primary transition-colors cursor-pointer"
+                      onClick={() => {
+                        if (!imageErrors[idx]) {
+                          setLightboxIndex(idx);
+                          setLightboxOpen(true);
+                        }
+                      }}
+                    >
+                      {imageLoading[idx] && !imageErrors[idx] && (
+                        <div className="w-full h-32 flex items-center justify-center bg-muted">
+                          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                      {imageErrors[idx] ? (
+                        <div className="w-full h-32 flex flex-col items-center justify-center bg-muted space-y-2">
+                          <AlertCircle className="h-6 w-6 text-muted-foreground" />
+                          <p className="text-xs text-muted-foreground">Failed to load</p>
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary hover:underline mt-1"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Open in new tab
+                          </a>
+                        </div>
+                      ) : (
+                        <>
+                          <img
+                            src={url}
+                            alt={`Screenshot ${idx + 1}`}
+                            className="w-full h-32 object-cover group-hover:scale-105 transition-transform screenshot-thumbnail"
+                            onLoad={() => handleImageLoad(idx)}
+                            onError={() => handleImageError(idx)}
+                            style={{ display: imageLoading[idx] ? 'none' : 'block' }}
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                            <Maximize2 className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {lightboxOpen && (
+                  <ScreenshotLightbox
+                    images={validAttachments}
+                    initialIndex={lightboxIndex}
+                    onClose={() => setLightboxOpen(false)}
+                  />
+                )}
+              </div>
+            );
+          })()}
 
           {/* Metadata */}
           <div className="space-y-2 text-sm">
