@@ -18,7 +18,6 @@ export interface DailyPlannerItem {
   notes: string | null;
   estimated_minutes: number | null;
   size_category: 'big' | 'medium' | 'little';
-  order_within_category: number;
   created_at: string;
   updated_at: string;
   assigned_users: Array<{
@@ -60,7 +59,6 @@ export function useDailyPlanner(date: Date = new Date()) {
       return (data || []).map((item: any) => ({
         ...item,
         scheduled_date: item.date,
-        order_within_category: item.position,
         assigned_users: (item.assignments || []).map((a: any) => a.profiles).filter(Boolean),
       }));
     },
@@ -81,13 +79,10 @@ export function useDailyPlanner(date: Date = new Date()) {
     }) => {
       if (!team?.id || !user?.id) throw new Error('Missing team or user');
 
-      // Get the max position and category order
+      // Get the max position
       const categoryItems = items.filter(i => i.size_category === sizeCategory);
       const maxPosition = items.length > 0 
         ? Math.max(...items.map(i => i.position)) 
-        : -1;
-      const maxCategoryOrder = categoryItems.length > 0
-        ? Math.max(...categoryItems.map(i => i.order_within_category))
         : -1;
 
       const { data: item, error: itemError } = await supabase
@@ -106,8 +101,6 @@ export function useDailyPlanner(date: Date = new Date()) {
         .single();
 
       if (itemError) throw itemError;
-
-      // No assignments table, just single user ownership
 
       return item;
     },
@@ -159,7 +152,7 @@ export function useDailyPlanner(date: Date = new Date()) {
       // Get only UNCOMPLETED items in the same category
       const categoryItems = items
         .filter(i => i.size_category === item.size_category && !i.completed)
-        .sort((a, b) => (a.order_within_category || 0) - (b.order_within_category || 0));
+        .sort((a, b) => (a.position || 0) - (b.position || 0));
 
       const oldIndex = categoryItems.findIndex(i => i.id === itemId);
       
@@ -189,7 +182,7 @@ export function useDailyPlanner(date: Date = new Date()) {
         if (item) {
           const categoryItems = previousItems
             .filter(i => i.size_category === item.size_category && !i.completed)
-            .sort((a, b) => a.order_within_category - b.order_within_category);
+            .sort((a, b) => a.position - b.position);
           
           const oldIndex = categoryItems.findIndex(i => i.id === itemId);
           const reordered = [...categoryItems];
@@ -201,7 +194,7 @@ export function useDailyPlanner(date: Date = new Date()) {
             const reorderedItem = reordered.find(r => r.id === prevItem.id);
             if (reorderedItem) {
               const newOrder = reordered.indexOf(reorderedItem);
-              return { ...prevItem, order_within_category: newOrder };
+              return { ...prevItem, position: newOrder };
             }
             return prevItem;
           });
@@ -236,13 +229,13 @@ export function useDailyPlanner(date: Date = new Date()) {
       if (!item.completed) {
         // Marking as COMPLETE: Move to back of queue
         const maxUncompletedOrder = uncompletedItems.length > 0
-          ? Math.max(...uncompletedItems.map(i => i.order_within_category))
+          ? Math.max(...uncompletedItems.map(i => i.position))
           : -1;
         newOrder = maxUncompletedOrder + 1000; // Large gap to ensure it's at the back
       } else {
         // Marking as UNCOMPLETE: Place at end of live tasks
         const maxUncompletedOrder = uncompletedItems.length > 0
-          ? Math.max(...uncompletedItems.map(i => i.order_within_category))
+          ? Math.max(...uncompletedItems.map(i => i.position))
           : -1;
         newOrder = maxUncompletedOrder + 1;
       }
@@ -273,12 +266,12 @@ export function useDailyPlanner(date: Date = new Date()) {
           let newOrder: number;
           if (!item.completed) {
             const maxUncompletedOrder = uncompletedItems.length > 0
-              ? Math.max(...uncompletedItems.map(i => i.order_within_category))
+              ? Math.max(...uncompletedItems.map(i => i.position))
               : -1;
             newOrder = maxUncompletedOrder + 1000;
           } else {
             const maxUncompletedOrder = uncompletedItems.length > 0
-              ? Math.max(...uncompletedItems.map(i => i.order_within_category))
+              ? Math.max(...uncompletedItems.map(i => i.position))
               : -1;
             newOrder = maxUncompletedOrder + 1;
           }
@@ -290,7 +283,7 @@ export function useDailyPlanner(date: Date = new Date()) {
                   completed: !prevItem.completed,
                   completed_at: !prevItem.completed ? new Date().toISOString() : null,
                   completed_by: !prevItem.completed ? user?.id : null,
-                  order_within_category: newOrder,
+                  position: newOrder,
                 }
               : prevItem
           );
@@ -498,13 +491,14 @@ export function useDailyPlanner(date: Date = new Date()) {
     toggleComplete: (id: string) => toggleCompleteMutation.mutate(id),
     updateAssignments: (data: Parameters<typeof updateAssignmentsMutation.mutate>[0]) => 
       updateAssignmentsMutation.mutate(data),
-    rollForward: (targetDate: Date) => rollForwardMutation.mutate({
-      targetDate,
-      currentDateStr: dateStr,
-      teamId: team?.id || '',
-    }),
+    rollForward: (data: Parameters<typeof rollForwardMutation.mutate>[0]) => 
+      rollForwardMutation.mutate(data),
     moveToDate: (data: Parameters<typeof moveToDateMutation.mutate>[0]) => 
       moveToDateMutation.mutate(data),
-    uncompletedCount: items.filter(i => !i.completed).length,
+    isCreating: createItemMutation.isPending,
+    isUpdating: updateItemMutation.isPending,
+    isDeleting: deleteItemMutation.isPending,
+    isRollingForward: rollForwardMutation.isPending,
+    isMovingToDate: moveToDateMutation.isPending,
   };
 }

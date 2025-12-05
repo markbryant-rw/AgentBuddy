@@ -49,7 +49,6 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
     address: "",
     suburb: "",
     status: "won_and_sold",
-    referral_potential: "medium",
   });
 
   useEffect(() => {
@@ -61,7 +60,6 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
         address: "",
         suburb: "",
         status: "won_and_sold",
-        referral_potential: "medium",
       });
       setSalePriceDisplay("");
     }

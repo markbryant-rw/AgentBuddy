@@ -49,6 +49,7 @@ export interface BuyerDetails {
   next_followup_date?: string;
 }
 
+// Interface aligned with actual database schema
 export interface PastSale {
   id: string;
   team_id: string;
@@ -59,45 +60,32 @@ export interface PastSale {
   longitude?: number;
   geocoded_at?: string;
   geocode_error?: string;
-  cabinet_number?: string;
-  listing_type?: string;
   status: string;
   lost_reason?: string;
-  won_date?: string;
   lost_date?: string;
   appraisal_low?: number;
   appraisal_high?: number;
-  vendor_expected_price?: number;
-  team_recommended_price?: number;
   listing_price?: number;
   sale_price?: number;
+  sale_date?: string;
   commission_rate?: number;
-  commission_amount?: number;
+  commission?: number;
   settlement_date?: string;
   first_contact_date?: string;
   appraisal_date?: string;
   listing_signed_date?: string;
   listing_live_date?: string;
   unconditional_date?: string;
-  days_to_convert?: number;
   days_on_market?: number;
   lead_source?: string;
   lead_source_detail?: string;
-  marketing_spend?: number;
-  matterport_url?: string;
-  video_tour_url?: string;
-  listing_url?: string;
   vendor_details?: VendorDetails;
   buyer_details?: BuyerDetails;
-  referral_potential?: string;
-  last_contacted_date?: string;
-  next_followup_date?: string;
-  referral_tags?: string[];
-  relationship_notes?: string;
-  attachments?: any[];
-  photos?: string[];
-  lead_salesperson?: string;
-  secondary_salesperson?: string;
+  agent_id?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  property_type?: string;
+  notes?: string;
   created_by: string;
   created_at: string;
   updated_at: string;

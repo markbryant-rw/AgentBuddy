@@ -169,7 +169,7 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
       
       // Salesperson filter
       if (salespersonFilter.length > 0) {
-        if (!sale.lead_salesperson || !salespersonFilter.includes(sale.lead_salesperson)) return false;
+        if (!sale.agent_id || !salespersonFilter.includes(sale.agent_id)) return false;
       }
       
       return true;
@@ -584,7 +584,7 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
 
   const renderPastSalePopup = (sale: PastSale) => {
     const isSold = sale.status === 'sold' || sale.status === 'won_and_sold';
-    const salesperson = sale.lead_salesperson ? getMemberById(sale.lead_salesperson) : null;
+    const salesperson = sale.agent_id ? getMemberById(sale.agent_id) : null;
     
     const vendorName = sale.vendor_details?.primary 
       ? `${sale.vendor_details.primary.first_name || ''} ${sale.vendor_details.primary.last_name || ''}`.trim()
@@ -696,7 +696,7 @@ const TransactMap = ({ transactions, pastSales, onAutoGeocode, isGeocoding }: Tr
   };
 
   const renderPastSaleMarker = (sale: PastSale) => {
-    const member = sale.lead_salesperson ? getMemberById(sale.lead_salesperson) : null;
+    const member = sale.agent_id ? getMemberById(sale.agent_id) : null;
     const statusColor = sale.status === 'sold' || sale.status === 'won_and_sold' ? '#22c55e' : '#ef4444';
 
     if (showAvatars && member) {

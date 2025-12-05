@@ -53,7 +53,7 @@ const PastSalesMap = ({ pastSales, onOpenDetail }: PastSalesMapProps) => {
     }
     
     if (salespersonFilter.length > 0) {
-      result = result.filter((s) => s.lead_salesperson && salespersonFilter.includes(s.lead_salesperson));
+      result = result.filter((s) => s.agent_id && salespersonFilter.includes(s.agent_id));
     }
     
     return result;
@@ -207,7 +207,7 @@ const PastSalesMap = ({ pastSales, onOpenDetail }: PastSalesMapProps) => {
               />
               <MapBoundsUpdater pastSales={filteredSales} />
               {filteredSales.map((sale) => {
-                const salesperson = teamMembers.find(m => m.id === sale.lead_salesperson);
+                const salesperson = teamMembers.find(m => m.id === sale.agent_id);
                 const markerColor = getMarkerColor(sale.status);
                 
                 if (showAvatars && salesperson) {

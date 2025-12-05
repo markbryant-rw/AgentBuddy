@@ -90,19 +90,29 @@ export const usePastSalesAnalytics = (pastSales: PastSale[]) => {
     const wonListings = pastSales.filter((s) => s.status === "won_and_sold" || s.status === "won_and_live").length;
     const conversionRate = totalListings > 0 ? (wonListings / totalListings) * 100 : 0;
 
-    // Average days to convert (lead to listing signed)
-    const salesWithConversion = pastSales.filter((s) => s.days_to_convert);
+    // Average days to convert (calculate from first_contact_date to listing_signed_date)
+    const salesWithConversion = pastSales.filter((s) => s.first_contact_date && s.listing_signed_date);
     const averageDaysToConvert =
       salesWithConversion.length > 0
-        ? salesWithConversion.reduce((sum, sale) => sum + (sale.days_to_convert || 0), 0) /
-          salesWithConversion.length
+        ? salesWithConversion.reduce((sum, sale) => {
+            const firstContact = new Date(sale.first_contact_date!);
+            const listingSigned = new Date(sale.listing_signed_date!);
+            const days = Math.ceil((listingSigned.getTime() - firstContact.getTime()) / (1000 * 60 * 60 * 24));
+            return sum + Math.max(0, days);
+          }, 0) / salesWithConversion.length
         : 0;
 
-    // Referral intelligence
-    const highPotentialReferrals = pastSales.filter((s) => s.referral_potential === "high");
+    // Referral intelligence (from vendor_details)
+    const highPotentialReferrals = pastSales.filter((s) => 
+      s.vendor_details?.primary?.referral_potential === "high"
+    );
     const upcomingFollowups = pastSales
-      .filter((s) => s.next_followup_date)
-      .sort((a, b) => (a.next_followup_date || "").localeCompare(b.next_followup_date || ""))
+      .filter((s) => s.vendor_details?.primary?.next_followup_date)
+      .sort((a, b) => 
+        (a.vendor_details?.primary?.next_followup_date || "").localeCompare(
+          b.vendor_details?.primary?.next_followup_date || ""
+        )
+      )
       .slice(0, 10);
 
     return {
