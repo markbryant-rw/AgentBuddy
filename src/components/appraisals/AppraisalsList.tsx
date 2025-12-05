@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { LoggedAppraisal, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
+import { LoggedAppraisal, GroupedProperty, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import {
   Table,
@@ -20,12 +20,14 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Search, Calendar, Trash2, RotateCcw, X } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Search, Calendar, Trash2, RotateCcw, X, LayoutList, Building2 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, subMonths } from 'date-fns';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useFinancialYear } from '@/hooks/useFinancialYear';
 import { getCurrentQuarter } from '@/utils/quarterCalculations';
 import { cn } from '@/lib/utils';
+import { PropertyAppraisalCard } from './PropertyAppraisalCard';
 
 interface AppraisalsListProps {
   appraisals: LoggedAppraisal[];
@@ -34,9 +36,10 @@ interface AppraisalsListProps {
 }
 
 type DateRange = 'all' | 'week' | 'month' | 'year' | 'currentQuarter' | 'lastQuarter' | 'custom';
+type ViewMode = 'property' | 'visit';
 
 const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsListProps) => {
-  const { updateAppraisal, deleteAppraisal } = useLoggedAppraisals();
+  const { updateAppraisal, deleteAppraisal, groupedAppraisals } = useLoggedAppraisals();
   const { members } = useTeamMembers();
   const { usesFinancialYear, fyStartMonth } = useFinancialYear();
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +49,7 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
   const [dateRange, setDateRange] = useState<DateRange>('all');
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
   const [selectedAppraisals, setSelectedAppraisals] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<ViewMode>('property');
 
   const filteredAppraisals = useMemo(() => {
     return appraisals.filter(appraisal => {
@@ -92,6 +96,55 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
       return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate && matchesAgent;
     });
   }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
+
+  // Filter grouped properties based on same criteria
+  const filteredGroupedAppraisals = useMemo(() => {
+    return groupedAppraisals.filter(property => {
+      const appraisal = property.latestAppraisal;
+      
+      const matchesSearch = 
+        appraisal.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (appraisal.vendor_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        appraisal.suburb?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStage = stageFilter === 'all' || appraisal.stage === stageFilter;
+      const matchesOutcome = outcomeFilter === 'all' || appraisal.outcome === outcomeFilter;
+      const matchesIntent = intentFilter === 'all' || appraisal.intent === intentFilter;
+      const matchesAgent = selectedAgents.size === 0 || (appraisal.agent_id && selectedAgents.has(appraisal.agent_id));
+
+      // Date range filtering
+      let matchesDate = true;
+      if (dateRange !== 'all') {
+        const appraisalDate = parseISO(appraisal.appraisal_date);
+        const now = new Date();
+        
+        switch (dateRange) {
+          case 'week':
+            matchesDate = appraisalDate >= startOfWeek(now) && appraisalDate <= endOfWeek(now);
+            break;
+          case 'month':
+            matchesDate = appraisalDate >= startOfMonth(now) && appraisalDate <= endOfMonth(now);
+            break;
+          case 'year':
+            matchesDate = appraisalDate >= startOfYear(now) && appraisalDate <= endOfYear(now);
+            break;
+          case 'currentQuarter': {
+            const currentQuarter = getCurrentQuarter(usesFinancialYear, fyStartMonth, now);
+            matchesDate = appraisalDate >= currentQuarter.startDate && appraisalDate <= currentQuarter.endDate;
+            break;
+          }
+          case 'lastQuarter': {
+            const threeMonthsAgo = subMonths(now, 3);
+            const lastQuarter = getCurrentQuarter(usesFinancialYear, fyStartMonth, threeMonthsAgo);
+            matchesDate = appraisalDate >= lastQuarter.startDate && appraisalDate <= lastQuarter.endDate;
+            break;
+          }
+        }
+      }
+
+      return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate && matchesAgent;
+    });
+  }, [groupedAppraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
 
   const toggleAgent = (agentId: string) => {
     const newSelected = new Set(selectedAgents);
@@ -315,123 +368,162 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
         </Select>
       </div>
 
-      {/* Results count */}
-      <div className="text-sm text-muted-foreground">
-        Showing {filteredAppraisals.length} of {appraisals.length} appraisals
+      {/* Results count and view toggle */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-muted-foreground">
+          {viewMode === 'property' ? (
+            <>Showing {filteredGroupedAppraisals.length} properties ({filteredAppraisals.length} visits)</>
+          ) : (
+            <>Showing {filteredAppraisals.length} of {appraisals.length} appraisals</>
+          )}
+        </div>
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+          <TabsList className="h-8">
+            <TabsTrigger value="property" className="h-7 px-3 text-xs gap-1.5">
+              <Building2 className="h-3.5 w-3.5" />
+              Properties
+            </TabsTrigger>
+            <TabsTrigger value="visit" className="h-7 px-3 text-xs gap-1.5">
+              <LayoutList className="h-3.5 w-3.5" />
+              All Visits
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Table */}
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Date</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Vendor</TableHead>
-              <TableHead>Agent</TableHead>
-              <TableHead>Intent</TableHead>
-              <TableHead>Value</TableHead>
-              <TableHead>Last Contact</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredAppraisals.length === 0 ? (
+      {/* Property View */}
+      {viewMode === 'property' && (
+        <div className="space-y-3">
+          {filteredGroupedAppraisals.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground border rounded-md">
+              No properties found
+            </div>
+          ) : (
+            filteredGroupedAppraisals.map((property) => (
+              <PropertyAppraisalCard
+                key={property.normalizedAddress}
+                property={property}
+                onClick={onAppraisalClick}
+              />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Visit Table View */}
+      {viewMode === 'visit' && (
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No appraisals found
-                </TableCell>
+                <TableHead>Date</TableHead>
+                <TableHead>Address</TableHead>
+                <TableHead>Vendor</TableHead>
+                <TableHead>Agent</TableHead>
+                <TableHead>Intent</TableHead>
+                <TableHead>Value</TableHead>
+                <TableHead>Last Contact</TableHead>
+                <TableHead>Status</TableHead>
               </TableRow>
-            ) : (
-              filteredAppraisals.map((appraisal) => (
-                <TableRow 
-                  key={appraisal.id} 
-                  className={cn(
-                    "cursor-pointer hover:bg-muted/50",
-                    appraisal.outcome === 'WON' && "bg-emerald-50/50 dark:bg-emerald-950/20",
-                    appraisal.outcome === 'LOST' && "bg-gray-100/50 dark:bg-gray-800/30"
-                  )}
-                  onClick={() => onAppraisalClick(appraisal)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      {format(new Date(appraisal.appraisal_date), 'dd MMM yyyy')}
-                    </div>
+            </TableHeader>
+            <TableBody>
+              {filteredAppraisals.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    No appraisals found
                   </TableCell>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <div>
-                        <div>{appraisal.address}</div>
-                        {appraisal.suburb && (
-                          <div className="text-sm text-muted-foreground">{appraisal.suburb}</div>
+                </TableRow>
+              ) : (
+                filteredAppraisals.map((appraisal) => (
+                  <TableRow 
+                    key={appraisal.id} 
+                    className={cn(
+                      "cursor-pointer hover:bg-muted/50",
+                      appraisal.outcome === 'WON' && "bg-emerald-50/50 dark:bg-emerald-950/20",
+                      appraisal.outcome === 'LOST' && "bg-gray-100/50 dark:bg-gray-800/30"
+                    )}
+                    onClick={() => onAppraisalClick(appraisal)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        {format(new Date(appraisal.appraisal_date), 'dd MMM yyyy')}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <div>{appraisal.address}</div>
+                          {appraisal.suburb && (
+                            <div className="text-sm text-muted-foreground">{appraisal.suburb}</div>
+                          )}
+                        </div>
+                        {appraisal.visit_number && appraisal.visit_number > 1 && (
+                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
+                            <RotateCcw className="h-3 w-3 mr-1" />
+                            Visit #{appraisal.visit_number}
+                          </Badge>
                         )}
                       </div>
-                      {appraisal.visit_number && appraisal.visit_number > 1 && (
-                        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
-                          <RotateCcw className="h-3 w-3 mr-1" />
-                          Visit #{appraisal.visit_number}
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{appraisal.vendor_name || '-'}</TableCell>
-                  <TableCell>
-                    {appraisal.agent ? (
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={appraisal.agent.avatar_url} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(appraisal.agent.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm">{appraisal.agent.full_name}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {appraisal.intent ? (
-                      <Badge variant="outline" className={getIntentColor(appraisal.intent)}>
-                        {appraisal.intent}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {appraisal.estimated_value ? (
-                        <div className="text-sm font-medium">
-                          ${appraisal.estimated_value.toLocaleString()}
+                    </TableCell>
+                    <TableCell>{appraisal.vendor_name || '-'}</TableCell>
+                    <TableCell>
+                      {appraisal.agent ? (
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={appraisal.agent.avatar_url} />
+                            <AvatarFallback className="text-xs">
+                              {getInitials(appraisal.agent.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{appraisal.agent.full_name}</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
-                      {appraisal.lead_source && (
-                        <div className="text-xs text-muted-foreground capitalize">
-                          {appraisal.lead_source.replace(/_/g, ' ')}
-                        </div>
+                    </TableCell>
+                    <TableCell>
+                      {appraisal.intent ? (
+                        <Badge variant="outline" className={getIntentColor(appraisal.intent)}>
+                          {appraisal.intent}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {appraisal.last_contact ? (
-                      format(new Date(appraisal.last_contact), 'dd MMM yyyy')
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <StatusBadge stage={appraisal.stage} outcome={appraisal.outcome} />
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {appraisal.estimated_value ? (
+                          <div className="text-sm font-medium">
+                            ${appraisal.estimated_value.toLocaleString()}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                        {appraisal.lead_source && (
+                          <div className="text-xs text-muted-foreground capitalize">
+                            {appraisal.lead_source.replace(/_/g, ' ')}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {appraisal.last_contact ? (
+                        format(new Date(appraisal.last_contact), 'dd MMM yyyy')
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <StatusBadge stage={appraisal.stage} outcome={appraisal.outcome} />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 };

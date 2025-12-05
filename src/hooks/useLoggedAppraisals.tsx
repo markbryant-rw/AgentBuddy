@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
@@ -50,6 +50,16 @@ export interface LoggedAppraisal {
   visit_number?: number;
 }
 
+// Grouped property interface for consolidated view
+export interface GroupedProperty {
+  normalizedAddress: string;
+  latestAppraisal: LoggedAppraisal;
+  visits: LoggedAppraisal[];
+  visitCount: number;
+  firstVisitDate: string;
+  durationMonths: number;
+}
+
 export const useLoggedAppraisals = () => {
   const { user } = useAuth();
   const { team } = useTeam();
@@ -95,6 +105,45 @@ export const useLoggedAppraisals = () => {
     },
     enabled: !!team,
   });
+
+  // Compute grouped properties for consolidated view
+  const groupedAppraisals = useMemo((): GroupedProperty[] => {
+    const groups: Record<string, LoggedAppraisal[]> = {};
+    
+    appraisals.forEach((appraisal) => {
+      const normalizedAddress = appraisal.address.toLowerCase().trim();
+      if (!groups[normalizedAddress]) {
+        groups[normalizedAddress] = [];
+      }
+      groups[normalizedAddress].push(appraisal);
+    });
+
+    return Object.entries(groups).map(([normalizedAddress, visits]) => {
+      // Sort visits by date (most recent first)
+      const sortedVisits = [...visits].sort(
+        (a, b) => new Date(b.appraisal_date).getTime() - new Date(a.appraisal_date).getTime()
+      );
+      
+      const latestAppraisal = sortedVisits[0];
+      const firstVisitDate = sortedVisits[sortedVisits.length - 1].appraisal_date;
+      const durationMonths = Math.floor(
+        (new Date(latestAppraisal.appraisal_date).getTime() - new Date(firstVisitDate).getTime()) /
+        (1000 * 60 * 60 * 24 * 30)
+      );
+
+      return {
+        normalizedAddress,
+        latestAppraisal,
+        visits: sortedVisits,
+        visitCount: visits.length,
+        firstVisitDate,
+        durationMonths,
+      };
+    }).sort((a, b) => 
+      new Date(b.latestAppraisal.appraisal_date).getTime() - 
+      new Date(a.latestAppraisal.appraisal_date).getTime()
+    );
+  }, [appraisals]);
 
   useEffect(() => {
     if (!team) return;
@@ -168,6 +217,82 @@ export const useLoggedAppraisals = () => {
     }
 
     queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
+  };
+
+  // Update appraisal with option to sync contact details across all visits at same address
+  const updateAppraisalWithSync = async (
+    id: string, 
+    updates: Partial<LoggedAppraisal>,
+    syncContactsToAllVisits: boolean = false
+  ): Promise<void> => {
+    if (!user) {
+      toast.error('User not authenticated');
+      return;
+    }
+
+    // First update the main appraisal
+    const { error } = await supabase
+      .from('logged_appraisals')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating appraisal:', error);
+      toast.error('Failed to update appraisal');
+      return;
+    }
+
+    // If syncing contacts, update all other appraisals at the same address
+    if (syncContactsToAllVisits) {
+      const appraisal = appraisals.find(a => a.id === id);
+      if (appraisal) {
+        const contactFields: Partial<LoggedAppraisal> = {};
+        if (updates.vendor_name !== undefined) contactFields.vendor_name = updates.vendor_name;
+        if (updates.vendor_mobile !== undefined) contactFields.vendor_mobile = updates.vendor_mobile;
+        if (updates.vendor_email !== undefined) contactFields.vendor_email = updates.vendor_email;
+        if (updates.latitude !== undefined) contactFields.latitude = updates.latitude;
+        if (updates.longitude !== undefined) contactFields.longitude = updates.longitude;
+        if (updates.geocoded_at !== undefined) contactFields.geocoded_at = updates.geocoded_at;
+        if (updates.geocode_error !== undefined) contactFields.geocode_error = updates.geocode_error;
+
+        if (Object.keys(contactFields).length > 0) {
+          const normalizedAddress = appraisal.address.toLowerCase().trim();
+          const otherAppraisals = appraisals.filter(
+            a => a.address.toLowerCase().trim() === normalizedAddress && a.id !== id
+          );
+
+          if (otherAppraisals.length > 0) {
+            const { error: syncError } = await supabase
+              .from('logged_appraisals')
+              .update({
+                ...contactFields,
+                updated_at: new Date().toISOString(),
+              })
+              .in('id', otherAppraisals.map(a => a.id));
+
+            if (syncError) {
+              console.error('Error syncing contact details:', syncError);
+              toast.error('Failed to sync contact details to other visits');
+            } else {
+              toast.success(`Contact details synced to ${otherAppraisals.length} other visit(s)`);
+            }
+          }
+        }
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] });
+  };
+
+  // Get all appraisals at a specific address
+  const getAppraisalsAtAddress = (address: string): LoggedAppraisal[] => {
+    const normalizedAddress = address.toLowerCase().trim();
+    return appraisals
+      .filter(a => a.address.toLowerCase().trim() === normalizedAddress)
+      .sort((a, b) => new Date(b.appraisal_date).getTime() - new Date(a.appraisal_date).getTime());
   };
 
   const deleteAppraisal = async (id: string): Promise<void> => {
@@ -304,14 +429,17 @@ export const useLoggedAppraisals = () => {
 
   return {
     appraisals,
+    groupedAppraisals,
     loading,
     addAppraisal,
     updateAppraisal,
+    updateAppraisalWithSync,
     deleteAppraisal,
     removeDuplicates,
     convertToListing,
     convertToOpportunity,
     getPreviousAppraisals,
+    getAppraisalsAtAddress,
     stats,
     refreshAppraisals: () => queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team?.id] }),
   };
