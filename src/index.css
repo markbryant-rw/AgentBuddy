@@ -1016,3 +1016,426 @@ html {
   box-shadow: none;
   animation: none;
 }
+
+/* ==========================================================================
+   🎄 CHRISTMAS THEME - EXTREME FESTIVE EFFECTS 🎄
+   These effects ONLY activate when theme-christmas class is on <html>
+   ========================================================================== */
+
+/* ========== ❄️ FALLING SNOWFLAKES ========== */
+.theme-christmas::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='2' fill='white' opacity='0.8'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='1.5' fill='white' opacity='0.6'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Ccircle cx='10' cy='10' r='1' fill='white' opacity='0.4'/%3E%3C/svg%3E");
+  background-size: 80px 80px, 50px 50px, 30px 30px;
+  animation: snowfall 15s linear infinite, snowfall2 20s linear infinite, snowfall3 25s linear infinite;
+}
+
+@keyframes snowfall {
+  0% { background-position: 0 -100vh, 0 -100vh, 0 -100vh; }
+  100% { background-position: 200px 100vh, -100px 100vh, 50px 100vh; }
+}
+
+@keyframes snowfall2 {
+  0% { background-position: 100px -100vh, 50px -100vh, 25px -100vh; }
+  100% { background-position: 300px 100vh, -50px 100vh, 100px 100vh; }
+}
+
+@keyframes snowfall3 {
+  0% { background-position: -50px -100vh, 150px -100vh, 0 -100vh; }
+  100% { background-position: 100px 100vh, 250px 100vh, -50px 100vh; }
+}
+
+/* ========== 🎄 TWINKLING CHRISTMAS LIGHTS ON CARDS ========== */
+.theme-christmas [data-slot="card"],
+.theme-christmas .card {
+  position: relative;
+  overflow: visible;
+}
+
+.theme-christmas [data-slot="card"]::before,
+.theme-christmas .card::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    hsl(0 72% 51%) 0%,
+    hsl(142 76% 36%) 25%,
+    hsl(43 96% 56%) 50%,
+    hsl(199 89% 48%) 75%,
+    hsl(0 72% 51%) 100%
+  );
+  background-size: 400% 100%;
+  animation: christmasLights 3s linear infinite;
+  z-index: -1;
+  opacity: 0.7;
+}
+
+@keyframes christmasLights {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 400% 50%; }
+}
+
+/* ========== 🍬 CANDY CANE PROGRESS BARS ========== */
+.theme-christmas [role="progressbar"] {
+  overflow: visible !important;
+  background: repeating-linear-gradient(
+    45deg,
+    hsl(0 0% 100%),
+    hsl(0 0% 100%) 10px,
+    hsl(0 72% 92%) 10px,
+    hsl(0 72% 92%) 20px
+  ) !important;
+}
+
+.theme-christmas [role="progressbar"] > div {
+  background: repeating-linear-gradient(
+    45deg,
+    hsl(0 72% 51%),
+    hsl(0 72% 51%) 10px,
+    hsl(0 0% 100%) 10px,
+    hsl(0 0% 100%) 20px
+  ) !important;
+  background-size: 28.28px 100%;
+  animation: candyCane 1s linear infinite;
+  box-shadow: 0 0 10px hsl(0 72% 51% / 0.4);
+}
+
+@keyframes candyCane {
+  0% { background-position: 0 0; }
+  100% { background-position: 28.28px 0; }
+}
+
+/* ========== 🔴 GLOWING ORNAMENT BADGES ========== */
+.theme-christmas .badge,
+.theme-christmas [data-slot="badge"] {
+  animation: ornamentGlow 2s ease-in-out infinite;
+  border-radius: 50px;
+}
+
+@keyframes ornamentGlow {
+  0%, 100% {
+    box-shadow: 0 0 5px currentColor, 0 0 10px hsl(0 72% 51% / 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 15px currentColor, 0 0 25px hsl(142 76% 36% / 0.4), 0 0 35px hsl(43 96% 56% / 0.2);
+    transform: scale(1.05);
+  }
+}
+
+/* ========== ✨ GOLDEN STAR SPARKLES ON BUTTONS ========== */
+.theme-christmas button:not([disabled]):not(.no-glow)::after {
+  content: '✨';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 14px;
+  animation: starSparkle 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes starSparkle {
+  0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.5; transform: scale(1.3) rotate(180deg); }
+}
+
+/* ========== 🌲 PINE TREE BACKGROUND ========== */
+.theme-christmas main {
+  background-image: 
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 10 L70 40 L60 40 L75 65 L65 65 L80 90 L20 90 L35 65 L25 65 L40 40 L30 40 Z' fill='%2315803D' opacity='0.03'/%3E%3C/svg%3E");
+  background-size: 150px 150px;
+}
+
+/* ========== 🧊 FROST GLASS CARDS ========== */
+.theme-christmas [data-slot="card"],
+.theme-christmas .card {
+  background: linear-gradient(
+    135deg,
+    hsl(0 0% 100% / 0.95),
+    hsl(200 30% 98% / 0.9),
+    hsl(0 0% 100% / 0.95)
+  ) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid hsl(200 50% 90% / 0.5);
+}
+
+/* ========== 🔔 JINGLE BELL ICONS ========== */
+.theme-christmas svg:not(.animate-spin):not([class*="close"]):not([class*="x"]):not([class*="check"]) {
+  animation: jingleBell 0.5s ease-in-out;
+  animation-iteration-count: 3;
+  animation-delay: 0.5s;
+}
+
+.theme-christmas svg:hover {
+  animation: jingleBell 0.3s ease-in-out infinite;
+}
+
+@keyframes jingleBell {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(15deg); }
+  75% { transform: rotate(-15deg); }
+}
+
+/* ========== 🎁 GIFT RIBBON HOVER EFFECTS ========== */
+.theme-christmas .hover-lift:hover {
+  box-shadow: 
+    0 0 0 3px hsl(43 96% 56%),
+    0 0 20px hsl(0 72% 51% / 0.3),
+    0 8px 25px hsl(0 0% 0% / 0.15);
+  transform: translateY(-4px);
+}
+
+.theme-christmas button:not([disabled]):hover {
+  box-shadow: 
+    0 0 15px hsl(0 72% 51% / 0.4),
+    0 0 30px hsl(142 76% 36% / 0.2);
+}
+
+/* ========== 🎅 CHRISTMAS TREE AVATAR FRAMES ========== */
+.theme-christmas .avatar,
+.theme-christmas [data-slot="avatar"],
+.theme-christmas img[class*="rounded-full"] {
+  border: 3px solid hsl(142 76% 36%) !important;
+  box-shadow: 
+    0 0 0 2px hsl(0 72% 51%),
+    0 0 10px hsl(43 96% 56% / 0.5);
+}
+
+/* ========== 🎄 CHRISTMAS DECORATIONS ON DIALOGS ========== */
+.theme-christmas [role="dialog"]::before {
+  content: '🎄';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 40px;
+  animation: treeSway 2s ease-in-out infinite;
+  z-index: 10;
+}
+
+@keyframes treeSway {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg); }
+  50% { transform: translateX(-50%) rotate(3deg); }
+}
+
+.theme-christmas [role="dialog"] {
+  box-shadow: 
+    0 0 30px hsl(0 72% 51% / 0.2),
+    0 0 60px hsl(142 76% 36% / 0.15),
+    0 25px 50px hsl(0 0% 0% / 0.25);
+  border: 2px solid hsl(43 96% 56% / 0.5);
+}
+
+/* ========== 💫 NEON CHRISTMAS SIGN HEADINGS ========== */
+.theme-christmas h1,
+.theme-christmas h2 {
+  text-shadow: 
+    0 0 10px hsl(0 72% 51% / 0.5),
+    0 0 20px hsl(142 76% 36% / 0.3),
+    0 0 30px hsl(0 72% 51% / 0.2);
+  animation: neonChristmas 2s ease-in-out infinite;
+}
+
+@keyframes neonChristmas {
+  0%, 100% {
+    text-shadow: 
+      0 0 10px hsl(0 72% 51% / 0.5),
+      0 0 20px hsl(142 76% 36% / 0.3);
+  }
+  50% {
+    text-shadow: 
+      0 0 15px hsl(142 76% 36% / 0.6),
+      0 0 30px hsl(0 72% 51% / 0.4),
+      0 0 40px hsl(43 96% 56% / 0.2);
+  }
+}
+
+/* ========== 🎊 GOLDEN SCROLLBARS ========== */
+.theme-christmas ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.theme-christmas ::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, hsl(0 72% 95%), hsl(142 30% 95%));
+  border-radius: 6px;
+}
+
+.theme-christmas ::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    hsl(0 72% 51%),
+    hsl(43 96% 56%),
+    hsl(142 76% 36%)
+  );
+  border-radius: 6px;
+  border: 2px solid hsl(0 0% 100%);
+}
+
+.theme-christmas ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    hsl(0 72% 45%),
+    hsl(43 96% 50%),
+    hsl(142 76% 30%)
+  );
+}
+
+/* ========== 🎁 PRESENT BOX INPUT FIELDS ========== */
+.theme-christmas input,
+.theme-christmas textarea,
+.theme-christmas select,
+.theme-christmas [role="combobox"] {
+  border: 2px solid hsl(142 76% 36%) !important;
+  background: hsl(0 0% 100%) !important;
+}
+
+.theme-christmas input:focus,
+.theme-christmas textarea:focus,
+.theme-christmas select:focus {
+  box-shadow: 
+    0 0 0 3px hsl(43 96% 56% / 0.4),
+    0 0 15px hsl(0 72% 51% / 0.2) !important;
+  border-color: hsl(0 72% 51%) !important;
+}
+
+/* ========== 🎁 GIFT-WRAPPED TOAST NOTIFICATIONS ========== */
+.theme-christmas [data-sonner-toast] {
+  background: linear-gradient(135deg, hsl(0 72% 51%), hsl(0 72% 45%)) !important;
+  color: white !important;
+  border: 3px solid hsl(43 96% 56%);
+  box-shadow: 
+    0 0 20px hsl(0 72% 51% / 0.4),
+    0 10px 30px hsl(0 0% 0% / 0.2);
+}
+
+.theme-christmas [data-sonner-toast]::before {
+  content: '🎁';
+  position: absolute;
+  top: -12px;
+  left: 10px;
+  font-size: 24px;
+}
+
+/* ========== 🧦 CHRISTMAS STOCKING SIDEBAR ========== */
+.theme-christmas [data-sidebar],
+.theme-christmas aside {
+  border-right: 3px solid hsl(0 72% 51%);
+  background: linear-gradient(
+    180deg,
+    hsl(0 72% 51%) 0%,
+    hsl(0 72% 51%) 8px,
+    hsl(0 0% 100%) 8px,
+    hsl(0 0% 100%) 100%
+  );
+}
+
+/* ========== 🎨 ALTERNATING TABLE ROWS ========== */
+.theme-christmas tr:nth-child(odd) {
+  background: hsl(0 72% 51% / 0.03);
+}
+
+.theme-christmas tr:nth-child(even) {
+  background: hsl(142 76% 36% / 0.03);
+}
+
+.theme-christmas tr:hover {
+  background: hsl(43 96% 56% / 0.1) !important;
+}
+
+/* ========== THEME PREVIEW CARD SPECIAL EFFECTS ========== */
+.christmas-card-preview {
+  animation: christmasCardGlow 2s ease-in-out infinite;
+}
+
+@keyframes christmasCardGlow {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px hsl(0 72% 51% / 0.3),
+      0 0 20px hsl(142 76% 36% / 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 20px hsl(142 76% 36% / 0.4),
+      0 0 40px hsl(0 72% 51% / 0.3),
+      0 0 60px hsl(43 96% 56% / 0.2);
+  }
+}
+
+.christmas-preview-strip {
+  position: relative;
+}
+
+.christmas-lights-preview {
+  background: linear-gradient(
+    90deg,
+    hsl(0 72% 51%) 0%,
+    hsl(0 72% 51%) 15%,
+    hsl(142 76% 36%) 15%,
+    hsl(142 76% 36%) 30%,
+    hsl(43 96% 56%) 30%,
+    hsl(43 96% 56%) 45%,
+    hsl(199 89% 48%) 45%,
+    hsl(199 89% 48%) 60%,
+    hsl(0 72% 51%) 60%,
+    hsl(0 72% 51%) 75%,
+    hsl(142 76% 36%) 75%,
+    hsl(142 76% 36%) 90%,
+    hsl(43 96% 56%) 90%,
+    hsl(43 96% 56%) 100%
+  );
+  animation: lightsScroll 2s linear infinite;
+}
+
+@keyframes lightsScroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 100px 0; }
+}
+
+.christmas-badge-glow {
+  animation: christmasBadgeGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes christmasBadgeGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px hsl(0 72% 51% / 0.5), 0 0 20px hsl(142 76% 36% / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px hsl(43 96% 56% / 0.6), 0 0 40px hsl(0 72% 51% / 0.4);
+  }
+}
+
+.ornament-swatch {
+  animation: ornamentSwing 2s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+@keyframes ornamentSwing {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
+}
+
+/* Protect screenshot images from Christmas effects */
+.theme-christmas .screenshot-thumbnail,
+.theme-christmas img[class*="screenshot"],
+.theme-christmas [role="dialog"] img:not([class*="avatar"]):not([class*="Avatar"]) {
+  border-radius: 0.5rem;
+  border: 2px solid hsl(142 76% 36% / 0.3);
+  box-shadow: none;
+  animation: none;
+}

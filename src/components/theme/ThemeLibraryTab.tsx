@@ -2,7 +2,7 @@ import { useTheme, ThemePack } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Check, Palette, Sparkles, Plus, Zap } from 'lucide-react';
+import { Check, Palette, Sparkles, Plus, Zap, TreePine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function ThemeCard({ theme, isActive, onSelect }: { 
@@ -11,13 +11,15 @@ function ThemeCard({ theme, isActive, onSelect }: {
   onSelect: () => void;
 }) {
   const isCyberpunk = theme.id === 'cyberpunk';
+  const isChristmas = theme.id === 'christmas';
   
   return (
     <Card 
       className={cn(
         "relative cursor-pointer transition-all duration-300 hover-lift overflow-hidden",
         isActive && "ring-2 ring-primary ring-offset-2",
-        isCyberpunk && "cyberpunk-card-preview"
+        isCyberpunk && "cyberpunk-card-preview",
+        isChristmas && "christmas-card-preview"
       )}
       onClick={onSelect}
     >
@@ -32,8 +34,22 @@ function ThemeCard({ theme, isActive, onSelect }: {
         </Badge>
       )}
       
-      {/* Color preview strip - special for cyberpunk */}
-      <div className={cn("h-20 flex relative", isCyberpunk && "cyberpunk-preview-strip")}>
+      {/* FESTIVE badge for Christmas */}
+      {isChristmas && (
+        <Badge 
+          className="absolute top-2 right-2 z-10 bg-gradient-to-r from-red-600 via-green-600 to-yellow-500 text-white border-0 shadow-lg christmas-badge-glow"
+        >
+          <TreePine className="h-3 w-3 mr-1" />
+          FESTIVE
+        </Badge>
+      )}
+      
+      {/* Color preview strip */}
+      <div className={cn(
+        "h-20 flex relative",
+        isCyberpunk && "cyberpunk-preview-strip",
+        isChristmas && "christmas-preview-strip"
+      )}>
         <div 
           className="flex-1" 
           style={{ backgroundColor: `hsl(${theme.colors.primary})` }} 
@@ -58,20 +74,40 @@ function ThemeCard({ theme, isActive, onSelect }: {
             }}
           />
         )}
+        {/* Christmas lights overlay */}
+        {isChristmas && (
+          <div className="absolute bottom-0 left-0 right-0 h-3 christmas-lights-preview" />
+        )}
       </div>
       
-      <CardContent className={cn("p-4", isCyberpunk && "bg-slate-900")}>
+      <CardContent className={cn(
+        "p-4",
+        isCyberpunk && "bg-slate-900",
+        isChristmas && "bg-gradient-to-b from-white to-red-50/50"
+      )}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className={cn("font-semibold", isCyberpunk && "text-cyan-400")}>
+            <h3 className={cn(
+              "font-semibold",
+              isCyberpunk && "text-cyan-400",
+              isChristmas && "text-red-700"
+            )}>
               {isCyberpunk ? '⚡ ' : ''}{theme.name}
             </h3>
-            <p className={cn("text-sm text-muted-foreground", isCyberpunk && "text-pink-300/70")}>
+            <p className={cn(
+              "text-sm text-muted-foreground",
+              isCyberpunk && "text-pink-300/70",
+              isChristmas && "text-green-700/70"
+            )}>
               {theme.description}
             </p>
           </div>
           {isActive ? (
-            <Badge variant="default" className={cn("bg-primary", isCyberpunk && "bg-cyan-500 animate-pulse")}>
+            <Badge variant="default" className={cn(
+              "bg-primary",
+              isCyberpunk && "bg-cyan-500 animate-pulse",
+              isChristmas && "bg-red-600 animate-pulse"
+            )}>
               <Check className="h-3 w-3 mr-1" />
               Active
             </Badge>
@@ -80,7 +116,10 @@ function ThemeCard({ theme, isActive, onSelect }: {
               size="sm" 
               variant="outline" 
               onClick={(e) => { e.stopPropagation(); onSelect(); }}
-              className={cn(isCyberpunk && "border-cyan-400 text-cyan-400 hover:bg-cyan-400/20")}
+              className={cn(
+                isCyberpunk && "border-cyan-400 text-cyan-400 hover:bg-cyan-400/20",
+                isChristmas && "border-red-500 text-red-600 hover:bg-red-500/10"
+              )}
             >
               Apply
             </Button>
@@ -90,27 +129,47 @@ function ThemeCard({ theme, isActive, onSelect }: {
         {/* Color swatches */}
         <div className="flex gap-1.5 mt-3">
           <div 
-            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
+            className={cn(
+              "h-6 w-6 rounded-full border-2 border-background shadow-sm",
+              isCyberpunk && "neon-swatch",
+              isChristmas && "ornament-swatch"
+            )}
             style={{ backgroundColor: `hsl(${theme.colors.primary})` }}
             title="Primary"
           />
           <div 
-            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
+            className={cn(
+              "h-6 w-6 rounded-full border-2 border-background shadow-sm",
+              isCyberpunk && "neon-swatch",
+              isChristmas && "ornament-swatch"
+            )}
             style={{ backgroundColor: `hsl(${theme.colors.accent})` }}
             title="Accent"
           />
           <div 
-            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
+            className={cn(
+              "h-6 w-6 rounded-full border-2 border-background shadow-sm",
+              isCyberpunk && "neon-swatch",
+              isChristmas && "ornament-swatch"
+            )}
             style={{ backgroundColor: `hsl(${theme.colors.success})` }}
             title="Success"
           />
           <div 
-            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
+            className={cn(
+              "h-6 w-6 rounded-full border-2 border-background shadow-sm",
+              isCyberpunk && "neon-swatch",
+              isChristmas && "ornament-swatch"
+            )}
             style={{ backgroundColor: `hsl(${theme.colors.warning})` }}
             title="Warning"
           />
           <div 
-            className={cn("h-6 w-6 rounded-full border-2 border-background shadow-sm", isCyberpunk && "neon-swatch")}
+            className={cn(
+              "h-6 w-6 rounded-full border-2 border-background shadow-sm",
+              isCyberpunk && "neon-swatch",
+              isChristmas && "ornament-swatch"
+            )}
             style={{ backgroundColor: `hsl(${theme.colors.danger})` }}
             title="Danger"
           />
