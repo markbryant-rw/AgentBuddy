@@ -130,6 +130,8 @@ const KnowledgeBasePlaybook = lazy(() => import("./pages/KnowledgeBasePlaybook")
 const KnowledgeBaseEditor = lazy(() => import("./pages/KnowledgeBaseEditor"));
 const KnowledgeBaseAnalytics = lazy(() => import("./pages/KnowledgeBaseAnalytics"));
 const LibraryManagement = lazy(() => import("./pages/LibraryManagement"));
+const AppraisalTemplateLibrary = lazy(() => import("./pages/appraisal-templates/AppraisalTemplateLibrary"));
+const AppraisalTemplateEditor = lazy(() => import("./pages/appraisal-templates/AppraisalTemplateEditor"));
 
 const AppContent = () => {
   useEffect(() => {
@@ -186,6 +188,8 @@ const AppContent = () => {
             <Route path="/prospect-dashboard/appraisals/import" element={<AppraisalImport />} />
             <Route path="/prospect-dashboard/pipeline" element={<ProspectPipeline />} />
             <Route path="/prospect-dashboard/analytics" element={<ProspectAnalyticsPage />} />
+            <Route path="/appraisal-templates" element={<AppraisalTemplateLibrary />} />
+            <Route path="/appraisal-templates/:templateId" element={<AppraisalTemplateEditor />} />
             <Route path="/operate-dashboard" element={<OperateDashboard />} />
             <Route path="/transact-dashboard" element={<TransactDashboard />} />
             <Route path="/grow-dashboard" element={<GrowDashboard />} />
