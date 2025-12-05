@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useDragScroll } from '@/hooks/useDragScroll';
 import {
   DndContext,
   DragEndEvent,
@@ -102,6 +103,9 @@ export default function TaskManager({ boardId }: TaskManagerProps) {
   }, [serverLists, optimisticLists]);
   
   const selectedBoard = boards.find(b => b.id === selectedBoardId);
+  
+  // Click-and-drag horizontal scrolling
+  const { containerRef, isDragging, handlers: dragScrollHandlers } = useDragScroll();
 
   // Calculate task stats for the selected board
   const taskStats = useMemo(() => {
@@ -290,7 +294,11 @@ export default function TaskManager({ boardId }: TaskManagerProps) {
       )}
 
       {/* Kanban Board - fills remaining height */}
-      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden p-4">
+      <div 
+        ref={containerRef}
+        className={`flex-1 min-h-0 overflow-x-auto overflow-y-hidden p-4 kanban-scroll ${isDragging ? 'cursor-grabbing select-none' : 'cursor-grab'}`}
+        {...dragScrollHandlers}
+      >
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
