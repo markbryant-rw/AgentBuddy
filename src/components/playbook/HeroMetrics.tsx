@@ -69,7 +69,7 @@ export const HeroMetrics = ({
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
-              background: 'linear-gradient(135deg, hsl(280, 40%, 55%) 0%, hsl(280, 45%, 45%) 100%)',
+              background: 'linear-gradient(135deg, hsl(174, 62%, 47%) 0%, hsl(187, 78%, 42%) 100%)',
             }}
           >
             <button
@@ -157,12 +157,12 @@ export const HeroMetrics = ({
               WebkitBackfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
               background: 'white',
-              border: '4px solid hsl(280, 40%, 55%)',
+              border: '4px solid hsl(174, 62%, 47%)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="h-full flex flex-col justify-center items-center text-center px-4">
-              <Target className="h-12 w-12 mb-4" style={{ color: 'hsl(280, 40%, 55%)' }} />
+              <Target className="h-12 w-12 mb-4" style={{ color: 'hsl(174, 62%, 47%)' }} />
               <h4 className="text-xl font-bold text-gray-900 mb-4">Quarterly Appraisal Targets</h4>
               <div className="text-gray-700 text-base leading-relaxed max-w-md space-y-3">
                 <p className="font-medium">Where do targets come from?</p>
@@ -176,8 +176,8 @@ export const HeroMetrics = ({
                 }}
                 className="mt-6 px-6 py-2 rounded-lg hover:bg-gray-100 transition-colors font-medium"
                 style={{ 
-                  backgroundColor: 'hsl(280, 40%, 95%)',
-                  color: 'hsl(280, 40%, 55%)'
+                  backgroundColor: 'hsl(174, 62%, 95%)',
+                  color: 'hsl(174, 62%, 47%)'
                 }}
               >
                 Got it
@@ -222,7 +222,7 @@ export const HeroMetrics = ({
             style={{
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
-              background: 'linear-gradient(135deg, hsl(220, 30%, 45%) 0%, hsl(220, 35%, 35%) 100%)',
+              background: 'linear-gradient(135deg, hsl(38, 92%, 50%) 0%, hsl(45, 93%, 47%) 100%)',
             }}
           >
             <button
@@ -301,12 +301,12 @@ export const HeroMetrics = ({
               WebkitBackfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
               background: 'white',
-              border: '4px solid hsl(220, 30%, 45%)',
+              border: '4px solid hsl(38, 92%, 50%)',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="h-full flex flex-col justify-center items-center text-center px-4">
-              <Home className="h-12 w-12 mb-4" style={{ color: 'hsl(220, 30%, 45%)' }} />
+              <Home className="h-12 w-12 mb-4" style={{ color: 'hsl(38, 92%, 50%)' }} />
               <h4 className="text-xl font-bold text-gray-900 mb-4">Listings & Sales Targets</h4>
               <div className="text-gray-700 text-base leading-relaxed max-w-md space-y-3">
                 <p className="font-medium">Where do targets come from?</p>
@@ -320,8 +320,8 @@ export const HeroMetrics = ({
                 }}
                 className="mt-6 px-6 py-2 rounded-lg hover:bg-gray-100 transition-colors font-medium"
                 style={{ 
-                  backgroundColor: 'hsl(220, 30%, 95%)',
-                  color: 'hsl(220, 30%, 45%)'
+                  backgroundColor: 'hsl(38, 92%, 95%)',
+                  color: 'hsl(38, 92%, 50%)'
                 }}
               >
                 Got it

@@ -1,4 +1,4 @@
-import { FileText } from 'lucide-react';
+import { FileText, Home, DollarSign, Clock, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { useTransactions, Transaction } from '@/hooks/useTransactions';
 import { usePastSales, PastSale } from '@/hooks/usePastSales';
@@ -10,6 +10,7 @@ import { TransactionDetailDrawer } from '@/components/transaction-management/Tra
 import PastSaleDetailDialog from '@/components/past-sales/PastSaleDetailDialog';
 import { calculatePriceAlignment } from '@/lib/priceAlignmentUtils';
 import { calculateDaysUntilExpiry, getExpiryStatus } from '@/lib/listingExpiryUtils';
+import { StatCard } from '@/components/ui/stat-card';
 
 const TransactDashboard = () => {
   const { team } = useTeam();
@@ -113,9 +114,9 @@ const TransactDashboard = () => {
   return (
     <div className="space-y-fluid-lg p-fluid-lg">
       {/* Header */}
-      <div>
+      <div className="animate-card-enter">
         <div className="flex items-center gap-fluid-md">
-          <FileText className="h-icon-lg w-icon-lg text-primary" />
+          <FileText className="h-icon-lg w-icon-lg text-amber-600" />
           <h1 className="text-fluid-3xl font-bold">Transact Dashboard</h1>
         </div>
         <p className="text-muted-foreground mt-1 text-fluid-base">
@@ -124,50 +125,52 @@ const TransactDashboard = () => {
       </div>
 
       {/* Quick Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-fluid-md">
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">Active Transactions</div>
-          <div className="text-fluid-2xl font-bold mt-1">
-            {transactionsLoading ? '...' : activeTransactions.length}
-          </div>
-        </div>
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">Pipeline Value</div>
-          <div className="text-fluid-2xl font-bold mt-1">
-            {transactionsLoading ? '...' : `$${(pipelineValue / 1000000).toFixed(1)}M`}
-          </div>
-        </div>
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">This Month's Settlements</div>
-          <div className="text-fluid-2xl font-bold mt-1">
-            {transactionsLoading ? '...' : thisMonthSettlements.length}
-          </div>
-        </div>
-        <div className="bg-card border rounded-lg p-fluid-md">
-          <div className="text-fluid-sm text-muted-foreground">Avg Settlement Time</div>
-          <div className="text-fluid-2xl font-bold mt-1">
-            {transactionsLoading ? '...' : `${avgSettlementDays} days`}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-fluid-md animate-card-enter stagger-1">
+        <StatCard
+          workspace="transact"
+          icon={Home}
+          label="Active Transactions"
+          value={transactionsLoading ? '...' : activeTransactions.length}
+        />
+        <StatCard
+          workspace="transact"
+          icon={DollarSign}
+          label="Pipeline Value"
+          value={transactionsLoading ? '...' : `$${(pipelineValue / 1000000).toFixed(1)}M`}
+        />
+        <StatCard
+          workspace="transact"
+          icon={TrendingUp}
+          label="This Month's Settlements"
+          value={transactionsLoading ? '...' : thisMonthSettlements.length}
+        />
+        <StatCard
+          workspace="transact"
+          icon={Clock}
+          label="Avg Settlement Time"
+          value={transactionsLoading ? '...' : `${avgSettlementDays} days`}
+        />
       </div>
 
       {/* Navigation Cards */}
-      <TransactNavigationCards
-        activeTransactions={activeTransactions.length}
-        underContract={stageBreakdown['under_contract'] || 0}
-        unconditional={stageBreakdown['unconditional'] || 0}
-        misalignedPrices={misalignedCount}
-        alignmentRate={alignmentRate}
-        totalSales={soldSales.length}
-        quarterlySales={thisQuarterSales.length}
-        conversionRate={conversionRate}
-        criticalListings={criticalListings}
-        expiringThisMonth={expiringThisMonth}
-        isLoading={transactionsLoading || pastSalesLoading}
-      />
+      <div className="animate-card-enter stagger-2">
+        <TransactNavigationCards
+          activeTransactions={activeTransactions.length}
+          underContract={stageBreakdown['under_contract'] || 0}
+          unconditional={stageBreakdown['unconditional'] || 0}
+          misalignedPrices={misalignedCount}
+          alignmentRate={alignmentRate}
+          totalSales={soldSales.length}
+          quarterlySales={thisQuarterSales.length}
+          conversionRate={conversionRate}
+          criticalListings={criticalListings}
+          expiringThisMonth={expiringThisMonth}
+          isLoading={transactionsLoading || pastSalesLoading}
+        />
+      </div>
 
       {/* Map View */}
-      <div className="mt-fluid-lg">
+      <div className="mt-fluid-lg animate-card-enter stagger-3">
         <h2 className="text-fluid-2xl font-bold mb-fluid-md">Map View</h2>
         <TransactMap
           transactions={transactions}

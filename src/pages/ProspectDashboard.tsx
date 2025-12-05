@@ -41,9 +41,9 @@ const ProspectDashboard = () => {
   return (
     <div className="space-y-fluid-lg p-fluid-lg">
       {/* Header */}
-      <div>
+      <div className="animate-card-enter">
         <div className="flex items-center gap-fluid-md">
-          <Target className="h-icon-lg w-icon-lg text-primary" />
+          <Target className="h-icon-lg w-icon-lg text-teal-600" />
           <h1 className="text-fluid-3xl font-bold">Prospect Dashboard</h1>
         </div>
         <p className="text-muted-foreground mt-1 text-fluid-base">
@@ -52,21 +52,25 @@ const ProspectDashboard = () => {
       </div>
 
       {/* Navigation Cards - Moved to Top */}
-      <ProspectNavigationCards 
-        appraisals={appraisals}
-        listings={listings}
-        appraisalStats={appraisalStats}
-        pipelineStats={pipelineStats}
-      />
+      <div className="animate-card-enter stagger-1">
+        <ProspectNavigationCards 
+          appraisals={appraisals}
+          listings={listings}
+          appraisalStats={appraisalStats}
+          pipelineStats={pipelineStats}
+        />
+      </div>
 
       {/* Map View - Larger */}
-      <ProspectMap 
-        appraisals={appraisals}
-        opportunities={listings}
-        onAppraisalClick={handleAppraisalClick}
-        onAutoGeocode={handleAutoGeocode}
-        isGeocoding={isGeocoding}
-      />
+      <div className="animate-card-enter stagger-2">
+        <ProspectMap 
+          appraisals={appraisals}
+          opportunities={listings}
+          onAppraisalClick={handleAppraisalClick}
+          onAutoGeocode={handleAutoGeocode}
+          isGeocoding={isGeocoding}
+        />
+      </div>
 
       {/* Detail Dialog */}
       <AppraisalDetailDialog
