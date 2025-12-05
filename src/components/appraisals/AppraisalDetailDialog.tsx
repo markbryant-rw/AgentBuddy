@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { LoggedAppraisal, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { useLeadSources } from '@/hooks/useLeadSources';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -74,6 +75,8 @@ const AppraisalDetailDialog = ({
   const [estimatedValueDisplay, setEstimatedValueDisplay] = useState("");
   const [syncContactsToAllVisits, setSyncContactsToAllVisits] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
+  const originalFollowUpRef = useRef<string | null | undefined>(undefined);
+  
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
     address: '',
     vendor_name: '',
@@ -103,6 +106,7 @@ const AppraisalDetailDialog = ({
     if (appraisal && !isNew) {
       setFormData(appraisal);
       setEstimatedValueDisplay(appraisal.estimated_value ? formatCurrencyFull(appraisal.estimated_value) : "");
+      originalFollowUpRef.current = appraisal.next_follow_up;
     } else if (isNew) {
       setFormData({
         address: '',
@@ -122,6 +126,7 @@ const AppraisalDetailDialog = ({
         agent_id: user?.id,
       });
       setEstimatedValueDisplay("");
+      originalFollowUpRef.current = undefined;
     }
   }, [appraisal, isNew, user?.id]);
 
@@ -149,8 +154,11 @@ const AppraisalDetailDialog = ({
         converted_date: dbFields.converted_date || null,
       };
       
+      let savedAppraisalId = appraisal?.id;
+      
       if (isNew) {
-        await addAppraisal(sanitizedData as any);
+        const result = await addAppraisal(sanitizedData as any);
+        savedAppraisalId = result?.id;
         toast({
           title: "Success",
           description: "Appraisal logged successfully",
@@ -167,6 +175,40 @@ const AppraisalDetailDialog = ({
           description: "Appraisal updated successfully",
         });
       }
+      
+      // Create follow-up task if next_follow_up was set or changed
+      const followUpChanged = formData.next_follow_up && formData.next_follow_up !== originalFollowUpRef.current;
+      if (followUpChanged && savedAppraisalId && team?.id) {
+        // Check if a follow-up task already exists for this date
+        const { data: existingTasks } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('appraisal_id', savedAppraisalId)
+          .ilike('title', '%Follow up%')
+          .eq('due_date', formData.next_follow_up);
+        
+        if (!existingTasks?.length) {
+          await supabase.from('tasks').insert({
+            title: `Follow up: ${formData.address}`,
+            section: 'Follow-ups',
+            due_date: formData.next_follow_up,
+            appraisal_id: savedAppraisalId,
+            appraisal_stage: formData.stage || 'VAP',
+            assigned_to: formData.agent_id || user?.id,
+            team_id: team.id,
+            created_by: user?.id,
+            source: 'appraisal',
+          });
+          // Invalidate queries so the task shows in My Assignments
+          queryClient.invalidateQueries({ queryKey: ['my-assigned-tasks'] });
+          queryClient.invalidateQueries({ queryKey: ['appraisal-tasks', savedAppraisalId] });
+          toast({
+            title: "Follow-up task created",
+            description: `Task scheduled for ${format(new Date(formData.next_follow_up), 'MMM d, yyyy')}`,
+          });
+        }
+      }
+      
       onOpenChange(false);
     } catch (error) {
       console.error('Save error:', error);
@@ -375,6 +417,9 @@ const AppraisalDetailDialog = ({
                   <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
                   <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
                 </div>
+
+                {/* Fix Location Section - moved from Tracking tab */}
+                <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
               </TabsContent>
 
               {/* Tracking Tab - Progress, Visit Timeline, Location Fix */}
@@ -409,8 +454,18 @@ const AppraisalDetailDialog = ({
                         <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="In Progress">In Progress</SelectItem>
-                          <SelectItem value="WON">WON</SelectItem>
-                          <SelectItem value="LOST">LOST</SelectItem>
+                          <SelectItem value="WON">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                              <span className="text-emerald-700">WON</span>
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="LOST">
+                            <span className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full bg-red-500" />
+                              <span className="text-red-700">LOST</span>
+                            </span>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -447,9 +502,6 @@ const AppraisalDetailDialog = ({
                 {allVisitsAtAddress.length > 0 && (
                   <VisitTimeline visits={allVisitsAtAddress} currentVisitId={appraisal?.id} />
                 )}
-
-                {/* Fix Location Section */}
-                <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
 
                 {/* Sync contact details option */}
                 {hasMultipleVisits && (

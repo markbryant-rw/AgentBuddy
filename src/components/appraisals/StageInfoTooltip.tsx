@@ -25,7 +25,7 @@ export const StageInfoTooltip = ({ stage, className }: StageInfoTooltipProps) =>
             )} 
           />
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[280px]">
+        <TooltipContent side="right" align="start" className="max-w-[280px] z-[200]">
           <p className="font-semibold mb-1">{APPRAISAL_STAGE_DISPLAY_NAMES[stage]}</p>
           <p className="text-xs text-muted-foreground">{APPRAISAL_STAGE_DESCRIPTIONS[stage]}</p>
         </TooltipContent>
