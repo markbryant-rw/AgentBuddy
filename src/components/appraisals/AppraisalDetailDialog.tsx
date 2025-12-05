@@ -31,6 +31,7 @@ import LocationFixSection from '@/components/shared/LocationFixSection';
 import { VisitTimeline } from './VisitTimeline';
 import { AppraisalTasksTab } from './AppraisalTasksTab';
 import { Trash2, Plus, ListTodo, FileText, TrendingUp } from "lucide-react";
+import { StageInfoTooltip } from './StageInfoTooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -383,13 +384,22 @@ const AppraisalDetailDialog = ({
                   <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Progress</h3>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="stage" className="text-sm font-medium">Stage <span className="text-destructive">*</span></Label>
+                      <Label htmlFor="stage" className="text-sm font-medium flex items-center gap-2">
+                        Stage <span className="text-destructive">*</span>
+                        <StageInfoTooltip stage={formData.stage as 'VAP' | 'MAP' | 'LAP'} />
+                      </Label>
                       <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
                         <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                         <SelectContent className="z-[60]">
-                          <SelectItem value="VAP">VAP</SelectItem>
-                          <SelectItem value="MAP">MAP</SelectItem>
-                          <SelectItem value="LAP">LAP</SelectItem>
+                          <SelectItem value="VAP">
+                            <div className="flex items-center gap-2">VAP <StageInfoTooltip stage="VAP" /></div>
+                          </SelectItem>
+                          <SelectItem value="MAP">
+                            <div className="flex items-center gap-2">MAP <StageInfoTooltip stage="MAP" /></div>
+                          </SelectItem>
+                          <SelectItem value="LAP">
+                            <div className="flex items-center gap-2">LAP <StageInfoTooltip stage="LAP" /></div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -549,13 +559,22 @@ const AppraisalDetailDialog = ({
                 <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Tracking</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="stage" className="text-sm font-medium">Stage <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="stage" className="text-sm font-medium flex items-center gap-2">
+                      Stage <span className="text-destructive">*</span>
+                      <StageInfoTooltip stage={formData.stage as 'VAP' | 'MAP' | 'LAP'} />
+                    </Label>
                     <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
                       <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
                       <SelectContent className="z-[60]">
-                        <SelectItem value="VAP">VAP</SelectItem>
-                        <SelectItem value="MAP">MAP</SelectItem>
-                        <SelectItem value="LAP">LAP</SelectItem>
+                        <SelectItem value="VAP">
+                          <div className="flex items-center gap-2">VAP <StageInfoTooltip stage="VAP" /></div>
+                        </SelectItem>
+                        <SelectItem value="MAP">
+                          <div className="flex items-center gap-2">MAP <StageInfoTooltip stage="MAP" /></div>
+                        </SelectItem>
+                        <SelectItem value="LAP">
+                          <div className="flex items-center gap-2">LAP <StageInfoTooltip stage="LAP" /></div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

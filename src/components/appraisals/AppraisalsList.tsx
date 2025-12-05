@@ -24,6 +24,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Search, Calendar, Trash2, RotateCcw, X, LayoutList, Building2 } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, subMonths } from 'date-fns';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
+import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
 import { useFinancialYear } from '@/hooks/useFinancialYear';
 import { getCurrentQuarter } from '@/utils/quarterCalculations';
 import { cn } from '@/lib/utils';
@@ -272,13 +274,19 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
           </span>
           <div className="flex gap-2">
             <Select onValueChange={(value) => handleBulkStageUpdate(value as 'VAP' | 'MAP' | 'LAP')}>
-              <SelectTrigger className="w-[140px] h-8">
+              <SelectTrigger className="w-[160px] h-8">
                 <SelectValue placeholder="Set Stage" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="VAP">VAP</SelectItem>
-                <SelectItem value="MAP">MAP</SelectItem>
-                <SelectItem value="LAP">LAP</SelectItem>
+                <SelectItem value="VAP">
+                  <div className="flex items-center gap-2">VAP <StageInfoTooltip stage="VAP" /></div>
+                </SelectItem>
+                <SelectItem value="MAP">
+                  <div className="flex items-center gap-2">MAP <StageInfoTooltip stage="MAP" /></div>
+                </SelectItem>
+                <SelectItem value="LAP">
+                  <div className="flex items-center gap-2">LAP <StageInfoTooltip stage="LAP" /></div>
+                </SelectItem>
               </SelectContent>
             </Select>
             <Select onValueChange={(value) => handleBulkOutcomeUpdate(value as 'In Progress' | 'WON' | 'LOST')}>
@@ -339,9 +347,15 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Stages</SelectItem>
-            <SelectItem value="VAP">VAP</SelectItem>
-            <SelectItem value="MAP">MAP</SelectItem>
-            <SelectItem value="LAP">LAP</SelectItem>
+            <SelectItem value="VAP">
+              <div className="flex items-center gap-2">VAP <StageInfoTooltip stage="VAP" /></div>
+            </SelectItem>
+            <SelectItem value="MAP">
+              <div className="flex items-center gap-2">MAP <StageInfoTooltip stage="MAP" /></div>
+            </SelectItem>
+            <SelectItem value="LAP">
+              <div className="flex items-center gap-2">LAP <StageInfoTooltip stage="LAP" /></div>
+            </SelectItem>
           </SelectContent>
         </Select>
         <Select value={outcomeFilter} onValueChange={setOutcomeFilter}>

@@ -1,12 +1,15 @@
 import { cn } from '@/lib/utils';
+import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
+import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
 
 interface StatusBadgeProps {
   stage?: 'VAP' | 'MAP' | 'LAP';
   outcome?: 'In Progress' | 'WON' | 'LOST';
   className?: string;
+  showInfo?: boolean;
 }
 
-export const StatusBadge = ({ stage, outcome, className }: StatusBadgeProps) => {
+export const StatusBadge = ({ stage, outcome, className, showInfo = false }: StatusBadgeProps) => {
   const getStatusStyles = () => {
     // If outcome is terminal (WON/LOST), show that with appropriate color
     if (outcome === 'WON') {
@@ -37,15 +40,22 @@ export const StatusBadge = ({ stage, outcome, className }: StatusBadgeProps) => 
     return stage || 'Unknown';
   };
 
+  const isStageValue = stage && ['VAP', 'MAP', 'LAP'].includes(stage) && !outcome;
+
   return (
-    <span
-      className={cn(
-        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border',
-        getStatusStyles(),
-        className
+    <span className="inline-flex items-center gap-1">
+      <span
+        className={cn(
+          'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border',
+          getStatusStyles(),
+          className
+        )}
+      >
+        {getStatusLabel()}
+      </span>
+      {showInfo && isStageValue && (
+        <StageInfoTooltip stage={stage as AppraisalStage} />
       )}
-    >
-      {getStatusLabel()}
     </span>
   );
 };

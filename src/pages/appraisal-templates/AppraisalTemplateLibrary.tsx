@@ -39,7 +39,8 @@ import {
   ArrowLeft,
   Search,
 } from 'lucide-react';
-import { useAppraisalTemplates, AppraisalStage, APPRAISAL_STAGES, APPRAISAL_STAGE_DISPLAY_NAMES } from '@/hooks/useAppraisalTemplates';
+import { useAppraisalTemplates, AppraisalStage, APPRAISAL_STAGES, APPRAISAL_STAGE_DISPLAY_NAMES, APPRAISAL_STAGE_DESCRIPTIONS } from '@/hooks/useAppraisalTemplates';
+import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 
 const STAGE_COLORS: Record<AppraisalStage, string> = {
@@ -122,14 +123,17 @@ const AppraisalTemplateLibrary = () => {
             />
           </div>
           <Select value={stageFilter} onValueChange={(v) => setStageFilter(v as AppraisalStage | 'all')}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-48">
               <SelectValue placeholder="All Stages" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Stages</SelectItem>
-              {APPRAISAL_STAGES.map((stage) => (
-                <SelectItem key={stage} value={stage}>
-                  {APPRAISAL_STAGE_DISPLAY_NAMES[stage]}
+              {APPRAISAL_STAGES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  <div className="flex items-center gap-2">
+                    <span>{s}</span>
+                    <StageInfoTooltip stage={s} />
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -177,6 +181,7 @@ const AppraisalTemplateLibrary = () => {
                         <Badge className={STAGE_COLORS[template.stage]}>
                           {template.stage}
                         </Badge>
+                        <StageInfoTooltip stage={template.stage} />
                         {template.is_default && (
                           <Star className="h-4 w-4 text-amber-500 fill-amber-500 flex-shrink-0" />
                         )}
