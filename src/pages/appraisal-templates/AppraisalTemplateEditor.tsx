@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import {
   Select,
   SelectContent,
@@ -18,7 +18,6 @@ import {
   Plus, 
   ArrowLeft,
   ListTodo,
-  Settings,
 } from 'lucide-react';
 import { arrayMove } from '@dnd-kit/sortable';
 import { 
@@ -51,7 +50,7 @@ const AppraisalTemplateEditor = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('tasks');
+  
   
   // New section input
   const [newSectionName, setNewSectionName] = useState('');
@@ -289,134 +288,56 @@ const AppraisalTemplateEditor = () => {
         />
 
         {/* Main Editor */}
-        <div className="flex-1 overflow-auto">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <div className="border-b px-6 py-2">
-              <TabsList>
-                <TabsTrigger value="tasks" className="gap-2">
-                  <ListTodo className="h-4 w-4" />
-                  Tasks
-                </TabsTrigger>
-                <TabsTrigger value="settings" className="gap-2">
-                  <Settings className="h-4 w-4" />
-                  Settings
-                </TabsTrigger>
-              </TabsList>
+        <div className="flex-1 overflow-auto p-6 space-y-6">
+          {/* Summary */}
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {tasks.length} tasks across {sections.length} sections
+            </p>
+          </div>
+
+          {/* Sections */}
+          {sections.length === 0 ? (
+            <div className="border-2 border-dashed rounded-lg p-12 text-center">
+              <ListTodo className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+              <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Add a section to get started building your template
+              </p>
             </div>
-
-            <TabsContent value="tasks" className="flex-1 overflow-auto p-6 space-y-6">
-              {/* Summary */}
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  {tasks.length} tasks across {sections.length} sections
-                </p>
-              </div>
-
-              {/* Sections */}
-              {sections.length === 0 ? (
-                <div className="border-2 border-dashed rounded-lg p-12 text-center">
-                  <ListTodo className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Add a section to get started building your template
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {sections.map((section, index) => (
-                    <AppraisalCollapsibleTaskSection
-                      key={section}
-                      section={section}
-                      sectionIndex={index}
-                      tasks={tasksBySection[section]}
-                      onUpdateTask={updateTask}
-                      onRemoveTask={removeTask}
-                      onAddTask={() => addTaskToSection(section)}
-                      onRenameSection={renameSection}
-                      onDeleteSection={deleteSection}
-                      onReorderTasks={reorderTasks}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Add Section */}
-              <div className="flex items-center gap-2 pt-4 border-t">
-                <Input
-                  value={newSectionName}
-                  onChange={(e) => setNewSectionName(e.target.value.toUpperCase())}
-                  placeholder="New section name..."
-                  className="max-w-xs"
-                  onKeyDown={(e) => e.key === 'Enter' && addSection()}
+          ) : (
+            <div className="space-y-6">
+              {sections.map((section, index) => (
+                <AppraisalCollapsibleTaskSection
+                  key={section}
+                  section={section}
+                  sectionIndex={index}
+                  tasks={tasksBySection[section]}
+                  onUpdateTask={updateTask}
+                  onRemoveTask={removeTask}
+                  onAddTask={() => addTaskToSection(section)}
+                  onRenameSection={renameSection}
+                  onDeleteSection={deleteSection}
+                  onReorderTasks={reorderTasks}
                 />
-                <Button onClick={addSection} disabled={!newSectionName.trim()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Section
-                </Button>
-              </div>
-            </TabsContent>
+              ))}
+            </div>
+          )}
 
-            <TabsContent value="settings" className="flex-1 overflow-auto p-6">
-              <div className="max-w-xl space-y-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Template Name</label>
-                  <Input
-                    value={name}
-                    onChange={(e) => { setName(e.target.value); setHasChanges(true); }}
-                    placeholder="e.g., Standard VAP Tasks"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    Stage
-                    <StageInfoTooltip stage={stage} />
-                  </label>
-                  <Select value={stage} onValueChange={(v) => { setStage(v as AppraisalStage); setHasChanges(true); }}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {APPRAISAL_STAGES.map((s) => (
-                        <SelectItem key={s} value={s}>
-                          <div className="flex items-center gap-2">
-                            <span>{APPRAISAL_STAGE_DISPLAY_NAMES[s]}</span>
-                            <StageInfoTooltip stage={s} />
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    This template will be available for appraisals in the {APPRAISAL_STAGE_DISPLAY_NAMES[stage]} stage
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={description}
-                    onChange={(e) => { setDescription(e.target.value); setHasChanges(true); }}
-                    placeholder="Optional description for this template..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">Default Template</p>
-                    <p className="text-sm text-muted-foreground">
-                      Automatically apply this template when appraisals enter the {stage} stage
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={isDefault} 
-                    onCheckedChange={(v) => { setIsDefault(v); setHasChanges(true); }} 
-                  />
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
+          {/* Add Section */}
+          <div className="flex items-center gap-2 pt-4 border-t">
+            <Input
+              value={newSectionName}
+              onChange={(e) => setNewSectionName(e.target.value.toUpperCase())}
+              placeholder="New section name..."
+              className="max-w-xs"
+              onKeyDown={(e) => e.key === 'Enter' && addSection()}
+            />
+            <Button onClick={addSection} disabled={!newSectionName.trim()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Section
+            </Button>
+          </div>
         </div>
       </div>
     </div>
