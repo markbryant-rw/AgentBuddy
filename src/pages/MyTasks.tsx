@@ -24,7 +24,7 @@ export default function MyTasks() {
   const [openSections, setOpenSections] = useState<string[]>(["overdue", "dueToday"]);
 
   const completeTask = useMutation({
-    mutationFn: async ({ taskId, source }: { taskId: string; source: 'transaction' | 'project' | 'planner' }) => {
+    mutationFn: async ({ taskId, source }: { taskId: string; source: 'transaction' | 'project' | 'planner' | 'appraisal' }) => {
       if (source === 'planner') {
         // Daily planner items are in daily_planner_items table
         const { error } = await supabase
@@ -33,7 +33,7 @@ export default function MyTasks() {
           .eq("id", taskId);
         if (error) throw error;
       } else {
-        // Transaction and project tasks are both in tasks table
+        // Transaction, project, and appraisal tasks are all in tasks table
         const { error } = await supabase
           .from("tasks")
           .update({ completed: true, completed_at: new Date().toISOString() })
@@ -44,6 +44,7 @@ export default function MyTasks() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-assigned-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["daily-planner"] });
+      queryClient.invalidateQueries({ queryKey: ["appraisal-tasks"] });
       toast.success("Task completed! 🎉");
     },
     onError: () => {

@@ -12,7 +12,7 @@ export interface AssignedTask {
   completed: boolean;
   
   // Source indicator
-  source: 'transaction' | 'project' | 'planner';
+  source: 'transaction' | 'project' | 'planner' | 'appraisal';
   
   // Transaction context
   transaction_id?: string | null;
@@ -34,6 +34,15 @@ export interface AssignedTask {
   // Planner context
   planner_time?: string | null;
   size_category?: string | null;
+  
+  // Appraisal context
+  appraisal_id?: string | null;
+  appraisal?: {
+    id: string;
+    address: string;
+    stage: string | null;
+    vendor_name: string | null;
+  } | null;
   
   // Creator info (for transaction tasks)
   creator?: {
@@ -63,17 +72,18 @@ export const useMyAssignedTasks = () => {
       const allAssignments: AssignedTask[] = [];
       const seenIds = new Set<string>();
 
-      // 1. Fetch transaction tasks (assigned directly via assigned_to)
+      // 1. Fetch transaction tasks (assigned directly via assigned_to, excluding appraisal tasks)
       const { data: transactionTasks } = await (supabase as any)
         .from('tasks')
         .select(`
           id, title, description, due_date, priority, completed,
-          transaction_id,
+          transaction_id, appraisal_id,
           transaction:transaction_id(id, address, stage),
           creator:created_by(id, full_name, avatar_url)
         `)
         .eq('assigned_to', user.id)
-        .eq('completed', false);
+        .eq('completed', false)
+        .is('appraisal_id', null);
 
       transactionTasks?.forEach((task: any) => {
         if (!seenIds.has(task.id)) {
@@ -93,7 +103,36 @@ export const useMyAssignedTasks = () => {
         }
       });
 
-      // 2. Fetch project tasks via task_assignees junction
+      // 2. Fetch appraisal tasks (assigned via assigned_to with appraisal_id)
+      const { data: appraisalTasks } = await (supabase as any)
+        .from('tasks')
+        .select(`
+          id, title, description, due_date, priority, completed,
+          appraisal_id, appraisal_stage,
+          logged_appraisals!appraisal_id(id, address, stage, vendor_name)
+        `)
+        .eq('assigned_to', user.id)
+        .eq('completed', false)
+        .not('appraisal_id', 'is', null);
+
+      appraisalTasks?.forEach((task: any) => {
+        if (!seenIds.has(task.id)) {
+          seenIds.add(task.id);
+          allAssignments.push({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            due_date: task.due_date,
+            priority: task.priority,
+            completed: task.completed,
+            source: 'appraisal',
+            appraisal_id: task.appraisal_id,
+            appraisal: task.logged_appraisals,
+          });
+        }
+      });
+
+      // 3. Fetch project tasks via task_assignees junction
       const { data: projectAssignments } = await (supabase as any)
         .from('task_assignees')
         .select(`
@@ -123,7 +162,7 @@ export const useMyAssignedTasks = () => {
         }
       });
 
-      // 3. Fetch daily planner items via daily_planner_assignments junction
+      // 4. Fetch daily planner items via daily_planner_assignments junction
       const { data: plannerAssignments } = await (supabase as any)
         .from('daily_planner_assignments')
         .select(`

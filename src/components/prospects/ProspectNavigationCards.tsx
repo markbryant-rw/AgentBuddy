@@ -1,10 +1,11 @@
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
-import { FileText, TrendingUp, BarChart3, ArrowRight } from 'lucide-react';
+import { FileText, TrendingUp, BarChart3, ArrowRight, ListTodo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { Listing } from '@/hooks/useListingPipeline';
 import { useMemo } from 'react';
+import { useAppraisalTemplates } from '@/hooks/useAppraisalTemplates';
 
 interface NavigationCardProps {
   title: string;
@@ -91,6 +92,7 @@ const ProspectNavigationCards = ({
   appraisalStats, 
   pipelineStats 
 }: ProspectNavigationCardsProps) => {
+  const { templates } = useAppraisalTemplates();
   
   // Calculate analytics stats
   const analyticsStats = useMemo(() => {
@@ -106,7 +108,7 @@ const ProspectNavigationCards = ({
   }, [listings]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-fluid-lg">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-lg">
       <NavigationCard
         title="View Appraisals"
         description="Manage all appraisals, track warmth and follow-ups"
@@ -144,6 +146,20 @@ const ProspectNavigationCards = ({
           { label: 'Pipeline Value', value: `$${(analyticsStats.totalValue / 1000000).toFixed(1)}M` }
         ]}
         gradient="bg-green-100 dark:bg-green-900/30"
+      />
+      <NavigationCard
+        title="Task Templates"
+        description="Manage appraisal task templates for VAP, MAP, LAP"
+        icon={ListTodo}
+        route="/appraisal-templates"
+        primaryStat={templates.length.toString()}
+        primaryLabel="Templates"
+        secondaryStats={[
+          { label: 'VAP', value: templates.filter(t => t.stage === 'VAP').length },
+          { label: 'MAP', value: templates.filter(t => t.stage === 'MAP').length },
+          { label: 'LAP', value: templates.filter(t => t.stage === 'LAP').length }
+        ]}
+        gradient="bg-amber-100 dark:bg-amber-900/30"
       />
     </div>
   );
