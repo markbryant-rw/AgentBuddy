@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { Plus, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { TaskSection } from './TaskSection';
@@ -12,6 +13,7 @@ import { AddTaskDialog } from './AddTaskDialog';
 import { EditTaskDialog } from './EditTaskDialog';
 import { TemplateSelector } from './TemplateSelector';
 import { DefaultTemplatePrompt } from './DefaultTemplatePrompt';
+import { isRolloverSection, getStageFromRolloverSection, STAGE_DISPLAY_NAMES } from '@/hooks/useTaskRollover';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -202,8 +204,8 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
     'COMMUNICATION', 'REPORTING', 'FINANCIAL'
   ];
 
-  const tasksBySection = useMemo(() => {
-    if (!tasks) return {};
+  const { tasksBySection, rolloverSections, regularSections } = useMemo(() => {
+    if (!tasks) return { tasksBySection: {}, rolloverSections: [], regularSections: [] };
     
     // Filter tasks based on hideCompleted toggle
     const visibleTasks = hideCompleted 
@@ -227,7 +229,12 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
       }
     });
     
-    return sections;
+    // Separate rollover sections from regular sections
+    const allSections = Object.keys(sections);
+    const rollover = allSections.filter(s => isRolloverSection(s));
+    const regular = allSections.filter(s => !isRolloverSection(s));
+    
+    return { tasksBySection: sections, rolloverSections: rollover, regularSections: regular };
   }, [tasks, hideCompleted]);
 
   const existingSections = useMemo(() => {
@@ -341,12 +348,13 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
             />
           </div>
         ) : (
-          <div className="p-4">
-            {Object.entries(tasksBySection).map(([section, sectionTasks]) => (
+          <div className="p-4 space-y-2">
+            {/* Regular sections first */}
+            {regularSections.map((section) => (
               <TaskSection
                 key={section}
                 title={section}
-                tasks={sectionTasks}
+                tasks={tasksBySection[section]}
                 onToggle={(id) => toggleTask.mutate(id)}
                 onEdit={handleEdit}
                 onDelete={(id) => setDeleteTaskId(id)}
@@ -354,6 +362,43 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
                 onInlineEdit={handleInlineEdit}
               />
             ))}
+            
+            {/* Rollover sections with visual distinction */}
+            {rolloverSections.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-dashed border-amber-300">
+                <div className="flex items-center gap-2 mb-3 px-2">
+                  <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 text-xs">
+                    Previous Stage Tasks
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {rolloverSections.reduce((sum, s) => sum + tasksBySection[s].length, 0)} tasks from earlier stages
+                  </span>
+                </div>
+                {rolloverSections.map((section) => {
+                  const stageName = getStageFromRolloverSection(section);
+                  const stageDisplayName = stageName ? STAGE_DISPLAY_NAMES[stageName] : section;
+                  return (
+                    <div key={section} className="bg-amber-50/50 rounded-lg mb-2">
+                      <TaskSection
+                        title={section}
+                        tasks={tasksBySection[section]}
+                        onToggle={(id) => toggleTask.mutate(id)}
+                        onEdit={handleEdit}
+                        onDelete={(id) => setDeleteTaskId(id)}
+                        onReorder={handleReorder}
+                        onInlineEdit={handleInlineEdit}
+                        defaultCollapsed
+                        badge={
+                          <Badge variant="outline" className="ml-2 text-xs bg-amber-100 text-amber-700 border-amber-300">
+                            From {stageDisplayName} stage
+                          </Badge>
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </ScrollArea>
