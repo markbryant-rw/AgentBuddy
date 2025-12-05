@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjectLists } from '@/hooks/useProjectLists';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useDragScroll } from '@/hooks/useDragScroll';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -805,6 +806,9 @@ export default function ProjectKanbanBoard() {
     return new Set();
   });
   
+  // Click-and-drag horizontal scrolling
+  const { containerRef: dragScrollRef, isDragging: isDragScrolling, handlers: dragScrollHandlers } = useDragScroll();
+  
   // Persist collapsed columns to localStorage
   useEffect(() => {
     if (projectId) {
@@ -1227,10 +1231,15 @@ export default function ProjectKanbanBoard() {
 
       {/* Kanban Board */}
       <div 
-        className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden kanban-scroll px-4 pb-2 pt-4"
+        ref={dragScrollRef}
+        className={cn(
+          "flex-1 min-h-0 overflow-x-auto overflow-y-hidden kanban-scroll px-4 pb-2 pt-4",
+          isDragScrolling ? 'cursor-grabbing select-none' : 'cursor-grab'
+        )}
         style={{ 
           background: project?.background || undefined,
         }}
+        {...dragScrollHandlers}
       >
         <DndContext
           sensors={sensors}
