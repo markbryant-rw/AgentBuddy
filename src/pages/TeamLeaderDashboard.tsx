@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { HelpRequestCard } from '@/components/help/HelpRequestCard';
 import { CreateHelpRequestDialog } from '@/components/help/CreateHelpRequestDialog';
 import { WorkspaceSwitcher } from '@/components/WorkspaceSwitcher';
+import { WeeklyTasksPerformanceCard } from '@/components/team-leader/WeeklyTasksPerformanceCard';
 
 export default function TeamLeaderDashboard() {
   const { user } = useAuth();

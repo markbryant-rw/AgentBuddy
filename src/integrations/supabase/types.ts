@@ -3207,10 +3207,12 @@ export type Database = {
           daily_position: number | null
           description: string | null
           due_date: string | null
+          generated_for_week: string | null
           id: string
           is_daily_task: boolean | null
           is_important: boolean | null
           is_urgent: boolean | null
+          is_weekly_recurring: boolean
           last_updated_by: string | null
           list_id: string | null
           listing_id: string | null
@@ -3227,6 +3229,7 @@ export type Database = {
           transaction_id: string | null
           transaction_stage: string | null
           updated_at: string | null
+          weekly_template_id: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -3239,10 +3242,12 @@ export type Database = {
           daily_position?: number | null
           description?: string | null
           due_date?: string | null
+          generated_for_week?: string | null
           id?: string
           is_daily_task?: boolean | null
           is_important?: boolean | null
           is_urgent?: boolean | null
+          is_weekly_recurring?: boolean
           last_updated_by?: string | null
           list_id?: string | null
           listing_id?: string | null
@@ -3259,6 +3264,7 @@ export type Database = {
           transaction_id?: string | null
           transaction_stage?: string | null
           updated_at?: string | null
+          weekly_template_id?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -3271,10 +3277,12 @@ export type Database = {
           daily_position?: number | null
           description?: string | null
           due_date?: string | null
+          generated_for_week?: string | null
           id?: string
           is_daily_task?: boolean | null
           is_important?: boolean | null
           is_urgent?: boolean | null
+          is_weekly_recurring?: boolean
           last_updated_by?: string | null
           list_id?: string | null
           listing_id?: string | null
@@ -3291,6 +3299,7 @@ export type Database = {
           transaction_id?: string | null
           transaction_stage?: string | null
           updated_at?: string | null
+          weekly_template_id?: string | null
         }
         Relationships: [
           {
@@ -3361,6 +3370,13 @@ export type Database = {
             columns: ["transaction_id"]
             isOneToOne: false
             referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_weekly_template_id_fkey"
+            columns: ["weekly_template_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_task_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -3723,6 +3739,7 @@ export type Database = {
           geocode_error: string | null
           geocoded_at: string | null
           id: string
+          include_weekly_tasks: boolean
           last_edited_by: string | null
           latitude: number | null
           lead_source: string | null
@@ -3780,6 +3797,7 @@ export type Database = {
           geocode_error?: string | null
           geocoded_at?: string | null
           id?: string
+          include_weekly_tasks?: boolean
           last_edited_by?: string | null
           latitude?: number | null
           lead_source?: string | null
@@ -3837,6 +3855,7 @@ export type Database = {
           geocode_error?: string | null
           geocoded_at?: string | null
           id?: string
+          include_weekly_tasks?: boolean
           last_edited_by?: string | null
           latitude?: number | null
           lead_source?: string | null
@@ -4035,6 +4054,82 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_task_settings: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_task_settings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_task_templates: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          default_size_category: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          position: number
+          team_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          default_size_category?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          position?: number
+          team_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          default_size_category?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          position?: number
+          team_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_task_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]

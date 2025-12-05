@@ -67,6 +67,7 @@ export interface Transaction {
   geocoded_at?: string;
   geocode_error?: string;
   deal_history?: any[]; // JSONB array storing deal collapse history
+  include_weekly_tasks?: boolean; // Whether to generate weekly recurring tasks
   created_at: string;
   updated_at: string;
 }

@@ -28,6 +28,7 @@ import { EditTransactionDialog } from './EditTransactionDialog';
 import { ExtendListingDialog } from './ExtendListingDialog';
 import { calculateDaysOnMarket, calculateDaysUntilExpiry, getExpiryStatus } from '@/lib/listingExpiryUtils';
 import { TransactionNotesTab } from './TransactionNotesTab';
+import { TransactionSettingsTab } from './TransactionSettingsTab';
 import { TransactionTasksTab } from './TransactionTasksTab';
 import { TransactionLinksSection } from './TransactionLinksSection';
 import { TransactionVendorReportsTab } from './TransactionVendorReportsTab';
@@ -561,6 +562,9 @@ export const TransactionDetailDrawer = ({
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Notes
               </TabsTrigger>
+              <TabsTrigger value="settings" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+                Settings
+              </TabsTrigger>
             </TabsList>
 
             <div className="flex-1 overflow-y-auto">
@@ -938,6 +942,10 @@ export const TransactionDetailDrawer = ({
 
               <TabsContent value="reports" className="mt-0">
                 <TransactionVendorReportsTab transactionId={transaction.id} />
+              </TabsContent>
+
+              <TabsContent value="settings" className="mt-0">
+                <TransactionSettingsTab transaction={transaction} />
               </TabsContent>
             </div>
           </Tabs>
