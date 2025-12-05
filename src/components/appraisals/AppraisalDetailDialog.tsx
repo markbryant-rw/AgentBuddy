@@ -23,15 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Checkbox } from '@/components/ui/checkbox';
 import ConvertToOpportunityDialog from './ConvertToOpportunityDialog';
 import LocationFixSection from '@/components/shared/LocationFixSection';
-import { Trash2, ChevronDown, History } from "lucide-react";
+import { VisitTimeline } from './VisitTimeline';
+import { Trash2, Plus } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,7 +58,7 @@ const AppraisalDetailDialog = ({
 }: AppraisalDetailDialogProps) => {
   const queryClient = useQueryClient();
   const { team } = useTeam();
-  const { addAppraisal, updateAppraisal, deleteAppraisal, getPreviousAppraisals } = useLoggedAppraisals();
+  const { addAppraisal, updateAppraisal, updateAppraisalWithSync, deleteAppraisal, getAppraisalsAtAddress } = useLoggedAppraisals();
   const { activeLeadSources } = useLeadSources();
   const { members } = useTeamMembers();
   const { user } = useAuth();
@@ -71,7 +68,7 @@ const AppraisalDetailDialog = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [estimatedValueDisplay, setEstimatedValueDisplay] = useState("");
-  const [previousAppraisalsOpen, setPreviousAppraisalsOpen] = useState(false);
+  const [syncContactsToAllVisits, setSyncContactsToAllVisits] = useState(false);
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
     address: '',
     vendor_name: '',
@@ -90,9 +87,12 @@ const AppraisalDetailDialog = ({
     agent_id: undefined,
   });
 
-  const previousAppraisals = appraisal && !isNew 
-    ? getPreviousAppraisals(appraisal.address, appraisal.id)
+  // Get all visits at this address for the timeline
+  const allVisitsAtAddress = appraisal && !isNew 
+    ? getAppraisalsAtAddress(appraisal.address)
     : [];
+  
+  const hasMultipleVisits = allVisitsAtAddress.length > 1;
 
   useEffect(() => {
     if (appraisal && !isNew) {
@@ -151,7 +151,12 @@ const AppraisalDetailDialog = ({
           description: "Appraisal logged successfully",
         });
       } else if (appraisal) {
-        await updateAppraisal(appraisal.id, sanitizedData);
+        // Use sync version if checkbox is checked and there are multiple visits
+        if (syncContactsToAllVisits && hasMultipleVisits) {
+          await updateAppraisalWithSync(appraisal.id, sanitizedData, true);
+        } else {
+          await updateAppraisal(appraisal.id, sanitizedData);
+        }
         toast({
           title: "Success",
           description: "Appraisal updated successfully",
@@ -168,6 +173,33 @@ const AppraisalDetailDialog = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleLogNewVisit = () => {
+    if (!appraisal) return;
+    // Pre-fill form with address and vendor details from current appraisal
+    setFormData({
+      address: appraisal.address,
+      vendor_name: appraisal.vendor_name,
+      vendor_mobile: appraisal.vendor_mobile,
+      vendor_email: appraisal.vendor_email,
+      suburb: appraisal.suburb,
+      latitude: appraisal.latitude,
+      longitude: appraisal.longitude,
+      appraisal_date: new Date().toISOString().split('T')[0],
+      intent: 'medium',
+      stage: 'VAP',
+      outcome: 'In Progress',
+      estimated_value: appraisal.estimated_value,
+      last_contact: new Date().toISOString().split('T')[0],
+      next_follow_up: '',
+      lead_source: appraisal.lead_source,
+      notes: '',
+      agent_id: user?.id,
+    });
+    setEstimatedValueDisplay(appraisal.estimated_value ? formatCurrencyFull(appraisal.estimated_value) : "");
+    // This will trigger a re-render with isNew behavior
+    // We need to handle this differently - open a new dialog or switch mode
   };
 
   const handleLocationUpdated = (data: { address: string; suburb: string; latitude: number; longitude: number }) => {
@@ -412,56 +444,34 @@ const AppraisalDetailDialog = ({
               />
             )}
 
-            {/* Previous Appraisals Section */}
-            {previousAppraisals.length > 0 && (
-              <Collapsible open={previousAppraisalsOpen} onOpenChange={setPreviousAppraisalsOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20">
-                    <div className="flex items-center gap-2 text-amber-600">
-                      <History className="h-4 w-4" />
-                      <span className="font-medium">Previous Appraisals at this Address ({previousAppraisals.length})</span>
-                    </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${previousAppraisalsOpen ? 'rotate-180' : ''}`} />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2 space-y-2">
-                  {previousAppraisals.map((prev) => (
-                    <div key={prev.id} className="p-3 rounded-lg bg-muted/50 border text-sm">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium">{format(new Date(prev.appraisal_date), 'dd MMM yyyy')}</div>
-                          <div className="text-muted-foreground">
-                            {prev.vendor_name} • {prev.stage} • {prev.outcome}
-                          </div>
-                          {prev.estimated_value && (
-                            <div className="text-muted-foreground">
-                              Estimated: ${prev.estimated_value.toLocaleString()}
-                            </div>
-                          )}
-                        </div>
-                        {prev.agent && (
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={prev.agent.avatar_url} />
-                              <AvatarFallback className="text-xs">{getInitials(prev.agent.full_name)}</AvatarFallback>
-                            </Avatar>
-                          </div>
-                        )}
-                      </div>
-                      {prev.notes && (
-                        <div className="mt-2 text-xs text-muted-foreground border-t pt-2">
-                          {prev.notes}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </CollapsibleContent>
-              </Collapsible>
+            {/* Visit Timeline - always visible for existing appraisals with multiple visits */}
+            {!isNew && allVisitsAtAddress.length > 0 && (
+              <VisitTimeline
+                visits={allVisitsAtAddress}
+                currentVisitId={appraisal?.id}
+              />
+            )}
+
+            {/* Sync contact details option */}
+            {!isNew && hasMultipleVisits && (
+              <div className="flex items-center space-x-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <Checkbox
+                  id="sync-contacts"
+                  checked={syncContactsToAllVisits}
+                  onCheckedChange={(checked) => setSyncContactsToAllVisits(checked as boolean)}
+                />
+                <label
+                  htmlFor="sync-contacts"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Sync contact details to all {allVisitsAtAddress.length} visits at this address
+                </label>
+              </div>
             )}
           </div>
 
           <div className="flex justify-between gap-3 pt-6 border-t">
-            <div>
+            <div className="flex gap-2">
               {appraisal && !isNew && (
                 <Button
                   type="button"
@@ -476,6 +486,18 @@ const AppraisalDetailDialog = ({
               )}
             </div>
             <div className="flex gap-3">
+              {appraisal && !isNew && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleLogNewVisit}
+                  disabled={isDeleting || isSaving}
+                  className="px-4"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Log New Visit
+                </Button>
+              )}
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting || isSaving} className="px-6">Cancel</Button>
               {appraisal && appraisal.outcome === 'In Progress' && !isNew && (
                 <Button type="button" variant="secondary" onClick={handleConvert} disabled={isDeleting || isSaving} className="px-6">Convert to Opportunity</Button>
