@@ -4,6 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
+import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
 
 interface PropertyAppraisalCardProps {
   property: GroupedProperty;
@@ -82,9 +84,12 @@ export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCa
 
           {/* Stage */}
           {latestAppraisal.stage && (
-            <Badge variant="secondary" className="text-xs px-1.5 py-0">
-              {latestAppraisal.stage}
-            </Badge>
+            <div className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                {latestAppraisal.stage}
+              </Badge>
+              <StageInfoTooltip stage={latestAppraisal.stage as AppraisalStage} className="h-3 w-3" />
+            </div>
           )}
 
           {/* Outcome */}

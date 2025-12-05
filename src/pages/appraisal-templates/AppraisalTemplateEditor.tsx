@@ -28,6 +28,7 @@ import {
   APPRAISAL_STAGES,
   APPRAISAL_STAGE_DISPLAY_NAMES 
 } from '@/hooks/useAppraisalTemplates';
+import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 import { AppraisalTemplateSidebar } from '@/components/appraisals/templates/AppraisalTemplateSidebar';
 import { AppraisalCollapsibleTaskSection } from '@/components/appraisals/templates/AppraisalCollapsibleTaskSection';
@@ -234,18 +235,24 @@ const AppraisalTemplateEditor = () => {
               placeholder="Template name..."
               className="text-lg font-semibold border-0 shadow-none focus-visible:ring-0 w-64 px-0"
             />
-            <Select value={stage} onValueChange={(v) => { setStage(v as AppraisalStage); setHasChanges(true); }}>
-              <SelectTrigger className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {APPRAISAL_STAGES.map((s) => (
-                  <SelectItem key={s} value={s}>
-                    {APPRAISAL_STAGE_DISPLAY_NAMES[s]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select value={stage} onValueChange={(v) => { setStage(v as AppraisalStage); setHasChanges(true); }}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {APPRAISAL_STAGES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      <div className="flex items-center gap-2">
+                        <span>{s}</span>
+                        <StageInfoTooltip stage={s} />
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <StageInfoTooltip stage={stage} />
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Default</span>
               <Switch 
@@ -361,7 +368,10 @@ const AppraisalTemplateEditor = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Stage</label>
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    Stage
+                    <StageInfoTooltip stage={stage} />
+                  </label>
                   <Select value={stage} onValueChange={(v) => { setStage(v as AppraisalStage); setHasChanges(true); }}>
                     <SelectTrigger>
                       <SelectValue />
@@ -369,7 +379,10 @@ const AppraisalTemplateEditor = () => {
                     <SelectContent>
                       {APPRAISAL_STAGES.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {APPRAISAL_STAGE_DISPLAY_NAMES[s]}
+                          <div className="flex items-center gap-2">
+                            <span>{APPRAISAL_STAGE_DISPLAY_NAMES[s]}</span>
+                            <StageInfoTooltip stage={s} />
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
