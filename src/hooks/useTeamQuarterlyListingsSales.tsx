@@ -39,28 +39,82 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
       const quarterStart = startOfQuarter(now);
       const quarterEnd = endOfQuarter(now);
       const quarterStartStr = format(quarterStart, 'yyyy-MM-dd');
-      const quarterEndStr = format(quarterEnd, 'yyyy-MM-dd');
+
+      // Helper to check if date is within quarter
+      const isWithinQuarter = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return !isBefore(date, quarterStart) && !isAfter(date, quarterEnd);
+      };
 
       // Fetch transactions for the team
-      const { data: transactions, error } = await supabase
+      const { data: transactions, error: txError } = await supabase
         .from('transactions')
-        .select('id, listing_signed_date, stage, settlement_date')
+        .select('id, address, listing_signed_date, stage, settlement_date')
         .eq('team_id', teamId);
 
-      if (error) throw error;
+      if (txError) throw txError;
 
-      // Filter listings (signed this quarter)
-      const listings = (transactions || []).filter(t => {
-        if (!t.listing_signed_date) return false;
-        const signedDate = new Date(t.listing_signed_date);
-        return !isBefore(signedDate, quarterStart) && !isAfter(signedDate, quarterEnd);
+      // Fetch past_sales for the team (all statuses - we filter appropriately below)
+      const { data: pastSales, error: psError } = await supabase
+        .from('past_sales')
+        .select('id, address, listing_signed_date, settlement_date, status')
+        .eq('team_id', teamId);
+
+      if (psError) throw psError;
+
+      // Deduplication sets using address + date as key
+      const listingKeys = new Set<string>();
+      const saleKeys = new Set<string>();
+
+      // Track listings and sales with dates for weekly cumulative data
+      const listingDates: Date[] = [];
+      const saleDates: Date[] = [];
+
+      // Process transactions
+      (transactions || []).forEach(t => {
+        // Listings: any with listing_signed_date in quarter
+        if (t.listing_signed_date && isWithinQuarter(t.listing_signed_date)) {
+          const key = `${t.address}|${t.listing_signed_date}`;
+          if (!listingKeys.has(key)) {
+            listingKeys.add(key);
+            listingDates.push(new Date(t.listing_signed_date));
+          }
+        }
+        // Sales: settled transactions with settlement_date in quarter
+        if (t.stage === 'settled' && t.settlement_date && isWithinQuarter(t.settlement_date)) {
+          const key = `${t.address}|${t.settlement_date}`;
+          if (!saleKeys.has(key)) {
+            saleKeys.add(key);
+            saleDates.push(new Date(t.settlement_date));
+          }
+        }
       });
 
-      // Filter sales (settled this quarter)
-      const sales = (transactions || []).filter(t => {
-        if (t.stage !== 'settled' || !t.settlement_date) return false;
-        const settledDate = new Date(t.settlement_date);
-        return !isBefore(settledDate, quarterStart) && !isAfter(settledDate, quarterEnd);
+      // Statuses that count as a SALE (not WITHDRAWN or LOST)
+      const soldStatuses = ['WON', 'SOLD', 'won_and_sold', null];
+
+      // Process past_sales
+      (pastSales || []).forEach(ps => {
+        // Listings: ALL statuses count (including WITHDRAWN)
+        if (ps.listing_signed_date && isWithinQuarter(ps.listing_signed_date)) {
+          const key = `${ps.address}|${ps.listing_signed_date}`;
+          if (!listingKeys.has(key)) {
+            listingKeys.add(key);
+            listingDates.push(new Date(ps.listing_signed_date));
+          }
+        }
+        // Sales: only WON/SOLD statuses (exclude WITHDRAWN and LOST)
+        if (ps.settlement_date && isWithinQuarter(ps.settlement_date)) {
+          const status = ps.status?.toUpperCase();
+          if (status === null || status === undefined || 
+              status === 'WON' || status === 'SOLD' || status === 'WON_AND_SOLD') {
+            const key = `${ps.address}|${ps.settlement_date}`;
+            if (!saleKeys.has(key)) {
+              saleKeys.add(key);
+              saleDates.push(new Date(ps.settlement_date));
+            }
+          }
+        }
       });
 
       // Generate weekly cumulative data
@@ -72,16 +126,10 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
         const weekEnd = addWeeks(weekStart, 1);
         
         // Count cumulative listings up to this week
-        const cumulativeListings = listings.filter(t => {
-          const signedDate = new Date(t.listing_signed_date!);
-          return isBefore(signedDate, weekEnd);
-        }).length;
+        const cumulativeListings = listingDates.filter(d => isBefore(d, weekEnd)).length;
 
         // Count cumulative sales up to this week
-        const cumulativeSales = sales.filter(t => {
-          const settledDate = new Date(t.settlement_date!);
-          return isBefore(settledDate, weekEnd);
-        }).length;
+        const cumulativeSales = saleDates.filter(d => isBefore(d, weekEnd)).length;
 
         // Only add data points up to current week
         if (isBefore(weekStart, now) || weekNum === 1) {
@@ -125,8 +173,8 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
       const FALLBACK_SALES_TARGET = 6;
 
       return {
-        totalListings: listings.length,
-        totalSales: sales.length,
+        totalListings: listingKeys.size,
+        totalSales: saleKeys.size,
         weeklyData,
         listingsTarget: listingsGoal?.target_value ?? FALLBACK_LISTINGS_TARGET,
         salesTarget: salesGoal?.target_value ?? FALLBACK_SALES_TARGET,
