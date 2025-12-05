@@ -46,8 +46,10 @@ export function DailyPlannerView() {
     updateAssignments,
     updateItem,
     rollForward,
-    uncompletedCount,
   } = useDailyPlanner(selectedDate);
+
+  // Calculate uncompleted count from items
+  const uncompletedCount = items.filter(item => !item.completed).length;
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -138,8 +140,13 @@ export function DailyPlannerView() {
   };
 
   const handleRollForward = () => {
+    if (!team?.id) return;
     const nextDay = addDays(selectedDate, 1);
-    rollForward(nextDay);
+    rollForward({
+      targetDate: nextDay,
+      currentDateStr: format(selectedDate, 'yyyy-MM-dd'),
+      teamId: team.id,
+    });
     setRollForwardDialogOpen(false);
     setSelectedDate(nextDay);
   };

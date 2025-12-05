@@ -67,11 +67,11 @@ export function CategorySection({
 }: CategorySectionProps) {
   const config = categoryConfig[category];
   
-  // Sort: uncompleted first (by order_within_category), then completed (by completed_at)
+  // Sort: uncompleted first (by position), then completed (by completed_at)
   const sortedItems = useMemo(() => {
     const uncompleted = items
       .filter(item => !item.completed)
-      .sort((a, b) => a.order_within_category - b.order_within_category);
+      .sort((a, b) => a.position - b.position);
     
     const completed = items
       .filter(item => item.completed)
