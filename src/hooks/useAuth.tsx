@@ -25,6 +25,7 @@ interface AuthContextType {
   startViewingAs: (userId: string, reason?: string) => Promise<void>;
   stopViewingAs: () => void;
   actualAdmin: User | null;
+  setActiveRoleState: (role: AppRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -44,6 +45,7 @@ const AuthContext = createContext<AuthContextType>({
   startViewingAs: async () => {},
   stopViewingAs: () => {},
   actualAdmin: null,
+  setActiveRoleState: () => {},
 });
 
 export const useAuth = () => {
@@ -385,6 +387,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Use viewAsUser if viewing, otherwise use actual user
   const effectiveUser = viewAsUser || user;
 
+  // Allow external components (like RoleSwitcher) to update activeRole state directly
+  const setActiveRoleState = (role: AppRole) => {
+    setActiveRole(role);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user: effectiveUser, 
@@ -403,6 +410,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       startViewingAs,
       stopViewingAs,
       actualAdmin: actualAdmin || user,
+      setActiveRoleState,
     }}>
       {children}
     </AuthContext.Provider>
