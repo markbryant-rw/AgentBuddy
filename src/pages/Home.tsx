@@ -190,7 +190,6 @@ export default function Home() {
               lowAppraisals={quarterlyAppraisals?.low || 0}
               totalListings={listingsSalesData?.totalListings || 0}
               totalSales={listingsSalesData?.totalSales || 0}
-              listingsSalesWeeklyData={listingsSalesData?.weeklyData || []}
               listingsTarget={listingsSalesData?.listingsTarget}
               salesTarget={listingsSalesData?.salesTarget}
             />
