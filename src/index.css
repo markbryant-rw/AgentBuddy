@@ -45,10 +45,18 @@ html {
   opacity: 1 !important;
 }
 
-/* Apple Notes Premium Design System - Warm, Inviting, Professional */
+/* ============================================
+   AGENTBUDDY DESIGN SYSTEM
+   Teal-Cyan Primary | Amber Accent | Modern & Professional
+   ============================================ */
 
 @layer base {
   :root {
+    /* Typography - Plus Jakarta Sans */
+    --font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", monospace;
+
     /* Fluid Typography Scale - scales smoothly between 768px and 1440px viewport */
     --text-xs: clamp(0.7rem, 0.65rem + 0.25vw, 0.8rem);
     --text-sm: clamp(0.8rem, 0.75rem + 0.25vw, 0.9rem);
@@ -78,132 +86,158 @@ html {
     --kanban-gap: clamp(0.5rem, 0.4rem + 0.5vw, 0.75rem);
     --kanban-card-padding: clamp(0.375rem, 0.3rem + 0.4vw, 0.625rem);
 
-    /* Warm background tones */
-    --background: 42 15% 98%;
-    --foreground: 222.2 84% 4.9%;
+    /* ========== PRIMARY PALETTE: Teal → Cyan ========== */
+    --primary: 174 62% 47%;          /* Teal #0D9488 */
+    --primary-light: 187 78% 42%;    /* Cyan #06B6D4 */
+    --primary-dark: 174 62% 38%;     /* Darker teal */
+    --primary-foreground: 0 0% 100%;
+    
+    /* ========== ACCENT PALETTE: Amber → Gold ========== */
+    --accent: 38 92% 50%;            /* Amber #F59E0B */
+    --accent-light: 45 93% 58%;      /* Gold #FBBF24 */
+    --accent-foreground: 0 0% 9%;
+    
+    /* ========== SEMANTIC COLORS ========== */
+    /* Success - Emerald */
+    --success: 160 84% 39%;          /* #059669 */
+    --success-foreground: 0 0% 100%;
+    --success-light: 152 76% 95%;
+    
+    /* Warning - Amber */
+    --warning: 45 93% 47%;           /* #EAB308 */
+    --warning-foreground: 0 0% 9%;
+    --warning-light: 48 96% 95%;
+    
+    /* Danger - Rose */
+    --danger: 0 84% 60%;             /* #EF4444 */
+    --danger-foreground: 0 0% 100%;
+    --danger-light: 0 86% 97%;
+    
+    /* Info - Sky */
+    --info: 199 89% 48%;             /* #0EA5E9 */
+    --info-foreground: 0 0% 100%;
+    --info-light: 201 94% 96%;
 
-    /* Card with subtle warmth */
-    --card: 40 20% 99%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* ========== NEUTRAL PALETTE: Slate ========== */
+    --background: 210 20% 98%;       /* Light slate bg */
+    --foreground: 222 47% 11%;       /* Dark slate text */
+
+    --card: 0 0% 100%;               /* Pure white cards */
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Warmer primary (soft blue-gray) */
-    --primary: 220 30% 45%;
-    --primary-foreground: 210 40% 98%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 47% 11%;
 
-    /* Soft secondary */
-    --secondary: 35 30% 94%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 15% 94%;
+    --muted-foreground: 215 16% 47%;
 
-    --muted: 35 20% 95%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    /* Warm accent */
-    --accent: 35 40% 92%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    /* Softer borders */
-    --border: 35 15% 88%;
-    --input: 35 15% 88%;
-    --ring: 220 30% 45%;
+    --border: 214 20% 90%;
+    --input: 214 20% 90%;
+    --ring: 174 62% 47%;
 
     --radius: 0.75rem;
 
     /* Notes-specific design tokens */
-    --note-gradient-start: 40 25% 99%;
-    --note-gradient-end: 35 20% 96%;
-    --note-shadow: 220 30% 45%;
+    --note-gradient-start: 210 20% 99%;
+    --note-gradient-end: 210 15% 96%;
+    --note-shadow: 174 62% 47%;
     --note-hover-lift: -4px;
     
     /* Warm color palette for note borders */
-    --note-blue: 215 80% 60%;
+    --note-blue: 199 89% 48%;
     --note-purple: 270 70% 65%;
     --note-pink: 340 75% 70%;
     --note-orange: 25 90% 65%;
-    --note-green: 150 60% 55%;
-    --note-yellow: 45 95% 65%;
+    --note-green: 160 84% 39%;
+    --note-yellow: 45 93% 47%;
 
-    --chart-1: 0 84% 60%;
-    --chart-2: 142 76% 36%;
-    --chart-3: 45 93% 47%;
-    --chart-4: 25 95% 53%;
-    --chart-5: 217 91% 60%;
+    /* Chart colors - using semantic palette */
+    --chart-1: 174 62% 47%;          /* Primary teal */
+    --chart-2: 160 84% 39%;          /* Success emerald */
+    --chart-3: 45 93% 47%;           /* Warning amber */
+    --chart-4: 38 92% 50%;           /* Accent amber */
+    --chart-5: 199 89% 48%;          /* Info sky */
 
-    --sidebar-background: 35 15% 97%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 35 20% 92%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 35 15% 88%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 47% 11%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 47% 13%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 47% 11%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 217 91% 60%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-
-    --note-gradient-start: 222.2 47% 13%;
-    --note-gradient-end: 222.2 47% 16%;
-    --note-shadow: 217 91% 60%;
-
-    --chart-1: 0 72% 51%;
-    --chart-2: 142 69% 58%;
-    --chart-3: 45 93% 58%;
-    --chart-4: 25 95% 63%;
-    --chart-5: 217 91% 60%;
-
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    /* Sidebar styling */
+    --sidebar-background: 210 15% 97%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 174 62% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 20% 94%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 214 20% 90%;
+    --sidebar-ring: 174 62% 47%;
 
     /* Message theme colors */
     --message-personal: 270 70% 65%;
     --message-personal-light: 270 60% 95%;
     --message-personal-dark: 270 70% 25%;
     
-    --message-channel: 215 80% 60%;
-    --message-channel-light: 215 80% 95%;
-    --message-channel-dark: 215 80% 25%;
+    --message-channel: 199 89% 48%;
+    --message-channel-light: 199 80% 95%;
+    --message-channel-dark: 199 89% 25%;
     
-    --message-announcement: 25 90% 65%;
-    --message-announcement-light: 25 90% 95%;
-    --message-announcement-dark: 25 90% 25%;
+    --message-announcement: 38 92% 50%;
+    --message-announcement-light: 38 90% 95%;
+    --message-announcement-dark: 38 90% 25%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 174 62% 55%;
+    --primary-light: 187 78% 50%;
+    --primary-dark: 174 62% 45%;
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 38 92% 55%;
+    --accent-light: 45 93% 62%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 212 27% 84%;
+
+    --note-gradient-start: 222 47% 13%;
+    --note-gradient-end: 222 47% 16%;
+    --note-shadow: 174 62% 55%;
+
+    --chart-1: 174 62% 55%;
+    --chart-2: 160 84% 50%;
+    --chart-3: 45 93% 58%;
+    --chart-4: 38 92% 58%;
+    --chart-5: 199 89% 55%;
+
+    --sidebar-background: 240 6% 10%;
+    --sidebar-foreground: 240 5% 96%;
+    --sidebar-primary: 174 62% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 4% 16%;
+    --sidebar-accent-foreground: 240 5% 96%;
+    --sidebar-border: 240 4% 16%;
+    --sidebar-ring: 174 62% 55%;
   }
 }
 
@@ -212,12 +246,12 @@ html {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground leading-relaxed;
+    @apply bg-background text-foreground leading-relaxed font-sans antialiased;
     font-size: var(--text-base);
   }
   
-  h1, h2, h3 {
-    @apply font-semibold;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display font-semibold tracking-tight;
   }
   
   h1 {
@@ -231,40 +265,157 @@ html {
   h3 {
     font-size: var(--text-xl);
   }
+
+  /* Numbers and data should use mono font */
+  .font-mono, code, pre, .tabular-nums {
+    font-family: var(--font-mono);
+  }
 }
 
 @layer components {
-  /* Enhanced card gradients */
+  /* ========== GRADIENT UTILITIES ========== */
+  .gradient-primary {
+    @apply bg-gradient-to-r from-primary to-primary-light;
+  }
+  
+  .gradient-primary-vertical {
+    @apply bg-gradient-to-b from-primary to-primary-light;
+  }
+
+  .gradient-accent {
+    @apply bg-gradient-to-r from-accent to-accent-light;
+  }
+
+  .gradient-success {
+    @apply bg-gradient-to-r from-success to-success/80;
+  }
+
+  .gradient-warning {
+    @apply bg-gradient-to-r from-warning to-warning/80;
+  }
+
+  .gradient-danger {
+    @apply bg-gradient-to-r from-danger to-danger/80;
+  }
+
+  .gradient-info {
+    @apply bg-gradient-to-r from-info to-info/80;
+  }
+
+  /* ========== GLASS EFFECT ========== */
+  .glass {
+    @apply bg-card/80 backdrop-blur-xl border border-border/50;
+    box-shadow: 0 8px 32px hsl(var(--foreground) / 0.06);
+  }
+
+  .glass-strong {
+    @apply bg-card/90 backdrop-blur-2xl border border-border/60;
+    box-shadow: 0 8px 32px hsl(var(--foreground) / 0.1);
+  }
+
+  /* ========== CARD VARIANTS ========== */
   .card-gradient-primary {
     @apply bg-gradient-to-br from-primary/5 via-background to-background border-primary/20;
   }
 
   .card-gradient-success {
-    @apply bg-gradient-to-br from-green-500/5 via-background to-background border-green-500/20;
+    @apply bg-gradient-to-br from-success/5 via-background to-background border-success/20;
   }
 
   .card-gradient-warning {
-    @apply bg-gradient-to-br from-orange-500/5 via-background to-background border-orange-500/20;
+    @apply bg-gradient-to-br from-warning/5 via-background to-background border-warning/20;
   }
 
   .card-gradient-danger {
-    @apply bg-gradient-to-br from-red-500/5 via-background to-background border-red-500/20;
+    @apply bg-gradient-to-br from-danger/5 via-background to-background border-danger/20;
   }
 
-  /* Progress bar variants */
-  .progress-success .bg-primary {
-    @apply bg-green-500;
+  .card-gradient-info {
+    @apply bg-gradient-to-br from-info/5 via-background to-background border-info/20;
   }
 
-  .progress-warning .bg-primary {
-    @apply bg-orange-500;
+  /* ========== SHIMMER EFFECT ========== */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
   }
 
-  .progress-danger .bg-primary {
-    @apply bg-red-500;
+  .shimmer::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary-foreground) / 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+    pointer-events: none;
   }
 
-  /* Note card with Apple Notes premium styling */
+  /* ========== GLOW EFFECTS ========== */
+  .glow-primary {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 20px hsl(var(--success) / 0.3);
+  }
+
+  .glow-warning {
+    box-shadow: 0 0 20px hsl(var(--warning) / 0.3);
+  }
+
+  .glow-danger {
+    box-shadow: 0 0 20px hsl(var(--danger) / 0.3);
+  }
+
+  /* ========== PROGRESS BAR VARIANTS ========== */
+  .progress-animated {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .progress-animated > div {
+    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .progress-gradient > div {
+    background: linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%);
+  }
+
+  .progress-success > div {
+    background: linear-gradient(90deg, hsl(var(--success)) 0%, hsl(160 84% 50%) 100%);
+    box-shadow: 0 0 20px hsl(var(--success) / 0.3);
+  }
+
+  .progress-warning > div {
+    background: linear-gradient(90deg, hsl(var(--warning)) 0%, hsl(38 92% 50%) 100%);
+    box-shadow: 0 0 20px hsl(var(--warning) / 0.3);
+  }
+
+  .progress-danger > div {
+    background: linear-gradient(90deg, hsl(var(--danger)) 0%, hsl(0 72% 51%) 100%);
+    box-shadow: 0 0 20px hsl(var(--danger) / 0.3);
+    animation: pulse-danger 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-danger {
+    0%, 100% { 
+      opacity: 1;
+      box-shadow: 0 0 20px hsl(var(--danger) / 0.3);
+    }
+    50% { 
+      opacity: 0.8;
+      box-shadow: 0 0 30px hsl(var(--danger) / 0.5);
+    }
+  }
+
+  /* ========== NOTE CARD STYLING ========== */
   .note-card {
     background: linear-gradient(135deg, hsl(var(--note-gradient-start)), hsl(var(--note-gradient-end)));
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -278,38 +429,25 @@ html {
                 0 8px 10px -6px hsl(var(--note-shadow) / 0.08);
   }
 
-  /* Floating Action Button */
+  /* ========== FLOATING ACTION BUTTON ========== */
   .fab {
-    @apply fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-xl;
+    @apply fixed bottom-6 right-6 h-14 w-14 rounded-full;
     @apply flex items-center justify-center;
-    @apply bg-primary text-primary-foreground;
+    @apply bg-gradient-to-br from-primary to-primary-light text-primary-foreground;
     @apply hover:scale-110 active:scale-95;
     @apply transition-all duration-200;
-    box-shadow: 0 10px 30px -5px hsl(var(--note-shadow) / 0.3),
-                0 5px 15px -5px hsl(var(--note-shadow) / 0.2);
+    box-shadow: 0 10px 30px -5px hsl(var(--primary) / 0.4),
+                0 5px 15px -5px hsl(var(--primary) / 0.2);
   }
 
-  /* Paper texture effect */
-  .paper-texture {
-    background-image: 
-      repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 1px,
-        hsl(var(--border) / 0.3) 1px,
-        hsl(var(--border) / 0.3) 2px
-      );
-    background-size: 100% 32px;
-  }
-
-  /* Smooth focus ring */
+  /* ========== FOCUS RING ========== */
   .focus-ring {
     @apply focus-visible:outline-none focus-visible:ring-2;
     @apply focus-visible:ring-primary/40 focus-visible:ring-offset-2;
     @apply focus-visible:ring-offset-background;
   }
 
-  /* TipTap editor styling */
+  /* ========== TIPTAP EDITOR STYLING ========== */
   .ProseMirror {
     @apply focus:outline-none min-h-[500px] px-0;
     @apply text-base leading-relaxed;
@@ -392,7 +530,7 @@ html {
     pointer-events: none;
   }
 
-  /* Smooth animations */
+  /* ========== ANIMATIONS ========== */
   .animate-lift {
     animation: lift 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
@@ -424,43 +562,7 @@ html {
     }
   }
 
-  /* Enhanced Progress Bars */
-  .progress-animated {
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .progress-animated > div {
-    transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .progress-success > div {
-    background: linear-gradient(90deg, hsl(142, 76%, 36%) 0%, hsl(142, 69%, 28%) 100%);
-    box-shadow: 0 0 20px hsla(142, 76%, 36%, 0.3);
-  }
-
-  .progress-warning > div {
-    background: linear-gradient(90deg, hsl(45, 93%, 47%) 0%, hsl(25, 95%, 53%) 100%);
-    box-shadow: 0 0 20px hsla(45, 93%, 47%, 0.3);
-  }
-
-  .progress-danger > div {
-    background: linear-gradient(90deg, hsl(0, 84%, 60%) 0%, hsl(0, 72%, 51%) 100%);
-    box-shadow: 0 0 20px hsla(0, 84%, 60%, 0.3);
-    animation: pulse-danger 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-danger {
-    0%, 100% { 
-      opacity: 1;
-      box-shadow: 0 0 20px hsla(0, 84%, 60%, 0.3);
-    }
-    50% { 
-      opacity: 0.8;
-      box-shadow: 0 0 30px hsla(0, 84%, 60%, 0.5);
-    }
-  }
-
-  /* Ensure all Radix dropdown/popover portals render above dialogs and overlays */
+  /* ========== RADIX PORTAL Z-INDEX ========== */
   [data-radix-popper-content-wrapper] {
     z-index: 10000 !important;
     pointer-events: auto;
@@ -468,12 +570,12 @@ html {
 
   /* Visual highlight class used by the debug panel */
   .debug-radix-highlight {
-    outline: 2px solid rgba(59, 130, 246, 0.9);
+    outline: 2px solid hsl(var(--primary) / 0.9);
     outline-offset: 4px;
   }
 }
 
-/* Custom scrollbar styling for Kanban boards */
+/* ========== CUSTOM SCROLLBAR STYLING ========== */
 .kanban-scroll::-webkit-scrollbar {
   height: 10px;
   width: 10px;

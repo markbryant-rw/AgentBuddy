@@ -13,6 +13,11 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        display: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "monospace"],
+      },
       fontSize: {
         'fluid-xs': 'var(--text-xs)',
         'fluid-sm': 'var(--text-sm)',
@@ -59,6 +64,8 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          light: "hsl(var(--primary-light))",
+          dark: "hsl(var(--primary-dark))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -75,6 +82,7 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          light: "hsl(var(--accent-light))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -83,6 +91,27 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        // Semantic colors
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+          light: "hsl(var(--success-light))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+          light: "hsl(var(--warning-light))",
+        },
+        danger: {
+          DEFAULT: "hsl(var(--danger))",
+          foreground: "hsl(var(--danger-foreground))",
+          light: "hsl(var(--danger-light))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+          light: "hsl(var(--info-light))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
@@ -117,6 +146,22 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      boxShadow: {
+        'glow-primary': '0 0 20px hsl(var(--primary) / 0.3)',
+        'glow-success': '0 0 20px hsl(var(--success) / 0.3)',
+        'glow-warning': '0 0 20px hsl(var(--warning) / 0.3)',
+        'glow-danger': '0 0 20px hsl(var(--danger) / 0.3)',
+        'glass': '0 8px 32px hsl(var(--foreground) / 0.08)',
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 100%)',
+        'gradient-accent': 'linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--accent-light)) 100%)',
+        'gradient-success': 'linear-gradient(135deg, hsl(var(--success)) 0%, hsl(142 69% 58%) 100%)',
+        'gradient-warning': 'linear-gradient(135deg, hsl(var(--warning)) 0%, hsl(45 93% 58%) 100%)',
+        'gradient-danger': 'linear-gradient(135deg, hsl(var(--danger)) 0%, hsl(0 72% 51%) 100%)',
+        'gradient-info': 'linear-gradient(135deg, hsl(var(--info)) 0%, hsl(199 89% 58%) 100%)',
+        'gradient-subtle': 'linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--muted)) 100%)',
       },
       keyframes: {
         "accordion-down": {
@@ -184,6 +229,30 @@ export default {
             transform: "translateY(0)",
           },
         },
+        shimmer: {
+          "0%": {
+            backgroundPosition: "-200% 0",
+          },
+          "100%": {
+            backgroundPosition: "200% 0",
+          },
+        },
+        "gradient-shift": {
+          "0%, 100%": {
+            backgroundPosition: "0% 50%",
+          },
+          "50%": {
+            backgroundPosition: "100% 50%",
+          },
+        },
+        "progress-pulse": {
+          "0%, 100%": {
+            opacity: "1",
+          },
+          "50%": {
+            opacity: "0.7",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -193,6 +262,9 @@ export default {
         "pulse-slow": "pulse-slow 4s ease-in-out infinite",
         "fade-in": "fade-in 0.3s ease-out",
         lift: "lift 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        shimmer: "shimmer 2s linear infinite",
+        "gradient-shift": "gradient-shift 3s ease infinite",
+        "progress-pulse": "progress-pulse 2s ease-in-out infinite",
       },
     },
   },
