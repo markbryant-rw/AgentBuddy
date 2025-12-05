@@ -1,6 +1,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, UserPlus, Tag } from 'lucide-react';
+import { Users, UserPlus, Tag, Palette } from 'lucide-react';
 import OfficeLeadSources from '@/pages/office-manager/OfficeLeadSources';
+import { ThemeLibraryTab } from '@/components/theme/ThemeLibraryTab';
 
 export default function OfficeManagerOffice() {
   return (
@@ -24,6 +25,10 @@ export default function OfficeManagerOffice() {
             <Tag className="h-4 w-4" />
             Lead Sources
           </TabsTrigger>
+          <TabsTrigger value="themes" className="flex items-center gap-2">
+            <Palette className="h-4 w-4" />
+            Themes
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="teams" className="mt-6">
@@ -40,6 +45,10 @@ export default function OfficeManagerOffice() {
 
         <TabsContent value="sources" className="mt-6">
           <OfficeLeadSources />
+        </TabsContent>
+
+        <TabsContent value="themes" className="mt-6">
+          <ThemeLibraryTab />
         </TabsContent>
       </Tabs>
     </div>
