@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-export type TransactionStage = 'signed' | 'live' | 'contract' | 'unconditional' | 'settled' | 'open_homes' | 'property_documents';
+export type TransactionStage = 'signed' | 'live' | 'contract' | 'unconditional' | 'settled';
 
 export interface TransactionTemplate {
   id: string;

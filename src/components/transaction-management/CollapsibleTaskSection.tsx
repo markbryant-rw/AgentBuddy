@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -81,8 +81,25 @@ export function CollapsibleTaskSection({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(section);
   const inputRef = useRef<HTMLInputElement>(null);
+  const taskInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [pendingFocusIndex, setPendingFocusIndex] = useState<number | null>(null);
   
   const colors = getSectionColor(sectionIndex);
+
+  // Auto-focus new task input when added
+  useEffect(() => {
+    if (pendingFocusIndex !== null) {
+      // Small timeout to ensure DOM is updated
+      const timeout = setTimeout(() => {
+        const targetRef = taskInputRefs.current[pendingFocusIndex];
+        if (targetRef) {
+          targetRef.focus();
+        }
+        setPendingFocusIndex(null);
+      }, 50);
+      return () => clearTimeout(timeout);
+    }
+  }, [pendingFocusIndex, tasks.length]);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -202,11 +219,19 @@ export function CollapsibleTaskSection({
               {/* Title Input */}
               <div className="flex-[2]">
                 <Input
+                  ref={(el) => { taskInputRefs.current[index] = el; }}
                   value={task.title}
                   onChange={(e) => onUpdateTask(originalIndex, { title: e.target.value })}
                   placeholder="Task title..."
                   className="h-9 border-0 shadow-none focus-visible:ring-1"
                   disabled={disabled}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !disabled) {
+                      e.preventDefault();
+                      onAddTask();
+                      setPendingFocusIndex(tasks.length);
+                    }
+                  }}
                 />
               </div>
 
