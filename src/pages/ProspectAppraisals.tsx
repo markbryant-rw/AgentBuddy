@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, Trash2 } from 'lucide-react';
+import { Plus, Upload, Trash2, FileText } from 'lucide-react';
 import { useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
+import { Link } from 'react-router-dom';
 import { useTeam } from '@/hooks/useTeam';
 import AppraisalsList from '@/components/appraisals/AppraisalsList';
 import AppraisalDetailDialog from '@/components/appraisals/AppraisalDetailDialog';
@@ -54,9 +55,18 @@ const ProspectAppraisals = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Appraisals</h1>
-              <p className="text-muted-foreground mt-1">
-                Manage all appraisals, track warmth, and plan follow-ups
-              </p>
+              <div className="flex items-center gap-3 mt-1">
+                <p className="text-muted-foreground">
+                  Manage all appraisals, track warmth, and plan follow-ups
+                </p>
+                <Link 
+                  to="/appraisal-templates" 
+                  className="text-sm text-primary hover:underline flex items-center gap-1"
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  Task Templates
+                </Link>
+              </div>
             </div>
             <div className="flex gap-3">
               <Button 
