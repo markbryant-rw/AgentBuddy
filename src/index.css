@@ -1439,3 +1439,75 @@ html {
   box-shadow: none;
   animation: none;
 }
+
+/* ==========================================================================
+   🛡️ THEME-NEUTRAL FLOATING UI ELEMENTS
+   These elements maintain neutral backgrounds regardless of active theme
+   to ensure readability for critical UI components like notifications
+   ========================================================================== */
+
+/* Force neutral backgrounds on popovers, dropdowns, and menus */
+[class*="theme-"] [data-radix-popper-content-wrapper] > * {
+  background: hsl(0 0% 100%) !important;
+  color: hsl(222 47% 11%) !important;
+  border-color: hsl(214 32% 91%) !important;
+}
+
+/* Ensure inner content inherits proper text colors */
+[class*="theme-"] [data-radix-popper-content-wrapper] .text-muted-foreground {
+  color: hsl(215 16% 47%) !important;
+}
+
+[class*="theme-"] [data-radix-popper-content-wrapper] .text-foreground {
+  color: hsl(222 47% 11%) !important;
+}
+
+/* Reset any card/frost effects on floating elements */
+[class*="theme-"] [data-radix-popper-content-wrapper] [data-slot="card"],
+[class*="theme-"] [data-radix-popper-content-wrapper] .card {
+  background: hsl(0 0% 100%) !important;
+}
+
+/* Specifically target dropdown menu content */
+[class*="theme-"] [role="menu"] {
+  background: hsl(0 0% 100%) !important;
+  color: hsl(222 47% 11%) !important;
+}
+
+[class*="theme-"] [role="menuitem"] {
+  color: hsl(222 47% 11%) !important;
+}
+
+[class*="theme-"] [role="menuitem"]:hover {
+  background: hsl(210 20% 96%) !important;
+}
+
+/* Notification popovers - always clean and readable */
+[class*="theme-"] .notification-popover,
+[class*="theme-"] [data-notification-content] {
+  background: hsl(0 0% 100%) !important;
+  color: hsl(222 47% 11%) !important;
+}
+
+/* Notification items - subtle hover, no theme effects */
+[class*="theme-"] .notification-item:hover {
+  background: hsl(210 20% 96%) !important;
+}
+
+/* Select dropdowns and comboboxes */
+[class*="theme-"] [data-radix-select-content],
+[class*="theme-"] [cmdk-root] {
+  background: hsl(0 0% 100%) !important;
+  color: hsl(222 47% 11%) !important;
+}
+
+/* Components can add data-theme-neutral to opt out of theme effects */
+[data-theme-neutral],
+[data-theme-neutral] * {
+  animation: none !important;
+}
+
+[data-theme-neutral]::before,
+[data-theme-neutral]::after {
+  display: none !important;
+}
