@@ -1,7 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Calendar, FolderKanban, MessageSquare, FileText, ArrowRight } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useState, useTransition } from 'react';
 
@@ -39,14 +38,14 @@ const OperateNavigationCards = ({
     });
   };
 
+  // Using Operate workspace theme colors (purple/violet)
   const cards = [
-    // ... keep existing code (Daily Planner, Projects, Messages cards)
     {
       title: 'Daily Planner',
       description: 'Organize and manage your daily tasks',
       icon: Calendar,
       route: '/daily-planner',
-      gradient: 'from-purple-500/10 to-purple-600/20',
+      gradient: 'from-purple-500/10 to-violet-600/20',
       iconBg: 'bg-purple-100 dark:bg-purple-900/30',
       iconColor: 'text-purple-600 dark:text-purple-400',
       stats: [
@@ -60,9 +59,9 @@ const OperateNavigationCards = ({
       description: 'Track and coordinate team projects',
       icon: FolderKanban,
       route: '/projects',
-      gradient: 'from-blue-500/10 to-blue-600/20',
-      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-      iconColor: 'text-blue-600 dark:text-blue-400',
+      gradient: 'from-purple-500/10 to-violet-600/20',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600 dark:text-purple-400',
       stats: [
         { label: 'Active Projects', value: activeProjects },
         { label: 'Overdue', value: overdueProjects, alert: overdueProjects > 0 },
@@ -74,9 +73,9 @@ const OperateNavigationCards = ({
       description: 'Stay connected with your team',
       icon: MessageSquare,
       route: '/messages',
-      gradient: 'from-green-500/10 to-green-600/20',
-      iconBg: 'bg-green-100 dark:bg-green-900/30',
-      iconColor: 'text-green-600 dark:text-green-400',
+      gradient: 'from-purple-500/10 to-violet-600/20',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600 dark:text-purple-400',
       stats: [
         { label: 'Unread Messages', value: unreadMessages, alert: unreadMessages > 0 },
         { label: 'Active Conversations', value: recentConversations },
@@ -88,9 +87,9 @@ const OperateNavigationCards = ({
       description: 'Capture ideas and meeting notes',
       icon: FileText,
       route: '/notes',
-      gradient: 'from-indigo-500/10 to-indigo-600/20',
-      iconBg: 'bg-indigo-100 dark:bg-indigo-900/30',
-      iconColor: 'text-indigo-600 dark:text-indigo-400',
+      gradient: 'from-purple-500/10 to-violet-600/20',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600 dark:text-purple-400',
       stats: [
         { label: 'Total Notes', value: totalNotes },
         { label: 'Recent', value: recentNotes },

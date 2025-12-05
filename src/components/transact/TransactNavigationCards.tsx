@@ -33,15 +33,16 @@ const TransactNavigationCards = ({
 }: TransactNavigationCardsProps) => {
   const navigate = useNavigate();
 
+  // Using Transact workspace theme colors (amber/orange)
   const cards = [
     {
       title: 'Current Listings',
       description: 'Manage your active transaction pipeline',
       icon: Flame,
       route: '/transaction-coordinating',
-      gradient: 'from-blue-500/10 to-blue-600/20',
-      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-      iconColor: 'text-blue-600 dark:text-blue-400',
+      gradient: 'from-amber-500/10 to-orange-600/20',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
       stats: [
         { label: 'Active Transactions', value: isLoading ? '...' : activeTransactions },
         { label: 'Under Contract', value: isLoading ? '...' : underContract },
@@ -53,9 +54,9 @@ const TransactNavigationCards = ({
       description: 'Monitor price alignment and stock health',
       icon: TrendingDown,
       route: '/stock-board',
-      gradient: 'from-orange-500/10 to-orange-600/20',
-      iconBg: 'bg-orange-100 dark:bg-orange-900/30',
-      iconColor: 'text-orange-600 dark:text-orange-400',
+      gradient: 'from-amber-500/10 to-orange-600/20',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
       stats: [
         { label: 'Active Stock', value: isLoading ? '...' : activeTransactions },
         { label: 'Misaligned', value: isLoading ? '...' : misalignedPrices, alert: misalignedPrices > 0 },
@@ -67,9 +68,9 @@ const TransactNavigationCards = ({
       description: 'Monitor agency agreement expiry dates',
       icon: Clock,
       route: '/listing-expiry-report',
-      gradient: 'from-purple-500/10 to-purple-600/20',
-      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
-      iconColor: 'text-purple-600 dark:text-purple-400',
+      gradient: 'from-amber-500/10 to-orange-600/20',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
       stats: [
         { label: 'Active Listings', value: isLoading ? '...' : activeTransactions },
         { label: 'Critical', value: isLoading ? '...' : criticalListings, alert: criticalListings > 0 },
@@ -81,9 +82,9 @@ const TransactNavigationCards = ({
       description: 'Track performance and build referral intelligence',
       icon: BarChart3,
       route: '/past-sales-history',
-      gradient: 'from-green-500/10 to-green-600/20',
-      iconBg: 'bg-green-100 dark:bg-green-900/30',
-      iconColor: 'text-green-600 dark:text-green-400',
+      gradient: 'from-amber-500/10 to-orange-600/20',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600 dark:text-amber-400',
       stats: [
         { label: 'Total Sales', value: isLoading ? '...' : totalSales },
         { label: 'This Quarter', value: isLoading ? '...' : quarterlySales },
@@ -102,7 +103,7 @@ const TransactNavigationCards = ({
             className={cn(
               'group relative overflow-hidden cursor-pointer',
               'hover:shadow-xl transition-all duration-300',
-              'border-l-4 border-l-green-500'
+              'border-l-4 border-l-amber-500'
             )}
             onClick={() => navigate(card.route)}
           >

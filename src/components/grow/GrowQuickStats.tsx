@@ -60,34 +60,35 @@ export function GrowQuickStats() {
     enabled: !!user?.id && !!team?.id,
   });
 
+  // Using Grow workspace theme colors (emerald/green)
   const quickStats = [
     {
       title: "Active Learning Paths",
       value: stats?.learningPathsActive || 0,
       icon: Target,
-      color: "text-blue-600 dark:text-blue-400",
-      bg: "bg-blue-100 dark:bg-blue-900/30",
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
     {
       title: "Knowledge Base Items",
       value: stats?.knowledgeBaseItems || 0,
       icon: BookOpen,
-      color: "text-purple-600 dark:text-purple-400",
-      bg: "bg-purple-100 dark:bg-purple-900/30",
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
     {
       title: "Coaching Sessions",
       value: stats?.coachingSessions || 0,
       icon: MessageSquare,
-      color: "text-pink-600 dark:text-pink-400",
-      bg: "bg-pink-100 dark:bg-pink-900/30",
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
     {
       title: "Skill Progress",
       value: `${stats?.skillProgress || 0}%`,
       icon: TrendingUp,
-      color: "text-green-600 dark:text-green-400",
-      bg: "bg-green-100 dark:bg-green-900/30",
+      color: "text-emerald-600 dark:text-emerald-400",
+      bg: "bg-emerald-100 dark:bg-emerald-900/30",
     },
   ];
 

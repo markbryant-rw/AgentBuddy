@@ -34,15 +34,16 @@ export function GrowNavigationCards() {
     enabled: !!user?.id,
   });
 
+  // Using Grow workspace theme colors (emerald/green)
   const cards = [
     {
       title: "AI Coaching Board",
       description: "Get personalized coaching and strategic guidance",
       icon: MessageSquare,
       route: "/coaches-corner",
-      gradient: "from-pink-500/10 to-rose-600/20 hover:from-pink-500/20 hover:to-rose-600/30",
-      iconBg: "bg-pink-100 dark:bg-pink-900/30",
-      iconColor: "text-pink-600 dark:text-pink-400",
+      gradient: "from-emerald-500/10 to-green-600/20 hover:from-emerald-500/20 hover:to-green-600/30",
+      iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
       comingSoon: true,
       stats: [
         { label: "Total Conversations", value: "—" },
@@ -55,9 +56,9 @@ export function GrowNavigationCards() {
       description: "Access playbooks, guides, and learning resources",
       icon: BookOpen,
       route: "/knowledge-base",
-      gradient: "from-purple-500/10 to-indigo-600/20 hover:from-purple-500/20 hover:to-indigo-600/30",
-      iconBg: "bg-purple-100 dark:bg-purple-900/30",
-      iconColor: "text-purple-600 dark:text-purple-400",
+      gradient: "from-emerald-500/10 to-green-600/20 hover:from-emerald-500/20 hover:to-green-600/30",
+      iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
       comingSoon: true,
       stats: [
         { label: "Categories", value: "—" },
@@ -70,7 +71,7 @@ export function GrowNavigationCards() {
       description: "Practice sales conversations with AI prospects",
       icon: Mic2,
       route: "/role-playing",
-      gradient: "from-emerald-500/10 to-teal-600/20 hover:from-emerald-500/20 hover:to-teal-600/30",
+      gradient: "from-emerald-500/10 to-green-600/20 hover:from-emerald-500/20 hover:to-green-600/30",
       iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
       iconColor: "text-emerald-600 dark:text-emerald-400",
       comingSoon: true,
@@ -85,9 +86,9 @@ export function GrowNavigationCards() {
       description: "Report bugs, suggest features, and help us improve",
       icon: MessageSquarePlus,
       route: "/feedback-centre",
-      gradient: "from-amber-500/10 to-orange-600/20 hover:from-amber-500/20 hover:to-orange-600/30",
-      iconBg: "bg-amber-100 dark:bg-amber-900/30",
-      iconColor: "text-amber-600 dark:text-amber-400",
+      gradient: "from-emerald-500/10 to-green-600/20 hover:from-emerald-500/20 hover:to-green-600/30",
+      iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
       comingSoon: false,
       stats: [
         { label: "Your Bug Reports", value: feedbackStats?.bugReports || 0 },

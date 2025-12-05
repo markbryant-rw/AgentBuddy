@@ -34,15 +34,16 @@ export function EngageNavigationCards() {
     });
   };
 
+  // Using Engage workspace theme colors (pink/rose)
   const cards = [
     {
       title: 'Leaderboards',
       description: 'See how you rank against your team and friends',
       icon: Trophy,
       route: '/engage/leaderboards',
-      gradient: 'from-amber-500/10 to-yellow-600/20',
-      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
-      iconColor: 'text-amber-600 dark:text-amber-400',
+      gradient: 'from-pink-500/10 to-rose-600/20',
+      iconBg: 'bg-pink-100 dark:bg-pink-900/30',
+      iconColor: 'text-pink-600 dark:text-pink-400',
       comingSoon: true,
       stats: [
         { label: 'Weekly Rank', value: '—' },
@@ -55,9 +56,9 @@ export function EngageNavigationCards() {
       description: 'Share wins, celebrate team, stay connected',
       icon: MessageSquare,
       route: '/engage/feed',
-      gradient: 'from-blue-500/10 to-cyan-600/20',
-      iconBg: 'bg-blue-100 dark:bg-blue-900/30',
-      iconColor: 'text-blue-600 dark:text-blue-400',
+      gradient: 'from-pink-500/10 to-rose-600/20',
+      iconBg: 'bg-pink-100 dark:bg-pink-900/30',
+      iconColor: 'text-pink-600 dark:text-pink-400',
       comingSoon: true,
       stats: [
         { label: 'Team Posts', value: '—' },
@@ -70,9 +71,9 @@ export function EngageNavigationCards() {
       description: 'Your trusted network of professionals',
       icon: Briefcase,
       route: '/systems/directory',
-      gradient: 'from-teal-500/10 to-emerald-600/20',
-      iconBg: 'bg-teal-100 dark:bg-teal-900/30',
-      iconColor: 'text-teal-600 dark:text-teal-400',
+      gradient: 'from-pink-500/10 to-rose-600/20',
+      iconBg: 'bg-pink-100 dark:bg-pink-900/30',
+      iconColor: 'text-pink-600 dark:text-pink-400',
       comingSoon: false,
       stats: [
         { label: 'Total Providers', value: providers.length },
@@ -102,7 +103,7 @@ export function EngageNavigationCards() {
                 className={cn(
                   'absolute inset-0 group overflow-hidden cursor-pointer',
                   'hover:shadow-xl transition-all duration-200',
-                  'border-l-4 border-l-teal-500',
+                  'border-l-4 border-l-pink-500',
                   clickedCard === card.route && 'opacity-70 scale-[0.98]',
                   card.comingSoon && 'opacity-80'
                 )}
@@ -150,7 +151,7 @@ export function EngageNavigationCards() {
                 <Card
                   className={cn(
                     'absolute inset-0 overflow-hidden cursor-pointer',
-                    'border-l-4 border-l-teal-500'
+                    'border-l-4 border-l-pink-500'
                   )}
                   style={{ 
                     backfaceVisibility: "hidden",

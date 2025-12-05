@@ -8,7 +8,7 @@ export default function GrowDashboard() {
     <div className="container mx-auto p-fluid-lg space-y-fluid-lg">
       <PageHeader
         icon={Rocket}
-        title="GROW Workspace"
+        title="Grow Dashboard"
         description="Continuous learning, skill development, and knowledge expansion"
         category="grow"
       />
