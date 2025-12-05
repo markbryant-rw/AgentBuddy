@@ -36,8 +36,6 @@ const stageLabels: Record<TransactionStage, string> = {
   contract: '03. Under Contract',
   unconditional: '04. Unconditional',
   settled: '05. Settled',
-  open_homes: 'Open Homes',
-  property_documents: 'Property Documents',
 };
 
 const stageColors: Record<TransactionStage, string> = {
@@ -46,8 +44,6 @@ const stageColors: Record<TransactionStage, string> = {
   contract: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30',
   unconditional: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30',
   settled: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
-  open_homes: 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/30',
-  property_documents: 'bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-500/30',
 };
 
 export default function TemplateLibrary() {

@@ -47,8 +47,6 @@ const stageLabels: Record<TransactionStage, string> = {
   contract: '03. Under Contract',
   unconditional: '04. Unconditional',
   settled: '05. Settled',
-  open_homes: 'Open Homes',
-  property_documents: 'Property Documents',
 };
 
 export function TemplateLibraryDialog({ open, onOpenChange }: TemplateLibraryDialogProps) {

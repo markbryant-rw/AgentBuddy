@@ -35,8 +35,6 @@ const stageLabels: Record<TransactionStage, string> = {
   contract: 'Under Contract',
   unconditional: 'Unconditional',
   settled: 'Settled',
-  open_homes: 'Open Homes',
-  property_documents: 'Property Documents',
 };
 
 
