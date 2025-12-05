@@ -35,6 +35,14 @@ export default {
         'icon-md': 'var(--icon-md)',
         'icon-lg': 'var(--icon-lg)',
         'icon-xl': 'var(--icon-xl)',
+        'kanban-col': 'var(--kanban-col-width)',
+        'kanban-collapsed': 'var(--kanban-col-collapsed)',
+      },
+      gap: {
+        'kanban': 'var(--kanban-gap)',
+      },
+      padding: {
+        'kanban': 'var(--kanban-card-padding)',
       },
       height: {
         'icon-sm': 'var(--icon-sm)',

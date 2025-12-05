@@ -200,7 +200,7 @@ const SortableTaskCard = ({
         )}
         style={{ backgroundColor: task.color || undefined }}
       >
-        <CardContent className="px-2.5 py-2">
+        <CardContent className="p-kanban">
           <div className="flex items-start gap-2">
             {/* Left: checkbox only */}
             <div className="flex-shrink-0 pt-0.5">
@@ -228,7 +228,7 @@ const SortableTaskCard = ({
                     onBlur={handleTitleSave}
                     onKeyDown={handleTitleKeyDown}
                     onClick={(e) => e.stopPropagation()}
-                    className="flex-1 text-sm leading-tight bg-background border rounded px-1.5 py-0.5 resize-none focus:outline-none focus:ring-1 focus:ring-primary min-h-[24px]"
+                    className="flex-1 text-fluid-sm leading-tight bg-background border rounded px-1.5 py-0.5 resize-none focus:outline-none focus:ring-1 focus:ring-primary min-h-[24px]"
                     rows={1}
                     style={{ height: 'auto' }}
                     onInput={(e) => {
@@ -240,7 +240,7 @@ const SortableTaskCard = ({
                 ) : (
                   <p 
                     className={cn(
-                      "text-sm leading-tight flex-1 cursor-text hover:bg-muted/50 rounded px-1 -mx-1 transition-colors",
+                      "text-fluid-sm leading-tight flex-1 cursor-text hover:bg-muted/50 rounded px-1 -mx-1 transition-colors",
                       isCompleted && "line-through text-muted-foreground"
                     )}
                     style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
@@ -533,7 +533,7 @@ const SortableColumn = ({
           backgroundColor: list.color || undefined,
         }}
         className={cn(
-          "w-10 flex-shrink-0 flex flex-col rounded-lg self-stretch cursor-pointer hover:opacity-80 transition-opacity",
+          "w-kanban-collapsed flex-shrink-0 flex flex-col rounded-lg self-stretch cursor-pointer hover:opacity-80 transition-opacity",
           !list.color && "bg-muted/30",
           isDragging && 'opacity-50'
         )}
@@ -566,7 +566,7 @@ const SortableColumn = ({
         backgroundColor: list.color || undefined,
       }}
       className={cn(
-        "w-56 flex-shrink-0 flex flex-col rounded-lg h-full shadow-sm",
+        "w-kanban-col flex-shrink-0 flex flex-col rounded-lg max-h-full shadow-sm",
         !list.color && "bg-muted/30",
         isDragging && 'opacity-50'
       )}
@@ -639,7 +639,7 @@ const SortableColumn = ({
       </div>
 
       {/* Tasks */}
-      <div className="flex-1 overflow-auto p-1.5 space-y-1.5">
+      <div className="flex-1 min-h-0 overflow-y-auto p-kanban space-y-1.5">
         <SortableContext
           items={activeTasks.map(t => t.id)}
           strategy={verticalListSortingStrategy}
@@ -1239,7 +1239,7 @@ export default function ProjectKanbanBoard() {
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 h-full min-w-max items-stretch pb-2">
+          <div className="flex gap-kanban min-w-max items-start pb-2">
             <SortableContext items={lists.map(l => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <SortableColumn
@@ -1273,10 +1273,10 @@ export default function ProjectKanbanBoard() {
             easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
           }}>
             {activeTask && (
-              <Card className="w-56 shadow-2xl rotate-3 scale-105 border-2 border-primary/30 bg-background overflow-hidden">
-                <CardContent className="px-2 py-1.5">
+              <Card className="w-kanban-col shadow-2xl rotate-3 scale-105 border-2 border-primary/30 bg-background overflow-hidden">
+                <CardContent className="p-kanban">
                   <p 
-                    className="font-medium text-xs"
+                    className="font-medium text-fluid-xs"
                     style={{ overflowWrap: 'anywhere', wordBreak: 'break-word' }}
                   >
                     {activeTask.title}
@@ -1285,7 +1285,7 @@ export default function ProjectKanbanBoard() {
               </Card>
             )}
             {activeList && (
-              <div className="w-56 h-24 bg-muted rounded-lg shadow-2xl rotate-2 flex items-center justify-center border-2 border-primary/30">
+              <div className="w-kanban-col h-24 bg-muted rounded-lg shadow-2xl rotate-2 flex items-center justify-center border-2 border-primary/30">
                 <div className="flex items-center gap-2">
                   <div 
                     className="w-2.5 h-2.5 rounded-full" 
