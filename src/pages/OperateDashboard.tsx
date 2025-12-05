@@ -28,9 +28,9 @@ const OperateDashboard = () => {
   return (
     <div className="space-y-fluid-lg p-fluid-lg">
       {/* Header */}
-      <div>
+      <div className="animate-card-enter">
         <div className="flex items-center gap-fluid-md">
-          <ListChecks className="h-icon-lg w-icon-lg text-primary" />
+          <ListChecks className="h-icon-lg w-icon-lg text-purple-600" />
           <h1 className="text-fluid-3xl font-bold">Operate Dashboard</h1>
         </div>
         <p className="text-muted-foreground mt-1 text-fluid-base">
@@ -39,7 +39,7 @@ const OperateDashboard = () => {
       </div>
 
       {/* Quick Stats Row - Using StatCard component */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-md">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-fluid-md animate-card-enter stagger-1">
         <StatCard
           workspace="operate"
           icon={Calendar}
@@ -67,20 +67,24 @@ const OperateDashboard = () => {
       </div>
 
       {/* Navigation Cards */}
-      <OperateNavigationCards
-        todaysTasks={hubData.tasks.myTasksToday.length}
-        completedToday={hubData.tasks.myTasksToday.filter((t) => t.completed).length}
-        activeProjects={activeProjects.length}
-        overdueProjects={overdueProjects.length}
-        unreadMessages={hubData.messages.unreadCount}
-        recentConversations={hubData.messages.recentConversations.length}
-        totalNotes={notesStats.totalNotes}
-        recentNotes={notesStats.recentNotes}
-        pinnedNotes={notesStats.pinnedNotes}
-      />
+      <div className="animate-card-enter stagger-2">
+        <OperateNavigationCards
+          todaysTasks={hubData.tasks.myTasksToday.length}
+          completedToday={hubData.tasks.myTasksToday.filter((t) => t.completed).length}
+          activeProjects={activeProjects.length}
+          overdueProjects={overdueProjects.length}
+          unreadMessages={hubData.messages.unreadCount}
+          recentConversations={hubData.messages.recentConversations.length}
+          totalNotes={notesStats.totalNotes}
+          recentNotes={notesStats.recentNotes}
+          pinnedNotes={notesStats.pinnedNotes}
+        />
+      </div>
 
       {/* My Assignments - Quick view of tasks assigned to you */}
-      <MyAssignmentsCard />
+      <div className="animate-card-enter stagger-3">
+        <MyAssignmentsCard />
+      </div>
     </div>
   );
 };

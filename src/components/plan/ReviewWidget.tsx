@@ -18,8 +18,8 @@ export const ReviewWidget = () => {
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-purple-100 dark:bg-purple-950/30">
-              <Calendar className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-950/30">
+              <Calendar className="h-6 w-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
               <h3 className="text-xl font-semibold">Last Quarter Review</h3>

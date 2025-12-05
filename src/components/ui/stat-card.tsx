@@ -15,7 +15,7 @@ export function StatCard({ workspace, icon: Icon, label, value, subValue }: Stat
   const theme = getWorkspaceTheme(workspace);
 
   return (
-    <Card className="relative overflow-hidden hover:shadow-lg transition-shadow">
+    <Card className="relative overflow-hidden hover:shadow-lg hover:scale-[1.01] transition-all duration-200">
       <div className={cn('absolute inset-0 bg-gradient-to-br opacity-40', theme.gradient)} />
       <CardContent className="relative p-fluid-md">
         <div className="flex items-center justify-between">

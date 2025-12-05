@@ -5,9 +5,9 @@ export default function EngageDashboard() {
   return (
     <div className="space-y-fluid-lg p-fluid-lg">
       {/* Header */}
-      <div>
+      <div className="animate-card-enter">
         <div className="flex items-center gap-fluid-md">
-          <Users className="h-icon-lg w-icon-lg text-primary" />
+          <Users className="h-icon-lg w-icon-lg text-pink-600" />
           <h1 className="text-fluid-3xl font-bold">Engage Dashboard</h1>
         </div>
         <p className="text-muted-foreground mt-1 text-fluid-base">
@@ -16,7 +16,9 @@ export default function EngageDashboard() {
       </div>
 
       {/* Navigation Cards */}
-      <EngageNavigationCards />
+      <div className="animate-card-enter stagger-1">
+        <EngageNavigationCards />
+      </div>
     </div>
   );
 }

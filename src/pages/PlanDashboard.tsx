@@ -24,10 +24,10 @@ export default function PlanDashboard() {
   return (
     <div className="space-y-fluid-lg p-fluid-lg">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between animate-card-enter">
         <div>
           <div className="flex items-center gap-fluid-md">
-            <Target className="h-icon-lg w-icon-lg text-primary" />
+            <Target className="h-icon-lg w-icon-lg text-blue-600" />
             <h1 className="text-fluid-3xl font-bold">Plan Dashboard</h1>
           </div>
           <p className="text-muted-foreground mt-1 text-fluid-base">
@@ -41,14 +41,16 @@ export default function PlanDashboard() {
       </div>
 
       {/* Hero Metrics */}
-      <PlanHeroMetrics />
+      <div className="animate-card-enter stagger-1">
+        <PlanHeroMetrics />
+      </div>
 
       {/* Four Planning Widgets */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-fluid-lg">
-        <ReviewWidget />
-        <CurrentWidget />
-        <RoadmapWidget />
-        <ReviewRoadmapWidget />
+        <div className="animate-card-enter stagger-2"><ReviewWidget /></div>
+        <div className="animate-card-enter stagger-3"><CurrentWidget /></div>
+        <div className="animate-card-enter stagger-4"><RoadmapWidget /></div>
+        <div className="animate-card-enter stagger-5"><ReviewRoadmapWidget /></div>
       </div>
 
       {/* Modals */}
