@@ -120,12 +120,16 @@ export const useTeamQuarterlyListingsSales = (teamId: string | undefined) => {
         .order('created_at', { ascending: false })
         .maybeSingle();
 
+      // Fallback benchmarks: 8 listings, 6 sales per quarter
+      const FALLBACK_LISTINGS_TARGET = 8;
+      const FALLBACK_SALES_TARGET = 6;
+
       return {
         totalListings: listings.length,
         totalSales: sales.length,
         weeklyData,
-        listingsTarget: listingsGoal?.target_value || null,
-        salesTarget: salesGoal?.target_value || null,
+        listingsTarget: listingsGoal?.target_value ?? FALLBACK_LISTINGS_TARGET,
+        salesTarget: salesGoal?.target_value ?? FALLBACK_SALES_TARGET,
         quarter: getQuarter(now),
         year: getYear(now),
       };
