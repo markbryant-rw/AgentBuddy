@@ -25,10 +25,12 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ConvertToOpportunityDialog from './ConvertToOpportunityDialog';
 import LocationFixSection from '@/components/shared/LocationFixSection';
 import { VisitTimeline } from './VisitTimeline';
-import { Trash2, Plus } from "lucide-react";
+import { AppraisalTasksTab } from './AppraisalTasksTab';
+import { Trash2, Plus, ListTodo, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrencyFull, parseCurrency } from "@/lib/currencyUtils";
 import { format } from 'date-fns';
+import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
 
 interface AppraisalDetailDialogProps {
   appraisal: LoggedAppraisal | null;
@@ -69,6 +72,7 @@ const AppraisalDetailDialog = ({
   const [isSaving, setIsSaving] = useState(false);
   const [estimatedValueDisplay, setEstimatedValueDisplay] = useState("");
   const [syncContactsToAllVisits, setSyncContactsToAllVisits] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
     address: '',
     vendor_name: '',
@@ -261,214 +265,323 @@ const AppraisalDetailDialog = ({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
-            <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-              <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Property Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="address" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
-                  <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="123 Main Street" required className="h-10" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="suburb" className="text-sm font-medium">Suburb <span className="text-destructive">*</span></Label>
-                  <Input id="suburb" value={formData.suburb || ''} onChange={(e) => setFormData({ ...formData, suburb: e.target.value })} placeholder="Auckland Central" required className="h-10" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="vendor_name" className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>
-                <Input id="vendor_name" value={formData.vendor_name} onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })} placeholder="John Smith" required className="h-10" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="vendor_mobile" className="text-sm font-medium">Vendor Mobile</Label>
-                  <Input id="vendor_mobile" value={formData.vendor_mobile || ''} onChange={(e) => setFormData({ ...formData, vendor_mobile: e.target.value })} placeholder="021 123 4567" className="h-10" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="vendor_email" className="text-sm font-medium">Vendor Email</Label>
-                  <Input id="vendor_email" type="email" value={formData.vendor_email || ''} onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })} placeholder="john@example.com" className="h-10" />
-                </div>
-              </div>
-            </div>
+          {/* Tabs for existing appraisals */}
+          {!isNew && appraisal ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="details" className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  Details
+                </TabsTrigger>
+                <TabsTrigger value="tasks" className="flex items-center gap-2">
+                  <ListTodo className="h-4 w-4" />
+                  Tasks
+                </TabsTrigger>
+              </TabsList>
 
-            <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-              <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Appraisal Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="appraisal_date" className="text-sm font-medium">Appraisal Date <span className="text-destructive">*</span></Label>
-                  <Input id="appraisal_date" type="date" value={formData.appraisal_date} onChange={(e) => setFormData({ ...formData, appraisal_date: e.target.value })} required className="h-10" />
+              <TabsContent value="details" className="mt-4 space-y-6">
+                {/* Property Details */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Property Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="address" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
+                      <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="123 Main Street" required className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="suburb" className="text-sm font-medium">Suburb <span className="text-destructive">*</span></Label>
+                      <Input id="suburb" value={formData.suburb || ''} onChange={(e) => setFormData({ ...formData, suburb: e.target.value })} placeholder="Auckland Central" required className="h-10" />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vendor_name" className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>
+                    <Input id="vendor_name" value={formData.vendor_name} onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })} placeholder="John Smith" required className="h-10" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="vendor_mobile" className="text-sm font-medium">Vendor Mobile</Label>
+                      <Input id="vendor_mobile" value={formData.vendor_mobile || ''} onChange={(e) => setFormData({ ...formData, vendor_mobile: e.target.value })} placeholder="021 123 4567" className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="vendor_email" className="text-sm font-medium">Vendor Email</Label>
+                      <Input id="vendor_email" type="email" value={formData.vendor_email || ''} onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })} placeholder="john@example.com" className="h-10" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Appraisal Information */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Appraisal Information</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="appraisal_date" className="text-sm font-medium">Appraisal Date <span className="text-destructive">*</span></Label>
+                      <Input id="appraisal_date" type="date" value={formData.appraisal_date} onChange={(e) => setFormData({ ...formData, appraisal_date: e.target.value })} required className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="agent_id" className="text-sm font-medium">Appraised By</Label>
+                      <Select value={formData.agent_id || ''} onValueChange={(value) => setFormData({ ...formData, agent_id: value })}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="Select agent">
+                            {formData.agent_id && members.find(m => m.user_id === formData.agent_id) && (
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-5 w-5">
+                                  <AvatarImage src={members.find(m => m.user_id === formData.agent_id)?.avatar_url} />
+                                  <AvatarFallback className="text-xs">{getInitials(members.find(m => m.user_id === formData.agent_id)?.full_name)}</AvatarFallback>
+                                </Avatar>
+                                <span>{members.find(m => m.user_id === formData.agent_id)?.full_name}</span>
+                              </div>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {members.map((member) => (
+                            <SelectItem key={member.user_id} value={member.user_id}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-5 w-5">
+                                  <AvatarImage src={member.avatar_url} />
+                                  <AvatarFallback className="text-xs">{getInitials(member.full_name)}</AvatarFallback>
+                                </Avatar>
+                                <span>{member.full_name}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="estimated_value" className="text-sm font-medium">Estimated Value</Label>
+                      <Input id="estimated_value" value={estimatedValueDisplay} onChange={(e) => { setEstimatedValueDisplay(e.target.value); setFormData({ ...formData, estimated_value: parseCurrency(e.target.value) }); }} onBlur={() => { if (formData.estimated_value) setEstimatedValueDisplay(formatCurrencyFull(formData.estimated_value)); }} placeholder="$1,200,000" className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lead_source" className="text-sm font-medium">Lead Source</Label>
+                      <Select value={formData.lead_source || ''} onValueChange={(value) => setFormData({ ...formData, lead_source: value })}>
+                        <SelectTrigger className="h-10"><SelectValue placeholder="Select lead source" /></SelectTrigger>
+                        <SelectContent>
+                          {activeLeadSources.map((source) => (<SelectItem key={source.id} value={source.value}>{source.label}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tracking */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Tracking</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="stage" className="text-sm font-medium">Stage <span className="text-destructive">*</span></Label>
+                      <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
+                        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent className="z-[60]">
+                          <SelectItem value="VAP">VAP</SelectItem>
+                          <SelectItem value="MAP">MAP</SelectItem>
+                          <SelectItem value="LAP">LAP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="outcome" className="text-sm font-medium">Outcome</Label>
+                      <Select value={formData.outcome} onValueChange={(value: 'In Progress' | 'WON' | 'LOST') => setFormData({ ...formData, outcome: value })}>
+                        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="In Progress">In Progress</SelectItem>
+                          <SelectItem value="WON">WON</SelectItem>
+                          <SelectItem value="LOST">LOST</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="intent" className="text-sm font-medium">Intent <span className="text-destructive">*</span></Label>
+                      <Select value={formData.intent || 'medium'} onValueChange={(value: any) => setFormData({ ...formData, intent: value })}>
+                        <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low - Exploring options</SelectItem>
+                          <SelectItem value="medium">Medium - Seriously considering</SelectItem>
+                          <SelectItem value="high">High - Ready to list soon</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last_contact" className="text-sm font-medium">Last Contact</Label>
+                      <Input id="last_contact" type="date" value={formData.last_contact || ''} onChange={(e) => setFormData({ ...formData, last_contact: e.target.value })} className="h-10" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="next_follow_up" className="text-sm font-medium">Next Follow-up</Label>
+                      <Input id="next_follow_up" type="date" value={formData.next_follow_up || ''} onChange={(e) => setFormData({ ...formData, next_follow_up: e.target.value })} className="h-10" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
+                  <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
+                </div>
+
+                {/* Fix Location Section */}
+                <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
+
+                {/* Visit Timeline */}
+                {allVisitsAtAddress.length > 0 && (
+                  <VisitTimeline visits={allVisitsAtAddress} currentVisitId={appraisal?.id} />
+                )}
+
+                {/* Sync contact details option */}
+                {hasMultipleVisits && (
+                  <div className="flex items-center space-x-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <Checkbox id="sync-contacts" checked={syncContactsToAllVisits} onCheckedChange={(checked) => setSyncContactsToAllVisits(checked as boolean)} />
+                    <label htmlFor="sync-contacts" className="text-sm font-medium leading-none">Sync contact details to all {allVisitsAtAddress.length} visits at this address</label>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="tasks" className="mt-4">
+                <AppraisalTasksTab
+                  appraisalId={appraisal.id}
+                  appraisalDate={formData.appraisal_date || appraisal.appraisal_date}
+                  stage={(formData.stage || appraisal.stage || 'VAP') as AppraisalStage}
+                  agentId={formData.agent_id || appraisal.agent_id || undefined}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            /* New appraisal form - no tabs */
+            <div className="space-y-6 py-4">
+              <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Property Details</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="address" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
+                    <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="123 Main Street" required className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="suburb" className="text-sm font-medium">Suburb <span className="text-destructive">*</span></Label>
+                    <Input id="suburb" value={formData.suburb || ''} onChange={(e) => setFormData({ ...formData, suburb: e.target.value })} placeholder="Auckland Central" required className="h-10" />
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="agent_id" className="text-sm font-medium">Appraised By</Label>
-                  <Select
-                    value={formData.agent_id || ''}
-                    onValueChange={(value) => setFormData({ ...formData, agent_id: value })}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Select agent">
-                        {formData.agent_id && members.find(m => m.user_id === formData.agent_id) && (
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={members.find(m => m.user_id === formData.agent_id)?.avatar_url} />
-                              <AvatarFallback className="text-xs">
-                                {getInitials(members.find(m => m.user_id === formData.agent_id)?.full_name)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{members.find(m => m.user_id === formData.agent_id)?.full_name}</span>
-                          </div>
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {members.map((member) => (
-                        <SelectItem key={member.user_id} value={member.user_id}>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-5 w-5">
-                              <AvatarImage src={member.avatar_url} />
-                              <AvatarFallback className="text-xs">{getInitials(member.full_name)}</AvatarFallback>
-                            </Avatar>
-                            <span>{member.full_name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="vendor_name" className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>
+                  <Input id="vendor_name" value={formData.vendor_name} onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })} placeholder="John Smith" required className="h-10" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="estimated_value" className="text-sm font-medium">Estimated Value</Label>
-                  <Input 
-                    id="estimated_value" 
-                    value={estimatedValueDisplay}
-                    onChange={(e) => {
-                      setEstimatedValueDisplay(e.target.value);
-                      const parsed = parseCurrency(e.target.value);
-                      setFormData({ ...formData, estimated_value: parsed });
-                    }}
-                    onBlur={() => {
-                      if (formData.estimated_value) {
-                        setEstimatedValueDisplay(formatCurrencyFull(formData.estimated_value));
-                      }
-                    }}
-                    placeholder="$1,200,000" 
-                    className="h-10" 
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lead_source" className="text-sm font-medium">Lead Source</Label>
-                  <Select
-                    value={formData.lead_source || ''}
-                    onValueChange={(value) => setFormData({ ...formData, lead_source: value })}
-                  >
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Select lead source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {activeLeadSources.map((source) => (
-                        <SelectItem key={source.id} value={source.value}>
-                          {source.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="vendor_mobile" className="text-sm font-medium">Vendor Mobile</Label>
+                    <Input id="vendor_mobile" value={formData.vendor_mobile || ''} onChange={(e) => setFormData({ ...formData, vendor_mobile: e.target.value })} placeholder="021 123 4567" className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vendor_email" className="text-sm font-medium">Vendor Email</Label>
+                    <Input id="vendor_email" type="email" value={formData.vendor_email || ''} onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })} placeholder="john@example.com" className="h-10" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-              <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Tracking</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="stage" className="text-sm font-medium">Stage <span className="text-destructive">*</span></Label>
-                  <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
-                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                    <SelectContent className="z-[60]">
-                      <SelectItem value="VAP">VAP</SelectItem>
-                      <SelectItem value="MAP">MAP</SelectItem>
-                      <SelectItem value="LAP">LAP</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="outcome" className="text-sm font-medium">Outcome</Label>
-                  <Select value={formData.outcome} onValueChange={(value: 'In Progress' | 'WON' | 'LOST') => setFormData({ ...formData, outcome: value })}>
-                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="In Progress">In Progress</SelectItem>
-                      <SelectItem value="WON">WON</SelectItem>
-                      <SelectItem value="LOST">LOST</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="intent" className="text-sm font-medium">Intent <span className="text-destructive">*</span></Label>
-                  <Select value={formData.intent || 'medium'} onValueChange={(value: any) => setFormData({ ...formData, intent: value })}>
-                    <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">Low - Exploring options</SelectItem>
-                      <SelectItem value="medium">Medium - Seriously considering</SelectItem>
-                      <SelectItem value="high">High - Ready to list soon</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">How serious is the vendor about listing?</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="last_contact" className="text-sm font-medium">Last Contact</Label>
-                  <Input id="last_contact" type="date" value={formData.last_contact || ''} onChange={(e) => setFormData({ ...formData, last_contact: e.target.value })} className="h-10" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="next_follow_up" className="text-sm font-medium">Next Follow-up</Label>
-                  <Input id="next_follow_up" type="date" value={formData.next_follow_up || ''} onChange={(e) => setFormData({ ...formData, next_follow_up: e.target.value })} className="h-10" />
+              <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Appraisal Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="appraisal_date" className="text-sm font-medium">Appraisal Date <span className="text-destructive">*</span></Label>
+                    <Input id="appraisal_date" type="date" value={formData.appraisal_date} onChange={(e) => setFormData({ ...formData, appraisal_date: e.target.value })} required className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="agent_id" className="text-sm font-medium">Appraised By</Label>
+                    <Select value={formData.agent_id || ''} onValueChange={(value) => setFormData({ ...formData, agent_id: value })}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Select agent">
+                          {formData.agent_id && members.find(m => m.user_id === formData.agent_id) && (
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={members.find(m => m.user_id === formData.agent_id)?.avatar_url} />
+                                <AvatarFallback className="text-xs">{getInitials(members.find(m => m.user_id === formData.agent_id)?.full_name)}</AvatarFallback>
+                              </Avatar>
+                              <span>{members.find(m => m.user_id === formData.agent_id)?.full_name}</span>
+                            </div>
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {members.map((member) => (
+                          <SelectItem key={member.user_id} value={member.user_id}>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage src={member.avatar_url} />
+                                <AvatarFallback className="text-xs">{getInitials(member.full_name)}</AvatarFallback>
+                              </Avatar>
+                              <span>{member.full_name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="estimated_value" className="text-sm font-medium">Estimated Value</Label>
+                    <Input id="estimated_value" value={estimatedValueDisplay} onChange={(e) => { setEstimatedValueDisplay(e.target.value); setFormData({ ...formData, estimated_value: parseCurrency(e.target.value) }); }} onBlur={() => { if (formData.estimated_value) setEstimatedValueDisplay(formatCurrencyFull(formData.estimated_value)); }} placeholder="$1,200,000" className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lead_source" className="text-sm font-medium">Lead Source</Label>
+                    <Select value={formData.lead_source || ''} onValueChange={(value) => setFormData({ ...formData, lead_source: value })}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Select lead source" /></SelectTrigger>
+                      <SelectContent>
+                        {activeLeadSources.map((source) => (<SelectItem key={source.id} value={source.value}>{source.label}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-              <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-sm font-medium">Additional Notes</Label>
+              <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Tracking</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="stage" className="text-sm font-medium">Stage <span className="text-destructive">*</span></Label>
+                    <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent className="z-[60]">
+                        <SelectItem value="VAP">VAP</SelectItem>
+                        <SelectItem value="MAP">MAP</SelectItem>
+                        <SelectItem value="LAP">LAP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="outcome" className="text-sm font-medium">Outcome</Label>
+                    <Select value={formData.outcome} onValueChange={(value: 'In Progress' | 'WON' | 'LOST') => setFormData({ ...formData, outcome: value })}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="WON">WON</SelectItem>
+                        <SelectItem value="LOST">LOST</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="intent" className="text-sm font-medium">Intent <span className="text-destructive">*</span></Label>
+                    <Select value={formData.intent || 'medium'} onValueChange={(value: any) => setFormData({ ...formData, intent: value })}>
+                      <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="low">Low - Exploring options</SelectItem>
+                        <SelectItem value="medium">Medium - Seriously considering</SelectItem>
+                        <SelectItem value="high">High - Ready to list soon</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="last_contact" className="text-sm font-medium">Last Contact</Label>
+                    <Input id="last_contact" type="date" value={formData.last_contact || ''} onChange={(e) => setFormData({ ...formData, last_contact: e.target.value })} className="h-10" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="next_follow_up" className="text-sm font-medium">Next Follow-up</Label>
+                    <Input id="next_follow_up" type="date" value={formData.next_follow_up || ''} onChange={(e) => setFormData({ ...formData, next_follow_up: e.target.value })} className="h-10" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4 p-4 rounded-lg bg-muted/50">
+                <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
                 <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
               </div>
             </div>
-
-            {/* Fix Location Section - only show for existing appraisals */}
-            {!isNew && appraisal && (
-              <LocationFixSection
-                entityId={appraisal.id}
-                entityType="appraisal"
-                address={formData.address || ''}
-                suburb={formData.suburb || undefined}
-                latitude={formData.latitude}
-                longitude={formData.longitude}
-                geocodeError={formData.geocode_error}
-                geocodedAt={formData.geocoded_at}
-                onLocationUpdated={handleLocationUpdated}
-              />
-            )}
-
-            {/* Visit Timeline - always visible for existing appraisals with multiple visits */}
-            {!isNew && allVisitsAtAddress.length > 0 && (
-              <VisitTimeline
-                visits={allVisitsAtAddress}
-                currentVisitId={appraisal?.id}
-              />
-            )}
-
-            {/* Sync contact details option */}
-            {!isNew && hasMultipleVisits && (
-              <div className="flex items-center space-x-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                <Checkbox
-                  id="sync-contacts"
-                  checked={syncContactsToAllVisits}
-                  onCheckedChange={(checked) => setSyncContactsToAllVisits(checked as boolean)}
-                />
-                <label
-                  htmlFor="sync-contacts"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Sync contact details to all {allVisitsAtAddress.length} visits at this address
-                </label>
-              </div>
-            )}
-          </div>
+          )}
 
           <div className="flex justify-between gap-3 pt-6 border-t">
             <div className="flex gap-2">

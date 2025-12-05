@@ -49,6 +49,13 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
             {task.transaction?.address || 'Transaction'}
           </Badge>
         );
+      case 'appraisal':
+        return (
+          <Badge variant="outline" className="bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800 gap-1">
+            <Home className="h-3 w-3" />
+            {task.appraisal?.address || 'Appraisal'} • {task.appraisal?.stage || ''}
+          </Badge>
+        );
       case 'project':
         return (
           <Badge 
@@ -80,6 +87,8 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
     switch (task.source) {
       case 'transaction':
         return task.transaction_id ? `/transaction-coordinating` : null;
+      case 'appraisal':
+        return '/prospect-dashboard/appraisals';
       case 'project':
         return task.project_id ? `/projects/${task.project_id}` : null;
       case 'planner':
@@ -93,6 +102,8 @@ export const AssignedTaskCard = ({ task, onComplete, isCompleting }: AssignedTas
     switch (task.source) {
       case 'transaction':
         return 'View Transaction';
+      case 'appraisal':
+        return 'View Appraisals';
       case 'project':
         return 'View Project';
       case 'planner':
