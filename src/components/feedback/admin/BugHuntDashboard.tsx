@@ -204,11 +204,12 @@ export function BugHuntDashboard() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Modules</SelectItem>
-                <SelectItem value="OPERATE">OPERATE</SelectItem>
-                <SelectItem value="PROSPECT">PROSPECT</SelectItem>
-                <SelectItem value="TRANSACT">TRANSACT</SelectItem>
-                <SelectItem value="GROW">GROW</SelectItem>
-                <SelectItem value="ENGAGE">ENGAGE</SelectItem>
+                <SelectItem value="Plan">Plan</SelectItem>
+                <SelectItem value="Prospect">Prospect</SelectItem>
+                <SelectItem value="Transact">Transact</SelectItem>
+                <SelectItem value="Operate">Operate</SelectItem>
+                <SelectItem value="Grow">Grow</SelectItem>
+                <SelectItem value="Engage">Engage</SelectItem>
               </SelectContent>
             </Select>
 

@@ -28,7 +28,7 @@ export default function PlanDashboard() {
         <div>
           <div className="flex items-center gap-fluid-md">
             <Target className="h-icon-lg w-icon-lg text-primary" />
-            <h1 className="text-fluid-3xl font-bold">PLAN Dashboard</h1>
+            <h1 className="text-fluid-3xl font-bold">Plan Dashboard</h1>
           </div>
           <p className="text-muted-foreground mt-1 text-fluid-base">
             Your command center for goals, progress, and planning

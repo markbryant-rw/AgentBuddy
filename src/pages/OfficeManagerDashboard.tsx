@@ -85,11 +85,11 @@ export default function OfficeManagerDashboard() {
         
         <div className="grid gap-6 md:grid-cols-2">
           <WorkspaceCard
-            title="OPERATE"
+            title="Operate"
             description="Daily tasks, messages, and team coordination"
             icon={CheckSquare}
             path="/office-manager/operate"
-            color="bg-blue-600"
+            color="bg-purple-600"
             stats={[
               { label: 'Open Tasks', value: workspaceStats?.openTasks || 0 },
               { label: 'Messages', value: 0 },
@@ -98,11 +98,11 @@ export default function OfficeManagerDashboard() {
           />
           
           <WorkspaceCard
-            title="OFFICE"
+            title="Office"
             description="Team management, users, and lead sources"
             icon={Building2}
             path="/office-manager/office"
-            color="bg-purple-600"
+            color="bg-teal-600"
             stats={[
               { label: 'Teams', value: workspaceStats?.teams || 0 },
               { label: 'Total Users', value: 0 },
@@ -111,11 +111,11 @@ export default function OfficeManagerDashboard() {
           />
           
           <WorkspaceCard
-            title="MONITOR"
+            title="Monitor"
             description="Stock board, listings, and pipeline analytics"
             icon={Activity}
             path="/office-manager/monitor"
-            color="bg-green-600"
+            color="bg-amber-600"
             stats={[
               { label: 'Live Listings', value: 0 },
               { label: 'Expiring Soon', value: 0 },
@@ -124,11 +124,11 @@ export default function OfficeManagerDashboard() {
           />
           
           <WorkspaceCard
-            title="SUPPORT"
+            title="Support"
             description="Help requests, training, and reports"
             icon={HeadphonesIcon}
             path="/office-manager/support"
-            color="bg-orange-600"
+            color="bg-emerald-600"
             stats={[
               { label: 'Open Requests', value: workspaceStats?.helpRequests || 0, variant: 'destructive' },
               { label: 'Training Items', value: 0 },

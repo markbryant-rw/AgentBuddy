@@ -66,11 +66,11 @@ export default function PlatformAdminDashboard() {
         
         <div className="grid gap-6 md:grid-cols-2">
           <WorkspaceCard
-            title="OPERATE"
+            title="Operate"
             description="Daily tasks, messages, and announcements"
             icon={CheckSquare}
             path="/platform-admin/operate"
-            color="bg-blue-600"
+            color="bg-purple-600"
             stats={[
               { label: 'Open Tasks', value: workspaceStats?.openTasks || 0 },
               { label: 'Messages', value: 0 },
@@ -79,11 +79,11 @@ export default function PlatformAdminDashboard() {
           />
           
           <WorkspaceCard
-            title="MONITOR"
+            title="Monitor"
             description="Health dashboard, activity, and module usage"
             icon={Activity}
             path="/platform-admin/monitor"
-            color="bg-green-600"
+            color="bg-amber-600"
             stats={[
               { label: 'Health Checks', value: 'OK', variant: 'default' },
               { label: 'Active Users', value: workspaceStats?.totalUsers || 0 },
@@ -92,11 +92,11 @@ export default function PlatformAdminDashboard() {
           />
           
           <WorkspaceCard
-            title="MANAGE"
+            title="Manage"
             description="Users, offices, and impersonation audit"
             icon={Users}
             path="/platform-admin/manage"
-            color="bg-purple-600"
+            color="bg-teal-600"
             stats={[
               { label: 'Total Users', value: workspaceStats?.totalUsers || 0 },
               { label: 'Active Offices', value: 0 },
@@ -105,11 +105,11 @@ export default function PlatformAdminDashboard() {
           />
           
           <WorkspaceCard
-            title="FEEDBACK"
+            title="Feedback"
             description="Bug reports and feature requests"
             icon={MessageSquarePlus}
             path="/platform-admin/feedback"
-            color="bg-orange-600"
+            color="bg-emerald-600"
             stats={[
               { label: 'Bugs', value: workspaceStats?.pendingBugs || 0, variant: 'destructive' },
               { label: 'Features', value: workspaceStats?.pendingFeatures || 0 },

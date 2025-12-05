@@ -15,6 +15,8 @@ interface NavigationCardProps {
   primaryLabel: string;
   secondaryStats?: { label: string; value: string | number }[];
   gradient: string;
+  iconBg: string;
+  iconColor: string;
 }
 
 const NavigationCard = ({ 
@@ -25,7 +27,9 @@ const NavigationCard = ({
   primaryStat, 
   primaryLabel,
   secondaryStats,
-  gradient 
+  gradient,
+  iconBg,
+  iconColor,
 }: NavigationCardProps) => {
   const navigate = useNavigate();
 
@@ -34,13 +38,13 @@ const NavigationCard = ({
       onClick={() => navigate(route)}
       className={cn(
         "cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-[1.02]",
-        "border-l-4 group min-h-[200px]"
+        "border-l-4 border-l-teal-500 group min-h-[200px]"
       )}
     >
       <CardContent className="p-fluid-lg">
         <div className="flex items-start justify-between mb-fluid-md">
-          <div className={cn("p-3 rounded-lg", gradient)}>
-            <Icon className="h-icon-md w-icon-md text-primary" />
+          <div className={cn("p-3 rounded-lg", iconBg)}>
+            <Icon className={cn("h-icon-md w-icon-md", iconColor)} />
           </div>
           <ArrowRight className="h-icon-sm w-icon-sm text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
@@ -49,7 +53,7 @@ const NavigationCard = ({
         
         {/* Primary Stat */}
         <div className="space-y-1 mb-3">
-          <div className="text-fluid-4xl font-bold text-primary">{primaryStat}</div>
+          <div className="text-fluid-4xl font-bold text-teal-600 dark:text-teal-400">{primaryStat}</div>
           <div className="text-fluid-xs text-muted-foreground uppercase tracking-wide">{primaryLabel}</div>
         </div>
 
@@ -104,6 +108,7 @@ const ProspectNavigationCards = ({
     return { winRate, totalValue };
   }, [listings]);
 
+  // Using Prospect workspace theme colors (teal/cyan)
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-fluid-lg">
       <NavigationCard
@@ -117,7 +122,9 @@ const ProspectNavigationCards = ({
           { label: 'Active', value: appraisalStats.active },
           { label: 'Converted', value: appraisalStats.converted }
         ]}
-        gradient="bg-purple-100 dark:bg-purple-900/30"
+        gradient="from-teal-500/10 to-cyan-600/20"
+        iconBg="bg-teal-100 dark:bg-teal-900/30"
+        iconColor="text-teal-600 dark:text-teal-400"
       />
       <NavigationCard
         title="View Pipeline"
@@ -130,7 +137,9 @@ const ProspectNavigationCards = ({
           { label: 'Hot', value: pipelineStats.hot },
           { label: 'Warm', value: pipelineStats.warm }
         ]}
-        gradient="bg-blue-100 dark:bg-blue-900/30"
+        gradient="from-teal-500/10 to-cyan-600/20"
+        iconBg="bg-teal-100 dark:bg-teal-900/30"
+        iconColor="text-teal-600 dark:text-teal-400"
       />
       <NavigationCard
         title="View Analytics"
@@ -142,7 +151,9 @@ const ProspectNavigationCards = ({
         secondaryStats={[
           { label: 'Pipeline Value', value: `$${(analyticsStats.totalValue / 1000000).toFixed(1)}M` }
         ]}
-        gradient="bg-green-100 dark:bg-green-900/30"
+        gradient="from-teal-500/10 to-cyan-600/20"
+        iconBg="bg-teal-100 dark:bg-teal-900/30"
+        iconColor="text-teal-600 dark:text-teal-400"
       />
     </div>
   );
