@@ -753,36 +753,40 @@ html {
   }
 }
 
-/* ========== RGB CYCLING BORDERS ON BUTTONS ========== */
-.theme-cyberpunk button:not([disabled]):not(.no-glow) {
-  position: relative;
-  overflow: visible;
-  z-index: 1;
+/* ========== RGB CYCLING GLOW ON BUTTONS ========== */
+/* Use box-shadow instead of ::before to avoid overflow issues */
+.theme-cyberpunk button:not([disabled]):not(.no-glow):not([role="combobox"]):not([data-state]) {
+  box-shadow: 
+    0 0 10px hsl(185 100% 50% / 0.4),
+    0 0 20px hsl(320 100% 60% / 0.2);
+  transition: box-shadow 0.3s ease;
 }
 
-.theme-cyberpunk button:not([disabled]):not(.no-glow)::before {
-  content: '';
-  position: absolute;
-  inset: -2px;
-  background: linear-gradient(
-    45deg,
-    hsl(185 100% 50%),
-    hsl(280 100% 60%),
-    hsl(320 100% 60%),
-    hsl(185 100% 50%)
-  );
-  background-size: 400% 400%;
-  animation: rgbCycle 3s linear infinite;
-  z-index: -1;
-  border-radius: inherit;
-  opacity: 0.7;
-  filter: blur(3px);
+.theme-cyberpunk button:not([disabled]):not(.no-glow):not([role="combobox"]):not([data-state]):hover {
+  box-shadow: 
+    0 0 15px hsl(185 100% 50% / 0.6),
+    0 0 30px hsl(320 100% 60% / 0.4),
+    0 0 45px hsl(185 100% 50% / 0.2);
 }
 
-@keyframes rgbCycle {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+/* Animated glow border using outline for primary buttons only */
+.theme-cyberpunk button[data-variant="default"],
+.theme-cyberpunk button.bg-primary {
+  animation: buttonGlow 2s ease-in-out infinite;
+}
+
+@keyframes buttonGlow {
+  0%, 100% { 
+    box-shadow: 
+      0 0 10px hsl(185 100% 50% / 0.5),
+      0 0 20px hsl(185 100% 50% / 0.3);
+  }
+  50% { 
+    box-shadow: 
+      0 0 20px hsl(320 100% 60% / 0.6),
+      0 0 40px hsl(320 100% 60% / 0.3),
+      0 0 60px hsl(185 100% 50% / 0.2);
+  }
 }
 
 /* ========== FLICKERING NEON BADGES ========== */
@@ -822,7 +826,11 @@ html {
 }
 
 /* ========== ELECTRIC FLOW PROGRESS BARS ========== */
-.theme-cyberpunk .progress > div,
+/* Allow overflow for glow effect */
+.theme-cyberpunk [role="progressbar"] {
+  overflow: visible !important;
+}
+
 .theme-cyberpunk [role="progressbar"] > div {
   background: linear-gradient(
     90deg, 
@@ -832,7 +840,10 @@ html {
   ) !important;
   background-size: 200% 100%;
   animation: electricFlow 1.5s linear infinite;
-  box-shadow: 0 0 20px hsl(185 100% 50% / 0.6);
+  box-shadow: 
+    0 0 10px hsl(185 100% 50% / 0.5),
+    0 0 20px hsl(185 100% 50% / 0.3);
+  border-radius: inherit;
 }
 
 @keyframes electricFlow {
