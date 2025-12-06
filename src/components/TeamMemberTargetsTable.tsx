@@ -164,9 +164,10 @@ export const TeamMemberTargetsTable = ({
               <Input
                 id="target-value"
                 type="number"
+                min="0"
                 value={editDialog.currentValue}
                 onChange={(e) =>
-                  setEditDialog({ ...editDialog, currentValue: parseInt(e.target.value) || 0 })
+                  setEditDialog({ ...editDialog, currentValue: Math.max(0, parseInt(e.target.value) || 0) })
                 }
               />
             </div>

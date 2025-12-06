@@ -98,7 +98,7 @@ export const AdjustTargetsDialog = ({ currentGoals, onSave, open, onOpenChange }
                   <FormItem>
                     <FormLabel>Calls</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -111,7 +111,7 @@ export const AdjustTargetsDialog = ({ currentGoals, onSave, open, onOpenChange }
                   <FormItem>
                     <FormLabel>SMS</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -124,7 +124,7 @@ export const AdjustTargetsDialog = ({ currentGoals, onSave, open, onOpenChange }
                   <FormItem>
                     <FormLabel>Appraisals</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -137,7 +137,7 @@ export const AdjustTargetsDialog = ({ currentGoals, onSave, open, onOpenChange }
                   <FormItem>
                     <FormLabel>Open Homes</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -150,7 +150,7 @@ export const AdjustTargetsDialog = ({ currentGoals, onSave, open, onOpenChange }
                   <FormItem>
                     <FormLabel>Listings</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -163,7 +163,7 @@ export const AdjustTargetsDialog = ({ currentGoals, onSave, open, onOpenChange }
                   <FormItem>
                     <FormLabel>Sales</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

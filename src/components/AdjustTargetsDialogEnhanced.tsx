@@ -194,42 +194,42 @@ export const AdjustTargetsDialogEnhanced = ({
                       <FormField control={personalForm.control} name="calls" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Calls (per week)</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormControl><Input type="number" min="0" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={personalForm.control} name="sms" render={({ field }) => (
                         <FormItem>
                           <FormLabel>SMS (per week)</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormControl><Input type="number" min="0" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={personalForm.control} name="appraisals" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Appraisals (per week)</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormControl><Input type="number" min="0" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={personalForm.control} name="openHomes" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Open Homes (per week)</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormControl><Input type="number" min="0" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={personalForm.control} name="listings" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Listings (per week)</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormControl><Input type="number" min="0" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
                       <FormField control={personalForm.control} name="sales" render={({ field }) => (
                         <FormItem>
                           <FormLabel>Sales (per week)</FormLabel>
-                          <FormControl><Input type="number" {...field} /></FormControl>
+                          <FormControl><Input type="number" min="0" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
                       )} />
@@ -279,42 +279,42 @@ export const AdjustTargetsDialogEnhanced = ({
                 <FormField control={personalForm.control} name="calls" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Calls (per week)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={personalForm.control} name="sms" render={({ field }) => (
                   <FormItem>
                     <FormLabel>SMS (per week)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={personalForm.control} name="appraisals" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Appraisals (per week)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={personalForm.control} name="openHomes" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Open Homes (per week)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={personalForm.control} name="listings" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Listings (per week)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={personalForm.control} name="sales" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Sales (per week)</FormLabel>
-                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
@@ -354,42 +354,42 @@ export const AdjustTargetsDialogEnhanced = ({
                   <FormField control={personalForm.control} name="calls" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Calls (per week)</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormControl><Input type="number" min="0" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={personalForm.control} name="sms" render={({ field }) => (
                     <FormItem>
                       <FormLabel>SMS (per week)</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormControl><Input type="number" min="0" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={personalForm.control} name="appraisals" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Appraisals (per week)</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormControl><Input type="number" min="0" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={personalForm.control} name="openHomes" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Open Homes (per week)</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormControl><Input type="number" min="0" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={personalForm.control} name="listings" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Listings (per week)</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormControl><Input type="number" min="0" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={personalForm.control} name="sales" render={({ field }) => (
                     <FormItem>
                       <FormLabel>Sales (per week)</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
+                      <FormControl><Input type="number" min="0" {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -443,7 +443,7 @@ export const AdjustTargetsDialogEnhanced = ({
                                 <FormField control={teamForm.control} name={kpi} render={({ field }) => (
                                   <FormItem>
                                     <FormLabel>{label}</FormLabel>
-                                    <FormControl><Input type="number" {...field} /></FormControl>
+                                    <FormControl><Input type="number" min="0" {...field} /></FormControl>
                                     <FormMessage />
                                   </FormItem>
                                 )} />

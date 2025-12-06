@@ -74,9 +74,10 @@ export function QuickLogSheet({ open, onOpenChange, onSave }: QuickLogSheetProps
                   id="calls"
                   type="number"
                   inputMode="numeric"
+                  min="0"
                   placeholder="0"
                   value={calls}
-                  onChange={(e) => setCalls(e.target.value)}
+                  onChange={(e) => setCalls(Math.max(0, Number(e.target.value) || 0).toString())}
                   className="text-2xl h-16 text-center"
                 />
               </div>
@@ -89,9 +90,10 @@ export function QuickLogSheet({ open, onOpenChange, onSave }: QuickLogSheetProps
                   id="appraisals"
                   type="number"
                   inputMode="numeric"
+                  min="0"
                   placeholder="0"
                   value={appraisals}
-                  onChange={(e) => setAppraisals(e.target.value)}
+                  onChange={(e) => setAppraisals(Math.max(0, Number(e.target.value) || 0).toString())}
                   className="text-2xl h-16 text-center"
                 />
               </div>
@@ -104,9 +106,10 @@ export function QuickLogSheet({ open, onOpenChange, onSave }: QuickLogSheetProps
                   id="openHomes"
                   type="number"
                   inputMode="numeric"
+                  min="0"
                   placeholder="0"
                   value={openHomes}
-                  onChange={(e) => setOpenHomes(e.target.value)}
+                  onChange={(e) => setOpenHomes(Math.max(0, Number(e.target.value) || 0).toString())}
                   className="text-2xl h-16 text-center"
                 />
               </div>
