@@ -185,58 +185,31 @@ export const BugCard = ({ bug, onClick, onStatusChange }: BugCardProps) => {
 
         {/* Status Transition Buttons */}
         {transitions.length > 0 && (
-          <div className="flex gap-1.5 pt-2 border-t border-border/50">
-            {transitions.length === 1 ? (
-              (() => {
-                const transition = transitions[0];
-                const Icon = transition.icon;
-                const isSuccess = transition.variant === 'success';
-                return (
-                  <Button
-                    variant={isSuccess ? 'default' : 'outline'}
-                    size="sm"
-                    className={cn(
-                      "h-7 text-xs flex-1 font-medium",
-                      isSuccess && "bg-green-600 hover:bg-green-700 text-white"
-                    )}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStatusChange(bug.id, transition.status);
-                    }}
-                  >
-                    <Icon className="h-3.5 w-3.5 mr-1.5" />
-                    {transition.label}
-                  </Button>
-                );
-              })()
-            ) : (
-              <div className="flex gap-1.5 flex-1">
-                {transitions.map((transition, idx) => {
-                  const Icon = transition.icon;
-                  const isSuccess = transition.variant === 'success';
-                  const isPrimary = idx === 0;
-                  return (
-                    <Button
-                      key={transition.status}
-                      variant={isSuccess ? 'default' : isPrimary ? 'outline' : 'ghost'}
-                      size="sm"
-                      className={cn(
-                        "h-7 text-xs font-medium",
-                        isPrimary ? "flex-1" : "flex-shrink-0",
-                        isSuccess && "bg-green-600 hover:bg-green-700 text-white"
-                      )}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onStatusChange(bug.id, transition.status);
-                      }}
-                    >
-                      <Icon className="h-3.5 w-3.5 mr-1.5" />
-                      {transition.label}
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
+          <div className="flex flex-wrap gap-1.5 pt-2 border-t border-border/50">
+            {transitions.map((transition, idx) => {
+              const Icon = transition.icon;
+              const isSuccess = transition.variant === 'success';
+              const isPrimary = idx === 0;
+              return (
+                <Button
+                  key={transition.status}
+                  variant={isSuccess ? 'default' : isPrimary ? 'outline' : 'ghost'}
+                  size="sm"
+                  className={cn(
+                    "h-7 text-xs font-medium min-w-0",
+                    isPrimary && transitions.length === 1 && "flex-1",
+                    isSuccess && "bg-green-600 hover:bg-green-700 text-white"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStatusChange(bug.id, transition.status);
+                  }}
+                >
+                  <Icon className="h-3.5 w-3.5 mr-1 shrink-0" />
+                  <span className="truncate">{transition.label}</span>
+                </Button>
+              );
+            })}
           </div>
         )}
       </div>
