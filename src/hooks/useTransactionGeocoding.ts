@@ -130,9 +130,9 @@ export const useTransactionGeocoding = () => {
     if (successCount === ungeocodedTransactions.length) {
       toast.success(`Successfully geocoded ${successCount} ${successCount === 1 ? 'property' : 'properties'}`);
     } else if (successCount > 0) {
-      toast.warning(`Geocoded ${successCount} of ${ungeocodedTransactions.length} properties. ${errors.length} need manual location fix.`);
+      toast.warning(`Geocoded ${successCount} of ${ungeocodedTransactions.length} properties. ${errors.length} need 'Fix Location'.`, { duration: 8000 });
     } else {
-      toast.error('Could not geocode properties. Try using the Fix Location tool for each property.');
+      toast.error(`Could not geocode properties. Use 'Fix Location' on each property to set coordinates manually.`, { duration: 8000 });
     }
   };
 

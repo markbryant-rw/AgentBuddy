@@ -100,9 +100,9 @@ export const useListingGeocoding = () => {
     if (failedCount === 0) {
       toast.success(`Successfully geocoded ${successCount} opportunities`);
     } else if (successCount === 0) {
-      toast.error(`Failed to geocode all ${failedCount} opportunities`);
+      toast.error(`Failed to geocode all ${failedCount} opportunities. Use 'Fix Location' on each property.`, { duration: 8000 });
     } else {
-      toast.warning(`Geocoded ${successCount} opportunities, ${failedCount} failed`);
+      toast.warning(`Geocoded ${successCount} opportunities, ${failedCount} failed. Use 'Fix Location' on failed properties.`, { duration: 8000 });
     }
   };
 
@@ -154,9 +154,9 @@ export const useListingGeocoding = () => {
     if (failedCount === 0) {
       toast.success(`Successfully geocoded ${successCount} opportunities`);
     } else if (successCount === 0) {
-      toast.error(`Failed to geocode all ${failedCount} opportunities`);
+      toast.error(`Failed to geocode all ${failedCount} opportunities. Use 'Fix Location' on each property.`, { duration: 8000 });
     } else {
-      toast.warning(`Geocoded ${successCount} opportunities, ${failedCount} still failed`);
+      toast.warning(`Geocoded ${successCount} opportunities, ${failedCount} still failed. Use 'Fix Location' on failed properties.`, { duration: 8000 });
     }
   };
 

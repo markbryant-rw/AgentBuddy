@@ -32,20 +32,26 @@ export const useProspectGeocoding = () => {
 
       // Geocode appraisals
       const appraisalResults = await Promise.allSettled(
-        ungeocodedAppraisals.map((appraisal) =>
-          supabase.functions.invoke('geocode-appraisal', {
+        ungeocodedAppraisals.map(async (appraisal) => {
+          const { data, error } = await supabase.functions.invoke('geocode-appraisal', {
             body: { appraisalId: appraisal.id },
-          })
-        )
+          });
+          if (error) throw error;
+          if (data && data.success === false) throw new Error(data.error || 'Geocoding failed');
+          return data;
+        })
       );
 
       // Geocode opportunities
       const opportunityResults = await Promise.allSettled(
-        ungeocodedOpportunities.map((opportunity) =>
-          supabase.functions.invoke('geocode-listing', {
+        ungeocodedOpportunities.map(async (opportunity) => {
+          const { data, error } = await supabase.functions.invoke('geocode-listing', {
             body: { listingId: opportunity.id },
-          })
-        )
+          });
+          if (error) throw error;
+          if (data && data.success === false) throw new Error(data.error || 'Geocoding failed');
+          return data;
+        })
       );
 
       const successfulAppraisals = appraisalResults.filter((r) => r.status === 'fulfilled').length;
@@ -60,7 +66,7 @@ export const useProspectGeocoding = () => {
       }
 
       if (totalFailed > 0) {
-        toast.warning(`Failed to geocode ${totalFailed} items`);
+        toast.warning(`${totalFailed} items could not be geocoded. Use 'Fix Location' on each property to set coordinates manually.`, { duration: 8000 });
       }
     } catch (error) {
       console.error('Geocoding error:', error);
