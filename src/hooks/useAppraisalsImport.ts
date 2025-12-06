@@ -336,6 +336,10 @@ export const useAppraisalsImport = () => {
 
       // Count warnings
       summary.warnings = validRows.filter(r => r.warnings.length > 0).length;
+      
+      if (summary.successful > 0) {
+        toast.success(`Successfully imported ${summary.successful} appraisals. Geocoding in progress - use Re-geocode or Fix Location if addresses fail.`, { duration: 8000 });
+      }
 
     } catch (error) {
       console.error('Import error:', error);

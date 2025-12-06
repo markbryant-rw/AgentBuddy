@@ -155,17 +155,19 @@ export const useTransactions = () => {
       // Trigger geocoding for new transaction
       if (data?.address) {
         try {
-          const { error: geocodeError } = await supabase.functions.invoke('geocode-transaction', {
+          const { data: geocodeResult, error: geocodeError } = await supabase.functions.invoke('geocode-transaction', {
             body: { transactionId: data.id }
           });
+          
           if (geocodeError) {
             logger.error('Geocoding failed:', geocodeError);
-            toast.error('Address geocoding failed - you can retry later from the map', {
-              duration: 5000,
-            });
+            toast.error(`Location warning: ${geocodeError.message || 'Geocoding failed'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
+          } else if (geocodeResult && geocodeResult.success === false) {
+            toast.error(`Location warning: ${geocodeResult.message || geocodeResult.error || 'Address could not be geocoded'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
           }
         } catch (error) {
           logger.error('Failed to geocode transaction:', error);
+          toast.error("Location warning: Geocoding service error. Use 'Fix Location' to set coordinates.", { duration: 8000 });
         }
       }
       
@@ -237,11 +239,19 @@ export const useTransactions = () => {
       // Re-geocode if address or suburb changed
       if ((variables.updates.address || variables.updates.suburb) && data?.id) {
         try {
-          supabase.functions.invoke('geocode-transaction', {
+          const { data: geocodeResult, error: geocodeError } = await supabase.functions.invoke('geocode-transaction', {
             body: { transactionId: data.id }
           });
+          
+          if (geocodeError) {
+            logger.error('Geocoding failed:', geocodeError);
+            toast.error(`Location warning: ${geocodeError.message || 'Geocoding failed'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
+          } else if (geocodeResult && geocodeResult.success === false) {
+            toast.error(`Location warning: ${geocodeResult.message || geocodeResult.error || 'Address could not be geocoded'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
+          }
         } catch (error) {
           logger.error('Failed to geocode transaction:', error);
+          toast.error("Location warning: Geocoding service error. Use 'Fix Location' to set coordinates.", { duration: 8000 });
         }
       }
     },

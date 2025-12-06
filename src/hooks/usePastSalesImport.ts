@@ -478,7 +478,7 @@ export const usePastSalesImport = () => {
       summary.failed = validatedRows.filter(r => !r.valid).length;
 
       if (summary.successful > 0) {
-        toast.success(`Successfully imported ${summary.successful} records`);
+        toast.success(`Successfully imported ${summary.successful} records. Geocoding in progress - use Re-geocode or Fix Location if addresses fail.`, { duration: 8000 });
       }
     } catch (error) {
       console.error('Import error:', error);

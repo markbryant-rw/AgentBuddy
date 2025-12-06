@@ -125,12 +125,18 @@ export const useListingPipeline = () => {
       // Auto-geocode the new listing if it has an address
       if (newListing.address) {
         try {
-          await supabase.functions.invoke('geocode-listing', {
+          const { data: geocodeResult, error: geocodeError } = await supabase.functions.invoke('geocode-listing', {
             body: { listingId: newListing.id },
           });
-        } catch (geocodeError) {
-          logger.error('Auto-geocoding failed:', geocodeError);
-          // Don't show error to user, geocoding is a background task
+          
+          if (geocodeError) {
+            toast.error(`Location warning: ${geocodeError.message || 'Geocoding failed'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
+          } else if (geocodeResult && geocodeResult.success === false) {
+            toast.error(`Location warning: ${geocodeResult.message || geocodeResult.error || 'Address could not be geocoded'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
+          }
+        } catch (geocodeErr) {
+          logger.error('Auto-geocoding failed:', geocodeErr);
+          toast.error("Location warning: Geocoding service error. Use 'Fix Location' to set coordinates.", { duration: 8000 });
         }
       }
       return true;
@@ -183,12 +189,18 @@ export const useListingPipeline = () => {
       // Auto-geocode if address or suburb changed
       if (updates.address || updates.suburb) {
         try {
-          await supabase.functions.invoke('geocode-listing', {
+          const { data: geocodeResult, error: geocodeError } = await supabase.functions.invoke('geocode-listing', {
             body: { listingId: id },
           });
-        } catch (geocodeError) {
-          logger.error('Auto-geocoding failed:', geocodeError);
-          // Don't show error to user, geocoding is a background task
+          
+          if (geocodeError) {
+            toast.error(`Location warning: ${geocodeError.message || 'Geocoding failed'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
+          } else if (geocodeResult && geocodeResult.success === false) {
+            toast.error(`Location warning: ${geocodeResult.message || geocodeResult.error || 'Address could not be geocoded'}. Use 'Fix Location' to set coordinates.`, { duration: 8000 });
+          }
+        } catch (geocodeErr) {
+          logger.error('Auto-geocoding failed:', geocodeErr);
+          toast.error("Location warning: Geocoding service error. Use 'Fix Location' to set coordinates.", { duration: 8000 });
         }
       }
       
