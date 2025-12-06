@@ -168,7 +168,7 @@ export const StageTransitionDialog = ({
               mode="single"
               selected={value ? new Date(value) : undefined}
               onSelect={(date) =>
-                handleFieldChange(field, date?.toISOString().split('T')[0])
+                handleFieldChange(field, date ? format(date, 'yyyy-MM-dd') : null)
               }
               initialFocus
             />

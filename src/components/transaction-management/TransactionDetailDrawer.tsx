@@ -209,6 +209,10 @@ export const TransactionDetailDrawer = ({
           console.error('Failed to send team notification', notifyError);
         }
       }
+      
+      // Close the drawer after successful stage transition
+      setStageTransitionDialogOpen(false);
+      onOpenChange(false);
     } finally {
       setPendingStageChange(null);
     }
