@@ -14,10 +14,15 @@ import {
 } from '@/lib/stageTransitionConfig';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Sparkles, Info } from 'lucide-react';
+import { CalendarIcon, Sparkles, Info, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
+import { 
+  validateTransactionDates, 
+  DateFieldName,
+  DateValidationError 
+} from '@/lib/transactionDateValidation';
 
 interface StageTransitionDialogProps {
   transaction: Transaction;
@@ -37,6 +42,7 @@ export const StageTransitionDialog = ({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [dateErrors, setDateErrors] = useState<DateValidationError[]>([]);
   const [isNotAuction, setIsNotAuction] = useState(false);
   const [hasPrefilledData, setHasPrefilledData] = useState(false);
 
@@ -77,9 +83,18 @@ export const StageTransitionDialog = ({
   if (!config) return null;
 
   const handleFieldChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    const newFormData = { ...formData, [field]: value };
+    setFormData(newFormData);
     // Clear validation error for this field
     setValidationErrors((prev) => prev.filter((f) => f !== field));
+    
+    // Re-validate dates when a date field changes
+    if (field.includes('date')) {
+      // Combine with existing transaction data for full validation
+      const fullData = { ...transaction, ...newFormData };
+      const errors = validateTransactionDates(fullData);
+      setDateErrors(errors);
+    }
   };
 
   const handleSubmit = async () => {
@@ -94,6 +109,15 @@ export const StageTransitionDialog = ({
     if (!validation.isValid) {
       setValidationErrors(validation.missingFields);
       toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    // Validate date constraints (no future dates, chronological order)
+    const fullData = { ...transaction, ...formData };
+    const dateValidationErrors = validateTransactionDates(fullData);
+    if (dateValidationErrors.length > 0) {
+      setDateErrors(dateValidationErrors);
+      toast.error(dateValidationErrors[0].message);
       return;
     }
 
@@ -137,10 +161,12 @@ export const StageTransitionDialog = ({
 
   const renderDateField = (field: string, label: string, required: boolean) => {
     const value = formData[field];
-    const hasError = validationErrors.includes(field);
+    const hasRequiredError = validationErrors.includes(field);
+    const dateError = dateErrors.find(e => e.field === field);
+    const hasError = hasRequiredError || !!dateError;
 
     return (
-      <div className="space-y-2">
+      <div key={field} className="space-y-2">
         <Label htmlFor={field} className="flex items-center gap-1">
           {label}
           {required && <span className="text-destructive">*</span>}
@@ -152,9 +178,9 @@ export const StageTransitionDialog = ({
               className={cn(
                 'w-full justify-start text-left font-normal',
                 !value && 'text-muted-foreground',
-                hasError && 'border-destructive',
-                // Add subtle green border for pre-filled required fields
-                value && required && 
+                hasError && 'border-destructive bg-destructive/5',
+                // Add subtle green border for pre-filled required fields without errors
+                !hasError && value && required && 
                   transaction[field as keyof Transaction] && 
                   'border-green-500 bg-green-50/50'
               )}
@@ -174,8 +200,14 @@ export const StageTransitionDialog = ({
             />
           </PopoverContent>
         </Popover>
-        {hasError && (
+        {hasRequiredError && (
           <p className="text-xs text-destructive">This field is required</p>
+        )}
+        {dateError && (
+          <p className="text-xs text-destructive flex items-center gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            {dateError.message}
+          </p>
         )}
       </div>
     );

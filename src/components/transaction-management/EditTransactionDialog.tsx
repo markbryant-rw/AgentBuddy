@@ -13,9 +13,15 @@ import { useLeadSources } from '@/hooks/useLeadSources';
 import { useAuth } from '@/hooks/useAuth';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CalendarIcon, Trash2 } from 'lucide-react';
+import { CalendarIcon, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { 
+  validateTransactionDates, 
+  DateValidationError,
+  DateFieldName 
+} from '@/lib/transactionDateValidation';
 
 interface EditTransactionDialogProps {
   transaction: Transaction;
@@ -69,6 +75,7 @@ export function EditTransactionDialog({
   const [formData, setFormData] = useState<Partial<Transaction>>(transaction);
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [dateErrors, setDateErrors] = useState<DateValidationError[]>([]);
 
   // Sync form data when transaction prop changes
   useEffect(() => {
@@ -101,6 +108,14 @@ export function EditTransactionDialog({
   };
 
   const handleSave = async () => {
+    // Validate dates before saving
+    const dateValidationErrors = validateTransactionDates(formData as Record<string, any>);
+    if (dateValidationErrors.length > 0) {
+      setDateErrors(dateValidationErrors);
+      toast.error(dateValidationErrors[0].message);
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const { id, created_at, updated_at, created_by, team_id, ...updates } = formData;
@@ -134,10 +149,15 @@ export function EditTransactionDialog({
   };
 
   const handleDateChange = (field: string, date: Date | undefined) => {
-    setFormData(prev => ({
-      ...prev,
+    const newFormData = {
+      ...formData,
       [field]: date ? format(date, 'yyyy-MM-dd') : null,
-    }));
+    };
+    setFormData(newFormData);
+    
+    // Validate dates when changed
+    const errors = validateTransactionDates(newFormData as Record<string, any>);
+    setDateErrors(errors);
   };
 
   return (
@@ -316,6 +336,7 @@ export function EditTransactionDialog({
               <div className="grid grid-cols-2 gap-4">
                 {visibleDateFields.map((field) => {
                   const dateValue = formData[field as keyof Transaction] as string | undefined;
+                  const dateError = dateErrors.find(e => e.field === field);
                   return (
                     <div key={field} className="space-y-2">
                       <Label>{dateFieldLabels[field]}</Label>
@@ -325,7 +346,8 @@ export function EditTransactionDialog({
                             variant="outline"
                             className={cn(
                               'w-full justify-start text-left font-normal',
-                              !dateValue && 'text-muted-foreground'
+                              !dateValue && 'text-muted-foreground',
+                              dateError && 'border-destructive bg-destructive/5'
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
@@ -341,6 +363,12 @@ export function EditTransactionDialog({
                           />
                         </PopoverContent>
                       </Popover>
+                      {dateError && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {dateError.message}
+                        </p>
+                      )}
                     </div>
                   );
                 })}
