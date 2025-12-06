@@ -88,8 +88,8 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
   return (
     <Dialog open={true} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between gap-4">
+        <DialogHeader className="pr-12">
+          <div className="flex items-center justify-between gap-3">
             <DialogTitle className="flex items-center gap-2 text-xl m-0">
               <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
                 <Bug className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -100,7 +100,8 @@ export const BugReportDialog = ({ open, onOpenChange }: BugReportDialogProps) =>
               variant="ghost"
               size="icon"
               onClick={handleMinimize}
-              className="h-8 w-8 shrink-0"
+              className="h-8 w-8 shrink-0 -mr-2"
+              title="Minimize to continue later"
             >
               <Minus className="h-4 w-4" />
             </Button>
