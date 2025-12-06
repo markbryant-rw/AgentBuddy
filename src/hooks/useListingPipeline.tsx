@@ -95,8 +95,8 @@ export const useListingPipeline = () => {
     fetchListings();
   }, [fetchListings]);
 
-  const addListing = async (listing: Omit<Listing, 'id' | 'created_at' | 'updated_at' | 'team_id' | 'created_by' | 'last_edited_by'>) => {
-    if (!user || !team) return;
+  const addListing = async (listing: Omit<Listing, 'id' | 'created_at' | 'updated_at' | 'team_id' | 'created_by' | 'last_edited_by'>): Promise<boolean> => {
+    if (!user || !team) return false;
 
     try {
       const { data, error } = await supabase
@@ -133,9 +133,11 @@ export const useListingPipeline = () => {
           // Don't show error to user, geocoding is a background task
         }
       }
+      return true;
     } catch (error: any) {
       logger.error('Error adding listing:', error);
       toast.error(`Failed to add listing: ${error?.message || 'Unknown error'}`);
+      return false;
     }
   };
 

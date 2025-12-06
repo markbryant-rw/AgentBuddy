@@ -325,19 +325,21 @@ export default function ListingPipeline() {
     : null;
 
   const handleAddListing = async () => {
-    await addListing(newListing);
-    setAddDialogOpen(false);
-    setNewListing({
-      address: '',
-      vendor_name: '',
-      suburb: '',
-      warmth: 'cold',
-      likelihood: 3,
-      expected_month: format(new Date(), 'yyyy-MM-dd'),
-      last_contact: format(new Date(), 'yyyy-MM-dd'),
-      estimated_value: undefined,
-      assigned_to: user?.id,
-    });
+    const success = await addListing(newListing);
+    if (success) {
+      setAddDialogOpen(false);
+      setNewListing({
+        address: '',
+        vendor_name: '',
+        suburb: '',
+        warmth: 'cold',
+        likelihood: 3,
+        expected_month: format(new Date(), 'yyyy-MM-dd'),
+        last_contact: format(new Date(), 'yyyy-MM-dd'),
+        estimated_value: undefined,
+        assigned_to: user?.id,
+      });
+    }
   };
 
   const handleCardClick = (listing: Listing) => {
