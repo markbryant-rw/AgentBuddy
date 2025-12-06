@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, User, Users, Settings as SettingsIcon, HelpCircle, Sparkles, CreditCard } from "lucide-react";
+import { Search, User, Users, Settings as SettingsIcon, HelpCircle, Sparkles, CreditCard, Plug } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ import { PreferencesCard } from "@/components/setup/PreferencesCard";
 import { AccountManagementCard } from "@/components/setup/AccountManagementCard";
 import { HelpSupportCard } from "@/components/setup/HelpSupportCard";
 import { BillingTab } from "@/components/setup/BillingTab";
+import IntegrationsTab from "@/components/settings/IntegrationsTab";
 
 // Import settings components
 import { UserProfileSection } from "@/components/settings/UserProfileSection";
@@ -21,11 +22,12 @@ const Setup = () => {
   const defaultTab = searchParams.get("tab") || "profile";
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Tab configuration - 5 core tabs
+  // Tab configuration - 6 core tabs
   const tabs = [
     { value: "profile", label: "Profile", icon: User, description: "Personal information and avatar" },
     { value: "team", label: "Team", icon: Users, description: "Your team information" },
     { value: "billing", label: "Billing", icon: CreditCard, description: "Subscription and payment" },
+    { value: "integrations", label: "Integrations", icon: Plug, description: "Connect external services" },
     { value: "preferences", label: "Preferences", icon: SettingsIcon, description: "Theme, notifications, and privacy" },
     { value: "help", label: "Help & Support", icon: HelpCircle, description: "Get help and export data" },
   ];
@@ -59,7 +61,7 @@ const Setup = () => {
 
       {/* Main Settings Tabs */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 gap-2 h-auto p-2 bg-muted/50">
+        <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2 h-auto p-2 bg-muted/50">
           {filteredTabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -91,6 +93,11 @@ const Setup = () => {
         {/* Billing Tab */}
         <TabsContent value="billing" className="mt-6 space-y-6">
           <BillingTab />
+        </TabsContent>
+
+        {/* Integrations Tab */}
+        <TabsContent value="integrations" className="mt-6">
+          <IntegrationsTab />
         </TabsContent>
 
         {/* Preferences Tab - Merged with Privacy */}
