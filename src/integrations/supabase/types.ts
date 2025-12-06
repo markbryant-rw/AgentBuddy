@@ -2250,6 +2250,7 @@ export type Database = {
           primary_team_id: string | null
           share_with_office: boolean
           status: string | null
+          timezone: string | null
           total_bug_points: number | null
           updated_at: string | null
         }
@@ -2274,6 +2275,7 @@ export type Database = {
           primary_team_id?: string | null
           share_with_office?: boolean
           status?: string | null
+          timezone?: string | null
           total_bug_points?: number | null
           updated_at?: string | null
         }
@@ -2298,6 +2300,7 @@ export type Database = {
           primary_team_id?: string | null
           share_with_office?: boolean
           status?: string | null
+          timezone?: string | null
           total_bug_points?: number | null
           updated_at?: string | null
         }

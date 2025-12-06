@@ -1,9 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.1';
+import { format } from 'https://esm.sh/date-fns@3.6.0';
+import { toZonedTime } from 'https://esm.sh/date-fns-tz@3.2.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Default timezone for New Zealand
+const DEFAULT_TIMEZONE = 'Pacific/Auckland';
 
 interface WeeklyTaskTemplate {
   id: string;
@@ -24,6 +29,40 @@ interface Transaction {
   include_weekly_tasks: boolean;
 }
 
+/**
+ * Get the start of the current week (Monday) in a specific timezone
+ */
+function getWeekStartInTimezone(timezone: string = DEFAULT_TIMEZONE): { weekStart: Date; weekStartStr: string } {
+  const now = new Date();
+  // Convert current UTC time to the user's local timezone
+  const localNow = toZonedTime(now, timezone);
+  
+  // Calculate Monday of the current week in local time
+  const dayOfWeek = localNow.getDay();
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const weekStart = new Date(localNow);
+  weekStart.setDate(localNow.getDate() + diff);
+  weekStart.setHours(0, 0, 0, 0);
+  
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+  
+  return { weekStart, weekStartStr };
+}
+
+/**
+ * Calculate due date for a specific day of week, timezone-aware
+ */
+function getDueDateForDayOfWeek(
+  weekStart: Date, 
+  dayOfWeek: number, 
+  timezone: string = DEFAULT_TIMEZONE
+): string {
+  // dayOfWeek: 1 = Monday, 2 = Tuesday, ..., 7 = Sunday
+  const dueDate = new Date(weekStart);
+  dueDate.setDate(weekStart.getDate() + (dayOfWeek - 1));
+  return format(dueDate, 'yyyy-MM-dd');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -35,18 +74,15 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const body = await req.json().catch(() => ({}));
-    const { teamId, listingIds, manual } = body;
+    const { teamId, listingIds, manual, timezone: userTimezone } = body;
 
-    // Calculate the week start (Monday)
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() + diff);
-    weekStart.setHours(0, 0, 0, 0);
-    const weekStartStr = weekStart.toISOString().split('T')[0];
-
-    console.log(`Generating weekly tasks for week starting ${weekStartStr}`);
+    // Use provided timezone or default to New Zealand
+    const timezone = userTimezone || DEFAULT_TIMEZONE;
+    
+    // Calculate week start in the user's timezone
+    const { weekStart, weekStartStr } = getWeekStartInTimezone(timezone);
+    
+    console.log(`Generating weekly tasks for week starting ${weekStartStr} (timezone: ${timezone})`);
 
     // Get teams with weekly tasks enabled
     let settingsQuery = supabase
@@ -137,10 +173,8 @@ Deno.serve(async (req) => {
           continue; // Skip if already exists
         }
 
-        // Calculate due date for this task (based on day_of_week)
-        const dueDate = new Date(weekStart);
-        dueDate.setDate(weekStart.getDate() + (template.day_of_week - 1));
-        const dueDateStr = dueDate.toISOString().split('T')[0];
+        // Calculate due date for this task (based on day_of_week) with timezone awareness
+        const dueDateStr = getDueDateForDayOfWeek(weekStart, template.day_of_week, timezone);
 
         const assignedTo = transaction.agent_id || transaction.created_by;
 
@@ -206,6 +240,7 @@ Deno.serve(async (req) => {
         tasksCreated,
         notificationsSent: notificationsToCreate.size,
         weekStart: weekStartStr,
+        timezone,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

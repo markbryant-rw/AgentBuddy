@@ -16,6 +16,7 @@ export interface UserProfile {
   birthday: string | null;
   birthday_visibility: string | null;
   mobile: string | null;
+  timezone: string | null;
   total_bug_points?: number;
   created_at: string;
   updated_at: string;
@@ -42,7 +43,7 @@ export const useProfile = () => {
           id, email, full_name, avatar_url,
           primary_team_id, office_id, active_role,
           birthday, birthday_visibility,
-          mobile, created_at, updated_at, total_bug_points
+          mobile, timezone, created_at, updated_at, total_bug_points
         `)
         .eq('id', user.id)
         .single();
