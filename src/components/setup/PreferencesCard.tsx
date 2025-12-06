@@ -2,14 +2,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
-import { Bell, Check, Palette, Zap, TreePine } from 'lucide-react';
+import { useProfile } from '@/hooks/useProfile';
+import { Bell, Check, Palette, Zap, TreePine, Shield, Cake } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 
 export const PreferencesCard = () => {
-  const { preferences, updatePreferences, loading } = useUserPreferences();
+  const { preferences, updatePreferences, loading: prefsLoading } = useUserPreferences();
+  const { profile, updateProfile, loading: profileLoading } = useProfile();
   const { currentTheme, setTheme, availableThemes } = useTheme();
+
+  const loading = prefsLoading || profileLoading;
 
   if (loading) {
     return (
@@ -27,6 +32,12 @@ export const PreferencesCard = () => {
     );
   }
 
+  const handleBirthdayVisibilityChange = (value: string) => {
+    updateProfile({ birthday_visibility: value });
+  };
+
+  const currentBirthdayVisibility = profile?.birthday_visibility || 'team_only';
+
   return (
     <Card>
       <CardHeader>
@@ -36,10 +47,10 @@ export const PreferencesCard = () => {
         </CardTitle>
         <CardDescription>Customize your experience</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8">
         {/* Theme Selection */}
         <div className="space-y-3">
-          <Label>Theme</Label>
+          <Label className="text-base font-semibold">Theme</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {availableThemes.map((theme) => {
               const isActive = currentTheme.id === theme.id;
@@ -130,39 +141,9 @@ export const PreferencesCard = () => {
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label>Friend Check-ins</Label>
-              <p className="text-xs text-muted-foreground">
-                Get notified when friends log their KPIs
-              </p>
-            </div>
-            <Switch
-              checked={preferences.notify_friend_checkin}
-              onCheckedChange={(checked) =>
-                updatePreferences({ notify_friend_checkin: checked })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Conversation Shares</Label>
-              <p className="text-xs text-muted-foreground">
-                Get notified when teammates share conversations
-              </p>
-            </div>
-            <Switch
-              checked={preferences.notify_conversation_share}
-              onCheckedChange={(checked) =>
-                updatePreferences({ notify_conversation_share: checked })
-              }
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
               <Label>Email Notifications</Label>
               <p className="text-xs text-muted-foreground">
-                Receive notifications via email
+                Receive important updates via email
               </p>
             </div>
             <Switch
@@ -171,6 +152,66 @@ export const PreferencesCard = () => {
                 updatePreferences({ notify_email: checked })
               }
             />
+          </div>
+        </div>
+
+        {/* Privacy Settings */}
+        <div className="space-y-4 pt-4 border-t">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-base font-semibold">Privacy</Label>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Cake className="h-4 w-4 text-muted-foreground" />
+              <Label>Birthday Visibility</Label>
+            </div>
+            <RadioGroup
+              value={currentBirthdayVisibility}
+              onValueChange={handleBirthdayVisibilityChange}
+              className="grid grid-cols-3 gap-2"
+            >
+              <Label
+                htmlFor="birthday-public"
+                className={cn(
+                  "flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-colors",
+                  currentBirthdayVisibility === 'public' 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:border-primary/50"
+                )}
+              >
+                <RadioGroupItem value="public" id="birthday-public" className="sr-only" />
+                <span className="text-sm">Everyone</span>
+              </Label>
+              <Label
+                htmlFor="birthday-team"
+                className={cn(
+                  "flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-colors",
+                  currentBirthdayVisibility === 'team_only'
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:border-primary/50"
+                )}
+              >
+                <RadioGroupItem value="team_only" id="birthday-team" className="sr-only" />
+                <span className="text-sm">Team Only</span>
+              </Label>
+              <Label
+                htmlFor="birthday-private"
+                className={cn(
+                  "flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-colors",
+                  currentBirthdayVisibility === 'private' 
+                    ? "border-primary bg-primary/5" 
+                    : "border-border hover:border-primary/50"
+                )}
+              >
+                <RadioGroupItem value="private" id="birthday-private" className="sr-only" />
+                <span className="text-sm">Only Me</span>
+              </Label>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              Control who can see your birthday on your profile
+            </p>
           </div>
         </div>
       </CardContent>

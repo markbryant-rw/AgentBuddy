@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { HelpCircle, MessageSquare, Bug, Lightbulb } from 'lucide-react';
+import { HelpCircle, Bug, Lightbulb } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const APP_VERSION = '2.0.0';
@@ -38,46 +38,25 @@ export const HelpSupportCard = () => {
             </Button>
           </Link>
 
-          <Button variant="outline" className="w-full justify-start" asChild>
-            <a href="mailto:support@example.com?subject=Bug Report">
+          <Link to="/bug-hunt">
+            <Button variant="outline" className="w-full justify-start">
               <Bug className="h-4 w-4 mr-2" />
               Report a Bug
-            </a>
-          </Button>
-
-          <Button variant="outline" className="w-full justify-start" asChild>
-            <a href="mailto:support@example.com">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Contact Support
-            </a>
-          </Button>
+            </Button>
+          </Link>
         </div>
 
-        {/* Documentation */}
-        <div className="pt-4 border-t space-y-3">
-          <h4 className="font-semibold text-sm">Documentation</h4>
-          <div className="space-y-2 text-sm">
-            <a href="#" className="block text-primary hover:underline">
-              Getting Started Guide
-            </a>
-            <a href="#" className="block text-primary hover:underline">
-              KPI Tracking Tutorial
-            </a>
-            <a href="#" className="block text-primary hover:underline">
-              Module Documentation
-            </a>
-            <a href="#" className="block text-primary hover:underline">
-              FAQ & Troubleshooting
-            </a>
-          </div>
-        </div>
-
-        {/* Support Hours */}
+        {/* Contact Support */}
         <div className="p-4 bg-muted/50 rounded-lg text-sm">
-          <p className="font-medium mb-1">Support Hours</p>
+          <p className="font-medium mb-2">Need Help?</p>
           <p className="text-muted-foreground">
-            Monday - Friday: 9:00 AM - 5:00 PM AEST<br />
-            Response time: Within 24 hours
+            For support or questions, email us at{' '}
+            <a 
+              href="mailto:support@agentbuddy.co" 
+              className="text-primary hover:underline font-medium"
+            >
+              support@agentbuddy.co
+            </a>
           </p>
         </div>
       </CardContent>

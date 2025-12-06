@@ -12,11 +12,23 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 
-// Validation schemas
+// Validation schema for international phone numbers (NZ, AU, PH)
 const mobileSchema = z.string()
   .trim()
-  .refine((val) => !val || /^(\+64|0)?[2-9]\d{7,9}$/.test(val.replace(/[\s-]/g, '')), {
-    message: "Invalid NZ mobile number format"
+  .refine((val) => {
+    if (!val) return true; // Empty is valid (optional field)
+    const cleaned = val.replace(/[\s\-()]/g, '');
+    // NZ: +64 or 02x format (9-11 digits after country code)
+    // AU: +61 or 04xx format (9 digits after country code)  
+    // PH: +63 or 09xx format (10 digits after country code)
+    const patterns = [
+      /^(\+?64|0)?[2-9]\d{7,9}$/,  // NZ
+      /^(\+?61|0)?4\d{8}$/,         // AU
+      /^(\+?63|0)?9\d{9}$/,         // PH
+    ];
+    return patterns.some(pattern => pattern.test(cleaned));
+  }, {
+    message: "Invalid phone number. Supports NZ, AU, and PH formats"
   });
 
 const passwordSchema = z.string()
@@ -130,14 +142,19 @@ export const UserProfileSection = () => {
         birthday = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       }
 
-      // Normalize mobile number (remove spaces, add +64 prefix if needed)
-      let normalizedMobile = formData.mobile.replace(/[\s-]/g, '');
+      // Normalize mobile number - detect country and add prefix
+      let normalizedMobile = formData.mobile.replace(/[\s\-()]/g, '');
       if (normalizedMobile && !normalizedMobile.startsWith('+')) {
-        if (normalizedMobile.startsWith('0')) {
+        if (normalizedMobile.startsWith('04') && normalizedMobile.length === 10) {
+          // Australian mobile (04xx xxx xxx)
+          normalizedMobile = '+61' + normalizedMobile.substring(1);
+        } else if (normalizedMobile.startsWith('09') && normalizedMobile.length === 11) {
+          // Philippines mobile (09xx xxx xxxx)
+          normalizedMobile = '+63' + normalizedMobile.substring(1);
+        } else if (normalizedMobile.startsWith('0')) {
+          // Default to NZ
           normalizedMobile = '+64' + normalizedMobile.substring(1);
-        } else if (!normalizedMobile.startsWith('64')) {
-          normalizedMobile = '+64' + normalizedMobile;
-        } else {
+        } else if (normalizedMobile.startsWith('64') || normalizedMobile.startsWith('61') || normalizedMobile.startsWith('63')) {
           normalizedMobile = '+' + normalizedMobile;
         }
       }
@@ -305,7 +322,7 @@ export const UserProfileSection = () => {
               maxLength={20}
             />
             <p className="text-xs text-muted-foreground">
-              Format: 027 321 3749 or +64 27 321 3749
+              Supports NZ, AU, and PH numbers
             </p>
           </div>
 
