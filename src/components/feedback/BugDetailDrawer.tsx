@@ -686,24 +686,29 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
           <BugReportCommentsSection bugReportId={bugId} />
 
           {/* Admin Actions - Bottom */}
-          {(isAdmin || isPlatformAdmin) && bug.status !== 'fixed' && bug.status !== 'archived' && (
+          {(isAdmin || isPlatformAdmin) && (
             <div className="flex flex-wrap gap-2 pt-6 border-t">
-              <Button
-                variant="default"
-                onClick={handleMarkAsFixed}
-                disabled={isMarkingFixed}
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Mark as Fixed
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowArchiveDialog(true)}
-                disabled={isArchiving}
-              >
-                <Archive className="h-4 w-4 mr-2" />
-                Archive
-              </Button>
+              {bug.status !== 'fixed' && bug.status !== 'archived' && (
+                <>
+                  <Button
+                    variant="default"
+                    onClick={handleMarkAsFixed}
+                    disabled={isMarkingFixed}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark as Fixed
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowArchiveDialog(true)}
+                    disabled={isArchiving}
+                  >
+                    <Archive className="h-4 w-4 mr-2" />
+                    Archive
+                  </Button>
+                </>
+              )}
+              {/* Delete always available for admins */}
               <Button
                 variant="ghost"
                 className="text-destructive hover:text-destructive"
