@@ -19,6 +19,7 @@ interface AIBugAnalysis {
   clarifying_questions: string[];
   affected_components: string[];
   estimated_fix_complexity: 'trivial' | 'easy' | 'moderate' | 'complex' | 'major';
+  lovable_fix_prompt: string;
 }
 
 serve(async (req) => {
@@ -83,8 +84,16 @@ Analyze bug reports and provide actionable insights. Return ONLY a valid JSON ob
   "needs_more_info": false,
   "clarifying_questions": [],
   "affected_components": ["src/path/Component.tsx"],
-  "estimated_fix_complexity": "moderate"
+  "estimated_fix_complexity": "moderate",
+  "lovable_fix_prompt": "A complete, ready-to-paste prompt for Lovable that describes the bug, its root cause, affected files, and step-by-step fix instructions. Write it as a direct instruction to Lovable AI. Make it comprehensive but concise. Start with 'Fix bug:' followed by the issue title."
 }
+
+IMPORTANT: The lovable_fix_prompt should be a single, comprehensive prompt that a developer can copy and paste directly into Lovable to fix the issue. Include:
+- Clear bug description
+- Root cause explanation
+- Specific file references
+- Step-by-step fix instructions
+- Any edge cases to handle
 
 If the bug description is too vague, set needs_more_info=true and focus on clarifying_questions.`
           },
@@ -133,7 +142,8 @@ Environment: ${JSON.stringify(bug.environment || {})}`
         needs_more_info: true,
         clarifying_questions: ['Please provide more detailed steps to reproduce', 'What were you trying to accomplish?'],
         affected_components: [],
-        estimated_fix_complexity: 'moderate'
+        estimated_fix_complexity: 'moderate',
+        lovable_fix_prompt: 'Unable to generate fix prompt - please provide more details about the bug.'
       };
     }
 

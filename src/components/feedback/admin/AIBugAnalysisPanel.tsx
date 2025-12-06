@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, ChevronDown, Copy, Target, AlertTriangle, Lightbulb, Code, HelpCircle, Wrench } from 'lucide-react';
+import { Sparkles, ChevronDown, Copy, Target, AlertTriangle, Lightbulb, Code, HelpCircle, Wrench, Rocket, Check } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface AIBugAnalysisPanelProps {
@@ -41,9 +41,20 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
     },
   });
 
+  const [copiedFixPrompt, setCopiedFixPrompt] = useState(false);
+
   const copyPrompt = (prompt: string) => {
     navigator.clipboard.writeText(prompt);
     toast.success('Prompt copied to clipboard!');
+  };
+
+  const copyFixPrompt = () => {
+    if (analysis?.lovable_fix_prompt) {
+      navigator.clipboard.writeText(analysis.lovable_fix_prompt);
+      setCopiedFixPrompt(true);
+      toast.success('Fix prompt copied! Paste it into Lovable to resolve the issue.');
+      setTimeout(() => setCopiedFixPrompt(false), 2000);
+    }
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -113,6 +124,45 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
 
             {analysis && (
               <>
+                {/* 🚀 Fix It Prompt - Primary Action */}
+                {analysis.lovable_fix_prompt && !analysis.needs_more_info && (
+                  <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Rocket className="h-5 w-5 text-primary" />
+                          <h5 className="font-semibold text-primary">Fix It Prompt</h5>
+                        </div>
+                        <Button
+                          size="sm"
+                          onClick={copyFixPrompt}
+                          className="gap-2"
+                        >
+                          {copiedFixPrompt ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4" />
+                              Copy & Fix in Lovable
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                      <div className="bg-background rounded-lg p-3 border">
+                        <pre className="text-sm whitespace-pre-wrap font-mono text-foreground/90 leading-relaxed">
+                          {analysis.lovable_fix_prompt}
+                        </pre>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2 italic">
+                        Copy this prompt and paste it into Lovable to resolve the issue
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Needs More Info */}
                 {analysis.needs_more_info && analysis.clarifying_questions?.length > 0 && (
                   <Card className="bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800">
