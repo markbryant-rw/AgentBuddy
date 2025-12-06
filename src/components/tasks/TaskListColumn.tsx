@@ -60,7 +60,7 @@ export const TaskListColumn = ({
     <div 
       ref={dragRef}
       className={cn(
-        "flex flex-col w-[350px] shrink-0 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 max-h-full",
+        "flex flex-col w-[350px] shrink-0 bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 h-full max-h-full",
         isOver && "ring-2 ring-primary shadow-xl scale-[1.02]"
       )}
     >

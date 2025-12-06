@@ -306,7 +306,7 @@ export default function TaskManager({ boardId }: TaskManagerProps) {
           onDragEnd={handleDragEnd}
           onDragOver={handleDragOver}
         >
-          <div className="flex gap-4 pb-4 h-full items-start">
+          <div className="flex gap-4 pb-4 h-full items-stretch">
             <SortableContext items={lists.map(l => l.id)} strategy={horizontalListSortingStrategy}>
               {lists.map((list) => (
                 <SortableTaskListColumn
