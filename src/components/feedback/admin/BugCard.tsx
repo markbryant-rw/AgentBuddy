@@ -5,12 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ImageIcon, ArrowRight, CheckCircle, Archive } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 interface BugReport {
   id: string;
@@ -61,31 +55,31 @@ const getModuleDisplay = (module?: string) => {
 };
 
 // Status transition options based on current status
+// Workflow: Triage → In Progress → Needs Review → Fixed (Complete)
 const getStatusTransitions = (currentStatus: string) => {
   switch (currentStatus) {
     case 'triage':
     case 'open':
       return [
-        { status: 'in_progress', label: 'Start Progress', icon: ArrowRight },
+        { status: 'in_progress', label: 'Start Investigating', icon: ArrowRight, variant: 'default' as const },
       ];
     case 'in_progress':
       return [
-        { status: 'needs_review', label: 'Send to Review', icon: ArrowRight },
-        { status: 'fixed', label: 'Mark Fixed', icon: CheckCircle },
+        { status: 'needs_review', label: 'Move to Review', icon: ArrowRight, variant: 'default' as const },
       ];
     case 'needs_review':
       return [
-        { status: 'in_progress', label: 'Back to Progress', icon: ArrowRight },
-        { status: 'fixed', label: 'Mark Fixed', icon: CheckCircle },
+        { status: 'fixed', label: 'Mark as Fixed', icon: CheckCircle, variant: 'success' as const },
+        { status: 'in_progress', label: 'Back to Progress', icon: ArrowRight, variant: 'secondary' as const },
       ];
     case 'fixed':
       return [
-        { status: 'archived', label: 'Archive', icon: Archive },
-        { status: 'in_progress', label: 'Reopen', icon: ArrowRight },
+        { status: 'archived', label: 'Archive', icon: Archive, variant: 'secondary' as const },
+        { status: 'in_progress', label: 'Reopen', icon: ArrowRight, variant: 'secondary' as const },
       ];
     case 'archived':
       return [
-        { status: 'in_progress', label: 'Reopen', icon: ArrowRight },
+        { status: 'in_progress', label: 'Reopen', icon: ArrowRight, variant: 'secondary' as const },
       ];
     default:
       return [];
@@ -194,54 +188,54 @@ export const BugCard = ({ bug, onClick, onStatusChange }: BugCardProps) => {
           <div className="flex gap-1.5 pt-2 border-t border-border/50">
             {transitions.length === 1 ? (
               (() => {
-                const Icon = transitions[0].icon;
+                const transition = transitions[0];
+                const Icon = transition.icon;
+                const isSuccess = transition.variant === 'success';
                 return (
                   <Button
-                    variant="outline"
+                    variant={isSuccess ? 'default' : 'outline'}
                     size="sm"
-                    className="h-6 text-[10px] flex-1"
+                    className={cn(
+                      "h-7 text-xs flex-1 font-medium",
+                      isSuccess && "bg-green-600 hover:bg-green-700 text-white"
+                    )}
                     onClick={(e) => {
                       e.stopPropagation();
-                      onStatusChange(bug.id, transitions[0].status);
+                      onStatusChange(bug.id, transition.status);
                     }}
                   >
-                    <Icon className="h-3 w-3 mr-1" />
-                    {transitions[0].label}
+                    <Icon className="h-3.5 w-3.5 mr-1.5" />
+                    {transition.label}
                   </Button>
                 );
               })()
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-6 text-[10px] flex-1"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ArrowRight className="h-3 w-3 mr-1" />
-                    Move to...
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-40">
-                  {transitions.map((transition) => {
-                    const Icon = transition.icon;
-                    return (
-                      <DropdownMenuItem
-                        key={transition.status}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onStatusChange(bug.id, transition.status);
-                        }}
-                        className="text-xs"
-                      >
-                        <Icon className="h-3 w-3 mr-2" />
-                        {transition.label}
-                      </DropdownMenuItem>
-                    );
-                  })}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex gap-1.5 flex-1">
+                {transitions.map((transition, idx) => {
+                  const Icon = transition.icon;
+                  const isSuccess = transition.variant === 'success';
+                  const isPrimary = idx === 0;
+                  return (
+                    <Button
+                      key={transition.status}
+                      variant={isSuccess ? 'default' : isPrimary ? 'outline' : 'ghost'}
+                      size="sm"
+                      className={cn(
+                        "h-7 text-xs font-medium",
+                        isPrimary ? "flex-1" : "flex-shrink-0",
+                        isSuccess && "bg-green-600 hover:bg-green-700 text-white"
+                      )}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStatusChange(bug.id, transition.status);
+                      }}
+                    >
+                      <Icon className="h-3.5 w-3.5 mr-1.5" />
+                      {transition.label}
+                    </Button>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
