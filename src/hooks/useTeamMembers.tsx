@@ -34,10 +34,15 @@ export const useTeamMembers = () => {
         throw error;
       }
 
-      const mappedMembers = data.map((member) => ({
-        ...member,
-        ...(member.profiles as any),
-      }));
+      const mappedMembers = data.map((member) => {
+        const profile = member.profiles as any;
+        return {
+          ...member,
+          ...profile,
+          // Explicitly set id to user_id to ensure it matches listings.assigned_to
+          id: profile?.id || member.user_id,
+        };
+      });
 
       logger.log('[useTeamMembers] Fetched members', { count: mappedMembers.length });
 
