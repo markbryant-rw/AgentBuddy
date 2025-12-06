@@ -19,7 +19,7 @@ type FilterTab = 'all' | 'misaligned' | 'aligned' | 'pending';
 
 export default function StockBoard() {
   const navigate = useNavigate();
-  const { transactions, isLoading, updateTransaction } = useTransactions();
+  const { transactions, isLoading, updateTransaction, deleteTransaction } = useTransactions();
   const queryClient = useQueryClient();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [detailDrawerOpen, setDetailDrawerOpen] = useState(false);
@@ -84,6 +84,12 @@ export default function StockBoard() {
     if (updated) {
       setSelectedTransaction(updated);
     }
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteTransaction(id);
+    setSelectedTransaction(null);
+    setDetailDrawerOpen(false);
   };
 
   const handleStageChange = async (transactionId: string, newStage: any) => {
@@ -174,6 +180,7 @@ export default function StockBoard() {
         onOpenChange={setDetailDrawerOpen}
         onStageChange={handleStageChange}
         onEdit={handleEditSave}
+        onDelete={handleDelete}
       />
 
       {/* Edit Dialog */}
