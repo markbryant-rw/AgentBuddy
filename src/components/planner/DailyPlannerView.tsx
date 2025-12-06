@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { addDays, subDays, format, isToday } from 'date-fns';
 import {
   DndContext,
@@ -50,6 +50,22 @@ export function DailyPlannerView() {
 
   // Calculate uncompleted count from items
   const uncompletedCount = items.filter(item => !item.completed).length;
+
+  // Stable date navigation handlers - prevents stale closure issues
+  const handlePreviousDay = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent DnD interference
+    setSelectedDate(prev => subDays(prev, 1));
+  }, []);
+
+  const handleNextDay = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent DnD interference
+    setSelectedDate(prev => addDays(prev, 1));
+  }, []);
+
+  const handleGoToToday = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedDate(new Date());
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -174,7 +190,7 @@ export function DailyPlannerView() {
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            onClick={() => setSelectedDate(subDays(selectedDate, 1))}
+            onClick={handlePreviousDay}
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -192,7 +208,7 @@ export function DailyPlannerView() {
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            onClick={() => setSelectedDate(addDays(selectedDate, 1))}
+            onClick={handleNextDay}
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -202,7 +218,7 @@ export function DailyPlannerView() {
               variant="ghost"
               size="sm"
               className="h-8"
-              onClick={() => setSelectedDate(new Date())}
+              onClick={handleGoToToday}
             >
               Today
             </Button>
