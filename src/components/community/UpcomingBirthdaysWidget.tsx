@@ -1,10 +1,12 @@
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Cake, ChevronRight } from 'lucide-react';
-import { formatDistanceToNow, differenceInDays, format, isSameDay } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Cake, ChevronRight, X } from 'lucide-react';
+import { differenceInDays, format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -31,8 +33,46 @@ const getInitials = (name: string) => {
   return parts[0][0].toUpperCase();
 };
 
+// LocalStorage key prefix for dismissed birthdays
+const DISMISSED_BIRTHDAY_PREFIX = 'dismissedBirthday_';
+
+// Get today's date string for birthday key (resets daily)
+const getTodayKey = () => format(new Date(), 'yyyy-MM-dd');
+
 export function UpcomingBirthdaysWidget() {
   const navigate = useNavigate();
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
+  
+  // Load dismissed birthdays from localStorage on mount
+  useEffect(() => {
+    const todayKey = getTodayKey();
+    const dismissed = new Set<string>();
+    
+    // Check localStorage for dismissed birthdays
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(DISMISSED_BIRTHDAY_PREFIX)) {
+        const storedDate = localStorage.getItem(key);
+        // Only keep dismissals from today (reset for new day)
+        if (storedDate === todayKey) {
+          const personId = key.replace(DISMISSED_BIRTHDAY_PREFIX, '');
+          dismissed.add(personId);
+        } else {
+          // Clean up old dismissals
+          localStorage.removeItem(key);
+        }
+      }
+    }
+    
+    setDismissedIds(dismissed);
+  }, []);
+  
+  const handleDismiss = (personId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent navigation
+    const todayKey = getTodayKey();
+    localStorage.setItem(`${DISMISSED_BIRTHDAY_PREFIX}${personId}`, todayKey);
+    setDismissedIds(prev => new Set([...prev, personId]));
+  };
   
   const { data: birthdays = [], isLoading } = useQuery({
     queryKey: ['upcoming-birthdays'],
@@ -76,7 +116,6 @@ export function UpcomingBirthdaysWidget() {
           profile.id // We'd need to check team_members, but simplified here
         );
         const isFriend = friendIds.includes(profile.id);
-        const isPublic = profile.birthday_visibility === 'public';
         
         if (profile.birthday_visibility === 'team_only' && !isTeamMember) continue;
         if (profile.birthday_visibility === 'friends_only' && !isFriend) continue;
@@ -108,7 +147,10 @@ export function UpcomingBirthdaysWidget() {
     },
   });
 
-  if (isLoading || birthdays.length === 0) return null;
+  // Filter out dismissed birthdays
+  const visibleBirthdays = birthdays.filter(b => !dismissedIds.has(b.id));
+
+  if (isLoading || visibleBirthdays.length === 0) return null;
 
   return (
     <Card>
@@ -119,12 +161,12 @@ export function UpcomingBirthdaysWidget() {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {birthdays.map((person) => (
+        {visibleBirthdays.map((person) => (
           <div
             key={person.id}
             onClick={() => navigate(`/profile/${person.id}`)}
             className={cn(
-              "flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer transition-colors",
+              "flex items-center gap-3 p-2 rounded-lg hover:bg-accent cursor-pointer transition-colors group relative",
               person.daysUntil === 0 && "bg-pink-50 dark:bg-pink-950/20 border border-pink-200 dark:border-pink-800"
             )}
           >
@@ -147,6 +189,16 @@ export function UpcomingBirthdaysWidget() {
               </Badge>
             )}
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            {/* Dismiss button - shows on hover */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => handleDismiss(person.id, e)}
+              aria-label={`Dismiss ${person.full_name}'s birthday notification`}
+            >
+              <X className="h-3 w-3" />
+            </Button>
           </div>
         ))}
       </CardContent>
