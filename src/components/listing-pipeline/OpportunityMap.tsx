@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Listing } from '@/hooks/useListingPipeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -126,83 +127,90 @@ export const OpportunityMap = ({
       />
       <FitBounds listings={filteredListings} />
       
-      {filteredListings.map((listing) => (
-        <CircleMarker
-          key={listing.id}
-          center={[listing.latitude!, listing.longitude!]}
-          radius={8 + listing.likelihood * 2}
-          pathOptions={{
-            fillColor: WARMTH_COLORS[listing.warmth],
-            color: WARMTH_COLORS[listing.warmth],
-            weight: 2,
-            opacity: 0.8,
-            fillOpacity: 0.6,
-          }}
-        >
-          <Popup>
-            <div className="space-y-2 min-w-[250px]">
-              <div>
-                <div className="font-semibold text-sm">{listing.address}</div>
-                {listing.suburb && (
-                  <div className="text-xs text-muted-foreground">{listing.suburb}</div>
-                )}
-              </div>
-              
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vendor:</span>
-                  <span className="font-medium">{listing.vendor_name}</span>
+      <MarkerClusterGroup
+        chunkedLoading
+        spiderfyOnMaxZoom
+        showCoverageOnHover={false}
+        maxClusterRadius={50}
+      >
+        {filteredListings.map((listing) => (
+          <CircleMarker
+            key={listing.id}
+            center={[listing.latitude!, listing.longitude!]}
+            radius={8}
+            pathOptions={{
+              fillColor: WARMTH_COLORS[listing.warmth],
+              color: WARMTH_COLORS[listing.warmth],
+              weight: 2,
+              opacity: 0.8,
+              fillOpacity: 0.6,
+            }}
+          >
+            <Popup>
+              <div className="space-y-2 min-w-[250px]">
+                <div>
+                  <div className="font-semibold text-sm">{listing.address}</div>
+                  {listing.suburb && (
+                    <div className="text-xs text-muted-foreground">{listing.suburb}</div>
+                  )}
                 </div>
                 
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Warmth:</span>
-                  <Badge variant="outline" className="text-xs">
-                    {WARMTH_LABELS[listing.warmth]}
-                  </Badge>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Likelihood:</span>
-                  <span>{'⭐'.repeat(listing.likelihood)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Expected:</span>
-                  <span className="font-medium">{formatDate(listing.expected_month)}</span>
-                </div>
-                
-                {listing.estimated_value && (
+                <div className="space-y-1 text-xs">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Value:</span>
-                    <span className="font-medium">{formatPrice(listing.estimated_value)}</span>
+                    <span className="text-muted-foreground">Vendor:</span>
+                    <span className="font-medium">{listing.vendor_name}</span>
                   </div>
-                )}
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Warmth:</span>
+                    <Badge variant="outline" className="text-xs">
+                      {WARMTH_LABELS[listing.warmth]}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Likelihood:</span>
+                    <span>{'⭐'.repeat(listing.likelihood)}</span>
+                  </div>
+                  
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Expected:</span>
+                    <span className="font-medium">{formatDate(listing.expected_month)}</span>
+                  </div>
+                  
+                  {listing.estimated_value && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Value:</span>
+                      <span className="font-medium">{formatPrice(listing.estimated_value)}</span>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => onListingSelect?.(listing)}
+                  >
+                    <Eye className="h-3 w-3 mr-1" />
+                    View
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => onEditClick?.(listing)}
+                  >
+                    <Edit className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
+                </div>
               </div>
-              
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onListingSelect?.(listing)}
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  View
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onEditClick?.(listing)}
-                >
-                  <Edit className="h-3 w-3 mr-1" />
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </Popup>
-        </CircleMarker>
-      ))}
+            </Popup>
+          </CircleMarker>
+        ))}
+      </MarkerClusterGroup>
     </MapContainer>
   );
 };
