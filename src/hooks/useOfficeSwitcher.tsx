@@ -107,20 +107,47 @@ export const useOfficeSwitcher = () => {
       if (error) throw error;
       return data;
     },
+    onMutate: async (officeId: string) => {
+      // Cancel any outgoing refetches so they don't overwrite our optimistic update
+      await queryClient.cancelQueries({ queryKey: ['active-office', user?.id] });
+
+      // Snapshot the previous value
+      const previousOffice = queryClient.getQueryData(['active-office', user?.id]);
+
+      // Optimistically update to the new office
+      const newOffice = availableOffices.find(o => o.id === officeId);
+      if (newOffice) {
+        queryClient.setQueryData(['active-office', user?.id], newOffice);
+      }
+
+      return { previousOffice };
+    },
     onSuccess: (data) => {
+      // Invalidate all office-dependent queries to force refetch with new office
       queryClient.invalidateQueries({ queryKey: ['active-office'] });
       queryClient.invalidateQueries({ queryKey: ['user-profile'] });
       queryClient.invalidateQueries({ queryKey: ['office-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['office-stats-v2'] });
       queryClient.invalidateQueries({ queryKey: ['team-hierarchy'] });
       queryClient.invalidateQueries({ queryKey: ['team-members'] });
       queryClient.invalidateQueries({ queryKey: ['all-offices'] });
       queryClient.invalidateQueries({ queryKey: ['assigned-offices'] });
       queryClient.invalidateQueries({ queryKey: ['office-teams-users'] });
       queryClient.invalidateQueries({ queryKey: ['data-health'] });
-      queryClient.refetchQueries({ type: 'active' });
+      queryClient.invalidateQueries({ queryKey: ['office-data'] });
+      queryClient.invalidateQueries({ queryKey: ['office-members'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['appraisals'] });
+      queryClient.invalidateQueries({ queryKey: ['kpi-entries'] });
+      
       toast.success(`Switched to ${data.office.name}`);
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _officeId, context) => {
+      // Rollback to previous office on error
+      if (context?.previousOffice) {
+        queryClient.setQueryData(['active-office', user?.id], context.previousOffice);
+      }
       console.error('Failed to switch office:', error);
       toast.error('Failed to switch office: ' + error.message);
     },
