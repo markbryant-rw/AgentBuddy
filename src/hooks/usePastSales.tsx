@@ -141,25 +141,48 @@ export const usePastSales = (teamId?: string) => {
 
       if (error) throw error;
 
-      // Trigger geocoding if address provided
+      // Trigger geocoding if address provided and check result
+      let geocodingFailed = false;
+      let geocodeErrorMessage = '';
+      
       if (data.address) {
         try {
-          await supabase.functions.invoke("geocode-past-sale", {
+          const { data: geocodeResult, error: geocodeError } = await supabase.functions.invoke("geocode-past-sale", {
             body: { pastSaleId: data.id },
           });
-        } catch (geocodeError) {
-          console.error("Geocoding error:", geocodeError);
+          
+          if (geocodeError) {
+            geocodingFailed = true;
+            geocodeErrorMessage = geocodeError.message || 'Geocoding service unavailable';
+          } else if (geocodeResult && geocodeResult.success === false) {
+            geocodingFailed = true;
+            geocodeErrorMessage = geocodeResult.message || geocodeResult.error || 'Address could not be geocoded';
+          }
+        } catch (err) {
+          console.error("Geocoding error:", err);
+          geocodingFailed = true;
+          geocodeErrorMessage = 'Geocoding service error';
         }
       }
 
-      return data;
+      return { ...data, geocodingFailed, geocodeErrorMessage };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["pastSales"] });
-      toast({
-        title: "Success",
-        description: "Past sale added successfully",
-      });
+      
+      if (result.geocodingFailed) {
+        toast({
+          title: "Past sale saved - Location warning",
+          description: `The address could not be geocoded: ${result.geocodeErrorMessage}. Use 'Fix Location' to manually set coordinates.`,
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Past sale added successfully",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -188,25 +211,48 @@ export const usePastSales = (teamId?: string) => {
 
       if (error) throw error;
 
-      // Trigger geocoding if address or suburb changed
+      // Trigger geocoding if address or suburb changed and check result
+      let geocodingFailed = false;
+      let geocodeErrorMessage = '';
+      
       if (updates.address || updates.suburb) {
         try {
-          await supabase.functions.invoke("geocode-past-sale", {
+          const { data: geocodeResult, error: geocodeError } = await supabase.functions.invoke("geocode-past-sale", {
             body: { pastSaleId: id },
           });
-        } catch (geocodeError) {
-          console.error("Geocoding error:", geocodeError);
+          
+          if (geocodeError) {
+            geocodingFailed = true;
+            geocodeErrorMessage = geocodeError.message || 'Geocoding service unavailable';
+          } else if (geocodeResult && geocodeResult.success === false) {
+            geocodingFailed = true;
+            geocodeErrorMessage = geocodeResult.message || geocodeResult.error || 'Address could not be geocoded';
+          }
+        } catch (err) {
+          console.error("Geocoding error:", err);
+          geocodingFailed = true;
+          geocodeErrorMessage = 'Geocoding service error';
         }
       }
 
-      return data;
+      return { ...data, geocodingFailed, geocodeErrorMessage };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["pastSales"] });
-      toast({
-        title: "Success",
-        description: "Past sale updated successfully",
-      });
+      
+      if (result.geocodingFailed) {
+        toast({
+          title: "Past sale saved - Location warning",
+          description: `The address could not be geocoded: ${result.geocodeErrorMessage}. Use 'Fix Location' to manually set coordinates.`,
+          variant: "destructive",
+          duration: 8000,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Past sale updated successfully",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
