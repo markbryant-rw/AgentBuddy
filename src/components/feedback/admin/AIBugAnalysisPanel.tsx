@@ -6,16 +6,18 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Sparkles, ChevronDown, Copy, Target, AlertTriangle, Lightbulb, Code, HelpCircle, Wrench, Rocket, Check } from 'lucide-react';
+import { Sparkles, ChevronDown, Copy, Target, AlertTriangle, Lightbulb, Code, HelpCircle, Wrench, Rocket, Check, FileEdit, ShieldAlert, XCircle, CheckCircle2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 interface AIBugAnalysisPanelProps {
   bugId: string;
   initialAnalysis?: any;
   isAdmin?: boolean;
+  onApplySuggestions?: (updates: { summary?: string; description?: string; severity?: string }) => void;
 }
 
-export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAnalysisPanelProps) {
+export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin, onApplySuggestions }: AIBugAnalysisPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [analysis, setAnalysis] = useState(initialAnalysis);
   const queryClient = useQueryClient();
@@ -31,7 +33,14 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
     },
     onSuccess: (data) => {
       setAnalysis(data);
-      toast.success('AI analysis complete!');
+      const status = data.analysis_status || 'success';
+      if (status === 'success') {
+        toast.success('AI analysis complete!');
+      } else if (status === 'partial') {
+        toast.warning('AI analysis completed with limited confidence');
+      } else {
+        toast.error('AI could not fully analyze this bug');
+      }
       queryClient.invalidateQueries({ queryKey: ['bug-detail', bugId] });
       queryClient.invalidateQueries({ queryKey: ['bug-reports'] });
       setIsOpen(true);
@@ -57,6 +66,25 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
     }
   };
 
+  const handleApplySuggestions = () => {
+    if (!analysis || !onApplySuggestions) return;
+    
+    const updates: { summary?: string; description?: string; severity?: string } = {};
+    
+    if (analysis.improved_summary) {
+      updates.summary = analysis.improved_summary;
+    }
+    if (analysis.improved_description) {
+      updates.description = analysis.improved_description;
+    }
+    if (analysis.suggested_severity) {
+      updates.severity = analysis.suggested_severity;
+    }
+    
+    onApplySuggestions(updates);
+    toast.success('AI suggestions applied!');
+  };
+
   const getConfidenceColor = (confidence: number) => {
     if (confidence >= 0.8) return 'text-green-600';
     if (confidence >= 0.5) return 'text-amber-600';
@@ -78,6 +106,54 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
     }
   };
 
+  const getAnalysisStatusBadge = () => {
+    if (!analysis) return null;
+    const status = analysis.analysis_status || 'success';
+    
+    switch (status) {
+      case 'success':
+        return (
+          <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Analyzed
+          </Badge>
+        );
+      case 'partial':
+        return (
+          <Badge variant="outline" className="bg-amber-100 text-amber-700 border-amber-300">
+            <AlertTriangle className="h-3 w-3 mr-1" />
+            Partial
+          </Badge>
+        );
+      case 'failed':
+        return (
+          <Badge variant="outline" className="bg-red-100 text-red-700 border-red-300">
+            <XCircle className="h-3 w-3 mr-1" />
+            Failed
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const getReportQualityBadge = () => {
+    if (!analysis?.report_quality) return null;
+    
+    const colors = {
+      excellent: 'bg-green-100 text-green-700',
+      good: 'bg-blue-100 text-blue-700',
+      needs_improvement: 'bg-amber-100 text-amber-700',
+      poor: 'bg-red-100 text-red-700'
+    };
+    
+    return (
+      <Badge variant="outline" className={colors[analysis.report_quality as keyof typeof colors] || ''}>
+        Report: {analysis.report_quality?.replace('_', ' ')}
+      </Badge>
+    );
+  };
+
   if (!isAdmin) return null;
 
   return (
@@ -88,11 +164,7 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
               <h4 className="font-semibold">AI Bug Hunt Co-Pilot</h4>
-              {analysis && (
-                <Badge variant="outline" className="ml-2">
-                  Analyzed
-                </Badge>
-              )}
+              {getAnalysisStatusBadge()}
             </div>
             <div className="flex items-center gap-2">
               {!analysis && (
@@ -124,8 +196,82 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
 
             {analysis && (
               <>
+                {/* Analysis Status Notes */}
+                {analysis.analysis_notes && (
+                  <div className={cn(
+                    "p-3 rounded-lg text-sm",
+                    analysis.analysis_status === 'failed' ? 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300' :
+                    analysis.analysis_status === 'partial' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300' :
+                    'bg-muted'
+                  )}>
+                    {analysis.analysis_notes}
+                  </div>
+                )}
+
+                {/* AI Suggested Severity */}
+                {analysis.suggested_severity && (
+                  <Card className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border-violet-200 dark:border-violet-800">
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-2">
+                          <ShieldAlert className="h-5 w-5 text-violet-600 mt-0.5" />
+                          <div>
+                            <h5 className="font-medium text-violet-900 dark:text-violet-100 mb-1">AI Suggested Severity</h5>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={cn(
+                                "text-white",
+                                analysis.suggested_severity === 'critical' ? 'bg-red-500' :
+                                analysis.suggested_severity === 'high' ? 'bg-orange-500' :
+                                analysis.suggested_severity === 'medium' ? 'bg-amber-500' :
+                                'bg-blue-500'
+                              )}>
+                                {analysis.suggested_severity}
+                              </Badge>
+                              {getReportQualityBadge()}
+                            </div>
+                            {analysis.severity_reasoning && (
+                              <p className="text-sm text-violet-700 dark:text-violet-300">{analysis.severity_reasoning}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* AI Improved Report */}
+                {(analysis.improved_summary || analysis.improved_description) && analysis.report_quality !== 'excellent' && (
+                  <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-blue-200 dark:border-blue-800">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <FileEdit className="h-5 w-5 text-blue-600" />
+                          <h5 className="font-semibold text-blue-900 dark:text-blue-100">AI-Improved Report</h5>
+                        </div>
+                        {onApplySuggestions && (
+                          <Button size="sm" variant="outline" onClick={handleApplySuggestions}>
+                            Apply Suggestions
+                          </Button>
+                        )}
+                      </div>
+                      {analysis.improved_summary && (
+                        <div className="mb-3">
+                          <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Suggested Title:</p>
+                          <p className="text-sm font-medium bg-white/50 dark:bg-black/20 p-2 rounded">{analysis.improved_summary}</p>
+                        </div>
+                      )}
+                      {analysis.improved_description && (
+                        <div>
+                          <p className="text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">Suggested Description:</p>
+                          <p className="text-sm bg-white/50 dark:bg-black/20 p-2 rounded whitespace-pre-wrap">{analysis.improved_description}</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* 🚀 Fix It Prompt - Primary Action */}
-                {analysis.lovable_fix_prompt && !analysis.needs_more_info && (
+                {analysis.lovable_fix_prompt && !analysis.needs_more_info && analysis.analysis_status !== 'failed' && (
                   <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30">
                     <CardContent className="pt-4">
                       <div className="flex items-center justify-between mb-3">
