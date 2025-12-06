@@ -2,9 +2,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { ImageIcon, ArrowRight, CheckCircle, Archive } from 'lucide-react';
+import { ImageIcon, ArrowRight, CheckCircle, Archive, Brain, AlertCircle } from 'lucide-react';
 
 interface BugReport {
   id: string;
@@ -18,6 +19,9 @@ interface BugReport {
   module?: string;
   archived_reason?: string;
   attachments?: string[];
+  ai_analysis?: any;
+  ai_confidence?: number;
+  ai_impact?: string;
   profiles?: {
     full_name: string;
     avatar_url?: string;
@@ -113,20 +117,57 @@ export const BugCard = ({ bug, onClick, onStatusChange }: BugCardProps) => {
       onClick={onClick}
     >
       <div className="space-y-2">
-        {/* Top: Title + Single Main Badge */}
+        {/* Top: Title + Badges */}
         <div className="flex items-start justify-between gap-2">
-          <h4 className="text-xs font-semibold line-clamp-2 flex-1">{bug.summary}</h4>
-          <div>
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            {/* AI Analysis Status Indicator */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="shrink-0">
+                    {bug.ai_analysis ? (
+                      <Brain className={cn(
+                        "h-3.5 w-3.5",
+                        bug.ai_confidence && bug.ai_confidence >= 0.7 
+                          ? "text-green-500" 
+                          : bug.ai_confidence && bug.ai_confidence >= 0.4 
+                            ? "text-amber-500" 
+                            : "text-muted-foreground"
+                      )} />
+                    ) : (
+                      <AlertCircle className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  {bug.ai_analysis ? (
+                    <div className="text-xs space-y-1">
+                      <p className="font-medium">AI Analyzed ✓</p>
+                      <p>Confidence: {Math.round((bug.ai_confidence || 0) * 100)}%</p>
+                      <p>Impact: {bug.ai_impact || 'unknown'}</p>
+                      <p className="text-muted-foreground">
+                        {(bug.ai_analysis as any)?.root_cause_hypothesis?.slice(0, 100)}...
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-xs">Pending AI analysis</p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <h4 className="text-xs font-semibold line-clamp-2">{bug.summary}</h4>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
             {isFixed ? (
-              <Badge variant="outline" className="bg-green-500 text-white text-[10px] px-1.5 border-green-500 shrink-0">
+              <Badge variant="outline" className="bg-green-500 text-white text-[10px] px-1.5 border-green-500">
                 Fixed ✓
               </Badge>
             ) : isArchived ? (
-              <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px] px-1.5 shrink-0">
+              <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px] px-1.5">
                 Archived
               </Badge>
             ) : (
-              <Badge variant="outline" className={`${severityColors[bug.severity as keyof typeof severityColors]} text-white text-[10px] px-1.5 shrink-0`}>
+              <Badge variant="outline" className={`${severityColors[bug.severity as keyof typeof severityColors]} text-white text-[10px] px-1.5`}>
                 {bug.severity}
               </Badge>
             )}
