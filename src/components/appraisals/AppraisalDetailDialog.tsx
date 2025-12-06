@@ -31,6 +31,8 @@ import ConvertToOpportunityDialog from './ConvertToOpportunityDialog';
 import LocationFixSection from '@/components/shared/LocationFixSection';
 import { VisitTimeline } from './VisitTimeline';
 import { AppraisalTasksTab } from './AppraisalTasksTab';
+import { BeaconReportButton } from './BeaconReportButton';
+import { BeaconEngagementPanel } from './BeaconEngagementPanel';
 import { Trash2, Plus, ListTodo, FileText, TrendingUp } from "lucide-react";
 import { StageInfoTooltip } from './StageInfoTooltip';
 import {
@@ -424,6 +426,15 @@ const AppraisalDetailDialog = ({
                   <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
                 </div>
 
+                {/* Beacon Report Button */}
+                <div className="flex items-center gap-3">
+                  <BeaconReportButton
+                    appraisalId={appraisal.id}
+                    beaconReportUrl={appraisal.beacon_report_url}
+                    beaconPersonalizedUrl={appraisal.beacon_personalized_url}
+                  />
+                </div>
+
                 {/* Fix Location Section - moved from Tracking tab */}
                 <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
               </TabsContent>
@@ -513,6 +524,24 @@ const AppraisalDetailDialog = ({
                 {hasMultipleVisits && (
                   <div className="flex items-center space-x-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
                     <Checkbox id="sync-contacts" checked={syncContactsToAllVisits} onCheckedChange={(checked) => setSyncContactsToAllVisits(checked as boolean)} />
+                    <label htmlFor="sync-contacts" className="text-sm font-medium leading-none">Sync contact details to all {allVisitsAtAddress.length} visits at this address</label>
+                  </div>
+                )}
+
+                {/* Beacon Engagement Panel */}
+                {appraisal.beacon_report_url && (
+                  <BeaconEngagementPanel
+                    beaconReportUrl={appraisal.beacon_report_url}
+                    beaconPersonalizedUrl={appraisal.beacon_personalized_url}
+                    propensityScore={appraisal.beacon_propensity_score || 0}
+                    totalViews={appraisal.beacon_total_views || 0}
+                    totalTimeSeconds={appraisal.beacon_total_time_seconds || 0}
+                    emailOpens={appraisal.beacon_email_opens || 0}
+                    isHotLead={appraisal.beacon_is_hot_lead || false}
+                    lastActivity={appraisal.beacon_last_activity}
+                    firstViewedAt={appraisal.beacon_first_viewed_at}
+                  />
+                )}
                     <label htmlFor="sync-contacts" className="text-sm font-medium leading-none">Sync contact details to all {allVisitsAtAddress.length} visits at this address</label>
                   </div>
                 )}

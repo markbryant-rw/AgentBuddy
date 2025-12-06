@@ -1063,6 +1063,57 @@ export type Database = {
           },
         ]
       }
+      integration_settings: {
+        Row: {
+          config: Json | null
+          connected_at: string | null
+          connected_by: string | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          integration_name: string
+          team_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json | null
+          connected_at?: string | null
+          connected_by?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          integration_name: string
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json | null
+          connected_at?: string | null
+          connected_by?: string | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          integration_name?: string
+          team_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integration_settings_connected_by_fkey"
+            columns: ["connected_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "integration_settings_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       kb_card_views: {
         Row: {
           card_id: string
@@ -1395,6 +1446,10 @@ export type Database = {
           archived_at: string | null
           assigned_to: string | null
           attachments: Json | null
+          beacon_is_hot_lead: boolean | null
+          beacon_last_activity: string | null
+          beacon_propensity_score: number | null
+          beacon_report_id: string | null
           campaign_start_date: string | null
           contract_signed_date: string | null
           created_at: string | null
@@ -1433,6 +1488,10 @@ export type Database = {
           archived_at?: string | null
           assigned_to?: string | null
           attachments?: Json | null
+          beacon_is_hot_lead?: boolean | null
+          beacon_last_activity?: string | null
+          beacon_propensity_score?: number | null
+          beacon_report_id?: string | null
           campaign_start_date?: string | null
           contract_signed_date?: string | null
           created_at?: string | null
@@ -1471,6 +1530,10 @@ export type Database = {
           archived_at?: string | null
           assigned_to?: string | null
           attachments?: Json | null
+          beacon_is_hot_lead?: boolean | null
+          beacon_last_activity?: string | null
+          beacon_propensity_score?: number | null
+          beacon_report_id?: string | null
           campaign_start_date?: string | null
           contract_signed_date?: string | null
           created_at?: string | null
@@ -1534,6 +1597,17 @@ export type Database = {
           appraisal_method: string | null
           appraisal_range_high: number | null
           appraisal_range_low: number | null
+          beacon_email_opens: number | null
+          beacon_first_viewed_at: string | null
+          beacon_is_hot_lead: boolean | null
+          beacon_last_activity: string | null
+          beacon_personalized_url: string | null
+          beacon_propensity_score: number | null
+          beacon_report_id: string | null
+          beacon_report_url: string | null
+          beacon_synced_at: string | null
+          beacon_total_time_seconds: number | null
+          beacon_total_views: number | null
           converted_date: string | null
           created_at: string | null
           created_by: string | null
@@ -1566,6 +1640,17 @@ export type Database = {
           appraisal_method?: string | null
           appraisal_range_high?: number | null
           appraisal_range_low?: number | null
+          beacon_email_opens?: number | null
+          beacon_first_viewed_at?: string | null
+          beacon_is_hot_lead?: boolean | null
+          beacon_last_activity?: string | null
+          beacon_personalized_url?: string | null
+          beacon_propensity_score?: number | null
+          beacon_report_id?: string | null
+          beacon_report_url?: string | null
+          beacon_synced_at?: string | null
+          beacon_total_time_seconds?: number | null
+          beacon_total_views?: number | null
           converted_date?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1598,6 +1683,17 @@ export type Database = {
           appraisal_method?: string | null
           appraisal_range_high?: number | null
           appraisal_range_low?: number | null
+          beacon_email_opens?: number | null
+          beacon_first_viewed_at?: string | null
+          beacon_is_hot_lead?: boolean | null
+          beacon_last_activity?: string | null
+          beacon_personalized_url?: string | null
+          beacon_propensity_score?: number | null
+          beacon_report_id?: string | null
+          beacon_report_url?: string | null
+          beacon_synced_at?: string | null
+          beacon_total_time_seconds?: number | null
+          beacon_total_views?: number | null
           converted_date?: string | null
           created_at?: string | null
           created_by?: string | null

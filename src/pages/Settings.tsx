@@ -4,6 +4,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import SocialSettingsTab from "@/components/settings/SocialSettingsTab";
 import PreferencesTab from "@/components/settings/PreferencesTab";
+import IntegrationsTab from "@/components/settings/IntegrationsTab";
 
 const Settings = () => {
   return (
@@ -25,13 +26,17 @@ const Settings = () => {
       <Tabs defaultValue="preferences" className="w-full">
         <TabsList>
           <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
           <TabsTrigger value="social">Social</TabsTrigger>
           <TabsTrigger value="general" disabled>General</TabsTrigger>
-          <TabsTrigger value="team" disabled>Team</TabsTrigger>
         </TabsList>
 
         <TabsContent value="preferences" className="mt-6">
           <PreferencesTab />
+        </TabsContent>
+
+        <TabsContent value="integrations" className="mt-6">
+          <IntegrationsTab />
         </TabsContent>
 
         <TabsContent value="social" className="mt-6">
@@ -46,18 +51,6 @@ const Settings = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">General settings will be available here.</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="team" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Team Settings</CardTitle>
-              <CardDescription>Coming soon</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">Team settings will be available here.</p>
             </CardContent>
           </Card>
         </TabsContent>
