@@ -264,6 +264,10 @@ export const BugKanbanBoard = () => {
     if (columnId === "complete") {
       return bugs.filter((bug) => bug.status === "fixed" || bug.status === "archived");
     }
+    if (columnId === "triage") {
+      // Include both 'triage' and legacy 'open' status in triage column
+      return bugs.filter((bug) => bug.status === "triage" || bug.status === "open");
+    }
     return bugs.filter((bug) => bug.status === columnId);
   };
 

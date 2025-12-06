@@ -82,9 +82,13 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
     enabled: !!user?.id,
   });
 
-  const isPlatformAdmin = profile?.user_roles?.some(
-    (role: any) => role.role === 'platform_admin' && !role.revoked_at
-  ) || false;
+  const isPlatformAdmin = (() => {
+    const roles = profile?.user_roles;
+    if (!roles) return false;
+    // Handle both array and single object responses from Supabase
+    const rolesArray = Array.isArray(roles) ? roles : [roles];
+    return rolesArray.some((role: any) => role.role === 'platform_admin' && !role.revoked_at);
+  })();
 
   console.log('[BugDetailDrawer] isPlatformAdmin:', isPlatformAdmin);
   console.log('[BugDetailDrawer] isAdmin prop:', isAdmin);
