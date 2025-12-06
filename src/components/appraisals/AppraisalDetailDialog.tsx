@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrencyFull, parseCurrency } from "@/lib/currencyUtils";
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { format } from 'date-fns';
 import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
 
@@ -72,7 +72,6 @@ const AppraisalDetailDialog = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [estimatedValueDisplay, setEstimatedValueDisplay] = useState("");
   const [syncContactsToAllVisits, setSyncContactsToAllVisits] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const originalFollowUpRef = useRef<string | null | undefined>(undefined);
@@ -105,7 +104,6 @@ const AppraisalDetailDialog = ({
   useEffect(() => {
     if (appraisal && !isNew) {
       setFormData(appraisal);
-      setEstimatedValueDisplay(appraisal.estimated_value ? formatCurrencyFull(appraisal.estimated_value) : "");
       originalFollowUpRef.current = appraisal.next_follow_up;
     } else if (isNew) {
       setFormData({
@@ -125,7 +123,6 @@ const AppraisalDetailDialog = ({
         notes: '',
         agent_id: user?.id,
       });
-      setEstimatedValueDisplay("");
       originalFollowUpRef.current = undefined;
     }
   }, [appraisal, isNew, user?.id]);
@@ -253,7 +250,7 @@ const AppraisalDetailDialog = ({
       notes: '',
       agent_id: user?.id,
     });
-    setEstimatedValueDisplay(appraisal.estimated_value ? formatCurrencyFull(appraisal.estimated_value) : "");
+    // CurrencyInput handles display formatting automatically
     // This will trigger a re-render with isNew behavior
     // We need to handle this differently - open a new dialog or switch mode
   };
@@ -407,7 +404,7 @@ const AppraisalDetailDialog = ({
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="estimated_value" className="text-sm font-medium">Estimated Value</Label>
-                      <Input id="estimated_value" value={estimatedValueDisplay} onChange={(e) => { setEstimatedValueDisplay(e.target.value); setFormData({ ...formData, estimated_value: parseCurrency(e.target.value) }); }} onBlur={() => { if (formData.estimated_value) setEstimatedValueDisplay(formatCurrencyFull(formData.estimated_value)); }} placeholder="$1,200,000" className="h-10" />
+                      <CurrencyInput id="estimated_value" value={formData.estimated_value} onChange={(value) => setFormData({ ...formData, estimated_value: value })} placeholder="$1,200,000" className="h-10" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lead_source" className="text-sm font-medium">Lead Source</Label>
@@ -602,7 +599,7 @@ const AppraisalDetailDialog = ({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="estimated_value" className="text-sm font-medium">Estimated Value</Label>
-                    <Input id="estimated_value" value={estimatedValueDisplay} onChange={(e) => { setEstimatedValueDisplay(e.target.value); setFormData({ ...formData, estimated_value: parseCurrency(e.target.value) }); }} onBlur={() => { if (formData.estimated_value) setEstimatedValueDisplay(formatCurrencyFull(formData.estimated_value)); }} placeholder="$1,200,000" className="h-10" />
+                    <CurrencyInput id="estimated_value" value={formData.estimated_value} onChange={(value) => setFormData({ ...formData, estimated_value: value })} placeholder="$1,200,000" className="h-10" />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lead_source" className="text-sm font-medium">Lead Source</Label>
