@@ -114,7 +114,7 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
             {analysis && (
               <>
                 {/* Needs More Info */}
-                {analysis.needs_more_info && (
+                {analysis.needs_more_info && analysis.clarifying_questions?.length > 0 && (
                   <Card className="bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-800">
                     <CardContent className="pt-4">
                       <div className="flex items-start gap-2">
@@ -166,7 +166,7 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
                 </div>
 
                 {/* Areas to Investigate */}
-                {analysis.areas_to_investigate.length > 0 && (
+                {analysis.areas_to_investigate?.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Code className="h-4 w-4 text-primary" />
@@ -183,7 +183,7 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
                 )}
 
                 {/* Suggested Prompts */}
-                {analysis.suggested_prompts.length > 0 && (
+                {analysis.suggested_prompts?.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Lightbulb className="h-4 w-4 text-primary" />
@@ -219,7 +219,7 @@ export function AIBugAnalysisPanel({ bugId, initialAnalysis, isAdmin }: AIBugAna
                 )}
 
                 {/* Solution Outline */}
-                {analysis.solution_outline.length > 0 && (
+                {analysis.solution_outline?.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Wrench className="h-4 w-4 text-primary" />
