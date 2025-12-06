@@ -2754,47 +2754,86 @@ export type Database = {
       service_providers: {
         Row: {
           agency_id: string | null
+          avatar_url: string | null
           category_id: string | null
           company: string | null
+          company_name: string | null
           created_at: string | null
           created_by: string | null
           email: string | null
+          full_name: string | null
           id: string
+          last_used_at: string | null
+          logo_url: string | null
           name: string
+          negative_count: number
+          neutral_count: number
           notes: string | null
           phone: string | null
+          positive_count: number
           rating: number | null
+          search_vector: unknown
+          team_category_id: string | null
+          team_id: string | null
+          total_reviews: number
           updated_at: string | null
+          visibility_level: string | null
           website: string | null
         }
         Insert: {
           agency_id?: string | null
+          avatar_url?: string | null
           category_id?: string | null
           company?: string | null
+          company_name?: string | null
           created_at?: string | null
           created_by?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
+          last_used_at?: string | null
+          logo_url?: string | null
           name: string
+          negative_count?: number
+          neutral_count?: number
           notes?: string | null
           phone?: string | null
+          positive_count?: number
           rating?: number | null
+          search_vector?: unknown
+          team_category_id?: string | null
+          team_id?: string | null
+          total_reviews?: number
           updated_at?: string | null
+          visibility_level?: string | null
           website?: string | null
         }
         Update: {
           agency_id?: string | null
+          avatar_url?: string | null
           category_id?: string | null
           company?: string | null
+          company_name?: string | null
           created_at?: string | null
           created_by?: string | null
           email?: string | null
+          full_name?: string | null
           id?: string
+          last_used_at?: string | null
+          logo_url?: string | null
           name?: string
+          negative_count?: number
+          neutral_count?: number
           notes?: string | null
           phone?: string | null
+          positive_count?: number
           rating?: number | null
+          search_vector?: unknown
+          team_category_id?: string | null
+          team_id?: string | null
+          total_reviews?: number
           updated_at?: string | null
+          visibility_level?: string | null
           website?: string | null
         }
         Relationships: [
@@ -2817,6 +2856,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_providers_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
