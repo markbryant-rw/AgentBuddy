@@ -1,4 +1,5 @@
 import { MapContainer, TileLayer, CircleMarker, Marker, Popup, useMap } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 import { LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { Listing } from '@/hooks/useListingPipeline';
 import { useEffect, useMemo, useState } from 'react';
@@ -75,23 +76,8 @@ const ProspectMap = ({ appraisals, opportunities, onAppraisalClick, onAutoGeocod
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
   const [salespersonFilter, setSalespersonFilter] = useState<string[]>([]);
 
-  const getRadiusByIntent = (intent: string) => {
-    switch (intent) {
-      case 'high': return 12;
-      case 'medium': return 9;
-      case 'low': return 6;
-      default: return 8;
-    }
-  };
-
-  const getRadiusByWarmth = (warmth: string) => {
-    switch (warmth) {
-      case 'hot': return 12;
-      case 'warm': return 9;
-      case 'cold': return 6;
-      default: return 8;
-    }
-  };
+  // Fixed radius for all markers (uniform size)
+  const MARKER_RADIUS = 8;
 
   const filteredAppraisals = useMemo(() => {
     return appraisals.filter(appraisal => {
@@ -293,6 +279,12 @@ const ProspectMap = ({ appraisals, opportunities, onAppraisalClick, onAutoGeocod
     return (
       <MapContainer center={[-36.8485, 174.7633]} zoom={11} className={`${height} w-full`}>
         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <MarkerClusterGroup
+          chunkedLoading
+          spiderfyOnMaxZoom
+          showCoverageOnHover={false}
+          maxClusterRadius={50}
+        >
         {showAppraisals && filteredAppraisals.map((appraisal) => {
           const salesperson = teamMembers.find(m => m.user_id === appraisal.created_by);
           const markerColor = getMarkerColor(appraisal);
@@ -337,7 +329,7 @@ const ProspectMap = ({ appraisals, opportunities, onAppraisalClick, onAutoGeocod
             <CircleMarker 
               key={`appraisal-${appraisal.id}`} 
               center={[appraisal.latitude!, appraisal.longitude!]} 
-              radius={getRadiusByIntent(appraisal.intent)}
+              radius={MARKER_RADIUS}
               pathOptions={{ fillColor: markerColor, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.7 }}
             >
               <Popup>
@@ -411,7 +403,7 @@ const ProspectMap = ({ appraisals, opportunities, onAppraisalClick, onAutoGeocod
             <CircleMarker 
               key={`opportunity-${opportunity.id}`} 
               center={[opportunity.latitude!, opportunity.longitude!]} 
-              radius={getRadiusByWarmth(opportunity.warmth)}
+              radius={MARKER_RADIUS}
               pathOptions={{ fillColor: markerColor, color: '#fff', weight: 2, opacity: 1, fillOpacity: 0.8 }}
             >
               <Popup>
@@ -441,6 +433,7 @@ const ProspectMap = ({ appraisals, opportunities, onAppraisalClick, onAutoGeocod
             </CircleMarker>
           );
         })}
+        </MarkerClusterGroup>
         <FitBounds listings={[...filteredAppraisals, ...filteredOpportunities]} />
       </MapContainer>
     );
