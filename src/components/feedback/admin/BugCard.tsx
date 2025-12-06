@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { ImageIcon, ArrowRight, CheckCircle, Archive, Brain, AlertCircle } from 'lucide-react';
+import { ImageIcon, ArrowRight, CheckCircle, Archive, Brain, AlertCircle, XCircle } from 'lucide-react';
 
 interface BugReport {
   id: string;
@@ -126,14 +126,21 @@ export const BugCard = ({ bug, onClick, onStatusChange }: BugCardProps) => {
                 <TooltipTrigger asChild>
                   <div className="shrink-0">
                     {bug.ai_analysis ? (
-                      <Brain className={cn(
-                        "h-3.5 w-3.5",
-                        bug.ai_confidence && bug.ai_confidence >= 0.7 
-                          ? "text-green-500" 
-                          : bug.ai_confidence && bug.ai_confidence >= 0.4 
-                            ? "text-amber-500" 
-                            : "text-muted-foreground"
-                      )} />
+                      (() => {
+                        const analysisStatus = (bug.ai_analysis as any)?.analysis_status || 'success';
+                        const confidence = bug.ai_confidence || 0;
+                        
+                        if (analysisStatus === 'failed') {
+                          return <XCircle className="h-3.5 w-3.5 text-red-400" />;
+                        }
+                        if (analysisStatus === 'partial' || confidence < 0.4) {
+                          return <Brain className="h-3.5 w-3.5 text-amber-500" />;
+                        }
+                        if (confidence >= 0.7) {
+                          return <Brain className="h-3.5 w-3.5 text-green-500" />;
+                        }
+                        return <Brain className="h-3.5 w-3.5 text-amber-500" />;
+                      })()
                     ) : (
                       <AlertCircle className="h-3.5 w-3.5 text-muted-foreground/50" />
                     )}
@@ -142,12 +149,30 @@ export const BugCard = ({ bug, onClick, onStatusChange }: BugCardProps) => {
                 <TooltipContent side="top" className="max-w-xs">
                   {bug.ai_analysis ? (
                     <div className="text-xs space-y-1">
-                      <p className="font-medium">AI Analyzed ✓</p>
-                      <p>Confidence: {Math.round((bug.ai_confidence || 0) * 100)}%</p>
-                      <p>Impact: {bug.ai_impact || 'unknown'}</p>
-                      <p className="text-muted-foreground">
-                        {(bug.ai_analysis as any)?.root_cause_hypothesis?.slice(0, 100)}...
-                      </p>
+                      {(() => {
+                        const analysisStatus = (bug.ai_analysis as any)?.analysis_status || 'success';
+                        const suggestedSeverity = (bug.ai_analysis as any)?.suggested_severity;
+                        
+                        return (
+                          <>
+                            <p className="font-medium">
+                              {analysisStatus === 'success' ? '✓ AI Analyzed' : 
+                               analysisStatus === 'partial' ? '⚠ Partial Analysis' : 
+                               '✗ Analysis Failed'}
+                            </p>
+                            <p>Confidence: {Math.round((bug.ai_confidence || 0) * 100)}%</p>
+                            <p>Impact: {bug.ai_impact || 'unknown'}</p>
+                            {suggestedSeverity && suggestedSeverity !== bug.severity && (
+                              <p className="text-amber-500">
+                                AI suggests: {suggestedSeverity} severity
+                              </p>
+                            )}
+                            <p className="text-muted-foreground">
+                              {(bug.ai_analysis as any)?.root_cause_hypothesis?.slice(0, 80)}...
+                            </p>
+                          </>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <p className="text-xs">Pending AI analysis</p>
