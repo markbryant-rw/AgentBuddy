@@ -109,16 +109,7 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
         .from('profiles')
         .select('full_name, email')
         .eq('id', data.user_id)
-        .single();
-      
-      // Initialize field values
-      setSummaryValue(data.summary);
-      setDescriptionValue(data.description);
-      setExpectedBehaviourValue(data.expected_behaviour || '');
-      setStepsToReproduceValue(data.steps_to_reproduce || '');
-      setSeverityValue(data.severity);
-      setModuleValue(data.module || '');
-      setStatusValue(data.status);
+        .maybeSingle();
       
       // Initialize loading states for images
       const attachments = Array.isArray(data.attachments) ? data.attachments : [];
@@ -134,6 +125,19 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
     },
     enabled: !!bugId && open,
   });
+
+  // Initialize field values only when bug data first loads or bugId changes
+  useEffect(() => {
+    if (bug) {
+      setSummaryValue(bug.summary || '');
+      setDescriptionValue(bug.description || '');
+      setExpectedBehaviourValue(bug.expected_behaviour || '');
+      setStepsToReproduceValue(bug.steps_to_reproduce || '');
+      setSeverityValue(bug.severity || '');
+      setModuleValue(bug.module || '');
+      setStatusValue(bug.status || '');
+    }
+  }, [bugId]); // Only re-initialize when bugId changes, not on every refetch
 
   const updateFieldMutation = useMutation({
     mutationFn: async ({ field, value }: { field: string; value: any }) => {
