@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useTeam } from '@/hooks/useTeam';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 export type AppraisalStage = 'VAP' | 'MAP' | 'LAP';
 
@@ -205,7 +206,7 @@ export const useAppraisalTemplates = () => {
         if (task.due_offset_days !== undefined) {
           const anchor = new Date(appraisalDate);
           anchor.setDate(anchor.getDate() + task.due_offset_days);
-          dueDate = anchor.toISOString().split('T')[0];
+          dueDate = format(anchor, 'yyyy-MM-dd');
         }
 
         return {

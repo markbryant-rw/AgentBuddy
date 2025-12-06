@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 export type TransactionStage = 'signed' | 'live' | 'contract' | 'unconditional' | 'settled';
 
@@ -191,7 +192,7 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
             created_by: user?.id,
             order_position: index,
             due_date: task.due_offset_days != null
-              ? new Date(anchorDate.getTime() + task.due_offset_days * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+              ? format(new Date(anchorDate.getTime() + task.due_offset_days * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
               : null,
             assigned_to: assignedTo,
           };
