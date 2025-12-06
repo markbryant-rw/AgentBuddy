@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, Search, UserPlus, Mail, Building2, Shield, Wrench, AlertCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Users, Search, UserPlus, Mail, Building2, Shield, Wrench, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -26,9 +26,12 @@ interface UserProfile {
   user_roles?: Array<{ role: string }>;
 }
 
+const PAGE_SIZE = 20;
+
 export default function UsersPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [repairDialogOpen, setRepairDialogOpen] = useState(false);
   const [selectedUserForRepair, setSelectedUserForRepair] = useState<UserProfile | null>(null);
 
@@ -84,15 +87,36 @@ export default function UsersPage() {
     }
   });
 
-  const filteredUsers = users.filter(user => {
+  // Filter users based on search query
+  const filteredUsers = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return (
+    return users.filter(user => 
       user.full_name?.toLowerCase().includes(query) ||
       user.email.toLowerCase().includes(query) ||
       user.office_name?.toLowerCase().includes(query) ||
       user.team_name?.toLowerCase().includes(query)
     );
-  });
+  }, [users, searchQuery]);
+
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredUsers.length / PAGE_SIZE);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const endIndex = startIndex + PAGE_SIZE;
+  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+  const handlePreviousPage = () => {
+    setCurrentPage(prev => Math.max(1, prev - 1));
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  };
 
   const getRoleLabel = (role: string) => {
     const roleMap: Record<string, string> = {
@@ -158,7 +182,7 @@ export default function UsersPage() {
               <Input
                 placeholder="Search by name, email, office, or team..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -176,92 +200,128 @@ export default function UsersPage() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={user.avatar_url || ''} />
-                          <AvatarFallback>
-                            {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
+              <>
+                <div className="space-y-2">
+                  {paginatedUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 flex-1">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={user.avatar_url || ''} />
+                            <AvatarFallback>
+                              {user.full_name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-semibold truncate">
-                              {user.full_name || 'No name set'}
-                            </h4>
-                            {user.user_roles && user.user_roles.length > 0 && (
-                              <div className="flex gap-1 flex-wrap">
-                                {user.user_roles.map((roleObj, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant={getRoleBadgeVariant(roleObj.role)}
-                                    className="text-xs"
-                                  >
-                                    <Shield className="h-3 w-3 mr-1" />
-                                    {getRoleLabel(roleObj.role)}
-                                  </Badge>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {user.email}
-                            </span>
-                            {user.office_name && (
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-semibold truncate">
+                                {user.full_name || 'No name set'}
+                              </h4>
+                              {user.user_roles && user.user_roles.length > 0 && (
+                                <div className="flex gap-1 flex-wrap">
+                                  {user.user_roles.map((roleObj, idx) => (
+                                    <Badge
+                                      key={idx}
+                                      variant={getRoleBadgeVariant(roleObj.role)}
+                                      className="text-xs"
+                                    >
+                                      <Shield className="h-3 w-3 mr-1" />
+                                      {getRoleLabel(roleObj.role)}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <Building2 className="h-3 w-3" />
-                                {user.office_name}
+                                <Mail className="h-3 w-3" />
+                                {user.email}
                               </span>
-                            )}
-                            {user.team_name && (
-                              <span className="text-xs px-2 py-0.5 bg-muted rounded">
-                                {user.team_name}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
+                              {user.office_name && (
+                                <span className="flex items-center gap-1">
+                                  <Building2 className="h-3 w-3" />
+                                  {user.office_name}
+                                </span>
+                              )}
+                              {user.team_name && (
+                                <span className="text-xs px-2 py-0.5 bg-muted rounded">
+                                  {user.team_name}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Joined {format(new Date(user.created_at), 'MMM d, yyyy')}
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        {isOrphaned(user) && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleRepairClick(user)}
-                            className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
-                          >
-                            <Wrench className="mr-2 h-4 w-4" />
-                            Repair
+                        <div className="flex items-center gap-2">
+                          {isOrphaned(user) && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleRepairClick(user)}
+                              className="border-amber-500 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950"
+                            >
+                              <Wrench className="mr-2 h-4 w-4" />
+                              Repair
+                            </Button>
+                          )}
+                          {user.status === 'inactive' && (
+                            <Badge variant="destructive" className="gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Inactive
+                            </Badge>
+                          )}
+                          <Button variant="outline" size="sm">
+                            View Details
                           </Button>
-                        )}
-                        {user.status === 'inactive' && (
-                          <Badge variant="destructive" className="gap-1">
-                            <AlertCircle className="h-3 w-3" />
-                            Inactive
-                          </Badge>
-                        )}
-                        <Button variant="outline" size="sm">
-                          View Details
-                        </Button>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {startIndex + 1}-{Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePreviousPage}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+                      <div className="flex items-center gap-1 px-2">
+                        <span className="text-sm font-medium">{currentPage}</span>
+                        <span className="text-sm text-muted-foreground">of</span>
+                        <span className="text-sm font-medium">{totalPages}</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNextPage}
+                        disabled={currentPage === totalPages}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
