@@ -268,18 +268,24 @@ export const TransactionKanbanCard = ({ transaction, onClick, onEdit }: Transact
           
           {transaction.stage === 'unconditional' && (
             <>
-              {transaction.settlement_date && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span className="truncate">Pre-Settlement: {format(new Date(transaction.settlement_date), 'dd MMM')}</span>
-                </div>
-              )}
-              {transaction.expected_settlement && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3" />
-                  <span className="truncate">Settlement: {format(new Date(transaction.expected_settlement), 'dd MMM')}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span className="truncate">
+                  Pre-Settlement: {transaction.pre_settlement_inspection_date 
+                    ? format(new Date(transaction.pre_settlement_inspection_date), 'dd MMM') 
+                    : 'TBC'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Calendar className="h-3 w-3" />
+                <span className="truncate">
+                  Settlement: {transaction.settlement_date 
+                    ? format(new Date(transaction.settlement_date), 'dd MMM') 
+                    : (transaction.expected_settlement 
+                      ? format(new Date(transaction.expected_settlement), 'dd MMM') 
+                      : 'TBC')}
+                </span>
+              </div>
             </>
           )}
           
