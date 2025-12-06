@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useTransactionDocuments, TransactionDocument } from '@/hooks/useTransactionDocuments';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -15,7 +15,11 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  X
+  X,
+  Paperclip,
+  Download,
+  Trash2,
+  Loader2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -23,6 +27,9 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useTeam } from '@/hooks/useTeam';
 
 interface TransactionDocumentsTabProps {
   transactionId: string;
@@ -34,12 +41,25 @@ const STATUS_CONFIG = {
   reviewed: { label: 'Reviewed', color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300', icon: CheckCircle2 },
 };
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_FILE_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
 export const TransactionDocumentsTab = ({ transactionId }: TransactionDocumentsTabProps) => {
   const { documents, isLoading, progress, updateDocument, createDocument } = useTransactionDocuments(transactionId);
+  const { team } = useTeam();
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['all']));
   const [isAddingDocument, setIsAddingDocument] = useState(false);
   const [newDocTitle, setNewDocTitle] = useState('');
   const [newDocRequired, setNewDocRequired] = useState(false);
+  const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const documentsBySection = useMemo(() => {
     const sections: Record<string, TransactionDocument[]> = {};
@@ -102,6 +122,115 @@ export const TransactionDocumentsTab = ({ transactionId }: TransactionDocumentsT
       setIsAddingDocument(false);
       setNewDocTitle('');
       setNewDocRequired(false);
+    }
+  };
+
+  const handleFileUpload = async (docId: string, file: File) => {
+    if (!team?.id) {
+      toast.error('No team context found');
+      return;
+    }
+
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast.error('File type not allowed. Please upload PDF, Word, or image files.');
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('File too large. Maximum size is 10MB.');
+      return;
+    }
+
+    setUploadingDocId(docId);
+
+    try {
+      // Generate unique file path
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${team.id}/${transactionId}/${fileName}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('transaction-documents')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('transaction-documents')
+        .getPublicUrl(filePath);
+
+      // Find current document and update attachments
+      const doc = documents.find(d => d.id === docId);
+      const currentAttachments = doc?.attachments || [];
+      
+      const newAttachment = {
+        url: urlData.publicUrl,
+        name: file.name,
+        type: file.type,
+      };
+
+      // Update document with new attachment and set status to received
+      updateDocument.mutate({
+        id: docId,
+        updates: {
+          attachments: [...currentAttachments, newAttachment],
+          status: doc?.status === 'pending' ? 'received' : doc?.status,
+        },
+      });
+
+      toast.success('File uploaded successfully');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Failed to upload file');
+    } finally {
+      setUploadingDocId(null);
+    }
+  };
+
+  const handleFileSelect = (docId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleFileUpload(docId, file);
+    }
+    // Reset input value so same file can be selected again
+    e.target.value = '';
+  };
+
+  const handleRemoveAttachment = async (docId: string, attachmentIndex: number) => {
+    const doc = documents.find(d => d.id === docId);
+    if (!doc) return;
+
+    const attachment = doc.attachments[attachmentIndex];
+    
+    try {
+      // Extract file path from URL and delete from storage
+      const urlParts = attachment.url.split('/');
+      const filePath = urlParts.slice(-3).join('/'); // team_id/transaction_id/filename
+      
+      await supabase.storage
+        .from('transaction-documents')
+        .remove([filePath]);
+
+      // Update document attachments
+      const updatedAttachments = doc.attachments.filter((_, i) => i !== attachmentIndex);
+      
+      updateDocument.mutate({
+        id: docId,
+        updates: {
+          attachments: updatedAttachments,
+          // Reset status to pending if no attachments left
+          status: updatedAttachments.length === 0 ? 'pending' : doc.status,
+        },
+      });
+
+      toast.success('Attachment removed');
+    } catch (error: any) {
+      console.error('Remove error:', error);
+      toast.error('Failed to remove attachment');
     }
   };
 
@@ -238,51 +367,106 @@ export const TransactionDocumentsTab = ({ transactionId }: TransactionDocumentsT
                   <CollapsibleContent className="mt-2 space-y-2">
                     {sectionDocs.map(doc => {
                       const StatusIcon = STATUS_CONFIG[doc.status].icon;
+                      const isUploading = uploadingDocId === doc.id;
                       
                       return (
                         <div
                           key={doc.id}
                           className={cn(
-                            "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                            "p-3 rounded-lg border transition-colors",
                             doc.status === 'reviewed' && "bg-green-50/50 dark:bg-green-950/20 border-green-200 dark:border-green-800",
                             doc.status === 'received' && "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
                             doc.status === 'pending' && "bg-background border-border"
                           )}
                         >
-                          <Checkbox
-                            checked={doc.status === 'reviewed'}
-                            onCheckedChange={() => handleStatusChange(doc.id, doc.status)}
-                            className="h-5 w-5"
-                          />
+                          {/* Document header row */}
+                          <div className="flex items-center gap-3">
+                            <Checkbox
+                              checked={doc.status === 'reviewed'}
+                              onCheckedChange={() => handleStatusChange(doc.id, doc.status)}
+                              className="h-5 w-5"
+                            />
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className={cn(
-                                "font-medium text-sm",
-                                doc.status === 'reviewed' && "line-through text-muted-foreground"
-                              )}>
-                                {doc.title}
-                              </span>
-                              {doc.required && (
-                                <Badge variant="outline" className="text-xs">
-                                  Required
-                                </Badge>
-                              )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className={cn(
+                                  "font-medium text-sm",
+                                  doc.status === 'reviewed' && "line-through text-muted-foreground"
+                                )}>
+                                  {doc.title}
+                                </span>
+                                {doc.required && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Required
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
+
+                            <Badge 
+                              variant="secondary" 
+                              className={cn("text-xs", STATUS_CONFIG[doc.status].color)}
+                            >
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {STATUS_CONFIG[doc.status].label}
+                            </Badge>
+
+                            {/* Hidden file input */}
+                            <input
+                              type="file"
+                              ref={el => fileInputRefs.current[doc.id] = el}
+                              className="hidden"
+                              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                              onChange={(e) => handleFileSelect(doc.id, e)}
+                            />
+
+                            {/* Upload button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => fileInputRefs.current[doc.id]?.click()}
+                              disabled={isUploading}
+                            >
+                              {isUploading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Upload className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
 
-                          <Badge 
-                            variant="secondary" 
-                            className={cn("text-xs", STATUS_CONFIG[doc.status].color)}
-                          >
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {STATUS_CONFIG[doc.status].label}
-                          </Badge>
-
+                          {/* Attachments list */}
                           {doc.attachments && doc.attachments.length > 0 && (
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <div className="mt-3 pl-8 space-y-1.5">
+                              {doc.attachments.map((attachment, index) => (
+                                <div
+                                  key={`${attachment.name}-${index}`}
+                                  className="flex items-center gap-2 text-sm bg-muted/50 rounded px-2 py-1.5 group"
+                                >
+                                  <Paperclip className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                  <span className="truncate flex-1 text-muted-foreground">
+                                    {attachment.name}
+                                  </span>
+                                  <a
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    <Download className="h-3.5 w-3.5" />
+                                  </a>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive"
+                                    onClick={() => handleRemoveAttachment(doc.id, index)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
                           )}
                         </div>
                       );
