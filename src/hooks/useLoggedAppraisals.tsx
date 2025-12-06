@@ -40,6 +40,18 @@ export interface LoggedAppraisal {
   attachments?: any[];
   created_at: string;
   updated_at: string;
+  // Beacon integration fields
+  beacon_report_id?: string;
+  beacon_report_url?: string;
+  beacon_personalized_url?: string;
+  beacon_propensity_score?: number;
+  beacon_total_views?: number;
+  beacon_total_time_seconds?: number;
+  beacon_email_opens?: number;
+  beacon_is_hot_lead?: boolean;
+  beacon_last_activity?: string;
+  beacon_first_viewed_at?: string;
+  beacon_synced_at?: string;
   // Joined profile data
   agent?: {
     id: string;
