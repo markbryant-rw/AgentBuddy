@@ -90,8 +90,23 @@ export const BugKanbanBoard = () => {
       console.log('[BugKanbanBoard] Update successful:', data);
       return data?.bug;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["bug-reports-kanban"] });
+    // Optimistic update - move card instantly
+    onMutate: async ({ bugId, newStatus }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["bug-reports-kanban"] });
+
+      // Snapshot previous value
+      const previousBugs = queryClient.getQueryData<BugReport[]>(["bug-reports-kanban"]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<BugReport[]>(["bug-reports-kanban"], (old) => {
+        if (!old) return old;
+        return old.map((bug) =>
+          bug.id === bugId ? { ...bug, status: newStatus } : bug
+        );
+      });
+
+      // Show immediate feedback
       const statusLabels: Record<string, string> = {
         'in_progress': 'In Progress',
         'needs_review': 'Needs Review',
@@ -99,12 +114,23 @@ export const BugKanbanBoard = () => {
         'archived': 'Archived',
         'triage': 'Triage',
       };
-      toast.success(`Bug moved to ${statusLabels[variables.newStatus] || variables.newStatus}`);
+      toast.success(`Bug moved to ${statusLabels[newStatus] || newStatus}`);
+
+      // Return context with the previous value
+      return { previousBugs };
     },
-    onError: (error: any) => {
+    onError: (error: any, variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousBugs) {
+        queryClient.setQueryData(["bug-reports-kanban"], context.previousBugs);
+      }
       console.error('[BugKanbanBoard] Mutation failed:', error);
       logger.error('Failed to update bug status', error);
       toast.error(`Failed to update bug status: ${error?.message || 'Unknown error'}`);
+    },
+    onSettled: () => {
+      // Refetch to ensure we have server state
+      queryClient.invalidateQueries({ queryKey: ["bug-reports-kanban"] });
     },
   });
 
