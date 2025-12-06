@@ -542,9 +542,6 @@ const AppraisalDetailDialog = ({
                     firstViewedAt={appraisal.beacon_first_viewed_at}
                   />
                 )}
-                    <label htmlFor="sync-contacts" className="text-sm font-medium leading-none">Sync contact details to all {allVisitsAtAddress.length} visits at this address</label>
-                  </div>
-                )}
               </TabsContent>
 
               {/* Tasks Tab */}
