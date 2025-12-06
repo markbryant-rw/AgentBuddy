@@ -79,7 +79,7 @@ export const useBugReports = (statusFilter: string = 'all') => {
     queryFn: async () => {
       let query = supabase
         .from('bug_reports')
-        .select('*')
+        .select('*, ai_analysis, ai_confidence, ai_impact, ai_analyzed_at')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {
