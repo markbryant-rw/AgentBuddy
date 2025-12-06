@@ -1,115 +1,87 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTeam } from "@/hooks/useTeam";
-import { useProfile } from "@/hooks/useProfile";
-import { Users, Building2, UserPlus, Settings } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Users, Building2, Copy, Check } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const TeamManagementSection = () => {
   const { team } = useTeam();
-  const { profile } = useProfile();
-  const navigate = useNavigate();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopyCode = () => {
+    if (team?.team_code) {
+      navigator.clipboard.writeText(team.team_code);
+      setCopied(true);
+      toast.success("Team code copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Current Team */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Current Team
-          </CardTitle>
-          <CardDescription>
-            Your active team and membership details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {team ? (
-            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold">{team.name}</h3>
-                  <Badge variant="default">Team Member</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {team.bio || "No team description"}
-                </p>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Your Team
+        </CardTitle>
+        <CardDescription>
+          View your team information
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {team ? (
+          <div className="space-y-4">
+            {/* Team Name & Badge */}
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Building2 className="h-6 w-6 text-primary" />
               </div>
-              <Button variant="outline" onClick={() => navigate("/team-management")}>
-                <Settings className="h-4 w-4 mr-2" />
-                Manage Team
-              </Button>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">{team.name}</h3>
+                  <Badge variant="secondary">Team Member</Badge>
+                </div>
+                {team.bio && (
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {team.bio}
+                  </p>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>You are not currently assigned to a team</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Team Details */}
-      {team && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              Team Information
-            </CardTitle>
-            <CardDescription>
-              Details about your team configuration
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            {/* Team Code */}
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Team Code</p>
-                  <p className="text-base font-mono mt-1">{team.team_code}</p>
+                  <p className="font-mono text-lg font-bold mt-1">{team.team_code}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Financial Year</p>
-                  <p className="text-base mt-1">
-                    {team.uses_financial_year 
-                      ? `Starts Month ${team.financial_year_start_month}`
-                      : "Calendar Year"}
-                  </p>
-                </div>
+                <button
+                  onClick={handleCopyCode}
+                  className="p-2 hover:bg-muted rounded-md transition-colors"
+                  title="Copy team code"
+                >
+                  {copied ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Copy className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Created</p>
-                <p className="text-base mt-1">
-                  {new Date(team.created_at).toLocaleDateString('en-NZ', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quick Actions */}
-      <Card className="border-dashed">
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-medium mb-1">Need to manage team members?</h3>
-              <p className="text-sm text-muted-foreground">
-                Invite new members, manage roles, and configure team settings
+              <p className="text-xs text-muted-foreground mt-2">
+                Share this code with others to help them join your team
               </p>
             </div>
-            <Button onClick={() => navigate("/invite")}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Invite Members
-            </Button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p>You are not currently assigned to a team</p>
+            <p className="text-sm mt-1">Contact your administrator to be added to a team</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };

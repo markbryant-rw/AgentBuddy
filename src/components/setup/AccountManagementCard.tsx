@@ -55,7 +55,7 @@ export const AccountManagementCard = () => {
           <Shield className="h-5 w-5" />
           Account Management
         </CardTitle>
-        <CardDescription>Manage your account settings and data</CardDescription>
+        <CardDescription>Manage your account and data</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Data Export */}
@@ -89,14 +89,6 @@ export const AccountManagementCard = () => {
           </div>
         </div>
 
-        {/* Security Notice */}
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <strong>Account Security:</strong> To change your email or password, please contact your team administrator.
-          </AlertDescription>
-        </Alert>
-
         {/* Delete Account Section */}
         <div className="pt-4 border-t">
           <Alert variant="destructive">
@@ -104,8 +96,14 @@ export const AccountManagementCard = () => {
             <AlertDescription className="space-y-2">
               <p className="font-semibold">Delete Account</p>
               <p className="text-sm">
-                To delete your account and all associated data, please contact support at support@example.com. 
-                This action cannot be undone and all your data will be permanently removed.
+                To delete your account and all associated data, please contact{' '}
+                <a 
+                  href="mailto:support@agentbuddy.co" 
+                  className="underline font-medium"
+                >
+                  support@agentbuddy.co
+                </a>. 
+                This action cannot be undone.
               </p>
             </AlertDescription>
           </Alert>

@@ -1,26 +1,17 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, User, Users, Settings as SettingsIcon, Shield, Sparkles, CreditCard, HelpCircle, Layers, Share2, AlertCircle } from "lucide-react";
+import { Search, User, Users, Settings as SettingsIcon, HelpCircle, Sparkles } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useUserRoles } from "@/hooks/useUserRoles";
 
-// Import existing setup components
+// Import setup components
 import { PreferencesCard } from "@/components/setup/PreferencesCard";
-import { PrivacyCard } from "@/components/setup/PrivacyCard";
-import { ModuleAccessCard } from "@/components/setup/ModuleAccessCard";
-import { BillingCard } from "@/components/setup/BillingCard";
 import { AccountManagementCard } from "@/components/setup/AccountManagementCard";
 import { HelpSupportCard } from "@/components/setup/HelpSupportCard";
 
 // Import settings components
-import LeadSourceManager from "@/components/settings/LeadSourceManager";
-import SocialSettingsTab from "@/components/settings/SocialSettingsTab";
-
-// Import new profile component
 import { UserProfileSection } from "@/components/settings/UserProfileSection";
 import { TeamManagementSection } from "@/components/settings/TeamManagementSection";
 
@@ -28,21 +19,13 @@ const Setup = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "profile";
   const [searchQuery, setSearchQuery] = useState("");
-  const { isOfficeManager, isPlatformAdmin } = useUserRoles();
-  
-  const canManageLeadSources = isOfficeManager || isPlatformAdmin;
 
-  // Tab configuration with icons and descriptions
+  // Simplified tab configuration - 4 core tabs
   const tabs = [
     { value: "profile", label: "Profile", icon: User, description: "Personal information and avatar" },
-    { value: "team", label: "Team", icon: Users, description: "Team settings and members" },
-    { value: "preferences", label: "Preferences", icon: SettingsIcon, description: "Theme and notifications" },
-    { value: "privacy", label: "Privacy", icon: Shield, description: "Visibility and security" },
-    { value: "social", label: "Social", icon: Share2, description: "Social feeds and reflections" },
-    { value: "workspace", label: "Workspace", icon: Layers, description: "Lead sources and modules" },
-    { value: "modules", label: "Module Access", icon: Sparkles, description: "Available features" },
-    { value: "billing", label: "Billing", icon: CreditCard, description: "Subscription and payments" },
-    { value: "help", label: "Help & Support", icon: HelpCircle, description: "Documentation and feedback" },
+    { value: "team", label: "Team", icon: Users, description: "Your team information" },
+    { value: "preferences", label: "Preferences", icon: SettingsIcon, description: "Theme, notifications, and privacy" },
+    { value: "help", label: "Help & Support", icon: HelpCircle, description: "Get help and export data" },
   ];
 
   // Filter tabs based on search
@@ -57,7 +40,7 @@ const Setup = () => {
       <div className="space-y-2">
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">
-          Manage your account, preferences, and platform configuration
+          Manage your account and preferences
         </p>
       </div>
 
@@ -74,7 +57,7 @@ const Setup = () => {
 
       {/* Main Settings Tabs */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 h-auto p-2 bg-muted/50">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 gap-2 h-auto p-2 bg-muted/50">
           {filteredTabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -98,62 +81,14 @@ const Setup = () => {
           <UserProfileSection />
         </TabsContent>
 
-        {/* Team Tab */}
+        {/* Team Tab - Read Only */}
         <TabsContent value="team" className="mt-6 space-y-6">
           <TeamManagementSection />
         </TabsContent>
 
-        {/* Preferences Tab */}
+        {/* Preferences Tab - Merged with Privacy */}
         <TabsContent value="preferences" className="mt-6">
           <PreferencesCard />
-        </TabsContent>
-
-        {/* Privacy Tab */}
-        <TabsContent value="privacy" className="mt-6">
-          <PrivacyCard />
-        </TabsContent>
-
-        {/* Social Tab */}
-        <TabsContent value="social" className="mt-6">
-          <SocialSettingsTab />
-        </TabsContent>
-
-        {/* Workspace Tab */}
-        <TabsContent value="workspace" className="mt-6 space-y-6">
-          {canManageLeadSources ? (
-            <LeadSourceManager />
-          ) : (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Lead sources are managed by your office manager. Contact them to request changes to lead source options.
-              </AlertDescription>
-            </Alert>
-          )}
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Additional Workspace Settings</CardTitle>
-              <CardDescription>
-                More workspace configuration options coming soon
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Features like custom fields, workflow automation, and data import/export will be available here.
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Module Access Tab */}
-        <TabsContent value="modules" className="mt-6">
-          <ModuleAccessCard />
-        </TabsContent>
-
-        {/* Billing Tab */}
-        <TabsContent value="billing" className="mt-6">
-          <BillingCard />
         </TabsContent>
 
         {/* Help & Support Tab */}
@@ -174,8 +109,7 @@ const Setup = () => {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Use the search bar above to quickly find any setting. You can also use keyboard shortcuts: 
-              <kbd className="ml-2 px-2 py-1 text-xs bg-muted rounded">Ctrl+K</kbd> to search
+              Use the search bar above to quickly find any setting.
             </p>
           </CardContent>
         </Card>
