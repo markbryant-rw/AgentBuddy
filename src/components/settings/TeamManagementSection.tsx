@@ -1,12 +1,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useTeam } from "@/hooks/useTeam";
-import { Users, Building2, Copy, Check } from "lucide-react";
+import { useTeamMembers } from "@/hooks/useTeamMembers";
+import { Users, Building2, Copy, Check, Mail, Phone } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const TeamManagementSection = () => {
   const { team } = useTeam();
+  const { members, isLoading } = useTeamMembers();
   const [copied, setCopied] = useState(false);
 
   const handleCopyCode = () => {
@@ -31,7 +34,7 @@ export const TeamManagementSection = () => {
       </CardHeader>
       <CardContent>
         {team ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Team Name & Badge */}
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -72,6 +75,48 @@ export const TeamManagementSection = () => {
               <p className="text-xs text-muted-foreground mt-2">
                 Share this code with others to help them join your team
               </p>
+            </div>
+
+            {/* Team Members */}
+            <div>
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                Team Members ({members.length})
+              </h4>
+              {isLoading ? (
+                <div className="text-sm text-muted-foreground">Loading members...</div>
+              ) : members.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-start gap-3 p-3 rounded-lg border bg-card"
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={member.avatar_url || ''} />
+                        <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                          {member.full_name?.[0] || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">
+                          {member.full_name || 'Unknown'}
+                        </p>
+                        {member.email && (
+                          <a
+                            href={`mailto:${member.email}`}
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors mt-1"
+                          >
+                            <Mail className="h-3 w-3" />
+                            <span className="truncate">{member.email}</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No team members found</p>
+              )}
             </div>
           </div>
         ) : (
