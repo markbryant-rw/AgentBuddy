@@ -158,7 +158,15 @@ const AppraisalDetailDialog = ({
       
       if (isNew) {
         const result = await addAppraisal(sanitizedData as any);
-        savedAppraisalId = result?.id;
+        if (!result) {
+          toast({
+            title: "Error",
+            description: "Failed to log appraisal - please try again",
+            variant: "destructive",
+          });
+          return;
+        }
+        savedAppraisalId = result.id;
         toast({
           title: "Success",
           description: "Appraisal logged successfully",
@@ -209,6 +217,7 @@ const AppraisalDetailDialog = ({
         }
       }
       
+      // Close the dialog after successful save
       onOpenChange(false);
     } catch (error) {
       console.error('Save error:', error);
