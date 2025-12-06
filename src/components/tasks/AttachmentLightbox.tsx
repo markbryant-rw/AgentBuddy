@@ -111,10 +111,11 @@ export const AttachmentLightbox = ({
           <Button
             variant="secondary"
             size="icon"
-            className="absolute top-4 right-4"
+            className="absolute top-4 right-4 z-50 bg-white/90 hover:bg-white text-gray-900 shadow-lg border border-gray-200"
             onClick={onClose}
+            aria-label="Close preview"
           >
-            <X className="h-6 w-6" />
+            <X className="h-5 w-5" />
           </Button>
 
           {/* Counter and filename */}
