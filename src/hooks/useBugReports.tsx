@@ -385,6 +385,8 @@ export const useBugReports = (statusFilter: string = 'all') => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['bug-reports'] });
+      queryClient.invalidateQueries({ queryKey: ['bug-reports-kanban'] });
+      queryClient.invalidateQueries({ queryKey: ['bug-report-stats'] });
       toast.success('Bug report deleted successfully');
     },
     onError: (error: Error) => {
