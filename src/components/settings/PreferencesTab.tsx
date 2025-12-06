@@ -1,11 +1,31 @@
 import { useTheme } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Palette, Zap, TreePine } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Check, Palette, Zap, TreePine, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/hooks/useProfile';
+import { COMMON_TIMEZONES, DEFAULT_TIMEZONE, getBrowserTimezone } from '@/lib/timezoneUtils';
+import { useState, useEffect } from 'react';
 
 export default function PreferencesTab() {
   const { currentTheme, setTheme, availableThemes } = useTheme();
+  const { profile, updateProfile } = useProfile();
+  const [selectedTimezone, setSelectedTimezone] = useState(profile?.timezone || DEFAULT_TIMEZONE);
+
+  // Sync with profile timezone when loaded
+  useEffect(() => {
+    if (profile?.timezone) {
+      setSelectedTimezone(profile.timezone);
+    }
+  }, [profile?.timezone]);
+
+  const handleTimezoneChange = (timezone: string) => {
+    setSelectedTimezone(timezone);
+    updateProfile({ timezone });
+  };
+
+  const browserTimezone = getBrowserTimezone();
 
   return (
     <div className="space-y-6">
@@ -113,6 +133,42 @@ export default function PreferencesTab() {
       </Card>
 
       {/* Future preferences placeholder */}
+      {/* Timezone Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Globe className="h-5 w-5" />
+            Timezone
+          </CardTitle>
+          <CardDescription>
+            Set your local timezone for accurate task scheduling and due dates.
+            {browserTimezone !== selectedTimezone && (
+              <span className="block mt-1 text-amber-600">
+                Your browser timezone is {browserTimezone}
+              </span>
+            )}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select value={selectedTimezone} onValueChange={handleTimezoneChange}>
+            <SelectTrigger className="w-full max-w-md">
+              <SelectValue placeholder="Select timezone" />
+            </SelectTrigger>
+            <SelectContent>
+              {COMMON_TIMEZONES.map((tz) => (
+                <SelectItem key={tz.value} value={tz.value}>
+                  {tz.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            This affects how recurring tasks and due dates are calculated for your Daily Planner.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Future preferences placeholder */}
       <Card className="opacity-60">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -121,18 +177,6 @@ export default function PreferencesTab() {
           </CardTitle>
           <CardDescription>
             Configure your notification preferences
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      <Card className="opacity-60">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            🌐 Language & Region
-            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
-          </CardTitle>
-          <CardDescription>
-            Set your language and regional preferences
           </CardDescription>
         </CardHeader>
       </Card>

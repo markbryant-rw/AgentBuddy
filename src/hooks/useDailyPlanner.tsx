@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { getTodayInTimezone, DEFAULT_TIMEZONE } from '@/lib/timezoneUtils';
 
 export interface DailyPlannerItem {
   id: string;
@@ -32,6 +33,9 @@ export function useDailyPlanner(date: Date = new Date()) {
   const { team } = useTeam();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Use timezone-aware date formatting for consistency
+  // The date parameter represents the user's intended local date
   const dateStr = format(date, 'yyyy-MM-dd');
 
   const { data: items = [], isLoading } = useQuery({
