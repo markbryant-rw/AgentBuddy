@@ -49,15 +49,14 @@ export function AIActionsMenu({ noteId, onContentUpdate, asDropdownItems = false
   });
 
   const limits: Record<string, number> = {
-    free: 3,
-    individual: 50,
-    team: 200,
-    agency: 999999,
+    starter: 3,
+    basic: 50,
+    professional: 200,
   };
 
   const currentUsage = usageData || 0;
-  const dailyLimit = limits[subscription?.plan || 'free'];
-  const isPremium = subscription?.plan !== 'free';
+  const dailyLimit = limits[subscription?.plan || 'starter'];
+  const isPremium = subscription?.plan !== 'starter';
 
   const handleAIAction = async (action: string, requiresPremium = false) => {
     if (isGenerating) return;
