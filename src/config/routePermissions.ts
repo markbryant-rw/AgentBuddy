@@ -19,32 +19,35 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
   '/team-management': ['platform_admin', 'office_manager', 'team_leader'],
   '/team-management/*': ['platform_admin', 'office_manager', 'team_leader'],
   
-  // Salesperson and Above
-  '/sales': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/sales/*': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+  // Salesperson/Assistant and Above (same permissions for both roles)
+  '/sales': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/sales/*': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Salesperson Dashboard
-  '/salesperson': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/salesperson/*': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+  '/salesperson': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/salesperson/*': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Assistant Dashboard  
   '/assistant': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   '/assistant/*': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Invitation feature (based on who can invite)
-  '/invite': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+  '/invite': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  
+  // Plan workspace
+  '/plan-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Transact workspace
-  '/transact-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/transaction-coordinating': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/stock-board': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/listing-expiry-report': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/past-sales-history': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+  '/transact-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/transaction-coordinating': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/stock-board': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/listing-expiry-report': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/past-sales-history': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Prospect workspace
-  '/prospect-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/logged-appraisals': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/listings-pipeline': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+  '/prospect-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/logged-appraisals': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/listings-pipeline': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Operate workspace
   '/operate-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
@@ -54,8 +57,8 @@ export const ROUTE_PERMISSIONS: Record<string, AppRole[]> = {
   '/systems/directory': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Grow workspace
-  '/grow-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
-  '/ai-coach': ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+  '/grow-dashboard': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
+  '/ai-coach': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   '/knowledge-base': ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
   
   // Engage workspace

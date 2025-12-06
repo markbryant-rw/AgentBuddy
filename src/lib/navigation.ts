@@ -49,7 +49,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Invite Users',
     path: '/invite',
     icon: UserPlus,
-    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
     category: 'management',
   },
   {
@@ -70,7 +70,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Sales Dashboard',
     path: '/salesperson',
     icon: TrendingUp,
-    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
     category: 'management',
   },
   {
@@ -84,21 +84,21 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Plan',
     path: '/plan-dashboard',
     icon: TrendingUp,
-    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
     category: 'workspace',
   },
   {
     label: 'Prospect',
     path: '/prospect-dashboard',
     icon: Flame,
-    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
     category: 'workspace',
   },
   {
     label: 'Transact',
     path: '/transact-dashboard',
     icon: FileText,
-    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
     category: 'workspace',
   },
   {
@@ -112,7 +112,7 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Grow',
     path: '/grow-dashboard',
     icon: Rocket,
-    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson'],
+    roles: ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'],
     category: 'workspace',
   },
   {
