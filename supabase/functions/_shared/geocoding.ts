@@ -1,27 +1,24 @@
-// Shared geocoding utilities for edge functions using Photon API (OpenStreetMap)
+// Shared geocoding utilities for edge functions using Google Geocoding API
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { getCorsHeaders } from './cors.ts';
 
-export interface PhotonResponse {
-  type: string;
-  features: Array<{
-    type: string;
+export interface GoogleGeocodeResponse {
+  results: Array<{
     geometry: {
-      type: string;
-      coordinates: [number, number]; // [lng, lat]
+      location: {
+        lat: number;
+        lng: number;
+      };
     };
-    properties: {
-      osm_type: string;
-      osm_id: number;
-      country: string;
-      city?: string;
-      district?: string;
-      street?: string;
-      housenumber?: string;
-      postcode?: string;
-      state?: string;
-    };
+    formatted_address: string;
+    address_components: Array<{
+      long_name: string;
+      short_name: string;
+      types: string[];
+    }>;
   }>;
+  status: string;
+  error_message?: string;
 }
 
 export interface GeocodeConfig {
@@ -37,9 +34,6 @@ export interface GeocodeResult {
   formatted?: string;
   error?: string;
 }
-
-// NZ bounding box for Photon API
-const NZ_BBOX = '166.0,-47.5,179.0,-34.0';
 
 /**
  * Fetch with retry logic and timeout
@@ -74,7 +68,7 @@ async function fetchWithRetry(url: string, maxRetries = 3): Promise<Response> {
 }
 
 /**
- * Geocode an entity (listing, appraisal, transaction, etc.) using Photon API
+ * Geocode an entity (listing, appraisal, transaction, etc.) using Google Geocoding API
  */
 export async function geocodeEntity(
   supabaseClient: any,
@@ -89,6 +83,16 @@ export async function geocodeEntity(
     return new Response(
       JSON.stringify({ error: `${entityName} ID is required` }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Get Google Maps API key
+  const googleMapsApiKey = Deno.env.get('GOOGLE_MAPS_API_KEY');
+  if (!googleMapsApiKey) {
+    console.error('GOOGLE_MAPS_API_KEY not configured');
+    return new Response(
+      JSON.stringify({ error: 'Geocoding service not configured' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
@@ -137,17 +141,17 @@ export async function geocodeEntity(
   } else {
     query = `${entity.address}${entity.suburb ? ', ' + entity.suburb : ''}, New Zealand`;
   }
-  console.log('Geocoding address with Photon:', query);
+  console.log('Geocoding address with Google:', query);
 
-  // Call Photon API (no API key required!)
-  const photonUrl = `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&bbox=${NZ_BBOX}&limit=1`;
+  // Call Google Geocoding API
+  const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&region=nz&components=country:NZ&key=${googleMapsApiKey}`;
 
   try {
-    const geocodeResponse = await fetchWithRetry(photonUrl);
+    const geocodeResponse = await fetchWithRetry(googleUrl);
 
     if (!geocodeResponse.ok) {
       const errorText = await geocodeResponse.text();
-      console.error('Photon API error:', errorText);
+      console.error('Google Geocoding API error:', errorText);
 
       await supabaseClient
         .from(tableName)
@@ -160,14 +164,18 @@ export async function geocodeEntity(
       );
     }
 
-    const geocodeData: PhotonResponse = await geocodeResponse.json();
+    const geocodeData: GoogleGeocodeResponse = await geocodeResponse.json();
 
-    if (!geocodeData.features || geocodeData.features.length === 0) {
-      console.log('No geocoding results found for:', query);
+    if (geocodeData.status !== 'OK' || !geocodeData.results || geocodeData.results.length === 0) {
+      console.log('No geocoding results found for:', query, 'Status:', geocodeData.status);
+      
+      const errorMsg = geocodeData.error_message || geocodeData.status === 'ZERO_RESULTS' 
+        ? 'Address not found - try using the Fix Location tool with autocomplete'
+        : `Geocoding failed: ${geocodeData.status}`;
 
       await supabaseClient
         .from(tableName)
-        .update({ geocode_error: 'Address not found - try using the Fix Location tool with autocomplete' })
+        .update({ geocode_error: errorMsg })
         .eq('id', entityId);
 
       // Return 200 with success: false - this is a valid response, not an error
@@ -181,22 +189,10 @@ export async function geocodeEntity(
       );
     }
 
-    const result = geocodeData.features[0];
-    // Photon returns coordinates as [lng, lat]
-    const lng = result.geometry.coordinates[0];
-    const lat = result.geometry.coordinates[1];
-
-    // Build formatted address from properties
-    const props = result.properties;
-    const formattedParts = [
-      props.housenumber,
-      props.street,
-      props.district || props.city,
-      props.state,
-      props.postcode,
-      props.country
-    ].filter(Boolean);
-    const formatted = formattedParts.join(', ');
+    const result = geocodeData.results[0];
+    const lat = result.geometry.location.lat;
+    const lng = result.geometry.location.lng;
+    const formatted = result.formatted_address;
 
     console.log('Geocoding successful:', { lat, lng, formatted });
 
