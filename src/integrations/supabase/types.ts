@@ -2015,10 +2015,76 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string | null
+          email_digest_enabled: boolean | null
+          email_digest_frequency: string | null
+          email_digest_hour: number | null
+          id: string
+          notify_listing_stage_contract: boolean | null
+          notify_listing_stage_live: boolean | null
+          notify_listing_stage_settled: boolean | null
+          notify_listing_stage_signed: boolean | null
+          notify_listing_stage_unconditional: boolean | null
+          notify_task_assigned: boolean | null
+          notify_task_due_soon: boolean | null
+          notify_team_member_joined: boolean | null
+          push_enabled: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_digest_enabled?: boolean | null
+          email_digest_frequency?: string | null
+          email_digest_hour?: number | null
+          id?: string
+          notify_listing_stage_contract?: boolean | null
+          notify_listing_stage_live?: boolean | null
+          notify_listing_stage_settled?: boolean | null
+          notify_listing_stage_signed?: boolean | null
+          notify_listing_stage_unconditional?: boolean | null
+          notify_task_assigned?: boolean | null
+          notify_task_due_soon?: boolean | null
+          notify_team_member_joined?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_digest_enabled?: boolean | null
+          email_digest_frequency?: string | null
+          email_digest_hour?: number | null
+          id?: string
+          notify_listing_stage_contract?: boolean | null
+          notify_listing_stage_live?: boolean | null
+          notify_listing_stage_settled?: boolean | null
+          notify_listing_stage_signed?: boolean | null
+          notify_listing_stage_unconditional?: boolean | null
+          notify_task_assigned?: boolean | null
+          notify_task_due_soon?: boolean | null
+          notify_team_member_joined?: boolean | null
+          push_enabled?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
           created_at: string | null
+          digest_sent_at: string | null
           id: string
           is_read: boolean | null
           message: string
@@ -2029,6 +2095,7 @@ export type Database = {
         Insert: {
           action_url?: string | null
           created_at?: string | null
+          digest_sent_at?: string | null
           id?: string
           is_read?: boolean | null
           message: string
@@ -2039,6 +2106,7 @@ export type Database = {
         Update: {
           action_url?: string | null
           created_at?: string | null
+          digest_sent_at?: string | null
           id?: string
           is_read?: boolean | null
           message?: string
@@ -2515,6 +2583,44 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string | null
+          endpoint: string
+          id: string
+          p256dh: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string | null
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string | null
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
