@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useProfile } from '@/hooks/useProfile';
 import { COMMON_TIMEZONES, DEFAULT_TIMEZONE, getBrowserTimezone } from '@/lib/timezoneUtils';
 import { useState, useEffect } from 'react';
+import { NotificationPreferencesCard } from './NotificationPreferencesCard';
 
 export default function PreferencesTab() {
   const { currentTheme, setTheme, availableThemes } = useTheme();
@@ -168,18 +169,8 @@ export default function PreferencesTab() {
         </CardContent>
       </Card>
 
-      {/* Future preferences placeholder */}
-      <Card className="opacity-60">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            🔔 Notifications
-            <Badge variant="secondary" className="text-xs">Coming Soon</Badge>
-          </CardTitle>
-          <CardDescription>
-            Configure your notification preferences
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      {/* Notification Preferences */}
+      <NotificationPreferencesCard />
     </div>
   );
 }
