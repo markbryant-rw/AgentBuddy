@@ -9,7 +9,7 @@ import {
 import { MapPin, ChevronDown, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { AddressAutocomplete, AddressResult } from './AddressAutocomplete';
+import { GoogleAddressAutocomplete, AddressResult } from './GoogleAddressAutocomplete';
 
 export interface LocationUpdateData {
   address: string;
@@ -76,7 +76,7 @@ const LocationFixSection = ({
     try {
       const tableName = getTableName();
       
-      // Update address, suburb, and coordinates directly from Photon result
+      // Update address, suburb, and coordinates directly from Google result
       const { error: updateError } = await supabase
         .from(tableName)
         .update({ 
@@ -183,7 +183,7 @@ const LocationFixSection = ({
           <Label className="text-sm font-medium">
             Search for correct address
           </Label>
-          <AddressAutocomplete
+          <GoogleAddressAutocomplete
             defaultValue={`${address}${suburb ? `, ${suburb}` : ''}`}
             placeholder="Start typing to search NZ addresses..."
             onSelect={handleAddressSelect}
