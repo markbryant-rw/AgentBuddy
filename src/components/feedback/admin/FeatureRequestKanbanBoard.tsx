@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, closestCorners, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FeatureRequestDetailDrawer } from "@/components/feedback/FeatureRequestDetailDrawer";
-import { SortableFeatureCard } from "./SortableFeatureCard";
-import { KanbanColumn } from "@/components/ui/kanban-column";
+import { FeatureCard } from "./FeatureCard";
+import { FeatureKanbanColumn } from "./FeatureKanbanColumn";
 import { logger } from "@/lib/logger";
 
 interface FeatureRequest {
@@ -17,6 +16,9 @@ interface FeatureRequest {
   created_at: string;
   user_id: string;
   ai_estimated_effort?: string;
+  ai_analysis?: any;
+  ai_priority_score?: number;
+  ai_analyzed_at?: string;
   module?: string;
   priority?: string;
   archived_reason?: string;
@@ -36,14 +38,7 @@ const COLUMNS = [
 
 export const FeatureRequestKanbanBoard = () => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
-  const [activeFeature, setActiveFeature] = useState<FeatureRequest | null>(null);
   const queryClient = useQueryClient();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    })
-  );
 
   const { data: features = [], isLoading } = useQuery({
     queryKey: ["feature-requests-kanban"],
@@ -75,15 +70,13 @@ export const FeatureRequestKanbanBoard = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ featureId, newStatus, reason, position }: { featureId: string; newStatus: string; reason?: string; position?: number }) => {
-      console.log('[FeatureRequestKanbanBoard] Attempting status update via edge function:', { featureId, newStatus, reason, position });
+    mutationFn: async ({ featureId, newStatus }: { featureId: string; newStatus: string }) => {
+      console.log('[FeatureRequestKanbanBoard] Updating status via edge function:', { featureId, newStatus });
       
       const { data, error } = await supabase.functions.invoke('notify-feature-status-change', {
         body: { 
           featureId, 
-          newStatus, 
-          adminNotes: reason,
-          position 
+          newStatus,
         }
       });
 
@@ -100,168 +93,61 @@ export const FeatureRequestKanbanBoard = () => {
       console.log('[FeatureRequestKanbanBoard] Update successful:', data);
       return data?.feature;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["feature-requests-kanban"] });
-      toast.success("Feature request status updated");
-    },
-    onError: (error: any) => {
-      console.error('[FeatureRequestKanbanBoard] Mutation failed:', {
-        fullError: error,
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        code: error?.code
+    // Optimistic update - move card instantly
+    onMutate: async ({ featureId, newStatus }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["feature-requests-kanban"] });
+
+      // Snapshot previous value
+      const previousFeatures = queryClient.getQueryData<FeatureRequest[]>(["feature-requests-kanban"]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<FeatureRequest[]>(["feature-requests-kanban"], (old) => {
+        if (!old) return old;
+        return old.map((feature) =>
+          feature.id === featureId ? { ...feature, status: newStatus } : feature
+        );
       });
+
+      // Show immediate feedback
+      const statusLabels: Record<string, string> = {
+        'in_progress': 'In Progress',
+        'needs_review': 'Needs Review',
+        'completed': 'Completed',
+        'archived': 'Archived',
+        'triage': 'Triage',
+      };
+      toast.success(`Feature moved to ${statusLabels[newStatus] || newStatus}`);
+
+      // Return context with the previous value
+      return { previousFeatures };
+    },
+    onError: (error: any, variables, context) => {
+      // Rollback to previous value on error
+      if (context?.previousFeatures) {
+        queryClient.setQueryData(["feature-requests-kanban"], context.previousFeatures);
+      }
+      console.error('[FeatureRequestKanbanBoard] Mutation failed:', error);
       logger.error('Failed to update feature request status', error);
-      toast.error(`Failed to update feature request status: ${error?.message || 'Unknown error'}`);
+      toast.error(`Failed to update feature status: ${error?.message || 'Unknown error'}`);
+    },
+    onSettled: () => {
+      // Refetch to ensure we have server state
+      queryClient.invalidateQueries({ queryKey: ["feature-requests-kanban"] });
     },
   });
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const feature = features.find(f => f.id === event.active.id);
-    setActiveFeature(feature || null);
-  };
-
-  // Helper to resolve target column ID from drop target (handles dropping on cards or columns)
-  const getTargetColumnId = (overId: string): string | null => {
-    const columnIds = ['triage', 'in_progress', 'needs_review', 'complete'];
-    
-    // If dropping directly on a column
-    if (columnIds.includes(overId)) {
-      return overId;
-    }
-    
-    // If dropping on another feature card, find that feature and get its column
-    const targetFeature = features.find(f => f.id === overId);
-    if (targetFeature) {
-      // Map feature status to column ID
-      if (targetFeature.status === 'completed' || targetFeature.status === 'archived') {
-        return 'complete';
-      }
-      return targetFeature.status;
-    }
-    
-    console.error('[getTargetColumnId] Could not resolve column for overId:', overId);
-    return null;
-  };
-
-  // Calculate new position based on drop location
-  const calculateNewPosition = (
-    targetColumnFeatures: any[],
-    overIndex: number
-  ): number => {
-    // If dropping at the start
-    if (overIndex === 0 || targetColumnFeatures.length === 0) {
-      const firstItem = targetColumnFeatures[0];
-      return firstItem?.position ? firstItem.position / 2 : 500;
-    }
-    
-    // If dropping at the end
-    if (overIndex >= targetColumnFeatures.length - 1) {
-      const lastItem = targetColumnFeatures[targetColumnFeatures.length - 1];
-      return lastItem?.position ? lastItem.position + 1000 : targetColumnFeatures.length * 1000;
-    }
-    
-    // If dropping between two items
-    const prevItem = targetColumnFeatures[overIndex - 1];
-    const nextItem = targetColumnFeatures[overIndex];
-    const prevPos = prevItem?.position || overIndex * 1000;
-    const nextPos = nextItem?.position || (overIndex + 1) * 1000;
-    return (prevPos + nextPos) / 2;
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveFeature(null);
-    
-    console.log('[Drag Drop] Event:', { 
-      activeId: active.id, 
-      overId: over?.id,
-      activeData: active.data.current,
-      overData: over?.data.current
-    });
-    
-    if (!over || active.id === over.id) {
-      console.log('[Drag Drop] No valid drop target');
-      return;
-    }
-
-    if (typeof active.id !== 'string' || typeof over.id !== 'string') {
-      console.error('[Drag Drop] Expected string IDs for drag event');
-      return;
-    }
-
-    const featureId = active.id;
-    const feature = features.find((f) => f.id === featureId);
-    if (!feature) {
-      console.error('[Drag Drop] Feature not found:', featureId);
-      return;
-    }
-
-    // Resolve the target column ID (handles dropping on cards or columns)
-    const targetColumnId = getTargetColumnId(over.id);
-    if (!targetColumnId) {
-      console.error('[Drag Drop] Could not determine target column');
-      return;
-    }
-
-    console.log('[Drag Drop] Found feature:', {
-      id: feature.id,
-      title: feature.title,
-      currentStatus: feature.status,
-      targetColumn: targetColumnId
-    });
-
-    // Can't skip stages
-    if (feature.status === "triage" && targetColumnId === "complete") {
-      toast.error("Cannot move directly from Triage to Complete. Must go through In Progress or Needs Review.");
-      return;
-    }
-
-    // When dropping into Complete column, default to "completed" status
-    const newStatus = targetColumnId === "complete" ? "completed" : targetColumnId;
-
-    // Skip if no status change
-    if (feature.status === newStatus) {
-      console.log('[Drag Drop] No status change needed, handling reorder within column');
-      // Still calculate position for within-column reordering
-      const targetColumnFeatures = getFeaturesByStatus(targetColumnId);
-      const overIndex = targetColumnFeatures.findIndex(f => f.id === over.id);
-      const newPosition = calculateNewPosition(targetColumnFeatures, overIndex >= 0 ? overIndex : targetColumnFeatures.length);
-      
-      updateStatusMutation.mutate({ featureId, newStatus: feature.status, position: newPosition });
-      return;
-    }
-
-    // Calculate position for the target column
-    const targetColumnFeatures = getFeaturesByStatus(targetColumnId);
-    const newPosition = calculateNewPosition(targetColumnFeatures, targetColumnFeatures.length);
-
-    console.log('[Drag Drop] Updating status:', {
-      featureId,
-      fromStatus: feature.status,
-      toStatus: newStatus,
-      columnId: targetColumnId,
-      newPosition
-    });
-
-    updateStatusMutation.mutate(
-      { featureId, newStatus, position: newPosition },
-      {
-        onError: (error) => {
-          console.error('[Drag Drop] Failed to update feature request', {
-            featureId,
-            attemptedStatus: newStatus,
-            error
-          });
-        }
-      }
-    );
+  const handleStatusChange = (featureId: string, newStatus: string) => {
+    updateStatusMutation.mutate({ featureId, newStatus });
   };
 
   const getFeaturesByStatus = (columnId: string) => {
     if (columnId === "complete") {
       return features.filter((feature) => feature.status === "completed" || feature.status === "archived");
+    }
+    if (columnId === "triage") {
+      // Include both 'triage' and legacy 'pending' status in triage column
+      return features.filter((feature) => feature.status === "triage" || feature.status === "pending");
     }
     return features.filter((feature) => feature.status === columnId);
   };
@@ -272,39 +158,25 @@ export const FeatureRequestKanbanBoard = () => {
 
   return (
     <>
-      <DndContext 
-        sensors={sensors} 
-        collisionDetection={closestCorners} 
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex gap-3 h-[calc(100vh-300px)] overflow-x-auto pb-4">
-          {COLUMNS.map((column) => (
-            <KanbanColumn
-              key={column.id}
-              id={column.id}
-              label={column.label}
-              color={column.color}
-              items={getFeaturesByStatus(column.id)}
-              getItemId={(feature) => feature.id}
-              renderItem={(feature) => (
-                <SortableFeatureCard
-                  feature={feature}
-                  onClick={() => setSelectedFeature(feature.id)}
-                />
-              )}
-            />
-          ))}
-        </div>
-        
-        <DragOverlay>
-          {activeFeature && (
-            <div className="opacity-50">
-              <SortableFeatureCard feature={activeFeature} onClick={() => {}} />
-            </div>
-          )}
-        </DragOverlay>
-      </DndContext>
+      <div className="flex gap-3 h-[calc(100vh-300px)] overflow-x-auto pb-4">
+        {COLUMNS.map((column) => (
+          <FeatureKanbanColumn
+            key={column.id}
+            id={column.id}
+            label={column.label}
+            color={column.color}
+            items={getFeaturesByStatus(column.id)}
+            getItemId={(feature) => feature.id}
+            renderItem={(feature) => (
+              <FeatureCard
+                feature={feature}
+                onClick={() => setSelectedFeature(feature.id)}
+                onStatusChange={handleStatusChange}
+              />
+            )}
+          />
+        ))}
+      </div>
 
       {selectedFeature && (
         <FeatureRequestDetailDrawer

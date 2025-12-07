@@ -14,6 +14,7 @@ import { useFeatureRequestComments } from "@/hooks/useFeatureRequestComments";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureRequests } from "@/hooks/useFeatureRequests";
 import { ScreenshotLightbox } from "./ScreenshotLightbox";
+import { AIFeatureAnalysisPanel } from "./admin/AIFeatureAnalysisPanel";
 
 interface FeatureRequestDetailDrawerProps {
   requestId: string;
@@ -305,6 +306,15 @@ export function FeatureRequestDetailDrawer({ requestId, open, onClose, isAdmin }
               <span>Created: {format(new Date(request.created_at), 'PPp')}</span>
             </div>
           </div>
+
+          {/* AI Analysis Panel - Admin only */}
+          {isAdmin && (
+            <AIFeatureAnalysisPanel
+              featureId={requestId}
+              initialAnalysis={request.ai_analysis}
+              isAdmin={isAdmin}
+            />
+          )}
 
           {/* Admin Notes */}
           {request.admin_notes && (
