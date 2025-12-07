@@ -1,14 +1,10 @@
-import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
+import { useMemo, useState, useCallback } from 'react';
 import { Listing } from '@/hooks/useListingPipeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Edit } from 'lucide-react';
-import 'leaflet/dist/leaflet.css';
-import { fixLeafletIcons } from '@/lib/leafletIconFix';
-
-// Fix leaflet icon paths
-fixLeafletIcons();
+import { useGoogleMaps } from '@/hooks/useGoogleMaps';
+import { GoogleMap, InfoWindow, Marker } from '@react-google-maps/api';
 
 // Warmth color scheme
 const WARMTH_COLORS = {
@@ -31,41 +27,12 @@ interface OpportunityMapProps {
   searchQuery?: string;
 }
 
-// Component to fit map bounds to show all markers
-const FitBounds = ({ listings }: { listings: Listing[] }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    // Safety check: ensure map is in a valid state before manipulating
-    if (!map || !map.getContainer()) {
-      return;
-    }
-
-    if (listings.length === 0) {
-      // Default to Auckland if no listings
-      try {
-        map.setView([-36.8485, 174.7633], 11);
-      } catch (error) {
-        console.error('Error setting map view:', error);
-      }
-      return;
-    }
-
-    const bounds = listings
-      .filter(l => l.latitude && l.longitude)
-      .map(l => [l.latitude!, l.longitude!] as [number, number]);
-
-    if (bounds.length > 0) {
-      try {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-      } catch (error) {
-        console.error('Error fitting map bounds:', error);
-      }
-    }
-  }, [listings, map]);
-
-  return null;
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%',
 };
+
+const defaultCenter = { lat: -36.8485, lng: 174.7633 }; // Auckland
 
 export const OpportunityMap = ({
   listings,
@@ -74,16 +41,16 @@ export const OpportunityMap = ({
   visibleWarmth = ['hot', 'warm', 'cold'],
   searchQuery = '',
 }: OpportunityMapProps) => {
+  const { isLoaded, loadError } = useGoogleMaps();
+  const [map, setMap] = useState<google.maps.Map | null>(null);
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
+
   // Filter listings that have coordinates and match visibility/search criteria
   const filteredListings = useMemo(() => {
     return listings.filter(listing => {
-      // Must have coordinates
       if (!listing.latitude || !listing.longitude) return false;
-      
-      // Must match warmth filter
       if (!visibleWarmth.includes(listing.warmth)) return false;
       
-      // Must match search query
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
@@ -96,6 +63,26 @@ export const OpportunityMap = ({
       return true;
     });
   }, [listings, visibleWarmth, searchQuery]);
+
+  const onLoad = useCallback((map: google.maps.Map) => {
+    setMap(map);
+  }, []);
+
+  // Fit bounds when listings change
+  useMemo(() => {
+    if (!map || filteredListings.length === 0) return;
+
+    const bounds = new google.maps.LatLngBounds();
+    filteredListings.forEach(listing => {
+      if (listing.latitude && listing.longitude) {
+        bounds.extend({ lat: listing.latitude, lng: listing.longitude });
+      }
+    });
+
+    if (!bounds.isEmpty()) {
+      map.fitBounds(bounds, 50);
+    }
+  }, [map, filteredListings]);
 
   const formatPrice = (price?: number) => {
     if (!price) return 'N/A';
@@ -114,95 +101,124 @@ export const OpportunityMap = ({
     });
   };
 
+  const createMarkerIcon = (warmth: 'hot' | 'warm' | 'cold', likelihood: number) => {
+    const color = WARMTH_COLORS[warmth];
+    const size = 12 + likelihood * 3;
+    
+    return {
+      path: google.maps.SymbolPath.CIRCLE,
+      fillColor: color,
+      fillOpacity: 0.6,
+      strokeColor: color,
+      strokeWeight: 2,
+      scale: size,
+    };
+  };
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-full bg-muted/20">
+        <p className="text-destructive">Error loading map</p>
+      </div>
+    );
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-full bg-muted/20">
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    );
+  }
+
   return (
-    <MapContainer
-      style={{ height: '100%', width: '100%' }}
+    <GoogleMap
+      mapContainerStyle={mapContainerStyle}
+      center={defaultCenter}
       zoom={11}
-      scrollWheelZoom={true}
+      onLoad={onLoad}
+      options={{
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+      }}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <FitBounds listings={filteredListings} />
-      
       {filteredListings.map((listing) => (
-        <CircleMarker
+        <Marker
           key={listing.id}
-          center={[listing.latitude!, listing.longitude!]}
-          radius={8 + listing.likelihood * 2}
-          pathOptions={{
-            fillColor: WARMTH_COLORS[listing.warmth],
-            color: WARMTH_COLORS[listing.warmth],
-            weight: 2,
-            opacity: 0.8,
-            fillOpacity: 0.6,
-          }}
-        >
-          <Popup>
-            <div className="space-y-2 min-w-[250px]">
-              <div>
-                <div className="font-semibold text-sm">{listing.address}</div>
-                {listing.suburb && (
-                  <div className="text-xs text-muted-foreground">{listing.suburb}</div>
-                )}
-              </div>
-              
-              <div className="space-y-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Vendor:</span>
-                  <span className="font-medium">{listing.vendor_name}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground">Warmth:</span>
-                  <Badge variant="outline" className="text-xs">
-                    {WARMTH_LABELS[listing.warmth]}
-                  </Badge>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Likelihood:</span>
-                  <span>{'⭐'.repeat(listing.likelihood)}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Expected:</span>
-                  <span className="font-medium">{formatDate(listing.expected_month)}</span>
-                </div>
-                
-                {listing.estimated_value && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Value:</span>
-                    <span className="font-medium">{formatPrice(listing.estimated_value)}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex gap-2 pt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onListingSelect?.(listing)}
-                >
-                  <Eye className="h-3 w-3 mr-1" />
-                  View
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onEditClick?.(listing)}
-                >
-                  <Edit className="h-3 w-3 mr-1" />
-                  Edit
-                </Button>
-              </div>
-            </div>
-          </Popup>
-        </CircleMarker>
+          position={{ lat: listing.latitude!, lng: listing.longitude! }}
+          icon={createMarkerIcon(listing.warmth, listing.likelihood)}
+          onClick={() => setSelectedListing(listing)}
+        />
       ))}
-    </MapContainer>
+
+      {selectedListing && (
+        <InfoWindow
+          position={{ lat: selectedListing.latitude!, lng: selectedListing.longitude! }}
+          onCloseClick={() => setSelectedListing(null)}
+        >
+          <div className="space-y-2 min-w-[250px] p-1">
+            <div>
+              <div className="font-semibold text-sm">{selectedListing.address}</div>
+              {selectedListing.suburb && (
+                <div className="text-xs text-muted-foreground">{selectedListing.suburb}</div>
+              )}
+            </div>
+            
+            <div className="space-y-1 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Vendor:</span>
+                <span className="font-medium">{selectedListing.vendor_name}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Warmth:</span>
+                <Badge variant="outline" className="text-xs">
+                  {WARMTH_LABELS[selectedListing.warmth]}
+                </Badge>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Likelihood:</span>
+                <span>{'⭐'.repeat(selectedListing.likelihood)}</span>
+              </div>
+              
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Expected:</span>
+                <span className="font-medium">{formatDate(selectedListing.expected_month)}</span>
+              </div>
+              
+              {selectedListing.estimated_value && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Value:</span>
+                  <span className="font-medium">{formatPrice(selectedListing.estimated_value)}</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-2 pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => onListingSelect?.(selectedListing)}
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                View
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1"
+                onClick={() => onEditClick?.(selectedListing)}
+              >
+                <Edit className="h-3 w-3 mr-1" />
+                Edit
+              </Button>
+            </div>
+          </div>
+        </InfoWindow>
+      )}
+    </GoogleMap>
   );
 };
