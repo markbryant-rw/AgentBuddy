@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -40,6 +40,27 @@ export const FeatureRequestKanbanBoard = () => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
+  // Auto-analyze feature request when it enters triage
+  const triggerAutoAnalysis = useCallback(async (featureId: string) => {
+    try {
+      console.log('[FeatureRequestKanbanBoard] Triggering auto-analysis for:', featureId);
+      const { data, error } = await supabase.functions.invoke('analyze-feature-request', {
+        body: { featureRequestId: featureId }
+      });
+      
+      if (error) {
+        console.error('[FeatureRequestKanbanBoard] Auto-analysis error:', error);
+        return;
+      }
+      
+      console.log('[FeatureRequestKanbanBoard] Auto-analysis complete:', data);
+      // Refresh to show analysis results
+      queryClient.invalidateQueries({ queryKey: ["feature-requests-kanban"] });
+    } catch (err) {
+      console.error('[FeatureRequestKanbanBoard] Auto-analysis failed:', err);
+    }
+  }, [queryClient]);
+
   const { data: features = [], isLoading } = useQuery({
     queryKey: ["feature-requests-kanban"],
     queryFn: async () => {
@@ -64,6 +85,15 @@ export const FeatureRequestKanbanBoard = () => {
         ...feature,
         profiles: profilesMap.get(feature.user_id),
       })) || [];
+
+      // Auto-analyze any triage features that haven't been analyzed yet
+      featuresWithProfiles.forEach((feature) => {
+        if ((feature.status === 'triage' || feature.status === 'pending') && !feature.ai_analyzed_at) {
+          triggerAutoAnalysis(feature.id);
+        }
+      });
+
+      return featuresWithProfiles as FeatureRequest[];
 
       return featuresWithProfiles as FeatureRequest[];
     },
