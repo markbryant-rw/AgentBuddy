@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquarePlus } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { FeedbackDialog } from './FeedbackDialog';
 import { cn } from '@/lib/utils';
 import {
@@ -65,13 +65,13 @@ export const FloatingFeedbackButton = () => {
                 "group"
               )}
               size="icon"
-              aria-label="Give Feedback"
+              aria-label="Feedback"
             >
-              <MessageSquarePlus className="h-6 w-6 text-primary-foreground group-hover:rotate-12 transition-transform" />
+              <Zap className="h-6 w-6 text-primary-foreground group-hover:rotate-12 transition-transform" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right" className="bg-popover text-popover-foreground">
-            <p className="font-semibold">Give Feedback</p>
+            <p className="font-semibold">Feedback</p>
             <p className="text-xs text-muted-foreground">Bug: Ctrl+Shift+B | Feature: Ctrl+Shift+F</p>
           </TooltipContent>
         </Tooltip>
