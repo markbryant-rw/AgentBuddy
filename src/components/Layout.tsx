@@ -18,7 +18,7 @@ import { PomodoroTimer } from '@/components/pomodoro/PomodoroTimer';
 import { PomodoroProvider } from '@/contexts/PomodoroContext';
 import { getWorkspaceItemsForActiveRole } from '@/lib/navigation';
 import { RoleModeBadge } from '@/components/RoleModeBadge';
-import { FloatingBugReportButton } from '@/components/feedback/FloatingBugReportButton';
+import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
 
 const Layout = () => {
   const { roles, activeRole, loading } = useAuth();
@@ -206,8 +206,8 @@ const Layout = () => {
         <Outlet />
       </main>
 
-      {/* Floating Bug Report Button */}
-      <FloatingBugReportButton />
+      {/* Floating Feedback Button */}
+      <FloatingFeedbackButton />
 
       {/* Mobile Bottom Navigation */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t">
