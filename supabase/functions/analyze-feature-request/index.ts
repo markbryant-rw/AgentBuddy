@@ -20,6 +20,7 @@ interface AIFeatureAnalysis {
     label: string;
     prompt: string;
   }>;
+  build_it_prompt: string;
 }
 
 serve(async (req) => {
@@ -85,7 +86,8 @@ Analyze feature requests and provide strategic implementation guidance. Return O
       "label": "Create base component",
       "prompt": "Create a new component for [feature]"
     }
-  ]
+  ],
+  "build_it_prompt": "A comprehensive, ready-to-use prompt for Lovable AI that describes exactly how to implement this feature. Include specific file paths, component names, database changes needed, and step-by-step implementation instructions. Make it actionable and detailed so it can be copy-pasted directly into Lovable."
 }
 
 Priority score (0-1): Consider vote_count, technical feasibility, and business impact.`
@@ -133,7 +135,8 @@ Current Status: ${request.status}`
         alternative_approaches: [],
         mvp_scope: 'Needs definition',
         nice_to_have: [],
-        suggested_prompts: []
+        suggested_prompts: [],
+        build_it_prompt: ''
       };
     }
 
