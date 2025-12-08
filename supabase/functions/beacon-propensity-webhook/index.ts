@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     const payload = await req.json();
     console.log('Beacon webhook received:', JSON.stringify(payload));
 
-    const { event, externalLeadId, data } = payload;
+    const { event, externalLeadId, reportId, data } = payload;
 
     if (!externalLeadId) {
       return new Response(
@@ -60,19 +60,83 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update appraisal with engagement data
+    // If reportId is provided, update the specific beacon_report record
+    if (reportId) {
+      const reportUpdateData: Record<string, any> = {
+        propensity_score: data.propensityScore || 0,
+        total_views: data.totalViews || 0,
+        total_time_seconds: data.totalTimeSeconds || 0,
+        email_opens: data.emailOpenCount || 0,
+        is_hot_lead: data.isHotLead || false,
+        last_activity: data.lastActivity || new Date().toISOString(),
+      };
+
+      // Set first viewed at only if not already set
+      if (data.firstViewedAt) {
+        reportUpdateData.first_viewed_at = data.firstViewedAt;
+      }
+
+      // Set report sent at when Beacon signals it was sent
+      if (data.reportSentAt) {
+        reportUpdateData.sent_at = data.reportSentAt;
+      }
+
+      const { error: reportUpdateError } = await supabase
+        .from('beacon_reports')
+        .update(reportUpdateData)
+        .eq('beacon_report_id', reportId);
+
+      if (reportUpdateError) {
+        console.error('Failed to update beacon_report:', reportUpdateError);
+      } else {
+        console.log(`Updated beacon_report with ID: ${reportId}`);
+      }
+    }
+
+    // Also update the appraisal with aggregated "best" metrics
+    // Get all reports for this appraisal to calculate aggregates
+    const { data: allReports } = await supabase
+      .from('beacon_reports')
+      .select('*')
+      .eq('appraisal_id', externalLeadId);
+
+    // Calculate aggregate metrics (best/highest values across all reports)
+    let bestPropensity = data.propensityScore || 0;
+    let totalViews = data.totalViews || 0;
+    let totalTimeSeconds = data.totalTimeSeconds || 0;
+    let totalEmailOpens = data.emailOpenCount || 0;
+    let anyHotLead = data.isHotLead || false;
+    let latestActivity = data.lastActivity || new Date().toISOString();
+    let earliestFirstViewed = data.firstViewedAt;
+
+    if (allReports && allReports.length > 0) {
+      for (const report of allReports) {
+        if (report.propensity_score > bestPropensity) bestPropensity = report.propensity_score;
+        totalViews += report.total_views || 0;
+        totalTimeSeconds += report.total_time_seconds || 0;
+        totalEmailOpens += report.email_opens || 0;
+        if (report.is_hot_lead) anyHotLead = true;
+        if (report.last_activity && report.last_activity > latestActivity) {
+          latestActivity = report.last_activity;
+        }
+        if (report.first_viewed_at && (!earliestFirstViewed || report.first_viewed_at < earliestFirstViewed)) {
+          earliestFirstViewed = report.first_viewed_at;
+        }
+      }
+    }
+
     const updateData: Record<string, any> = {
-      beacon_propensity_score: data.propensityScore || 0,
-      beacon_total_views: data.totalViews || 0,
-      beacon_total_time_seconds: data.totalTimeSeconds || 0,
-      beacon_email_opens: data.emailOpenCount || 0,
-      beacon_is_hot_lead: data.isHotLead || false,
-      beacon_last_activity: data.lastActivity || new Date().toISOString(),
+      beacon_propensity_score: bestPropensity,
+      beacon_total_views: totalViews,
+      beacon_total_time_seconds: totalTimeSeconds,
+      beacon_email_opens: totalEmailOpens,
+      beacon_is_hot_lead: anyHotLead,
+      beacon_last_activity: latestActivity,
     };
 
     // Set first viewed at only if not already set
-    if (data.firstViewedAt && !(appraisal as any).beacon_first_viewed_at) {
-      updateData.beacon_first_viewed_at = data.firstViewedAt;
+    if (earliestFirstViewed && !(appraisal as any).beacon_first_viewed_at) {
+      updateData.beacon_first_viewed_at = earliestFirstViewed;
     }
 
     // Set report sent at when Beacon signals it was sent
@@ -93,14 +157,14 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert individual engagement events if provided
+    // Insert individual engagement events if provided (link to specific report if available)
     if (data.events && Array.isArray(data.events) && data.events.length > 0) {
       const eventsToInsert = data.events.map((evt: any) => ({
         appraisal_id: externalLeadId,
         event_type: evt.type || 'view',
         occurred_at: evt.occurredAt,
         duration_seconds: evt.durationSeconds || 0,
-        metadata: evt.metadata || {},
+        metadata: { ...(evt.metadata || {}), reportId: reportId },
       }));
 
       // Use upsert to avoid duplicates (based on unique constraint)
@@ -113,7 +177,6 @@ Deno.serve(async (req) => {
 
       if (eventsError) {
         console.error('Failed to insert engagement events:', eventsError);
-        // Don't fail the whole request, just log
       } else {
         console.log(`Inserted ${eventsToInsert.length} engagement events`);
       }
@@ -130,15 +193,15 @@ Deno.serve(async (req) => {
       await supabase
         .from('listings_pipeline')
         .update({
-          beacon_propensity_score: data.propensityScore || 0,
-          beacon_is_hot_lead: data.isHotLead || false,
-          beacon_last_activity: data.lastActivity || new Date().toISOString(),
+          beacon_propensity_score: bestPropensity,
+          beacon_is_hot_lead: anyHotLead,
+          beacon_last_activity: latestActivity,
         })
         .eq('id', listing.id);
     }
 
     // Create notification for hot lead event (only if newly hot)
-    if (event === 'hot_lead' && data.isHotLead && !appraisal.beacon_is_hot_lead) {
+    if (event === 'hot_lead' && anyHotLead && !appraisal.beacon_is_hot_lead) {
       console.log('Creating hot lead notification for user:', appraisal.user_id);
       
       await supabase

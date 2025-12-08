@@ -227,6 +227,68 @@ export type Database = {
           },
         ]
       }
+      beacon_reports: {
+        Row: {
+          appraisal_id: string
+          beacon_report_id: string
+          created_at: string
+          email_opens: number | null
+          first_viewed_at: string | null
+          id: string
+          is_hot_lead: boolean | null
+          last_activity: string | null
+          personalized_url: string | null
+          propensity_score: number | null
+          report_type: string
+          report_url: string | null
+          sent_at: string | null
+          total_time_seconds: number | null
+          total_views: number | null
+        }
+        Insert: {
+          appraisal_id: string
+          beacon_report_id: string
+          created_at?: string
+          email_opens?: number | null
+          first_viewed_at?: string | null
+          id?: string
+          is_hot_lead?: boolean | null
+          last_activity?: string | null
+          personalized_url?: string | null
+          propensity_score?: number | null
+          report_type?: string
+          report_url?: string | null
+          sent_at?: string | null
+          total_time_seconds?: number | null
+          total_views?: number | null
+        }
+        Update: {
+          appraisal_id?: string
+          beacon_report_id?: string
+          created_at?: string
+          email_opens?: number | null
+          first_viewed_at?: string | null
+          id?: string
+          is_hot_lead?: boolean | null
+          last_activity?: string | null
+          personalized_url?: string | null
+          propensity_score?: number | null
+          report_type?: string
+          report_url?: string | null
+          sent_at?: string | null
+          total_time_seconds?: number | null
+          total_views?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beacon_reports_appraisal_id_fkey"
+            columns: ["appraisal_id"]
+            isOneToOne: false
+            referencedRelation: "logged_appraisals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bug_report_categories: {
         Row: {
           created_at: string | null
