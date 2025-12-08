@@ -25,8 +25,8 @@ export const PaymentMethodCard = ({ canManage }: PaymentMethodCardProps) => {
 
   if (!subscription) return null;
 
-  // Don't show payment method for starter/free users or discount code users
-  if (subscription.plan === 'starter' || subscription.discountCode) {
+  // Don't show payment method for users without subscription or with discount code
+  if (!subscription?.plan || subscription.discountCode) {
     return null;
   }
 

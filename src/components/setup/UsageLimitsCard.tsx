@@ -1,22 +1,22 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Users, Database, Zap } from 'lucide-react';
+import { Users, Zap } from 'lucide-react';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
 import { STRIPE_PLANS } from '@/lib/stripe-plans';
 
 export const UsageLimitsCard = () => {
   const { subscription } = useUserSubscription();
 
-  // Only show for paid plans (basic/professional)
-  if (!subscription || subscription.plan === 'starter') {
+  if (!subscription || !subscription.plan) {
     return null;
   }
 
   const plan = STRIPE_PLANS[subscription.plan];
   
-  // Mock usage data
+  // Mock usage data - AI credits would come from actual tracking
   const usage = {
-    aiCredits: { current: Math.floor(plan.aiCredits * 0.6), max: plan.aiCredits },
+    aiCreditsUsed: 150,
+    aiCreditsMax: 500,
   };
 
   return (
@@ -39,11 +39,11 @@ export const UsageLimitsCard = () => {
               <span className="font-medium">AI Credits (this month)</span>
             </div>
             <span className="text-muted-foreground">
-              {usage.aiCredits.current.toLocaleString()} / {usage.aiCredits.max.toLocaleString()}
+              {usage.aiCreditsUsed.toLocaleString()} / {usage.aiCreditsMax.toLocaleString()}
             </span>
           </div>
           <Progress 
-            value={(usage.aiCredits.current / usage.aiCredits.max) * 100} 
+            value={(usage.aiCreditsUsed / usage.aiCreditsMax) * 100} 
             className="h-2"
           />
         </div>
@@ -56,17 +56,14 @@ export const UsageLimitsCard = () => {
               <span className="font-medium">Team Members</span>
             </div>
             <span className="text-muted-foreground">
-              Unlimited
+              {subscription.plan === 'team' ? 'Up to 3' : '1'}
             </span>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            All paid plans include unlimited team members
           </div>
         </div>
 
         <div className="pt-4 border-t">
           <p className="text-xs text-muted-foreground text-center">
-            AI credits reset on your billing date. Need more? Upgrade to Professional.
+            AI credits reset on your billing date.
           </p>
         </div>
       </CardContent>

@@ -7,7 +7,7 @@ export type SubscriptionPlan = PlanId;
 export type SubscriptionStatus = 'active' | 'cancelled' | 'past_due' | 'trial' | 'inactive';
 
 export interface UserSubscription {
-  plan: SubscriptionPlan;
+  plan: SubscriptionPlan | null;
   status: SubscriptionStatus;
   amount: number;
   currency: string;
@@ -34,12 +34,12 @@ export const useUserSubscription = () => {
 
         if (data?.subscribed) {
           const planId = getPlanByProductId(data.product_id);
-          const plan = STRIPE_PLANS[planId];
+          const plan = planId ? STRIPE_PLANS[planId] : null;
 
           return {
             plan: planId,
             status: data.cancel_at_period_end ? 'cancelled' : 'active',
-            amount: data.amount || plan.amountMonthly,
+            amount: data.amount || (plan?.amountMonthly ?? 0),
             currency: 'NZD',
             billingCycle: data.billing_cycle || 'monthly',
             nextBillingDate: data.subscription_end ? new Date(data.subscription_end) : null,
@@ -49,10 +49,10 @@ export const useUserSubscription = () => {
           };
         }
 
-        // Default to free/starter plan
+        // No active subscription
         return {
-          plan: 'starter',
-          status: 'active',
+          plan: null,
+          status: 'inactive',
           amount: 0,
           currency: 'NZD',
           billingCycle: 'monthly',
@@ -63,10 +63,10 @@ export const useUserSubscription = () => {
         };
       } catch (error) {
         console.error('Subscription check failed:', error);
-        // Return starter plan on error
+        // Return no subscription on error
         return {
-          plan: 'starter',
-          status: 'active',
+          plan: null,
+          status: 'inactive',
           amount: 0,
           currency: 'NZD',
           billingCycle: 'monthly',

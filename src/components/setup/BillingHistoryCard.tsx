@@ -24,8 +24,8 @@ export const BillingHistoryCard = () => {
     );
   }
 
-  // Don't show for starter/free users or managed users
-  if (!subscription || subscription.plan === 'starter') {
+  // Don't show for users without a subscription
+  if (!subscription || !subscription.plan) {
     return null;
   }
 
