@@ -224,6 +224,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   };
 
   const handleCreateReport = (reportType: BeaconReportType) => {
+    console.log('BeaconTab: handleCreateReport called with', reportType, 'appraisalId:', appraisal.id);
     createBeaconReport.mutate({ appraisalId: appraisal.id, reportType });
   };
 

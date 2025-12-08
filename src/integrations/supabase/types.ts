@@ -438,7 +438,7 @@ export type Database = {
           team_id: string | null
           title: string
           updated_at: string | null
-          user_id: string
+          user_id: string | null
           vote_count: number | null
           workspace_module: string | null
         }
@@ -476,7 +476,7 @@ export type Database = {
           team_id?: string | null
           title: string
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
           vote_count?: number | null
           workspace_module?: string | null
         }
@@ -514,7 +514,7 @@ export type Database = {
           team_id?: string | null
           title?: string
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
           vote_count?: number | null
           workspace_module?: string | null
         }
@@ -1060,7 +1060,7 @@ export type Database = {
           team_id: string | null
           title: string
           updated_at: string | null
-          user_id: string
+          user_id: string | null
           vote_count: number | null
         }
         Insert: {
@@ -1083,7 +1083,7 @@ export type Database = {
           team_id?: string | null
           title: string
           updated_at?: string | null
-          user_id: string
+          user_id?: string | null
           vote_count?: number | null
         }
         Update: {
@@ -1106,7 +1106,7 @@ export type Database = {
           team_id?: string | null
           title?: string
           updated_at?: string | null
-          user_id?: string
+          user_id?: string | null
           vote_count?: number | null
         }
         Relationships: [
