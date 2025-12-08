@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
-  SelectContentInline,
+  SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -125,13 +125,13 @@ const ConvertToOpportunityDialog = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Select month" />
                 </SelectTrigger>
-                <SelectContentInline>
+                <SelectContent>
                   {monthOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
                   ))}
-                </SelectContentInline>
+                </SelectContent>
               </Select>
             </div>
 
@@ -146,12 +146,12 @@ const ConvertToOpportunityDialog = ({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContentInline>
+                <SelectContent>
                   <SelectItem value="call">Call - Initial Contact</SelectItem>
                   <SelectItem value="vap">VAP - Vendor Appraisal</SelectItem>
                   <SelectItem value="map">MAP - Marketing Appraisal</SelectItem>
                   <SelectItem value="lap">LAP - Listing Appointment</SelectItem>
-                </SelectContentInline>
+                </SelectContent>
               </Select>
             </div>
 
