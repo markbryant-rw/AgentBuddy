@@ -88,7 +88,12 @@ export const useBeaconIntegration = () => {
     },
     onSuccess: (data, appraisalId) => {
       queryClient.invalidateQueries({ queryKey: ['logged_appraisals'] });
-      toast.success('Beacon report created successfully');
+      toast.success(data.existing ? 'Opening existing Beacon report...' : 'Beacon report created! Opening in new tab...');
+      
+      // Open the Beacon report edit page in a new tab
+      if (data.urls?.edit) {
+        window.open(data.urls.edit, '_blank');
+      }
     },
     onError: (error) => {
       console.error('Failed to create Beacon report:', error);
