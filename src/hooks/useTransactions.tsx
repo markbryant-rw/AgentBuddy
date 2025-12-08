@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
+import { useGoogleCalendar } from './useGoogleCalendar';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 
@@ -76,6 +77,7 @@ export const useTransactions = () => {
   const { user } = useAuth();
   const { team } = useTeam();
   const queryClient = useQueryClient();
+  const { isConnected, settings, syncEvent } = useGoogleCalendar();
 
   const { data: transactions = [], isLoading, error: queryError } = useQuery({
     queryKey: ['transactions', team?.id],
@@ -185,6 +187,11 @@ export const useTransactions = () => {
         logger.error('Failed to send team notification:', error);
         // Don't fail the whole operation if notification fails
       }
+      
+      // Sync to Google Calendar if connected and enabled
+      if (isConnected && settings?.sync_transactions && data) {
+        syncEvent({ type: 'transaction', data });
+      }
     },
     onError: (error) => {
       toast.error('Failed to add transaction');
@@ -253,6 +260,13 @@ export const useTransactions = () => {
           logger.error('Failed to geocode transaction:', error);
           toast.error("Location warning: Geocoding service error. Use 'Fix Location' to set coordinates.", { duration: 8000 });
         }
+      }
+      
+      // Sync to Google Calendar if connected and enabled (on key date changes)
+      const dateFields = ['settlement_date', 'unconditional_date', 'listing_expires_date', 'expected_settlement'];
+      const hasDateChange = dateFields.some(field => variables.updates[field as keyof typeof variables.updates] !== undefined);
+      if (isConnected && settings?.sync_transactions && hasDateChange && data) {
+        syncEvent({ type: 'transaction', data });
       }
     },
     onError: (error) => {

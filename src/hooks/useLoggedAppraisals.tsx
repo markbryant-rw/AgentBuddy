@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
+import { useGoogleCalendar } from './useGoogleCalendar';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 
@@ -76,6 +77,7 @@ export const useLoggedAppraisals = () => {
   const { user } = useAuth();
   const { team } = useTeam();
   const queryClient = useQueryClient();
+  const { isConnected, settings, syncEvent } = useGoogleCalendar();
 
   const { data: appraisals = [], isLoading: loading } = useQuery({
     queryKey: ['logged_appraisals', team?.id],
@@ -205,6 +207,12 @@ export const useLoggedAppraisals = () => {
     }
 
     queryClient.invalidateQueries({ queryKey: ['logged_appraisals', team.id] });
+    
+    // Sync to Google Calendar if connected and enabled
+    if (isConnected && settings?.sync_appraisals && data) {
+      syncEvent({ type: 'appraisal', data });
+    }
+    
     return data;
   };
 
