@@ -222,28 +222,6 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <Input
-                  id="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="123 Main Street"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="suburb">Suburb</Label>
-                <Input
-                  id="suburb"
-                  value={formData.suburb}
-                  onChange={(e) => setFormData({ ...formData, suburb: e.target.value })}
-                  placeholder="Auckland Central"
-                />
-              </div>
-            </div>
 
             <div className="space-y-2">
               <Label htmlFor="client_name">Vendor Name *</Label>
