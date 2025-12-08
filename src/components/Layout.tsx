@@ -132,7 +132,8 @@ const Layout = () => {
     <PomodoroProvider date={new Date()}>
       <div className={cn(
         "bg-background flex flex-col",
-        isFullHeightPage ? "h-screen overflow-hidden" : "min-h-screen"
+        isFullHeightPage ? "h-screen overflow-hidden" : "min-h-screen",
+        isDemoMode && "pt-11" // Add padding for fixed demo banner
       )}>
       {isDemoMode && <DemoBanner />}
       <ViewAsBanner />
