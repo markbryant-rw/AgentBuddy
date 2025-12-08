@@ -2,7 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, x-webhook-source, x-idempotency-key',
 };
 
 Deno.serve(async (req) => {
@@ -19,6 +19,7 @@ Deno.serve(async (req) => {
     // Validate API key from Beacon
     const providedApiKey = req.headers.get('X-API-Key') || req.headers.get('x-api-key');
     const webhookSource = req.headers.get('X-Webhook-Source') || req.headers.get('x-webhook-source');
+    const idempotencyKey = req.headers.get('X-Idempotency-Key') || req.headers.get('x-idempotency-key');
     
     if (!providedApiKey || providedApiKey !== beaconApiKey) {
       console.error('Invalid or missing API key');
@@ -28,15 +29,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Log webhook source for debugging
-    console.log('Webhook received from source:', webhookSource);
+    console.log('Webhook received from source:', webhookSource, 'idempotency:', idempotencyKey);
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const payload = await req.json();
     console.log('Beacon webhook received:', JSON.stringify(payload));
 
-    const { event, externalLeadId, reportId, data } = payload;
+    const { event, externalLeadId, data, timestamp } = payload;
+    
+    // Beacon sends reportType in data, not at top level
+    const reportType = data?.reportType || 'appraisal';
 
     if (!externalLeadId) {
       return new Response(
@@ -45,7 +48,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch the appraisal to verify it exists and get current data
+    // Fetch the appraisal to verify it exists
     const { data: appraisal, error: fetchError } = await supabase
       .from('logged_appraisals')
       .select('id, user_id, address, vendor_name, beacon_is_hot_lead, beacon_first_viewed_at')
@@ -60,48 +63,80 @@ Deno.serve(async (req) => {
       );
     }
 
-    // If reportId is provided, update the specific beacon_report record
-    if (reportId) {
+    // Map Beacon reportType to our report_type values
+    const reportTypeMap: Record<string, string> = {
+      'appraisal': 'market_appraisal',
+      'proposal': 'proposal',
+      'campaign': 'update',
+    };
+    const mappedReportType = reportTypeMap[reportType] || 'market_appraisal';
+
+    // Find the most recent report matching externalLeadId + reportType
+    const { data: matchingReport } = await supabase
+      .from('beacon_reports')
+      .select('*')
+      .eq('appraisal_id', externalLeadId)
+      .eq('report_type', mappedReportType)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Update the specific beacon_report if found
+    if (matchingReport) {
       const reportUpdateData: Record<string, any> = {
         propensity_score: data.propensityScore || 0,
         total_views: data.totalViews || 0,
         total_time_seconds: data.totalTimeSeconds || 0,
         email_opens: data.emailOpenCount || 0,
-        is_hot_lead: data.isHotLead || false,
-        last_activity: data.lastActivity || new Date().toISOString(),
+        is_hot_lead: data.isHotLead || (data.propensityScore >= 70),
+        last_activity: data.lastActivity || data.lastViewedAt || new Date().toISOString(),
       };
 
-      // Set first viewed at only if not already set
-      if (data.firstViewedAt) {
+      // Set first viewed at only if provided and not already set
+      if (data.firstViewedAt && !matchingReport.first_viewed_at) {
         reportUpdateData.first_viewed_at = data.firstViewedAt;
       }
 
       // Set report sent at when Beacon signals it was sent
-      if (data.reportSentAt) {
+      if (data.reportSentAt && !matchingReport.sent_at) {
         reportUpdateData.sent_at = data.reportSentAt;
+      }
+
+      // Handle proposal events
+      if (event === 'proposal_accepted' && data.proposalAcceptedAt) {
+        reportUpdateData.proposal_accepted_at = data.proposalAcceptedAt;
+      }
+      if (event === 'proposal_declined') {
+        if (data.proposalDeclinedAt) reportUpdateData.proposal_declined_at = data.proposalDeclinedAt;
+        if (data.proposalDeclineReason) reportUpdateData.proposal_decline_reason = data.proposalDeclineReason;
+      }
+      if (event === 'campaign_started' && data.campaignStartedAt) {
+        reportUpdateData.campaign_started_at = data.campaignStartedAt;
+      }
+      if (data.daysOnMarket !== undefined) {
+        reportUpdateData.days_on_market = data.daysOnMarket;
       }
 
       const { error: reportUpdateError } = await supabase
         .from('beacon_reports')
         .update(reportUpdateData)
-        .eq('beacon_report_id', reportId);
+        .eq('id', matchingReport.id);
 
       if (reportUpdateError) {
         console.error('Failed to update beacon_report:', reportUpdateError);
       } else {
-        console.log(`Updated beacon_report with ID: ${reportId}`);
+        console.log(`Updated beacon_report ID: ${matchingReport.id} for type: ${mappedReportType}`);
       }
+    } else {
+      console.log(`No matching report found for appraisal ${externalLeadId} type ${mappedReportType}`);
     }
 
-    // Also update the appraisal with aggregated "best" metrics
-    // Get all reports for this appraisal to calculate aggregates (after the update above)
+    // Calculate aggregate metrics from ALL reports for this appraisal
     const { data: allReports } = await supabase
       .from('beacon_reports')
       .select('*')
       .eq('appraisal_id', externalLeadId);
 
-    // Calculate aggregate metrics from stored report data ONLY (not from current event)
-    // This prevents double-counting since the report was already updated above
     let bestPropensity = 0;
     let totalViews = 0;
     let totalTimeSeconds = 0;
@@ -126,20 +161,18 @@ Deno.serve(async (req) => {
           earliestFirstViewed = report.first_viewed_at;
         }
       }
-    }
-
-    // Fallback to current event data if no reports found (shouldn't happen normally)
-    if (!allReports || allReports.length === 0) {
+    } else {
+      // Fallback to current event data if no reports found
       bestPropensity = data.propensityScore || 0;
       totalViews = data.totalViews || 0;
       totalTimeSeconds = data.totalTimeSeconds || 0;
       totalEmailOpens = data.emailOpenCount || 0;
-      anyHotLead = data.isHotLead || false;
-      latestActivity = data.lastActivity || new Date().toISOString();
+      anyHotLead = data.isHotLead || (data.propensityScore >= 70);
+      latestActivity = data.lastActivity || data.lastViewedAt || new Date().toISOString();
       earliestFirstViewed = data.firstViewedAt;
     }
 
-    const updateData: Record<string, any> = {
+    const appraisalUpdateData: Record<string, any> = {
       beacon_propensity_score: bestPropensity,
       beacon_total_views: totalViews,
       beacon_total_time_seconds: totalTimeSeconds,
@@ -150,17 +183,17 @@ Deno.serve(async (req) => {
 
     // Set first viewed at only if not already set
     if (earliestFirstViewed && !(appraisal as any).beacon_first_viewed_at) {
-      updateData.beacon_first_viewed_at = earliestFirstViewed;
+      appraisalUpdateData.beacon_first_viewed_at = earliestFirstViewed;
     }
 
     // Set report sent at when Beacon signals it was sent
     if (data.reportSentAt) {
-      updateData.beacon_report_sent_at = data.reportSentAt;
+      appraisalUpdateData.beacon_report_sent_at = data.reportSentAt;
     }
 
     const { error: updateError } = await supabase
       .from('logged_appraisals')
-      .update(updateData)
+      .update(appraisalUpdateData)
       .eq('id', externalLeadId);
 
     if (updateError) {
@@ -171,17 +204,22 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert individual engagement events if provided (link to specific report if available)
+    // Insert individual engagement events with idempotency (upsert with unique constraint)
     if (data.events && Array.isArray(data.events) && data.events.length > 0) {
       const eventsToInsert = data.events.map((evt: any) => ({
         appraisal_id: externalLeadId,
         event_type: evt.type || 'view',
         occurred_at: evt.occurredAt,
         duration_seconds: evt.durationSeconds || 0,
-        metadata: { ...(evt.metadata || {}), reportId: reportId },
+        metadata: { 
+          ...(evt.metadata || {}), 
+          reportType: mappedReportType,
+          linkUrl: evt.linkUrl,
+          linkLabel: evt.linkLabel,
+        },
       }));
 
-      // Use upsert to avoid duplicates (based on unique constraint)
+      // Use upsert with ON CONFLICT to handle idempotency
       const { error: eventsError } = await supabase
         .from('beacon_engagement_events')
         .upsert(eventsToInsert, {
@@ -192,7 +230,7 @@ Deno.serve(async (req) => {
       if (eventsError) {
         console.error('Failed to insert engagement events:', eventsError);
       } else {
-        console.log(`Inserted ${eventsToInsert.length} engagement events`);
+        console.log(`Processed ${eventsToInsert.length} engagement events`);
       }
     }
 
@@ -214,10 +252,12 @@ Deno.serve(async (req) => {
         .eq('id', listing.id);
     }
 
-    // Create notification for hot lead event (only if newly hot)
-    if (event === 'hot_lead' && anyHotLead && !appraisal.beacon_is_hot_lead) {
+    // Create notifications for important events
+    const wasHotLead = appraisal.beacon_is_hot_lead;
+    
+    // Hot lead notification (only if newly hot)
+    if (event === 'hot_lead' && anyHotLead && !wasHotLead) {
       console.log('Creating hot lead notification for user:', appraisal.user_id);
-      
       await supabase
         .from('notifications')
         .insert({
@@ -225,6 +265,32 @@ Deno.serve(async (req) => {
           title: '🔥 Hot Lead Alert!',
           message: `${appraisal.vendor_name || 'A vendor'} at ${appraisal.address} has high engagement with their Beacon report!`,
           type: 'hot_lead',
+          action_url: `/prospect-appraisals?appraisal=${externalLeadId}`,
+        });
+    }
+
+    // Proposal accepted notification
+    if (event === 'proposal_accepted') {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: appraisal.user_id,
+          title: '✅ Proposal Accepted!',
+          message: `${appraisal.vendor_name || 'The vendor'} at ${appraisal.address} has accepted your proposal!`,
+          type: 'proposal_accepted',
+          action_url: `/prospect-appraisals?appraisal=${externalLeadId}`,
+        });
+    }
+
+    // Proposal declined notification
+    if (event === 'proposal_declined') {
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: appraisal.user_id,
+          title: '❌ Proposal Declined',
+          message: `${appraisal.vendor_name || 'The vendor'} at ${appraisal.address} declined the proposal${data.proposalDeclineReason ? `: ${data.proposalDeclineReason}` : ''}.`,
+          type: 'proposal_declined',
           action_url: `/prospect-appraisals?appraisal=${externalLeadId}`,
         });
     }
