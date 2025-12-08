@@ -94,13 +94,10 @@ serve(async (req) => {
     }
 
     // Initialize Supabase client with service role for inserting records
+    // Service role bypasses RLS, allowing inserts without a valid user_id FK
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Get or create a system user for Beacon submissions
-    // We'll use a fixed UUID for Beacon submissions
-    const BEACON_SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000001';
 
     // Process attachments if provided (base64 encoded images)
     let uploadedAttachments: string[] = [];
@@ -161,7 +158,7 @@ serve(async (req) => {
     let result;
 
     if (type === 'bug') {
-      // Insert bug report
+      // Insert bug report - user_id is nullable, external submissions don't have a user
       const { data, error } = await supabase
         .from('bug_reports')
         .insert({
@@ -172,7 +169,6 @@ serve(async (req) => {
           severity: severity || 'medium',
           source: 'beacon',
           status: 'triage',
-          user_id: BEACON_SYSTEM_USER_ID,
           attachments: uploadedAttachments.length > 0 ? uploadedAttachments : null,
         })
         .select('id')
@@ -191,7 +187,7 @@ serve(async (req) => {
       }).catch(err => console.error('AI analysis trigger failed:', err));
 
     } else {
-      // Insert feature request
+      // Insert feature request - user_id is nullable, external submissions don't have a user
       const { data, error } = await supabase
         .from('feature_requests')
         .insert({
@@ -200,7 +196,6 @@ serve(async (req) => {
           module: 'BEACON',
           source: 'beacon',
           status: 'submitted',
-          user_id: BEACON_SYSTEM_USER_ID,
           attachments: uploadedAttachments.length > 0 ? uploadedAttachments : null,
         })
         .select('id')

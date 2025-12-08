@@ -117,9 +117,13 @@ export const useBeaconIntegration = () => {
   // Create a Beacon report for an appraisal
   const createBeaconReport = useMutation({
     mutationFn: async ({ appraisalId, reportType = 'market_appraisal' }: { appraisalId: string; reportType?: BeaconReportType }) => {
+      console.log('createBeaconReport: Starting mutation', { appraisalId, reportType });
+      
       const { data, error } = await supabase.functions.invoke('create-beacon-report', {
         body: { appraisalId, reportType },
       });
+
+      console.log('createBeaconReport: Response', { data, error });
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Failed to create report');
