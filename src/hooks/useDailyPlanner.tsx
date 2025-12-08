@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 import { useToast } from '@/hooks/use-toast';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { format } from 'date-fns';
 import { getTodayInTimezone, DEFAULT_TIMEZONE } from '@/lib/timezoneUtils';
 
@@ -33,6 +34,7 @@ export function useDailyPlanner(date: Date = new Date()) {
   const { team } = useTeam();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isConnected, settings, syncEvent } = useGoogleCalendar();
   
   // Use timezone-aware date formatting for consistency
   // The date parameter represents the user's intended local date
@@ -108,8 +110,19 @@ export function useDailyPlanner(date: Date = new Date()) {
 
       return item;
     },
-    onSuccess: () => {
+    onSuccess: (item) => {
       queryClient.invalidateQueries({ queryKey: ['daily-planner'] });
+      
+      // Sync to Google Calendar if connected and enabled
+      if (isConnected && settings?.sync_daily_planner && item) {
+        syncEvent({ 
+          type: 'planner', 
+          data: { 
+            ...item, 
+            scheduled_date: dateStr 
+          } 
+        });
+      }
     },
   });
 
