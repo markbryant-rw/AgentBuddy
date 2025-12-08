@@ -101,6 +101,11 @@ export function GoogleAddressAutocomplete({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Sync suburb value when currentSuburb prop changes
+  useEffect(() => {
+    setSuburbValue(currentSuburb);
+  }, [currentSuburb]);
+
   const handleSelect = useCallback((prediction: google.maps.places.AutocompletePrediction) => {
     if (!placesServiceRef.current) return;
     
@@ -203,11 +208,6 @@ export function GoogleAddressAutocomplete({
       </div>
     );
   }
-
-  // Sync suburb value when currentSuburb prop changes
-  useEffect(() => {
-    setSuburbValue(currentSuburb);
-  }, [currentSuburb]);
 
   return (
     <div ref={wrapperRef} className={cn("space-y-2", className)}>
