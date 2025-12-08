@@ -186,6 +186,9 @@ export function EditTransactionDialog({
                     longitude: result.longitude,
                   }));
                 }}
+                showSuburbOverride={true}
+                currentSuburb={formData.suburb || ''}
+                onSuburbChange={(suburb) => setFormData(prev => ({ ...prev, suburb }))}
               />
             </div>
           </div>

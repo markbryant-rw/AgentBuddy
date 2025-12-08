@@ -380,7 +380,9 @@ const AppraisalDetailDialog = ({
                           longitude: result.longitude,
                         }));
                       }}
-                      className="h-10"
+                      showSuburbOverride={true}
+                      currentSuburb={formData.suburb || ''}
+                      onSuburbChange={(suburb) => setFormData(prev => ({ ...prev, suburb }))}
                     />
                   </div>
                   <div className="space-y-2">
@@ -611,18 +613,10 @@ const AppraisalDetailDialog = ({
                         longitude: result.longitude,
                       }));
                     }}
-                    className="h-10"
+                    showSuburbOverride={true}
+                    currentSuburb={formData.suburb || ''}
+                    onSuburbChange={(suburb) => setFormData(prev => ({ ...prev, suburb }))}
                   />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
-                    <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="123 Main Street" required className="h-10" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="suburb" className="text-sm font-medium">Suburb <span className="text-destructive">*</span></Label>
-                    <Input id="suburb" value={formData.suburb || ''} onChange={(e) => setFormData({ ...formData, suburb: e.target.value })} placeholder="Auckland Central" required className="h-10" />
-                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="vendor_name" className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
-import { Loader2, MapPin } from 'lucide-react';
+import { Loader2, MapPin, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useGoogleMaps } from '@/hooks/useGoogleMaps';
 
@@ -17,6 +17,9 @@ interface GoogleAddressAutocompleteProps {
   onSelect: (result: AddressResult) => void;
   defaultValue?: string;
   className?: string;
+  showSuburbOverride?: boolean;
+  currentSuburb?: string;
+  onSuburbChange?: (suburb: string) => void;
 }
 
 export function GoogleAddressAutocomplete({
@@ -24,6 +27,9 @@ export function GoogleAddressAutocomplete({
   onSelect,
   defaultValue = "",
   className,
+  showSuburbOverride = false,
+  currentSuburb = "",
+  onSuburbChange,
 }: GoogleAddressAutocompleteProps) {
   const { isLoaded } = useGoogleMaps();
   const [query, setQuery] = useState(defaultValue);
@@ -196,8 +202,16 @@ export function GoogleAddressAutocomplete({
     );
   }
 
+  const [showSuburbEdit, setShowSuburbEdit] = useState(false);
+  const [suburbValue, setSuburbValue] = useState(currentSuburb);
+
+  // Sync suburb value when currentSuburb prop changes
+  useEffect(() => {
+    setSuburbValue(currentSuburb);
+  }, [currentSuburb]);
+
   return (
-    <div ref={wrapperRef} className={cn("relative", className)}>
+    <div ref={wrapperRef} className={cn("space-y-2", className)}>
       <div className="relative">
         <Input
           ref={inputRef}
@@ -214,38 +228,73 @@ export function GoogleAddressAutocomplete({
         {isLoading && (
           <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
         )}
+
+        {isOpen && suggestions.length > 0 && (
+          <div className="absolute z-[12000] w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto pointer-events-auto">
+            {suggestions.map((suggestion, index) => (
+              <button
+                key={suggestion.place_id}
+                type="button"
+                className={cn(
+                  "w-full px-3 py-2 text-left text-sm flex items-start gap-2 hover:bg-accent transition-colors",
+                  highlightedIndex === index && "bg-accent"
+                )}
+                onClick={() => handleSelect(suggestion)}
+                onMouseEnter={() => setHighlightedIndex(index)}
+              >
+                <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                <div className="flex flex-col">
+                  <span className="text-foreground font-medium">
+                    {suggestion.structured_formatting.main_text}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {suggestion.structured_formatting.secondary_text}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {isOpen && !isLoading && suggestions.length === 0 && query.length >= 3 && (
+          <div className="absolute z-[12000] w-full mt-1 bg-popover border border-border rounded-md shadow-lg p-3 pointer-events-auto">
+            <p className="text-sm text-muted-foreground">No addresses found</p>
+          </div>
+        )}
       </div>
 
-      {isOpen && suggestions.length > 0 && (
-        <div className="absolute z-[12000] w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-60 overflow-auto pointer-events-auto">
-          {suggestions.map((suggestion, index) => (
+      {/* Suburb override section */}
+      {showSuburbOverride && (
+        <div className="flex items-center gap-2">
+          {showSuburbEdit ? (
+            <div className="flex items-center gap-2 flex-1">
+              <Input
+                value={suburbValue}
+                onChange={(e) => {
+                  setSuburbValue(e.target.value);
+                  onSuburbChange?.(e.target.value);
+                }}
+                placeholder="Enter suburb"
+                className="h-8 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSuburbEdit(false)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Done
+              </button>
+            </div>
+          ) : (
             <button
-              key={suggestion.place_id}
               type="button"
-              className={cn(
-                "w-full px-3 py-2 text-left text-sm flex items-start gap-2 hover:bg-accent transition-colors",
-                highlightedIndex === index && "bg-accent"
-              )}
-              onClick={() => handleSelect(suggestion)}
-              onMouseEnter={() => setHighlightedIndex(index)}
+              onClick={() => setShowSuburbEdit(true)}
+              className="text-xs text-primary hover:underline flex items-center gap-1"
             >
-              <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
-              <div className="flex flex-col">
-                <span className="text-foreground font-medium">
-                  {suggestion.structured_formatting.main_text}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {suggestion.structured_formatting.secondary_text}
-                </span>
-              </div>
+              <Pencil className="h-3 w-3" />
+              {currentSuburb ? `Edit suburb (${currentSuburb})` : 'Edit suburb'}
             </button>
-          ))}
-        </div>
-      )}
-
-      {isOpen && !isLoading && suggestions.length === 0 && query.length >= 3 && (
-        <div className="absolute z-[12000] w-full mt-1 bg-popover border border-border rounded-md shadow-lg p-3 pointer-events-auto">
-          <p className="text-sm text-muted-foreground">No addresses found</p>
+          )}
         </div>
       )}
     </div>
