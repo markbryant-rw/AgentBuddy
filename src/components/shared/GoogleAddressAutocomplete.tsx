@@ -37,6 +37,8 @@ export function GoogleAddressAutocomplete({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuburbEdit, setShowSuburbEdit] = useState(false);
+  const [suburbValue, setSuburbValue] = useState(currentSuburb);
   
   const wrapperRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -201,9 +203,6 @@ export function GoogleAddressAutocomplete({
       </div>
     );
   }
-
-  const [showSuburbEdit, setShowSuburbEdit] = useState(false);
-  const [suburbValue, setSuburbValue] = useState(currentSuburb);
 
   // Sync suburb value when currentSuburb prop changes
   useEffect(() => {
