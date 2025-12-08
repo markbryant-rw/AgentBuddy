@@ -9,7 +9,7 @@ export default function DailyTasks() {
 
   // Redirect to new daily planner
   useEffect(() => {
-    navigate('/tasks', { replace: true });
+    navigate('/daily-planner', { replace: true });
   }, [navigate]);
 
   return (

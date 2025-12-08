@@ -42,7 +42,7 @@ const CompleteProfile = lazy(() => import("./pages/onboarding/CompleteProfile"))
 const InviteUser = lazy(() => import("./pages/InviteUser"));
 const AccessDenied = lazy(() => import("./pages/AccessDenied"));
 const Setup = lazy(() => import("./pages/Setup"));
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+
 const PlatformAdminDashboard = lazy(() => import('./pages/PlatformAdminDashboard'));
 const PlatformAdminHealthDashboard = lazy(() => import('./pages/platform-admin/HealthDashboard'));
 const PlatformAdminUsers = lazy(() => import('./pages/platform-admin/OfficesOverview'));
@@ -203,6 +203,12 @@ const AppContent = () => {
             <Route path="/notes" element={<Notes />} />
             <Route path="/notes/:noteId" element={<NoteEditor />} />
             <Route path="/systems/directory" element={<Directory />} />
+            <Route path="/knowledge-base" element={<KnowledgeBase />} />
+            <Route path="/knowledge-base/analytics" element={<KnowledgeBaseAnalytics />} />
+            <Route path="/knowledge-base/library/:libraryId" element={<KnowledgeBaseLibrary />} />
+            <Route path="/knowledge-base/edit/:playbookId" element={<KnowledgeBaseEditor />} />
+            <Route path="/knowledge-base/new" element={<KnowledgeBaseEditor />} />
+            <Route path="/knowledge-base/:playbookId" element={<KnowledgeBasePlaybook />} />
             <Route path="/projects" element={<TaskProjects />} />
             <Route path="/projects/:projectId" element={<ProjectKanbanBoard />} />
             <Route path="/tasks/projects" element={<TaskProjects />} />

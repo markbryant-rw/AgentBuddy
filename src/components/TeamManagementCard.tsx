@@ -193,16 +193,7 @@ export function TeamManagementCard() {
                     {messagingUserId === member.user_id ? 'Opening...' : 'Message'}
                   </Button>
                   
-                  {!memberIsFriend && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate("/friends")}
-                    >
-                      <UserPlus className="h-4 w-4 mr-1" />
-                      Add Friend
-                    </Button>
-                  )}
+                  {/* Add Friend button disabled - Friends feature pending review */}
 
                   {currentUserIsAdmin && (
                     <Button
