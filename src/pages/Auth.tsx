@@ -14,7 +14,7 @@ import { AnimatedAuthBackground } from '@/components/AnimatedAuthBackground';
 import { AgencyCombobox } from '@/components/AgencyCombobox';
 import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { InvitationSignup } from '@/components/InvitationSignup';
-import { TrendingUp, Check, X, Users, Loader2 } from 'lucide-react';
+import { TrendingUp, Check, X, Users, Loader2, ArrowLeft } from 'lucide-react';
 import { useAgencies } from '@/hooks/useAgencies';
 import { cn } from '@/lib/utils';
 import { authSchemas } from '@/lib/validation';
@@ -490,6 +490,18 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted p-4 relative overflow-hidden">
       <AnimatedAuthBackground />
+      
+      {/* Back to landing page button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate('/')}
+        className="absolute top-4 left-4 z-20 gap-2 text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back
+      </Button>
+      
       <Card className="w-full max-w-md relative z-10">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
