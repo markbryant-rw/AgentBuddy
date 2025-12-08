@@ -34,6 +34,7 @@ import { AppraisalTasksTab } from './AppraisalTasksTab';
 import { BeaconReportButton } from './BeaconReportButton';
 import { BeaconEngagementPanel } from './BeaconEngagementPanel';
 import { BeaconTab } from './BeaconTab';
+import { NewVisitDialog } from './NewVisitDialog';
 import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle } from "lucide-react";
 import { StageInfoTooltip } from './StageInfoTooltip';
 import {
@@ -77,6 +78,7 @@ const AppraisalDetailDialog = ({
   const [isSaving, setIsSaving] = useState(false);
   const [syncContactsToAllVisits, setSyncContactsToAllVisits] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
+  const [showNewVisitDialog, setShowNewVisitDialog] = useState(false);
   const originalFollowUpRef = useRef<string | null | undefined>(undefined);
   
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
@@ -231,47 +233,49 @@ const AppraisalDetailDialog = ({
     }
   };
 
-  const handleLogNewVisit = async () => {
+  const handleLogNewVisit = () => {
+    setShowNewVisitDialog(true);
+  };
+
+  const handleConfirmNewVisit = async (data: {
+    appraisal_date: string;
+    stage: 'VAP' | 'MAP' | 'LAP';
+    intent: 'low' | 'medium' | 'high';
+  }) => {
     if (!appraisal || !team?.id) return;
     
-    try {
-      // Create new appraisal with inherited property details
-      const newVisitData = {
-        address: appraisal.address,
-        vendor_name: appraisal.vendor_name,
-        vendor_mobile: appraisal.vendor_mobile,
-        vendor_email: appraisal.vendor_email,
-        suburb: appraisal.suburb,
-        latitude: appraisal.latitude,
-        longitude: appraisal.longitude,
-        appraisal_date: new Date().toISOString().split('T')[0],
-        intent: 'medium' as const,
-        stage: 'VAP' as const,
-        outcome: 'In Progress' as const,
-        estimated_value: appraisal.estimated_value,
-        last_contact: new Date().toISOString().split('T')[0],
-        next_follow_up: null,
-        lead_source: appraisal.lead_source,
-        notes: '',
-        agent_id: user?.id,
-        team_id: team.id,
-      };
-      
-      const result = await addAppraisal(newVisitData as any);
-      if (result) {
-        toast({ 
-          title: "New visit logged", 
-          description: `Visit logged for ${appraisal.address}`,
-        });
-        // Close current dialog - user can reopen from list if needed
-        onOpenChange(false);
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to log new visit",
-        variant: "destructive",
+    // Create new appraisal with inherited property details + user choices
+    const newVisitData = {
+      address: appraisal.address,
+      vendor_name: appraisal.vendor_name,
+      vendor_mobile: appraisal.vendor_mobile,
+      vendor_email: appraisal.vendor_email,
+      suburb: appraisal.suburb,
+      latitude: appraisal.latitude,
+      longitude: appraisal.longitude,
+      appraisal_date: data.appraisal_date,
+      intent: data.intent,
+      stage: data.stage,
+      outcome: 'In Progress' as const,
+      estimated_value: appraisal.estimated_value,
+      last_contact: data.appraisal_date,
+      next_follow_up: null,
+      lead_source: appraisal.lead_source,
+      notes: '',
+      agent_id: user?.id,
+      team_id: team.id,
+    };
+    
+    const result = await addAppraisal(newVisitData as any);
+    if (result) {
+      toast({ 
+        title: "New visit logged", 
+        description: `${data.stage} visit logged for ${appraisal.address}`,
       });
+      // Close current dialog - user can reopen from list if needed
+      onOpenChange(false);
+    } else {
+      throw new Error('Failed to create visit');
     }
   };
 
@@ -531,7 +535,14 @@ const AppraisalDetailDialog = ({
 
                 {/* Visit Timeline */}
                 {allVisitsAtAddress.length > 0 && (
-                  <VisitTimeline visits={allVisitsAtAddress} currentVisitId={appraisal?.id} />
+                  <VisitTimeline 
+                    visits={allVisitsAtAddress} 
+                    currentVisitId={appraisal?.id}
+                    onVisitDeleted={() => {
+                      // If current visit was deleted, close dialog
+                      queryClient.invalidateQueries({ queryKey: ['logged_appraisals'] });
+                    }}
+                  />
                 )}
 
                 {/* Sync contact details option */}
@@ -791,6 +802,15 @@ const AppraisalDetailDialog = ({
       </AlertDialog>
 
       {appraisal && <ConvertToOpportunityDialog appraisal={appraisal} open={showConvertDialog} onOpenChange={setShowConvertDialog} />}
+      
+      {appraisal && (
+        <NewVisitDialog
+          open={showNewVisitDialog}
+          onOpenChange={setShowNewVisitDialog}
+          parentAppraisal={appraisal}
+          onConfirm={handleConfirmNewVisit}
+        />
+      )}
     </>
   );
 };
