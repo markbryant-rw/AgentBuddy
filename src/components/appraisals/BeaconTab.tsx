@@ -22,7 +22,8 @@ import {
   Sparkles,
   Lock,
   Plus,
-  ChevronDown
+  ChevronDown,
+  Pencil
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -171,21 +172,37 @@ const ReportCard = ({
 
       {/* Actions */}
       <div className="flex gap-2 pt-2">
-        <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" asChild>
-          <a href={report.report_url || ''} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="h-3 w-3 mr-1" />
-            Open
-          </a>
-        </Button>
+        {/* Edit - opens Beacon editor */}
+        {report.report_url && (
+          <Button 
+            size="sm" 
+            className="flex-1 h-8 text-xs bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white" 
+            asChild
+          >
+            <a href={report.report_url} target="_blank" rel="noopener noreferrer">
+              <Pencil className="h-3 w-3 mr-1" />
+              Edit
+            </a>
+          </Button>
+        )}
+        {/* View - opens vendor view */}
+        {report.personalized_url && (
+          <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" asChild>
+            <a href={report.personalized_url} target="_blank" rel="noopener noreferrer">
+              <Eye className="h-3 w-3 mr-1" />
+              View
+            </a>
+          </Button>
+        )}
+        {/* Copy Link */}
         {report.personalized_url && (
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1 h-8 text-xs"
+            className="h-8 text-xs px-2"
             onClick={() => onCopyLink(report.personalized_url!)}
           >
-            <Copy className="h-3 w-3 mr-1" />
-            Copy Link
+            <Copy className="h-3 w-3" />
           </Button>
         )}
       </div>
