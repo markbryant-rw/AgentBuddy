@@ -249,9 +249,9 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                     {hasReport && <Check className="h-3.5 w-3.5 text-teal-600 mt-1" />}
                   </div>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent className="max-w-[200px] text-center">
                   {reportCreatedAt ? (
-                    <p>Created: {format(new Date(reportCreatedAt), 'MMM d, yyyy h:mm a')}</p>
+                    <p className="whitespace-normal">Created: {format(new Date(reportCreatedAt), 'MMM d, yyyy h:mm a')}</p>
                   ) : (
                     <p>Draft not yet created</p>
                   )}
