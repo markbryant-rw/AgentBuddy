@@ -41,8 +41,8 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   const emailOpens = appraisal.beacon_email_opens || 0;
   const isHotLead = appraisal.beacon_is_hot_lead || propensityScore >= 70;
   
-  // New fields for Draft/Sent status
-  const reportCreatedAt = appraisal.beacon_report_created_at;
+  // New fields for Draft/Sent status - fallback to beacon_synced_at for legacy reports
+  const reportCreatedAt = appraisal.beacon_report_created_at || appraisal.beacon_synced_at;
   const reportSentAt = appraisal.beacon_report_sent_at;
   const isDraft = hasReport && !reportSentAt;
   const isSent = hasReport && !!reportSentAt;
