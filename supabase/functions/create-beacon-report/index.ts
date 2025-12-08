@@ -54,7 +54,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { appraisalId, reportType = 'market_appraisal' } = await req.json();
+    const { appraisalId, reportType: rawReportType = 'market_appraisal' } = await req.json();
+    
+    // Validate reportType
+    const validReportTypes = ['market_appraisal', 'proposal', 'update'];
+    const reportType = validReportTypes.includes(rawReportType) ? rawReportType : 'market_appraisal';
+    
     console.log(`Creating Beacon report for appraisal: ${appraisalId}, type: ${reportType}`);
 
     // Fetch appraisal data
