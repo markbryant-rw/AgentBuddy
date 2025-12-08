@@ -230,11 +230,19 @@ Deno.serve(async (req) => {
         });
       }
 
+      console.log(`Creating ${events.length} transaction events for ${transaction.address}`);
+
       // Create all transaction events
       const results = [];
       for (const evt of events) {
+        console.log('Creating event:', evt.summary, 'on', evt.start);
         const result = await createOrUpdateCalendarEvent(accessToken, connection.calendar_id, evt);
-        if (result) results.push(result);
+        if (result) {
+          console.log('Event created successfully:', result.id);
+          results.push(result);
+        } else {
+          console.log('Event creation failed for:', evt.summary);
+        }
       }
 
       return new Response(JSON.stringify({ success: true, eventsCreated: results.length }), {
