@@ -189,6 +189,44 @@ export type Database = {
           },
         ]
       }
+      beacon_engagement_events: {
+        Row: {
+          appraisal_id: string
+          created_at: string | null
+          duration_seconds: number | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          occurred_at: string
+        }
+        Insert: {
+          appraisal_id: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          occurred_at: string
+        }
+        Update: {
+          appraisal_id?: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          occurred_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beacon_engagement_events_appraisal_id_fkey"
+            columns: ["appraisal_id"]
+            isOneToOne: false
+            referencedRelation: "logged_appraisals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bug_report_categories: {
         Row: {
           created_at: string | null
@@ -1682,7 +1720,9 @@ export type Database = {
           beacon_last_activity: string | null
           beacon_personalized_url: string | null
           beacon_propensity_score: number | null
+          beacon_report_created_at: string | null
           beacon_report_id: string | null
+          beacon_report_sent_at: string | null
           beacon_report_url: string | null
           beacon_synced_at: string | null
           beacon_total_time_seconds: number | null
@@ -1725,7 +1765,9 @@ export type Database = {
           beacon_last_activity?: string | null
           beacon_personalized_url?: string | null
           beacon_propensity_score?: number | null
+          beacon_report_created_at?: string | null
           beacon_report_id?: string | null
+          beacon_report_sent_at?: string | null
           beacon_report_url?: string | null
           beacon_synced_at?: string | null
           beacon_total_time_seconds?: number | null
@@ -1768,7 +1810,9 @@ export type Database = {
           beacon_last_activity?: string | null
           beacon_personalized_url?: string | null
           beacon_propensity_score?: number | null
+          beacon_report_created_at?: string | null
           beacon_report_id?: string | null
+          beacon_report_sent_at?: string | null
           beacon_report_url?: string | null
           beacon_synced_at?: string | null
           beacon_total_time_seconds?: number | null
