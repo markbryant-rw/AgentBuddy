@@ -1,16 +1,21 @@
-import { Calendar, Check, Loader2, Unlink } from 'lucide-react';
+import { Calendar, Check, Loader2, RefreshCw, Unlink } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useTeam } from '@/hooks/useTeam';
+import { format } from 'date-fns';
 
 export function GoogleCalendarCard() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const { team } = useTeam();
+  const [isSyncing, setIsSyncing] = useState(false);
   const {
     isConnected,
     isLoadingConnection,
@@ -22,7 +27,73 @@ export function GoogleCalendarCard() {
     isDisconnecting,
     updateSettings,
     isUpdatingSettings,
+    syncEvent,
   } = useGoogleCalendar();
+
+  // Manual sync function
+  const handleManualSync = async () => {
+    if (!team?.id) return;
+    
+    setIsSyncing(true);
+    let syncedCount = 0;
+    
+    try {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      
+      // Sync daily planner items (today and future)
+      if (settings?.sync_daily_planner) {
+        const { data: plannerItems } = await supabase
+          .from('daily_planner_items')
+          .select('*')
+          .eq('team_id', team.id)
+          .gte('date', today)
+          .eq('completed', false);
+        
+        for (const item of plannerItems || []) {
+          syncEvent({ type: 'planner', data: { ...item, scheduled_date: item.date } });
+          syncedCount++;
+        }
+      }
+      
+      // Sync appraisals (today and future)
+      if (settings?.sync_appraisals) {
+        const { data: appraisals } = await supabase
+          .from('logged_appraisals')
+          .select('*')
+          .eq('team_id', team.id)
+          .gte('appraisal_date', today);
+        
+        for (const appraisal of appraisals || []) {
+          syncEvent({ type: 'appraisal', data: appraisal });
+          syncedCount++;
+        }
+      }
+      
+      // Sync transactions with upcoming dates
+      if (settings?.sync_transactions) {
+        const { data: transactions } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('team_id', team.id)
+          .eq('archived', false);
+        
+        for (const transaction of transactions || []) {
+          // Only sync if has upcoming milestone dates
+          if (transaction.settlement_date || transaction.unconditional_date || transaction.listing_expires_date) {
+            syncEvent({ type: 'transaction', data: transaction });
+            syncedCount++;
+          }
+        }
+      }
+      
+      toast.success(`Synced ${syncedCount} items to Google Calendar`);
+    } catch (error) {
+      console.error('Manual sync failed:', error);
+      toast.error('Failed to sync some items');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // Handle OAuth callback result
   useEffect(() => {
@@ -161,9 +232,24 @@ export function GoogleCalendarCard() {
             )}
           </div>
           
-          <p className="text-xs text-muted-foreground">
-            Events sync one-way to a dedicated "AgentBuddy" calendar in your Google account.
-          </p>
+          <div className="flex items-center justify-between border-t pt-4">
+            <p className="text-xs text-muted-foreground">
+              Events sync one-way to a dedicated "AgentBuddy" calendar.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleManualSync}
+              disabled={isSyncing}
+            >
+              {isSyncing ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Sync Now
+            </Button>
+          </div>
         </CardContent>
       )}
     </Card>
