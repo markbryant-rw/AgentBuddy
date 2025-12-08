@@ -72,10 +72,11 @@ export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCa
           {isBeaconEnabled && latestAppraisal.beacon_report_id && (
             <BeaconStatusIndicator
               hasReport={!!latestAppraisal.beacon_report_id}
-              isSent={!!latestAppraisal.beacon_synced_at}
               viewCount={latestAppraisal.beacon_total_views || 0}
               propensityScore={latestAppraisal.beacon_propensity_score || 0}
               isHotLead={latestAppraisal.beacon_is_hot_lead || false}
+              reportCreatedAt={latestAppraisal.beacon_report_created_at || undefined}
+              reportSentAt={latestAppraisal.beacon_report_sent_at || undefined}
               compact
             />
           )}
