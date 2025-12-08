@@ -1,19 +1,33 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { LandingHero } from "@/components/landing/LandingHero";
-import { ProblemSolution } from "@/components/landing/ProblemSolution";
-import { FeatureHighlights } from "@/components/landing/FeatureHighlights";
-import { PricingCards } from "@/components/landing/PricingCards";
-import { ReferralBanner } from "@/components/landing/ReferralBanner";
-import { Testimonials } from "@/components/landing/Testimonials";
-import { CTASection } from "@/components/landing/CTASection";
-import { LandingFooter } from "@/components/landing/LandingFooter";
 import { LandingNav } from "@/components/landing/LandingNav";
+import { LandingFooter } from "@/components/landing/LandingFooter";
+import { LandingHeroNew } from "@/components/landing/LandingHeroNew";
+import { IntegrationSection } from "@/components/landing/IntegrationSection";
+import { AudiencePathsSection } from "@/components/landing/AudiencePathsSection";
+import { WorkspaceShowcase } from "@/components/landing/WorkspaceShowcase";
+import { PropertyJourney } from "@/components/landing/PropertyJourney";
+import { SocialProofNew } from "@/components/landing/SocialProofNew";
+import { BeaconFeature } from "@/components/landing/BeaconFeature";
+import { PricingSimple } from "@/components/landing/PricingSimple";
+import { FAQNew } from "@/components/landing/FAQNew";
+import { FinalCTANew } from "@/components/landing/FinalCTANew";
 
 const Landing = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.title = "AgentBuddy - Give Your Real Estate Business Superpowers";
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 
+        'AgentBuddy adds AI assistance, team coordination, and transaction tracking to your real estate workflow — without replacing your CRM. Start free today.'
+      );
+    }
+  }, []);
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
@@ -27,13 +41,16 @@ const Landing = () => {
       <LandingNav />
       
       <main>
-        <LandingHero />
-        <ProblemSolution />
-        <FeatureHighlights />
-        <PricingCards />
-        <ReferralBanner />
-        <Testimonials />
-        <CTASection />
+        <LandingHeroNew />
+        <IntegrationSection />
+        <AudiencePathsSection />
+        <WorkspaceShowcase />
+        <PropertyJourney />
+        <SocialProofNew />
+        <BeaconFeature />
+        <PricingSimple />
+        <FAQNew />
+        <FinalCTANew />
       </main>
       
       <LandingFooter />
