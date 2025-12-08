@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
   Activity, 
-  Building2, 
   Users2, 
   Users, 
   Settings,
@@ -16,6 +15,7 @@ import {
   CheckSquare,
   Shield
 } from 'lucide-react';
+import agentBuddyLogo from '@/assets/agentbuddy-logo.png';
 import { Button } from '@/components/ui/button';
 import { UserMenuDropdown } from '@/components/UserMenuDropdown';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -93,9 +93,11 @@ export const PlatformAdminLayout = () => {
             <SheetContent side="left" className="w-64 p-0">
               <div className="p-6 border-b bg-gradient-to-r from-primary/10 to-transparent">
                 <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                    <Building2 className="h-5 w-5 text-primary-foreground" />
-                  </div>
+                  <img 
+                    src={agentBuddyLogo} 
+                    alt="AgentBuddy" 
+                    className="h-8 w-8 rounded-lg"
+                  />
                   <div>
                     <h2 className="text-lg font-semibold">Platform Admin</h2>
                     <p className="text-xs text-muted-foreground">System Management</p>
@@ -110,9 +112,11 @@ export const PlatformAdminLayout = () => {
 
           {/* Logo & Title */}
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary/80 shadow-lg">
-              <Building2 className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <img 
+              src={agentBuddyLogo} 
+              alt="AgentBuddy" 
+              className="hidden md:block h-10 w-10 rounded-lg"
+            />
             <div>
               <h1 className="text-lg font-bold leading-none">Platform Administration</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">System-wide Management</p>
