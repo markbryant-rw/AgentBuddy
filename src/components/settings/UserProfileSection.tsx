@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useProfile } from "@/hooks/useProfile";
-import { Loader2, Upload, User, Mail, Calendar, Phone, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, Upload, User, Mail, Calendar, Phone, Lock, Eye, EyeOff, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +43,16 @@ export const UserProfileSection = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [copiedUserId, setCopiedUserId] = useState(false);
+
+  const handleCopyUserId = async () => {
+    if (profile?.id) {
+      await navigator.clipboard.writeText(profile.id);
+      setCopiedUserId(true);
+      toast.success("User ID copied to clipboard");
+      setTimeout(() => setCopiedUserId(false), 2000);
+    }
+  };
   
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || "",
@@ -305,6 +315,35 @@ export const UserProfileSection = () => {
             />
             <p className="text-xs text-muted-foreground">
               Contact support to change your email address
+            </p>
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <Label className="flex items-center gap-2 text-muted-foreground">
+              User ID
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={profile?.id || ""}
+                disabled
+                className="bg-muted font-mono text-xs"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleCopyUserId}
+                className="shrink-0"
+              >
+                {copiedUserId ? (
+                  <Check className="h-4 w-4 text-green-500" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your unique identifier for integrations
             </p>
           </div>
 
