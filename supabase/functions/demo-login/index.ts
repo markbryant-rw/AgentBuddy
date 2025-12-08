@@ -48,6 +48,55 @@ const FAKE_TEAM_MEMBERS = [
   },
 ];
 
+// Helper function to create fake team members
+async function ensureFakeTeamMembers(adminClient: any) {
+  console.log("Creating/updating fake team members...");
+  
+  for (const member of FAKE_TEAM_MEMBERS) {
+    // Create profile
+    const { error: profileError } = await adminClient.from("profiles").upsert({
+      id: member.id,
+      email: member.email,
+      full_name: member.full_name,
+      office_id: DEMO_AGENCY_ID,
+      primary_team_id: DEMO_TEAM_ID,
+      active_role: member.roles[0],
+      avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.avatar_seed}`,
+    }, { onConflict: "id" });
+    
+    if (profileError) {
+      console.error(`Profile error for ${member.full_name}:`, profileError);
+    } else {
+      console.log(`Profile created/updated for ${member.full_name}`);
+    }
+
+    // Add to team
+    const { error: teamMemberError } = await adminClient.from("team_members").upsert({
+      user_id: member.id,
+      team_id: DEMO_TEAM_ID,
+      access_level: member.access_level,
+    }, { onConflict: "user_id,team_id" });
+    
+    if (teamMemberError) {
+      console.error(`Team member error for ${member.full_name}:`, teamMemberError);
+    }
+
+    // Assign roles
+    for (const role of member.roles) {
+      const { error: roleError } = await adminClient.from("user_roles").upsert({
+        user_id: member.id,
+        role: role,
+      }, { onConflict: "user_id,role" });
+      
+      if (roleError) {
+        console.error(`Role error for ${member.full_name} (${role}):`, roleError);
+      }
+    }
+  }
+  
+  console.log("Fake team members setup complete");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -85,116 +134,119 @@ serve(async (req) => {
       userId = newUser.user.id;
 
       // Create demo agency
-      await adminClient.from("agencies").upsert({
+      const { error: agencyError } = await adminClient.from("agencies").upsert({
         id: DEMO_AGENCY_ID,
         name: "Auckland Premier Realty",
         slug: "auckland-premier-realty",
         created_by: userId,
-        is_demo: true,
         brand: "Ray White",
         brand_color: "#FFD100",
-      });
+      }, { onConflict: "id" });
+      
+      if (agencyError) console.error("Agency error:", agencyError);
 
       // Create demo team
-      await adminClient.from("teams").upsert({
+      const { error: teamError } = await adminClient.from("teams").upsert({
         id: DEMO_TEAM_ID,
         name: "Sales Stars",
         agency_id: DEMO_AGENCY_ID,
         created_by: userId,
-        is_demo: true,
-      });
+      }, { onConflict: "id" });
+      
+      if (teamError) console.error("Team error:", teamError);
 
-      // Create demo user profile
-      await adminClient.from("profiles").upsert({
+      // Create demo user profile with primary_team_id
+      const { error: profileError } = await adminClient.from("profiles").upsert({
         id: userId,
         email: DEMO_EMAIL,
         full_name: "Demo User",
         office_id: DEMO_AGENCY_ID,
+        primary_team_id: DEMO_TEAM_ID,
         active_role: "salesperson",
         avatar_url: "https://api.dicebear.com/7.x/avataaars/svg?seed=demo",
-      });
+      }, { onConflict: "id" });
+      
+      if (profileError) console.error("Profile error:", profileError);
 
       // Assign demo user to team
-      await adminClient.from("team_members").upsert({
+      const { error: teamMemberError } = await adminClient.from("team_members").upsert({
         user_id: userId,
         team_id: DEMO_TEAM_ID,
         access_level: "admin",
-      });
+      }, { onConflict: "user_id,team_id" });
+      
+      if (teamMemberError) console.error("Team member error:", teamMemberError);
 
       // Assign roles to demo user (salesperson, team_leader, office_manager for full testing)
-      await adminClient.from("user_roles").upsert([
+      const { error: rolesError } = await adminClient.from("user_roles").upsert([
         { user_id: userId, role: "salesperson" },
         { user_id: userId, role: "team_leader" },
         { user_id: userId, role: "office_manager" },
       ], { onConflict: "user_id,role" });
+      
+      if (rolesError) console.error("Roles error:", rolesError);
 
-      // Create fake team member profiles
-      console.log("Creating fake team members...");
-      for (const member of FAKE_TEAM_MEMBERS) {
-        // Create profile (no auth.users record - they can't log in)
-        await adminClient.from("profiles").upsert({
-          id: member.id,
-          email: member.email,
-          full_name: member.full_name,
-          office_id: DEMO_AGENCY_ID,
-          active_role: member.roles[0],
-          avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.avatar_seed}`,
-        });
-
-        // Add to team
-        await adminClient.from("team_members").upsert({
-          user_id: member.id,
-          team_id: DEMO_TEAM_ID,
-          access_level: member.access_level,
-        });
-
-        // Assign roles
-        for (const role of member.roles) {
-          await adminClient.from("user_roles").upsert({
-            user_id: member.id,
-            role: role,
-          }, { onConflict: "user_id,role" });
-        }
-      }
+      // Create fake team members
+      await ensureFakeTeamMembers(adminClient);
 
       // Seed demo data
       console.log("Seeding demo data...");
-      await adminClient.rpc("seed_demo_data", { p_demo_user_id: userId });
+      const { error: seedError } = await adminClient.rpc("seed_demo_data", { p_demo_user_id: userId });
+      if (seedError) {
+        console.error("Seed demo data error:", seedError);
+      } else {
+        console.log("Demo data seeded successfully");
+      }
     } else {
       userId = demoUser.id;
+      console.log("Demo user exists, ensuring setup is complete...");
+      
+      // Ensure demo user has primary_team_id set
+      const { error: profileUpdateError } = await adminClient.from("profiles").update({
+        primary_team_id: DEMO_TEAM_ID,
+        office_id: DEMO_AGENCY_ID,
+      }).eq("id", userId);
+      
+      if (profileUpdateError) {
+        console.error("Profile update error:", profileUpdateError);
+      } else {
+        console.log("Demo user profile updated with primary_team_id");
+      }
+      
+      // Ensure demo user is in team_members
+      const { error: teamMemberError } = await adminClient.from("team_members").upsert({
+        user_id: userId,
+        team_id: DEMO_TEAM_ID,
+        access_level: "admin",
+      }, { onConflict: "user_id,team_id" });
+      
+      if (teamMemberError) console.error("Team member upsert error:", teamMemberError);
       
       // Ensure fake team members exist
-      for (const member of FAKE_TEAM_MEMBERS) {
-        const { data: existingProfile } = await adminClient
-          .from("profiles")
-          .select("id")
-          .eq("id", member.id)
-          .single();
-          
-        if (!existingProfile) {
-          console.log(`Creating missing fake team member: ${member.full_name}`);
-          await adminClient.from("profiles").upsert({
-            id: member.id,
-            email: member.email,
-            full_name: member.full_name,
-            office_id: DEMO_AGENCY_ID,
-            active_role: member.roles[0],
-            avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.avatar_seed}`,
-          });
-
-          await adminClient.from("team_members").upsert({
-            user_id: member.id,
-            team_id: DEMO_TEAM_ID,
-            access_level: member.access_level,
-          });
-
-          for (const role of member.roles) {
-            await adminClient.from("user_roles").upsert({
-              user_id: member.id,
-              role: role,
-            }, { onConflict: "user_id,role" });
-          }
+      await ensureFakeTeamMembers(adminClient);
+      
+      // Check if demo data exists, seed if not
+      const { count: appraisalCount, error: countError } = await adminClient
+        .from("logged_appraisals")
+        .select("*", { count: "exact", head: true })
+        .eq("team_id", DEMO_TEAM_ID);
+      
+      if (countError) {
+        console.error("Count error:", countError);
+      }
+      
+      console.log(`Found ${appraisalCount || 0} appraisals for demo team`);
+      
+      if (!appraisalCount || appraisalCount === 0) {
+        console.log("No demo data found, seeding...");
+        const { error: seedError } = await adminClient.rpc("seed_demo_data", { p_demo_user_id: userId });
+        if (seedError) {
+          console.error("Seed demo data error:", seedError);
+        } else {
+          console.log("Demo data seeded successfully");
         }
+      } else {
+        console.log("Demo data already exists, skipping seed");
       }
     }
 
