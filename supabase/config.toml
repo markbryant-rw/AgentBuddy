@@ -203,3 +203,6 @@ verify_jwt = true
 
 [functions.sync-to-google-calendar]
 verify_jwt = true
+
+[functions.reset-demo-data]
+verify_jwt = false
