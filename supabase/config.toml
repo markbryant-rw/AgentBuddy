@@ -209,3 +209,9 @@ verify_jwt = true
 
 [functions.reset-demo-data]
 verify_jwt = false
+
+[functions.link-beacon-report]
+verify_jwt = true
+
+[functions.search-beacon-reports]
+verify_jwt = true

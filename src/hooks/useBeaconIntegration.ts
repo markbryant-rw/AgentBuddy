@@ -147,6 +147,53 @@ export const useBeaconIntegration = () => {
     },
   });
 
+  // Link an existing Beacon report to an appraisal
+  const linkBeaconReport = useMutation({
+    mutationFn: async ({ appraisalId, reportId, propertySlug, reportType }: { 
+      appraisalId: string; 
+      reportId?: string; 
+      propertySlug?: string;
+      reportType?: string;
+    }) => {
+      console.log('linkBeaconReport: Starting mutation', { appraisalId, reportId, propertySlug });
+      
+      const { data, error } = await supabase.functions.invoke('link-beacon-report', {
+        body: { appraisalId, reportId, propertySlug, reportType },
+      });
+
+      console.log('linkBeaconReport: Response', { data, error });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to link report');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logged_appraisals'] });
+      queryClient.invalidateQueries({ queryKey: ['beacon_reports'] });
+      toast.success('Beacon report linked successfully!');
+    },
+    onError: (error: Error) => {
+      console.error('Failed to link Beacon report:', error);
+      if (error.message.includes('not found')) {
+        toast.error('Report not found in Beacon');
+      } else {
+        toast.error('Failed to link Beacon report');
+      }
+    },
+  });
+
+  // Search for existing Beacon reports
+  const searchBeaconReports = async (params: { address?: string; ownerName?: string; ownerEmail?: string }) => {
+    console.log('searchBeaconReports:', params);
+    
+    const { data, error } = await supabase.functions.invoke('search-beacon-reports', {
+      body: params,
+    });
+
+    if (error) throw error;
+    return data?.reports || [];
+  };
+
   return {
     isBeaconEnabled,
     isLoadingSettings,
@@ -154,5 +201,8 @@ export const useBeaconIntegration = () => {
     toggleBeaconIntegration,
     createBeaconReport,
     isCreatingReport: createBeaconReport.isPending,
+    linkBeaconReport,
+    isLinkingReport: linkBeaconReport.isPending,
+    searchBeaconReports,
   };
 };
