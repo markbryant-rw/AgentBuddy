@@ -70,10 +70,7 @@ export const PropertyJourney = () => {
           </p>
         </motion.div>
 
-        {/* Journey timeline */}
         <div className="relative max-w-6xl mx-auto">
-          {/* Connection line */}
-          <div className="absolute top-24 left-0 right-0 h-0.5 bg-gradient-to-r from-teal-500 via-purple-500 to-pink-500 hidden lg:block" />
 
           {/* Steps */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
