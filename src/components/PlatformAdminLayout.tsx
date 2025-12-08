@@ -1,6 +1,7 @@
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
+import { AnimatedOutlet } from '@/components/AnimatedOutlet';
 import { cn } from '@/lib/utils';
 import { 
   LayoutDashboard, 
@@ -150,7 +151,7 @@ export const PlatformAdminLayout = () => {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          <AnimatedOutlet />
         </main>
       </div>
     </div>

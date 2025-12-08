@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, TrendingUp, UserCheck } from 'lucide-react';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
-import { Skeleton } from '@/components/ui/skeleton';
+import { WidgetSkeleton } from '@/components/ui/workspace-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,20 +10,7 @@ export const UsersManagementWidget = () => {
   const { data: stats, isLoading } = usePlatformStats();
 
   if (isLoading) {
-    return (
-      <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-500">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-white dark:from-blue-950/20 dark:to-background pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Users className="h-5 w-5 text-blue-600" />
-            Users
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-8 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton workspace="platform-admin" />;
   }
 
   const activePercentage = stats?.totalUsers 

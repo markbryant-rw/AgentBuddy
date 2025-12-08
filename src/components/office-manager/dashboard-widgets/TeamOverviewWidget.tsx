@@ -31,9 +31,9 @@ export const TeamOverviewWidget = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="space-y-2">
-            <div className="h-8 bg-muted animate-pulse rounded" />
-            <div className="h-4 bg-muted animate-pulse rounded w-2/3" />
+          <div className="space-y-3">
+            <div className="h-10 rounded bg-gradient-to-r from-teal-500/20 via-cyan-500/10 to-teal-500/5 animate-pulse skeleton-shimmer" />
+            <div className="h-10 rounded bg-gradient-to-r from-teal-500/20 via-cyan-500/10 to-teal-500/5 animate-pulse skeleton-shimmer" />
           </div>
         ) : (
           <>

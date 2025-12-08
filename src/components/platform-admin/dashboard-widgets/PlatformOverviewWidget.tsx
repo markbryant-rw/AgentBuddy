@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Users2, Users, TrendingUp } from 'lucide-react';
 import { usePlatformStats } from '@/hooks/usePlatformStats';
-import { Skeleton } from '@/components/ui/skeleton';
+import { WidgetSkeleton } from '@/components/ui/workspace-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,20 +10,7 @@ export const PlatformOverviewWidget = () => {
   const { data: stats, isLoading } = usePlatformStats();
 
   if (isLoading) {
-    return (
-      <Card className="cursor-pointer hover:shadow-lg transition-all duration-300 border-l-4 border-l-gradient-to-b from-purple-500 via-indigo-500 to-blue-500 lg:col-span-2">
-        <CardHeader className="bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 dark:from-purple-950/20 dark:via-indigo-950/20 dark:to-blue-950/20 pb-3">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Building2 className="h-5 w-5 text-purple-600" />
-            Platform Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Skeleton className="h-16 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </CardContent>
-      </Card>
-    );
+    return <WidgetSkeleton workspace="platform-admin" className="lg:col-span-2" rows={4} />;
   }
 
   const totalAgencies = stats?.totalAgencies || 0;

@@ -1,4 +1,5 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { AnimatedOutlet } from '@/components/AnimatedOutlet';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Building2, LayoutDashboard, Menu } from 'lucide-react';
@@ -87,7 +88,7 @@ export const OfficeManagerLayout = () => {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto">
           <div className="container mx-auto px-6 py-8">
-            <Outlet />
+            <AnimatedOutlet />
           </div>
         </main>
       </div>
