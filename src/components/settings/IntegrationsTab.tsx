@@ -2,12 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Home, Calendar, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Home, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
 import { useBeaconIntegration } from "@/hooks/useBeaconIntegration";
 import { useTeam } from "@/hooks/useTeam";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
+import { GoogleCalendarCard } from "./GoogleCalendarCard";
 
 const IntegrationsTab = () => {
   const { team } = useTeam();
@@ -37,6 +38,9 @@ const IntegrationsTab = () => {
           Connect external services to enhance your workflow
         </p>
       </div>
+
+      {/* Google Calendar Integration */}
+      <GoogleCalendarCard />
 
       {/* Beacon Integration Card */}
       <Card>
@@ -121,32 +125,6 @@ const IntegrationsTab = () => {
               </a>
             </Button>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Google Calendar Integration Card - Coming Soon */}
-      <Card className="opacity-60">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 text-white">
-                <Calendar className="h-5 w-5" />
-              </div>
-              <div>
-                <CardTitle className="text-lg">Google Calendar</CardTitle>
-                <CardDescription>
-                  Sync transaction dates to your calendar
-                </CardDescription>
-              </div>
-            </div>
-            <Badge variant="outline">Coming Soon</Badge>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Automatically sync key transaction dates, open homes, and appointments 
-            with your Google Calendar.
-          </p>
         </CardContent>
       </Card>
     </div>
