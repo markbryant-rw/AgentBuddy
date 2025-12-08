@@ -14,8 +14,7 @@ const floatingWorkspaces = [
 
 const trustBadges = [
   { icon: Sparkles, text: "Works with your existing CRM" },
-  { icon: Shield, text: "Free forever tier" },
-  { icon: CreditCard, text: "No credit card required" },
+  { icon: Shield, text: "Built for NZ real estate" },
 ];
 
 export const LandingHeroNew = () => {
@@ -105,15 +104,11 @@ export const LandingHeroNew = () => {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8"
             >
               <Link to="/auth?tab=signup">
-                <Button size="lg" className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/25 group">
-                  Start Free
-                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                <Button size="lg" className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/25 px-10 py-6 text-lg group">
+                  Enter AgentBuddy
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
-              <Button size="lg" variant="outline" className="group">
-                <Play className="mr-2 h-4 w-4" />
-                See how it works
-              </Button>
             </motion.div>
 
             {/* Trust badges */}

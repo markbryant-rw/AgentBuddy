@@ -54,34 +54,23 @@ export const FinalCTANew = () => {
 
           {/* Subheadline */}
           <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto">
-            Start free today. No credit card required. No commitment. 
-            Just a better way to work.
+            AI-powered workflows. Team coordination. Transaction tracking.
+            Everything you need to close more deals.
           </p>
 
-          {/* CTA buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-            <Link to="/auth?tab=signup">
-              <Button 
-                size="lg" 
-                className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/25 px-8 group"
-              >
-                Create My Free Account
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link to="/auth">
-              <Button size="lg" variant="outline" className="px-8">
-                Sign In
-              </Button>
-            </Link>
-          </div>
+          {/* Single CTA button */}
+          <Link to="/auth?tab=signup">
+            <Button 
+              size="lg" 
+              className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/25 px-12 py-6 text-lg group"
+            >
+              Enter AgentBuddy
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
 
           {/* Trust points */}
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Free forever tier
-            </span>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-muted-foreground mt-8">
             <span className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
               5-minute setup
