@@ -15,6 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useFeatureRequests } from "@/hooks/useFeatureRequests";
 import { ScreenshotLightbox } from "./ScreenshotLightbox";
 import { AIFeatureAnalysisPanel } from "./admin/AIFeatureAnalysisPanel";
+import { cn } from "@/lib/utils";
 
 interface FeatureRequestDetailDrawerProps {
   requestId: string;
@@ -184,6 +185,18 @@ export function FeatureRequestDetailDrawer({ requestId, open, onClose, isAdmin }
             <SheetTitle className="flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-indigo-500" />
               Feature Request Details
+              {/* Source Badge */}
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-xs ml-2",
+                  request.source === 'beacon' 
+                    ? "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-700" 
+                    : "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700"
+                )}
+              >
+                {request.source === 'beacon' ? '🅱️ Beacon' : '🅰️ AgentBuddy'}
+              </Badge>
             </SheetTitle>
             {isPlatformAdmin && (
               <Button

@@ -98,7 +98,7 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bug_reports')
-        .select('id, summary, description, expected_behaviour, steps_to_reproduce, severity, module, status, attachments, user_id, created_at, ai_analysis')
+        .select('id, summary, description, expected_behaviour, steps_to_reproduce, severity, module, status, attachments, user_id, created_at, ai_analysis, source')
         .eq('id', bugId)
         .single();
       
@@ -271,6 +271,18 @@ export function BugDetailDrawer({ bugId, open, onClose, isAdmin }: BugDetailDraw
           <SheetTitle className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-destructive" />
             Bug Report Details
+            {/* Source Badge */}
+            <Badge 
+              variant="outline" 
+              className={cn(
+                "text-xs ml-2",
+                bug.source === 'beacon' 
+                  ? "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-700" 
+                  : "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700"
+              )}
+            >
+              {bug.source === 'beacon' ? '🅱️ Beacon' : '🅰️ AgentBuddy'}
+            </Badge>
           </SheetTitle>
         </SheetHeader>
 

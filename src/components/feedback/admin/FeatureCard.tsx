@@ -16,6 +16,7 @@ interface FeatureRequest {
   created_at: string;
   user_id: string;
   module?: string;
+  source?: string;
   priority?: string;
   archived_reason?: string;
   attachments?: string[];
@@ -203,20 +204,36 @@ export const FeatureCard = ({ feature, onClick, onStatusChange }: FeatureCardPro
         {/* Description Preview */}
         <p className="text-xs text-muted-foreground line-clamp-2">{feature.description}</p>
 
-        {/* AI Effort Badge */}
-        {feature.ai_estimated_effort && (
-          <Badge variant="outline" className={cn("text-[10px] w-fit", effortColors[feature.ai_estimated_effort] || '')}>
-            <Rocket className="h-3 w-3 mr-1" />
-            {feature.ai_estimated_effort}
+        {/* Source + Effort + Module badges */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Source Badge */}
+          <Badge 
+            variant="outline" 
+            className={cn(
+              "text-[10px] px-1.5",
+              feature.source === 'beacon' 
+                ? "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-700" 
+                : "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700"
+            )}
+          >
+            {feature.source === 'beacon' ? '🅱️ Beacon' : '🅰️ AgentBuddy'}
           </Badge>
-        )}
 
-        {/* Module (only if meaningful) */}
-        {shouldShowModule(feature.module) && (
-          <Badge variant="secondary" className="text-[10px] w-fit">
-            {getModuleDisplay(feature.module)}
-          </Badge>
-        )}
+          {/* AI Effort Badge */}
+          {feature.ai_estimated_effort && (
+            <Badge variant="outline" className={cn("text-[10px]", effortColors[feature.ai_estimated_effort] || '')}>
+              <Rocket className="h-3 w-3 mr-1" />
+              {feature.ai_estimated_effort}
+            </Badge>
+          )}
+
+          {/* Module (only if meaningful) */}
+          {shouldShowModule(feature.module) && (
+            <Badge variant="secondary" className="text-[10px]">
+              {getModuleDisplay(feature.module)}
+            </Badge>
+          )}
+        </div>
 
         {/* Bottom: Reporter + Time + Votes */}
         <div className="flex items-center justify-between pt-1">

@@ -17,6 +17,7 @@ interface BugReport {
   created_at: string;
   user_id: string;
   module?: string;
+  source?: string;
   archived_reason?: string;
   attachments?: string[];
   ai_analysis?: any;
@@ -202,12 +203,28 @@ export const BugCard = ({ bug, onClick, onStatusChange }: BugCardProps) => {
         {/* Description Preview */}
         <p className="text-xs text-muted-foreground line-clamp-2">{bug.description}</p>
 
-        {/* Module (only if meaningful) */}
-        {shouldShowModule(bug.module) && (
-          <Badge variant="secondary" className="text-[10px] w-fit">
-            {getModuleDisplay(bug.module)}
+        {/* Source + Module badges */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {/* Source Badge */}
+          <Badge 
+            variant="outline" 
+            className={cn(
+              "text-[10px] px-1.5",
+              bug.source === 'beacon' 
+                ? "bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-700" 
+                : "bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700"
+            )}
+          >
+            {bug.source === 'beacon' ? '🅱️ Beacon' : '🅰️ AgentBuddy'}
           </Badge>
-        )}
+          
+          {/* Module (only if meaningful) */}
+          {shouldShowModule(bug.module) && (
+            <Badge variant="secondary" className="text-[10px]">
+              {getModuleDisplay(bug.module)}
+            </Badge>
+          )}
+        </div>
 
         {/* Bottom: Reporter + Time + Votes */}
         <div className="flex items-center justify-between pt-1">

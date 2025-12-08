@@ -1,5 +1,8 @@
 project_id = "mxsefnpxrnamupatgrlb"
 
+[functions.submit-external-feedback]
+verify_jwt = false
+
 [functions.analyze-bug-report]
 verify_jwt = true
 
