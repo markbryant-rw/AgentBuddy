@@ -85,11 +85,14 @@ Deno.serve(async (req) => {
     }
 
     // Call Beacon API to create report
-    console.log('Calling Beacon API:', `${beaconApiUrl}/create-report-from-agentbuddy`);
-    const beaconResponse = await fetch(`${beaconApiUrl}/create-report-from-agentbuddy`, {
+    const endpoint = `${beaconApiUrl}/create-report-from-agentbuddy`;
+    console.log('Calling Beacon API:', endpoint);
+    
+    const beaconResponse = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Environment': 'production', // Use production URLs
       },
       body: JSON.stringify({
         apiKey: beaconApiKey,
@@ -99,9 +102,7 @@ Deno.serve(async (req) => {
         ownerEmail: appraisal.vendor_email || '',
         ownerMobile: appraisal.vendor_mobile || '',
         externalLeadId: appraisalId,
-        specs: {},
-        highlights: [],
-        notes: appraisal.notes || '',
+        reportType: 'appraisal',
       }),
     });
 
