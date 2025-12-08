@@ -38,6 +38,9 @@ export const LandingHeroNew = () => {
           refresh_token: data.session.session.refresh_token,
         });
         
+        // Wait for auth state to stabilize and roles to load before navigating
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         toast.success("Welcome to Demo Mode! Explore freely - everything resets at midnight NZT.");
         navigate('/dashboard');
       } else {
