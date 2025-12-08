@@ -431,6 +431,7 @@ export type Database = {
           satisfaction_recorded_at: string | null
           satisfaction_requested_at: string | null
           severity: string | null
+          source: string
           status: string | null
           steps_to_reproduce: string | null
           summary: string | null
@@ -468,6 +469,7 @@ export type Database = {
           satisfaction_recorded_at?: string | null
           satisfaction_requested_at?: string | null
           severity?: string | null
+          source?: string
           status?: string | null
           steps_to_reproduce?: string | null
           summary?: string | null
@@ -505,6 +507,7 @@ export type Database = {
           satisfaction_recorded_at?: string | null
           satisfaction_requested_at?: string | null
           severity?: string | null
+          source?: string
           status?: string | null
           steps_to_reproduce?: string | null
           summary?: string | null
@@ -1052,6 +1055,7 @@ export type Database = {
           module: string | null
           position: number | null
           priority: string | null
+          source: string
           status: string | null
           team_id: string | null
           title: string
@@ -1074,6 +1078,7 @@ export type Database = {
           module?: string | null
           position?: number | null
           priority?: string | null
+          source?: string
           status?: string | null
           team_id?: string | null
           title: string
@@ -1096,6 +1101,7 @@ export type Database = {
           module?: string | null
           position?: number | null
           priority?: string | null
+          source?: string
           status?: string | null
           team_id?: string | null
           title?: string
