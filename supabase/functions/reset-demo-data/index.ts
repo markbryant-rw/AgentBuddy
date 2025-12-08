@@ -95,8 +95,8 @@ serve(async (req) => {
       }
     }
 
-    // Call the reset function
-    const { error } = await adminClient.rpc("reset_demo_data");
+    // Call the bulletproof reset function (now returns jsonb with detailed results)
+    const { data, error } = await adminClient.rpc("reset_demo_data");
 
     if (error) {
       console.error("Reset error:", error);
@@ -104,13 +104,14 @@ serve(async (req) => {
     }
 
     const duration = Date.now() - startTime;
-    console.log(`Demo data reset completed in ${duration}ms`);
+    console.log(`Demo data reset completed in ${duration}ms`, data);
 
     return new Response(
       JSON.stringify({
-        success: true,
+        success: data?.success ?? true,
         message: "Demo data reset successfully",
         duration_ms: duration,
+        details: data,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
