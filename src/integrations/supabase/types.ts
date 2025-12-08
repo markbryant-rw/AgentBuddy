@@ -231,7 +231,9 @@ export type Database = {
         Row: {
           appraisal_id: string
           beacon_report_id: string
+          campaign_started_at: string | null
           created_at: string
+          days_on_market: number | null
           email_opens: number | null
           first_viewed_at: string | null
           id: string
@@ -239,6 +241,9 @@ export type Database = {
           last_activity: string | null
           personalized_url: string | null
           propensity_score: number | null
+          proposal_accepted_at: string | null
+          proposal_decline_reason: string | null
+          proposal_declined_at: string | null
           report_type: string
           report_url: string | null
           sent_at: string | null
@@ -248,7 +253,9 @@ export type Database = {
         Insert: {
           appraisal_id: string
           beacon_report_id: string
+          campaign_started_at?: string | null
           created_at?: string
+          days_on_market?: number | null
           email_opens?: number | null
           first_viewed_at?: string | null
           id?: string
@@ -256,6 +263,9 @@ export type Database = {
           last_activity?: string | null
           personalized_url?: string | null
           propensity_score?: number | null
+          proposal_accepted_at?: string | null
+          proposal_decline_reason?: string | null
+          proposal_declined_at?: string | null
           report_type?: string
           report_url?: string | null
           sent_at?: string | null
@@ -265,7 +275,9 @@ export type Database = {
         Update: {
           appraisal_id?: string
           beacon_report_id?: string
+          campaign_started_at?: string | null
           created_at?: string
+          days_on_market?: number | null
           email_opens?: number | null
           first_viewed_at?: string | null
           id?: string
@@ -273,6 +285,9 @@ export type Database = {
           last_activity?: string | null
           personalized_url?: string | null
           propensity_score?: number | null
+          proposal_accepted_at?: string | null
+          proposal_decline_reason?: string | null
+          proposal_declined_at?: string | null
           report_type?: string
           report_url?: string | null
           sent_at?: string | null
