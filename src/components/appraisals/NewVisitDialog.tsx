@@ -64,8 +64,11 @@ export const NewVisitDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      <DialogContent 
+        className="sm:max-w-md z-[11002]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
@@ -104,7 +107,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="z-[100]">
+              <SelectContent>
                 <SelectItem value="VAP">
                   <div className="flex items-center gap-2">
                     VAP <StageInfoTooltip stage="VAP" />
@@ -136,7 +139,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent className="z-[100]">
+              <SelectContent>
                 <SelectItem value="low">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500" />
