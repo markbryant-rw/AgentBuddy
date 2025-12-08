@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     
     console.log(`Creating Beacon report for appraisal: ${appraisalId}, type: ${reportType}`);
 
-    // Fetch appraisal data
+    // Fetch appraisal data with team_id
     const { data: appraisal, error: appraisalError } = await supabase
       .from('logged_appraisals')
       .select('*')
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Beacon API to create report (always create new)
+    // Call Beacon API to create report as draft (no credit consumed until publish)
     const endpoint = `${beaconApiUrl}/create-report-from-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
@@ -97,6 +97,7 @@ Deno.serve(async (req) => {
         ownerMobile: appraisal.vendor_mobile || '',
         externalLeadId: appraisalId,
         reportType: reportType,
+        team_id: appraisal.team_id, // Pass team_id for credit-based billing
       }),
     });
 

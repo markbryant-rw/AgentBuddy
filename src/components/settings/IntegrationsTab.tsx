@@ -89,6 +89,12 @@ const IntegrationsTab = () => {
               <li>Propensity scoring to identify hot leads</li>
               <li>Automatic engagement notifications</li>
             </ul>
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm font-medium">$25/month includes 3 reports</p>
+              <p className="text-xs text-muted-foreground">
+                Credit packs from $2.50/report for more. Teams share credits across all members.
+              </p>
+            </div>
           </div>
 
           {isTeamAdmin ? (

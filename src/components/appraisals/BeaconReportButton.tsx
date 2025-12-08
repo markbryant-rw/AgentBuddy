@@ -75,7 +75,7 @@ export const BeaconReportButton = ({
     );
   }
 
-  // No report yet - show create button
+  // No report yet - show create button with credit info tooltip
   return (
     <Button
       variant="outline"
@@ -83,13 +83,14 @@ export const BeaconReportButton = ({
       onClick={handleCreateReport}
       disabled={isCreatingReport}
       className="gap-2"
+      title="Opens editor (free) - Publishing uses 1 credit"
     >
       {isCreatingReport ? (
         <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <FileText className="h-4 w-4" />
       )}
-      {!compact && (isCreatingReport ? "Creating..." : "Create Beacon Report")}
+      {!compact && (isCreatingReport ? "Creating..." : "Create Draft")}
     </Button>
   );
 };
