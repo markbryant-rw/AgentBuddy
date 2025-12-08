@@ -41,7 +41,7 @@ type DateRange = 'all' | 'week' | 'month' | 'year' | 'currentQuarter' | 'lastQua
 type ViewMode = 'property' | 'visit';
 
 const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsListProps) => {
-  const { updateAppraisal, deleteAppraisal, groupedAppraisals } = useLoggedAppraisals();
+  const { updateAppraisal, deleteAppraisal } = useLoggedAppraisals();
   const { members } = useTeamMembers();
   const { usesFinancialYear, fyStartMonth } = useFinancialYear();
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,9 +99,43 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
     });
   }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
 
-  // Filter grouped properties based on same criteria
+  // Create grouped properties from the filtered appraisals prop (respecting parent filter like hot leads)
   const filteredGroupedAppraisals = useMemo(() => {
-    return groupedAppraisals.filter(property => {
+    // Group the already-filtered appraisals by address
+    const addressMap = new Map<string, LoggedAppraisal[]>();
+    
+    appraisals.forEach(appraisal => {
+      const key = appraisal.address.toLowerCase().trim();
+      if (!addressMap.has(key)) {
+        addressMap.set(key, []);
+      }
+      addressMap.get(key)!.push(appraisal);
+    });
+    
+    // Convert to grouped properties format (matching GroupedProperty interface)
+    const grouped: GroupedProperty[] = [];
+    addressMap.forEach((visits, normalizedKey) => {
+      // Sort by date descending to get latest, ascending for first
+      const sortedVisits = [...visits].sort((a, b) => 
+        new Date(b.appraisal_date).getTime() - new Date(a.appraisal_date).getTime()
+      );
+      const firstVisitDate = sortedVisits[sortedVisits.length - 1].appraisal_date;
+      const latestDate = new Date(sortedVisits[0].appraisal_date);
+      const firstDate = new Date(firstVisitDate);
+      const durationMonths = Math.max(0, Math.round((latestDate.getTime() - firstDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+      
+      grouped.push({
+        normalizedAddress: normalizedKey,
+        latestAppraisal: sortedVisits[0],
+        visits: sortedVisits,
+        visitCount: sortedVisits.length,
+        firstVisitDate,
+        durationMonths,
+      });
+    });
+    
+    // Apply additional filters (search, stage, outcome, etc.)
+    return grouped.filter(property => {
       const appraisal = property.latestAppraisal;
       
       const matchesSearch = 
@@ -146,7 +180,7 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
 
       return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate && matchesAgent;
     });
-  }, [groupedAppraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
+  }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
 
   const toggleAgent = (agentId: string) => {
     const newSelected = new Set(selectedAgents);
