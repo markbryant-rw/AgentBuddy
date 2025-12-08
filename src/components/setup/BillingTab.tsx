@@ -1,12 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AlertTriangle } from 'lucide-react';
 import { SubscriptionOverview } from './SubscriptionOverview';
 import { PlanSelector } from './PlanSelector';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
 import { useSubscriptionCheckout } from '@/hooks/useSubscriptionCheckout';
 import { useQueryClient } from '@tanstack/react-query';
 import { PlanId } from '@/lib/stripe-plans';
+import { useDemoMode } from '@/hooks/useDemoMode';
+import { Card, CardContent } from '@/components/ui/card';
 
 export const BillingTab = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -14,6 +17,7 @@ export const BillingTab = () => {
   const { startCheckout } = useSubscriptionCheckout();
   const queryClient = useQueryClient();
   const autoCheckoutTriggered = useRef(false);
+  const { isDemoMode } = useDemoMode();
 
   // Handle success redirect from Stripe
   useEffect(() => {
@@ -34,6 +38,7 @@ export const BillingTab = () => {
   // Auto-trigger checkout if redirected from signup with a plan
   useEffect(() => {
     if (autoCheckoutTriggered.current) return;
+    if (isDemoMode) return; // Don't auto-checkout for demo users
     
     const autoCheckout = searchParams.get('auto_checkout') === 'true';
     const pendingPlan = localStorage.getItem('pending_plan') as PlanId | null;
@@ -52,7 +57,7 @@ export const BillingTab = () => {
       // Trigger checkout
       startCheckout(pendingPlan, isAnnual);
     }
-  }, [searchParams, setSearchParams, startCheckout]);
+  }, [searchParams, setSearchParams, startCheckout, isDemoMode]);
 
   if (isLoading) {
     return (
@@ -67,11 +72,31 @@ export const BillingTab = () => {
 
   return (
     <div className="space-y-6">
-      {/* Subscription Overview */}
-      <SubscriptionOverview canManage={true} />
+      {/* Demo Mode Warning */}
+      {isDemoMode && (
+        <Card className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <CardContent className="flex items-start gap-3 p-4">
+            <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-amber-800 dark:text-amber-200">
+                Demo Mode - Billing Disabled
+              </p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
+                You're using the demo sandbox. Billing and subscription management are simulated. 
+                Sign up for a real account to subscribe to a plan.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Plan Selector - always show for plan selection/changes */}
-      <PlanSelector currentPlan={subscription?.plan || ''} />
+      {/* Subscription Overview */}
+      <SubscriptionOverview canManage={!isDemoMode} />
+
+      {/* Plan Selector - disable for demo users */}
+      {!isDemoMode && (
+        <PlanSelector currentPlan={subscription?.plan || ''} />
+      )}
     </div>
   );
 };

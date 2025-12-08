@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isDemoEmail } from "../_shared/demoCheck.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,6 +46,20 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Return mock response for demo users - no external API call
+    if (isDemoEmail(user.email)) {
+      console.log('Demo user - skipping real Beacon team sync');
+      return new Response(
+        JSON.stringify({
+          success: true,
+          demo: true,
+          message: 'Team sync simulated in demo mode',
+          beaconTeamId: 'demo-beacon-team',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
