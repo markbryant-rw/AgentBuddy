@@ -59,7 +59,7 @@ export const PricingSimple = () => {
             Simple, honest pricing
           </h2>
           <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-6">
-            No hidden fees. No long-term contracts. Cancel anytime.
+            Invest in your business. Cancel anytime.
           </p>
           
           {/* Annual toggle */}
