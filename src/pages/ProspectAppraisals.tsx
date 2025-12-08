@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, Trash2, FileText } from 'lucide-react';
+import { Plus, Upload, Trash2, FileText, Flame } from 'lucide-react';
+import { Toggle } from '@/components/ui/toggle';
 import { useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { Link } from 'react-router-dom';
 import { useTeam } from '@/hooks/useTeam';
@@ -18,6 +19,21 @@ const ProspectAppraisals = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
+  const [showHotLeadsOnly, setShowHotLeadsOnly] = useState(false);
+
+  // Filter appraisals for hot leads
+  const filteredAppraisals = useMemo(() => {
+    if (!showHotLeadsOnly) return appraisals;
+    return appraisals.filter(a => 
+      a.beacon_is_hot_lead === true || (a.beacon_propensity_score && a.beacon_propensity_score >= 70)
+    );
+  }, [appraisals, showHotLeadsOnly]);
+
+  const hotLeadsCount = useMemo(() => {
+    return appraisals.filter(a => 
+      a.beacon_is_hot_lead === true || (a.beacon_propensity_score && a.beacon_propensity_score >= 70)
+    ).length;
+  }, [appraisals]);
 
   const handleAppraisalClick = (appraisal: LoggedAppraisal) => {
     setSelectedAppraisal(appraisal);
@@ -68,7 +84,27 @@ const ProspectAppraisals = () => {
                 </Link>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 items-center">
+              {/* Hot Leads Toggle */}
+              <Toggle
+                pressed={showHotLeadsOnly}
+                onPressedChange={setShowHotLeadsOnly}
+                variant="outline"
+                className={`gap-2 ${showHotLeadsOnly ? 'bg-orange-500/10 border-orange-500/50 text-orange-600' : ''}`}
+              >
+                <Flame className={`h-4 w-4 ${showHotLeadsOnly ? 'text-orange-500' : ''}`} />
+                Hot Leads
+                {hotLeadsCount > 0 && (
+                  <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                    showHotLeadsOnly 
+                      ? 'bg-orange-500 text-white' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    {hotLeadsCount}
+                  </span>
+                )}
+              </Toggle>
+
               <Button 
                 onClick={handleRemoveDuplicates} 
                 variant="outline"
@@ -90,7 +126,7 @@ const ProspectAppraisals = () => {
 
           {/* Appraisals List */}
           <AppraisalsList 
-            appraisals={appraisals}
+            appraisals={filteredAppraisals}
             loading={loading}
             onAppraisalClick={handleAppraisalClick}
           />
