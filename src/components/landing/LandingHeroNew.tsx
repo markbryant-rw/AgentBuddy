@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Sparkles, Shield, CreditCard } from "lucide-react";
+import { ArrowRight, Play, Sparkles, Shield, Gamepad2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const floatingWorkspaces = [
   { name: "Plan", emoji: "📋", gradient: "from-blue-500 to-indigo-600", delay: 0 },
@@ -18,6 +21,37 @@ const trustBadges = [
 ];
 
 export const LandingHeroNew = () => {
+  const navigate = useNavigate();
+  const [isDemoLoading, setIsDemoLoading] = useState(false);
+
+  const handleTryDemo = async () => {
+    setIsDemoLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('demo-login');
+      
+      if (error) throw error;
+      
+      if (data?.success && data?.session) {
+        // Set the session from the response
+        await supabase.auth.setSession({
+          access_token: data.session.session.access_token,
+          refresh_token: data.session.session.refresh_token,
+        });
+        
+        toast.success("Welcome to Demo Mode! Explore freely - everything resets at midnight NZT.");
+        navigate('/dashboard');
+      } else {
+        throw new Error(data?.error || 'Failed to start demo');
+      }
+    } catch (error: unknown) {
+      console.error('Demo login error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start demo';
+      toast.error(errorMessage);
+    } finally {
+      setIsDemoLoading(false);
+    }
+  };
+
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden pt-20">
       {/* Animated gradient background */}
@@ -103,9 +137,27 @@ export const LandingHeroNew = () => {
               transition={{ delay: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8"
             >
+              <Button 
+                size="lg" 
+                onClick={handleTryDemo}
+                disabled={isDemoLoading}
+                className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg shadow-amber-500/25 px-8 py-6 text-lg group"
+              >
+                {isDemoLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Starting Demo...
+                  </>
+                ) : (
+                  <>
+                    <Gamepad2 className="mr-2 h-5 w-5" />
+                    Try Demo
+                  </>
+                )}
+              </Button>
               <Link to="/auth?tab=signup">
-                <Button size="lg" className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white shadow-lg shadow-teal-500/25 px-10 py-6 text-lg group">
-                  Enter AgentBuddy
+                <Button size="lg" variant="outline" className="border-2 px-8 py-6 text-lg group">
+                  Get Started
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>

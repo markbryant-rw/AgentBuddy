@@ -20,10 +20,13 @@ import { PomodoroProvider } from '@/contexts/PomodoroContext';
 import { getWorkspaceItemsForActiveRole } from '@/lib/navigation';
 import { RoleModeBadge } from '@/components/RoleModeBadge';
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
+import { DemoBanner } from '@/components/demo/DemoBanner';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 const Layout = () => {
   const { roles, activeRole, loading } = useAuth();
   const location = useLocation();
+  const { isDemoMode } = useDemoMode();
   
   // Get workspace items, but ensure we have items during initial load
   // This prevents the navigation from being empty while auth is loading
@@ -131,6 +134,7 @@ const Layout = () => {
         "bg-background flex flex-col",
         isFullHeightPage ? "h-screen overflow-hidden" : "min-h-screen"
       )}>
+      {isDemoMode && <DemoBanner />}
       <ViewAsBanner />
       <ImpersonationAlertBanner />
       <nav className="sticky top-0 z-[100] border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
