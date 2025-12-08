@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { TransactionStage } from '@/hooks/useTransactions';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +13,7 @@ import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/lib/logger';
+import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
 
 interface CreateTransactionDialogProps {
   open: boolean;
@@ -208,24 +208,41 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
           {/* Property Details */}
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="address">Property Address *</Label>
-              <Input
-                id="address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="123 Main Street"
-                required
+              <Label>Property Address *</Label>
+              <GoogleAddressAutocomplete
+                placeholder="Start typing address..."
+                defaultValue=""
+                onSelect={(result: AddressResult) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    address: result.address,
+                    suburb: result.suburb || prev.suburb,
+                  }));
+                }}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="suburb">Suburb</Label>
-              <Input
-                id="suburb"
-                value={formData.suburb}
-                onChange={(e) => setFormData({ ...formData, suburb: e.target.value })}
-                placeholder="Auckland Central"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="address">Address *</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="123 Main Street"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="suburb">Suburb</Label>
+                <Input
+                  id="suburb"
+                  value={formData.suburb}
+                  onChange={(e) => setFormData({ ...formData, suburb: e.target.value })}
+                  placeholder="Auckland Central"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
