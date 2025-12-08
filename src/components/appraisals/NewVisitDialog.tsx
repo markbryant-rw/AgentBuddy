@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
-  SelectContent,
+  SelectContentInline,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -64,11 +64,8 @@ export const NewVisitDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-      <DialogContent 
-        className="sm:max-w-md z-[11002]"
-        onPointerDownOutside={(e) => e.preventDefault()}
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-5 w-5" />
@@ -107,7 +104,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContentInline>
                 <SelectItem value="VAP">
                   <div className="flex items-center gap-2">
                     VAP <StageInfoTooltip stage="VAP" />
@@ -123,7 +120,7 @@ export const NewVisitDialog = ({
                     LAP <StageInfoTooltip stage="LAP" />
                   </div>
                 </SelectItem>
-              </SelectContent>
+              </SelectContentInline>
             </Select>
           </div>
 
@@ -139,7 +136,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContentInline>
                 <SelectItem value="low">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500" />
@@ -158,7 +155,7 @@ export const NewVisitDialog = ({
                     High
                   </span>
                 </SelectItem>
-              </SelectContent>
+              </SelectContentInline>
             </Select>
           </div>
         </div>

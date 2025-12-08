@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
-  SelectContent,
+  SelectContentInline,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -93,11 +93,8 @@ const ConvertToOpportunityDialog = ({
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
-      <DialogContent 
-        className="z-[11002]"
-        onPointerDownOutside={(e) => e.preventDefault()}
-      >
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Convert to Opportunity</DialogTitle>
           <DialogDescription>
@@ -128,13 +125,13 @@ const ConvertToOpportunityDialog = ({
                 <SelectTrigger>
                   <SelectValue placeholder="Select month" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContentInline>
                   {monthOptions.map((option) => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
                     </SelectItem>
                   ))}
-                </SelectContent>
+                </SelectContentInline>
               </Select>
             </div>
 
@@ -149,12 +146,12 @@ const ConvertToOpportunityDialog = ({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContentInline>
                   <SelectItem value="call">Call - Initial Contact</SelectItem>
                   <SelectItem value="vap">VAP - Vendor Appraisal</SelectItem>
                   <SelectItem value="map">MAP - Marketing Appraisal</SelectItem>
                   <SelectItem value="lap">LAP - Listing Appointment</SelectItem>
-                </SelectContent>
+                </SelectContentInline>
               </Select>
             </div>
 
