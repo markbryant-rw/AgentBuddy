@@ -84,21 +84,50 @@ const ProspectAppraisals = () => {
                 </Link>
               </div>
             </div>
-            <div className="flex gap-3 items-center">
-              {/* Hot Leads Toggle */}
+            <div className="flex gap-2 items-center">
+              {/* Utility buttons - smaller, less prominent */}
+              <Button 
+                onClick={handleRemoveDuplicates} 
+                variant="ghost"
+                size="sm"
+                disabled={isRemovingDuplicates}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1.5 text-xs">
+                  {isRemovingDuplicates ? 'Removing...' : 'Duplicates'}
+                </span>
+              </Button>
+              
+              <Button 
+                onClick={() => setIsImportDialogOpen(true)}
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Upload className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1.5 text-xs">Import</span>
+              </Button>
+
+              <div className="w-px h-6 bg-border mx-1" />
+
+              {/* Primary actions - prominent */}
               <Toggle
                 pressed={showHotLeadsOnly}
                 onPressedChange={setShowHotLeadsOnly}
-                variant="outline"
-                className={`gap-2 ${showHotLeadsOnly ? 'bg-orange-500/10 border-orange-500/50 text-orange-600' : ''}`}
+                className={`gap-2 px-4 py-2 h-10 font-medium transition-all ${
+                  showHotLeadsOnly 
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white border-orange-500 shadow-lg shadow-orange-500/25' 
+                    : 'bg-orange-500/10 border-orange-200 text-orange-600 hover:bg-orange-500/20'
+                }`}
               >
-                <Flame className={`h-4 w-4 ${showHotLeadsOnly ? 'text-orange-500' : ''}`} />
+                <Flame className={`h-4 w-4 ${showHotLeadsOnly ? 'animate-pulse' : ''}`} />
                 Hot Leads
                 {hotLeadsCount > 0 && (
-                  <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${
+                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
                     showHotLeadsOnly 
-                      ? 'bg-orange-500 text-white' 
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-white/20 text-white' 
+                      : 'bg-orange-500 text-white'
                   }`}>
                     {hotLeadsCount}
                   </span>
@@ -106,20 +135,11 @@ const ProspectAppraisals = () => {
               </Toggle>
 
               <Button 
-                onClick={handleRemoveDuplicates} 
-                variant="outline"
-                disabled={isRemovingDuplicates}
+                onClick={handleAddAppraisal} 
+                className="gap-2 px-5 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium shadow-lg shadow-teal-500/25"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {isRemovingDuplicates ? 'Removing...' : 'Remove Duplicates'}
-              </Button>
-              <Button onClick={handleAddAppraisal} variant="secondary">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4" />
                 Log Appraisal
-              </Button>
-              <Button onClick={() => setIsImportDialogOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Import
               </Button>
             </div>
           </div>
