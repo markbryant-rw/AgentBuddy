@@ -562,21 +562,6 @@ const AppraisalDetailDialog = ({
                     <label htmlFor="sync-contacts" className="text-sm font-medium leading-none">Sync contact details to all {allVisitsAtAddress.length} visits at this address</label>
                   </div>
                 )}
-
-                {/* Beacon Engagement Panel */}
-                {appraisal.beacon_report_url && (
-                  <BeaconEngagementPanel
-                    beaconReportUrl={appraisal.beacon_report_url}
-                    beaconPersonalizedUrl={appraisal.beacon_personalized_url}
-                    propensityScore={appraisal.beacon_propensity_score || 0}
-                    totalViews={appraisal.beacon_total_views || 0}
-                    totalTimeSeconds={appraisal.beacon_total_time_seconds || 0}
-                    emailOpens={appraisal.beacon_email_opens || 0}
-                    isHotLead={appraisal.beacon_is_hot_lead || false}
-                    lastActivity={appraisal.beacon_last_activity}
-                    firstViewedAt={appraisal.beacon_first_viewed_at}
-                  />
-                )}
               </TabsContent>
 
               {/* Tasks Tab */}
