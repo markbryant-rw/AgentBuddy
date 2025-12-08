@@ -33,7 +33,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { agencies, loading: agenciesLoading } = useAgencies();
   
-  const selectedPlan = searchParams.get('plan');
+  const selectedPlan = searchParams.get('plan') as 'solo' | 'team' | null;
+  const selectedBilling = searchParams.get('billing') as 'monthly' | 'annual' | null;
   const defaultTab = searchParams.get('tab') || 'signin';
   
   // Multi-step signup state
@@ -384,11 +385,16 @@ const Auth = () => {
           description: successMessage,
         });
 
+        // If user selected a plan from landing page, redirect to billing
         if (selectedPlan) {
-          localStorage.setItem('selected_plan', selectedPlan);
+          localStorage.setItem('pending_plan', selectedPlan);
+          if (selectedBilling) {
+            localStorage.setItem('pending_billing', selectedBilling);
+          }
+          navigate('/setup?tab=billing&auto_checkout=true');
+        } else {
+          navigate('/dashboard');
         }
-
-        navigate('/dashboard');
       }
     } catch (err: any) {
       toast({
