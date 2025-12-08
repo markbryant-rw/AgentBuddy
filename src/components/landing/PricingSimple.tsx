@@ -4,13 +4,11 @@ import { Check, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { STRIPE_PLANS } from "@/lib/stripe-plans";
 
 const plans = [
   {
-    name: "Solo Agent",
-    monthlyPrice: 49.99,
-    annualPrice: 499.90, // 10 months = 2 months free
-    description: "Everything you need as an individual agent",
+    ...STRIPE_PLANS.solo,
     features: [
       "Single user license",
       "Full appraisal pipeline",
@@ -24,10 +22,7 @@ const plans = [
     gradient: "from-teal-500 to-cyan-500",
   },
   {
-    name: "Small Team",
-    monthlyPrice: 99.99,
-    annualPrice: 999.90, // 10 months = 2 months free
-    description: "Perfect for agents with a team",
+    ...STRIPE_PLANS.team,
     features: [
       "Up to 3 team members",
       "Full appraisal pipeline",
@@ -109,7 +104,7 @@ export const PricingSimple = () => {
                   <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className={`text-4xl font-bold bg-gradient-to-r ${plan.gradient} bg-clip-text text-transparent`}>
-                      ${isAnnual ? plan.annualPrice.toFixed(2) : plan.monthlyPrice.toFixed(2)}
+                      ${isAnnual ? plan.amountAnnual.toFixed(2) : plan.amountMonthly.toFixed(2)}
                     </span>
                     <span className="text-muted-foreground">
                       {isAnnual ? "/year" : "/month"}
@@ -117,7 +112,7 @@ export const PricingSimple = () => {
                   </div>
                   {isAnnual && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      (${(plan.annualPrice / 12).toFixed(2)}/month)
+                      (${(plan.amountAnnual / 12).toFixed(2)}/month)
                     </p>
                   )}
                 </div>
@@ -134,8 +129,11 @@ export const PricingSimple = () => {
                   ))}
                 </ul>
 
-                {/* CTA */}
-                <Link to="/auth?tab=signup" className="block">
+                {/* CTA - passes plan and billing to signup */}
+                <Link 
+                  to={`/auth?tab=signup&plan=${plan.id}&billing=${isAnnual ? 'annual' : 'monthly'}`} 
+                  className="block"
+                >
                   <Button
                     className={`w-full ${
                       plan.popular

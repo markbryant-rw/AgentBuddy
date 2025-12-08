@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Check, Zap, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { STRIPE_PLANS, PlanId } from '@/lib/stripe-plans';
 import { useSubscriptionCheckout } from '@/hooks/useSubscriptionCheckout';
 
@@ -13,28 +13,21 @@ interface PlanSelectorProps {
 }
 
 const planFeatures: Record<PlanId, string[]> = {
-  starter: [
-    'Hub dashboard',
-    'Task Manager',
-    'Messages (text only)',
-    'KPI Tracker',
-    '1 Agent + 1 VA seat',
+  solo: [
+    'Single user license',
+    'Full appraisal pipeline',
+    'Transaction management',
+    'All 6 workspaces',
+    'AI credits included',
+    'Email support',
   ],
-  basic: [
-    'All Starter features',
-    'File sharing in messages',
-    'Vendor Reporting',
-    'Listing Pipeline',
-    '500 AI credits/month',
-    'Unlimited team members',
-  ],
-  professional: [
-    'All Basic features',
-    'Coaches Corner (AI coaching)',
-    'CMA Generator',
-    'AI Listing Descriptions',
-    'Knowledge Base',
-    '2,000 AI credits/month',
+  team: [
+    'Up to 3 team members',
+    'Full appraisal pipeline',
+    'Transaction management',
+    'All 6 workspaces',
+    'AI credits included',
+    'Team dashboards',
     'Priority support',
   ],
 };
@@ -50,15 +43,15 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
     setLoadingPlan(null);
   };
 
-  const plans: PlanId[] = ['starter', 'basic', 'professional'];
+  const plans: PlanId[] = ['solo', 'team'];
 
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Upgrade Your Plan</CardTitle>
-            <CardDescription>Choose the plan that best fits your needs</CardDescription>
+            <CardTitle>Choose Your Plan</CardTitle>
+            <CardDescription>Select the plan that best fits your needs</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Label htmlFor="billing-toggle" className={!isAnnual ? 'font-semibold' : 'text-muted-foreground'}>
@@ -70,19 +63,19 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
               onCheckedChange={setIsAnnual}
             />
             <Label htmlFor="billing-toggle" className={isAnnual ? 'font-semibold' : 'text-muted-foreground'}>
-              Annual <span className="text-primary text-xs">(Save 20%)</span>
+              Annual <span className="text-emerald-600 text-xs">(2 months free!)</span>
             </Label>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {plans.map((planId) => {
             const plan = STRIPE_PLANS[planId];
             const features = planFeatures[planId];
-            const isCurrent = currentPlan === planId || (currentPlan === 'free' && planId === 'starter');
-            const isPopular = planId === 'professional';
-            const price = isAnnual ? plan.amountAnnual / 12 : plan.amountMonthly;
+            const isCurrent = currentPlan === planId;
+            const isPopular = planId === 'team';
+            const price = isAnnual ? plan.amountAnnual : plan.amountMonthly;
             const isLoadingThis = loadingPlan === planId;
 
             return (
@@ -105,40 +98,35 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
 
                 <div className="text-center mb-4 pt-2">
                   <h3 className="font-semibold text-lg">{plan.name}</h3>
+                  <p className="text-sm text-muted-foreground mb-2">{plan.description}</p>
                   <div className="flex items-baseline justify-center gap-1 mt-2">
                     <span className="text-3xl font-bold">
-                      ${price.toFixed(price % 1 === 0 ? 0 : 2)}
+                      ${price.toFixed(2)}
                     </span>
                     <span className="text-muted-foreground text-sm">
-                      {plan.amountMonthly > 0 ? '/mo' : ''}
+                      /{isAnnual ? 'year' : 'month'}
                     </span>
                   </div>
-                  {plan.aiCredits > 0 && (
-                    <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
-                      <Zap className="h-3 w-3 text-primary" />
-                      {plan.aiCredits.toLocaleString()} AI credits/mo
+                  {isAnnual && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      (${(plan.amountAnnual / 12).toFixed(2)}/month)
                     </p>
                   )}
                 </div>
 
                 <ul className="space-y-2 mb-4 text-sm">
-                  {features.slice(0, 5).map((feature) => (
+                  {features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2">
                       <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       <span>{feature}</span>
                     </li>
                   ))}
-                  {features.length > 5 && (
-                    <li className="text-muted-foreground text-xs">
-                      +{features.length - 5} more features
-                    </li>
-                  )}
                 </ul>
 
                 <Button
                   className="w-full"
                   variant={isCurrent ? 'outline' : isPopular ? 'default' : 'outline'}
-                  disabled={isCurrent || isLoading || planId === 'starter'}
+                  disabled={isCurrent || isLoading}
                   onClick={() => handleUpgrade(planId)}
                 >
                   {isLoadingThis ? (
@@ -148,10 +136,8 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
                     </>
                   ) : isCurrent ? (
                     'Current Plan'
-                  ) : planId === 'starter' ? (
-                    'Free'
                   ) : (
-                    'Upgrade'
+                    'Select Plan'
                   )}
                 </Button>
               </div>

@@ -1,20 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Calendar, TrendingUp, Shield, Settings, Loader2 } from 'lucide-react';
+import { CreditCard, Calendar, TrendingUp, Settings, Loader2 } from 'lucide-react';
 import { useUserSubscription, SubscriptionPlan } from '@/hooks/useUserSubscription';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
 import { useCustomerPortal } from '@/hooks/useCustomerPortal';
 import { STRIPE_PLANS } from '@/lib/stripe-plans';
+
 interface SubscriptionOverviewProps {
   canManage: boolean;
 }
 
 export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) => {
   const { subscription, isLoading } = useUserSubscription();
-  const navigate = useNavigate();
   const { openPortal, isLoading: portalLoading } = useCustomerPortal();
+  
   if (isLoading) {
     return (
       <Card>
@@ -31,12 +31,11 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
   if (!subscription) return null;
 
   const getPlanBadge = () => {
-    const badges: Record<SubscriptionPlan, { label: string; variant: 'secondary' | 'default'; icon: typeof Shield }> = {
-      starter: { label: 'Starter (Free)', variant: 'secondary', icon: Shield },
-      basic: { label: 'Basic', variant: 'default', icon: CreditCard },
-      professional: { label: 'Professional', variant: 'default', icon: TrendingUp },
+    const badges: Record<SubscriptionPlan, { label: string; variant: 'secondary' | 'default'; icon: typeof CreditCard }> = {
+      solo: { label: 'Solo Agent', variant: 'default', icon: CreditCard },
+      team: { label: 'Small Team', variant: 'default', icon: TrendingUp },
     };
-    return badges[subscription.plan];
+    return badges[subscription.plan] || { label: 'No Plan', variant: 'secondary' as const, icon: CreditCard };
   };
 
   const badge = getPlanBadge();
@@ -114,36 +113,26 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
         )}
 
         {/* Action Buttons */}
-        {canManage && (
+        {canManage && subscription.plan && (
           <div className="flex gap-2 pt-2">
-            {subscription.plan === 'starter' && (
-              <Button 
-                className="flex-1"
-                onClick={() => navigate('/pricing')}
-              >
-                Upgrade Plan
-              </Button>
-            )}
-            {subscription.plan !== 'starter' && (
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={openPortal}
-                disabled={portalLoading}
-              >
-                {portalLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Loading...
-                  </>
-                ) : (
-                  <>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Manage Subscription
-                  </>
-                )}
-              </Button>
-            )}
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={openPortal}
+              disabled={portalLoading}
+            >
+              {portalLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage Subscription
+                </>
+              )}
+            </Button>
           </div>
         )}
 

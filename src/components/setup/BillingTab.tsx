@@ -40,10 +40,8 @@ export const BillingTab = () => {
       {/* Subscription Overview */}
       <SubscriptionOverview canManage={true} />
 
-      {/* Plan Selector - only show if not on Professional */}
-      {subscription?.plan !== 'professional' && (
-        <PlanSelector currentPlan={subscription?.plan || 'starter'} />
-      )}
+      {/* Plan Selector - always show for plan selection/changes */}
+      <PlanSelector currentPlan={subscription?.plan || ''} />
     </div>
   );
 };

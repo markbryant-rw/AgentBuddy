@@ -55,8 +55,8 @@ export function AIActionsMenu({ noteId, onContentUpdate, asDropdownItems = false
   };
 
   const currentUsage = usageData || 0;
-  const dailyLimit = limits[subscription?.plan || 'starter'];
-  const isPremium = subscription?.plan !== 'starter';
+  const dailyLimit = limits[subscription?.plan || 'solo'] || limits.solo;
+  const isPremium = !!subscription?.plan;
 
   const handleAIAction = async (action: string, requiresPremium = false) => {
     if (isGenerating) return;
