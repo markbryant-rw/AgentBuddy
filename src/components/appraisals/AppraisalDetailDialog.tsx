@@ -33,7 +33,8 @@ import { VisitTimeline } from './VisitTimeline';
 import { AppraisalTasksTab } from './AppraisalTasksTab';
 import { BeaconReportButton } from './BeaconReportButton';
 import { BeaconEngagementPanel } from './BeaconEngagementPanel';
-import { Trash2, Plus, ListTodo, FileText, TrendingUp } from "lucide-react";
+import { BeaconTab } from './BeaconTab';
+import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity } from "lucide-react";
 import { StageInfoTooltip } from './StageInfoTooltip';
 import {
   AlertDialog,
@@ -319,7 +320,7 @@ const AppraisalDetailDialog = ({
           {/* Tabs for existing appraisals */}
           {!isNew && appraisal ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="details" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Details
@@ -331,6 +332,10 @@ const AppraisalDetailDialog = ({
                 <TabsTrigger value="tasks" className="flex items-center gap-2">
                   <ListTodo className="h-4 w-4" />
                   Tasks
+                </TabsTrigger>
+                <TabsTrigger value="beacon" className="flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Beacon
                 </TabsTrigger>
               </TabsList>
 
@@ -552,6 +557,11 @@ const AppraisalDetailDialog = ({
                   stage={(formData.stage || appraisal.stage || 'VAP') as AppraisalStage}
                   agentId={formData.agent_id || appraisal.agent_id || undefined}
                 />
+              </TabsContent>
+
+              {/* Beacon Tab */}
+              <TabsContent value="beacon" className="mt-4">
+                <BeaconTab appraisal={appraisal} />
               </TabsContent>
             </Tabs>
           ) : (
