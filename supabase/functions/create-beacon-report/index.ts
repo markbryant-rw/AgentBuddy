@@ -103,6 +103,7 @@ Deno.serve(async (req) => {
         apiKey: beaconApiKey,
         agentEmail: user.email,
         address: appraisal.address,
+        suburb: appraisal.suburb || '',
         ownerName: appraisal.vendor_name || 'Property Owner',
         ownerEmail: appraisal.vendor_email || '',
         ownerMobile: appraisal.vendor_mobile || '',
