@@ -5,53 +5,39 @@ import { Button } from "@/components/ui/button";
 
 const plans = [
   {
-    name: "Free Forever",
-    price: "$0",
-    period: "forever",
-    description: "Perfect for getting started",
-    features: [
-      "Up to 3 team members",
-      "Basic appraisal tracking",
-      "Daily planner",
-      "10 AI credits/month",
-      "Community support",
-    ],
-    cta: "Start Free",
-    popular: false,
-    gradient: "from-gray-500 to-gray-600",
-  },
-  {
-    name: "Basic",
-    price: "$9.99",
+    name: "Solo Agent",
+    price: "$49.99",
     period: "/month",
-    description: "For growing agents & small teams",
+    description: "Everything you need as an individual agent",
     features: [
-      "Up to 10 team members",
+      "Single user license",
       "Full appraisal pipeline",
       "Transaction management",
-      "100 AI credits/month",
+      "All 6 workspaces",
+      "AI credits included",
       "Beacon integration",
       "Email support",
     ],
-    cta: "Get Basic",
+    cta: "Get Started",
     popular: false,
     gradient: "from-teal-500 to-cyan-500",
   },
   {
-    name: "Professional",
-    price: "$29",
+    name: "Small Team",
+    price: "$99.99",
     period: "/month",
-    description: "Full power for agencies",
+    description: "Perfect for agents with a team",
     features: [
-      "Unlimited team members",
-      "All workspaces unlocked",
-      "Unlimited AI credits",
-      "Advanced analytics",
-      "Custom templates",
+      "Up to 3 team members",
+      "Full appraisal pipeline",
+      "Transaction management",
+      "All 6 workspaces",
+      "AI credits included",
+      "Beacon integration",
+      "Team dashboards",
       "Priority support",
-      "API access",
     ],
-    cta: "Go Pro",
+    cta: "Start with Team",
     popular: true,
     gradient: "from-purple-500 to-violet-600",
   },
@@ -75,7 +61,7 @@ export const PricingSimple = () => {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -149,7 +135,7 @@ export const PricingSimple = () => {
           transition={{ delay: 0.4 }}
           className="text-center text-sm text-muted-foreground mt-8"
         >
-          All prices in NZD. Annual billing saves 20%. Cancel anytime.
+          All prices in NZD. Cancel anytime.
         </motion.p>
       </div>
     </section>
