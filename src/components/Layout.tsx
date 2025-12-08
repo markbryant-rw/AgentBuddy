@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet, Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouteRoleSync } from '@/hooks/useRouteRoleSync';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Home } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/NotificationBell';
 import { TaskNotificationBell } from '@/components/layout/TaskNotificationBell';
+import { AnimatedOutlet } from '@/components/AnimatedOutlet';
 import { MessagesDropdown } from '@/components/MessagesDropdown';
 import { UserMenuDropdown } from '@/components/UserMenuDropdown';
 import { MobileMoreMenu } from '@/components/MobileMoreMenu';
@@ -203,7 +204,7 @@ const Layout = () => {
           : "px-4 md:px-6",
         !isFullHeightPage && location.pathname !== '/messages' && 'py-8 pb-20 md:pb-8'
       )}>
-        <Outlet />
+        <AnimatedOutlet />
       </main>
 
       {/* Floating Feedback Button */}

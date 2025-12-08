@@ -1,6 +1,6 @@
 import { Card } from '@/components/ui/card';
 import { Home, TrendingUp, Clock } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ActivitySkeleton } from '@/components/ui/workspace-skeleton';
 
 export const StockOverviewWidget = () => {
   // Placeholder data - will be implemented with proper queries
@@ -8,12 +8,7 @@ export const StockOverviewWidget = () => {
   const isLoading = false;
 
   if (isLoading) {
-    return (
-      <Card className="p-6">
-        <Skeleton className="h-8 w-32 mb-4" />
-        <Skeleton className="h-16 w-full" />
-      </Card>
-    );
+    return <ActivitySkeleton workspace="office-manager" />;
   }
 
   return (

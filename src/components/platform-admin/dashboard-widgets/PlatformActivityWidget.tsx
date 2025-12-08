@@ -2,7 +2,7 @@ import { Card } from '@/components/ui/card';
 import { Activity, Users, MessageSquare, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ActivitySkeleton } from '@/components/ui/workspace-skeleton';
 
 export const PlatformActivityWidget = () => {
   const { data: activity, isLoading } = useQuery({
@@ -24,12 +24,7 @@ export const PlatformActivityWidget = () => {
   });
 
   if (isLoading) {
-    return (
-      <Card className="p-6">
-        <Skeleton className="h-8 w-32 mb-4" />
-        <Skeleton className="h-16 w-full" />
-      </Card>
-    );
+    return <ActivitySkeleton workspace="platform-admin" />;
   }
 
   return (
