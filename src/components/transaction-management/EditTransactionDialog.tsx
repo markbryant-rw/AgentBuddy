@@ -22,6 +22,7 @@ import {
   DateValidationError,
   DateFieldName 
 } from '@/lib/transactionDateValidation';
+import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
 
 interface EditTransactionDialogProps {
   transaction: Transaction;
@@ -171,6 +172,22 @@ export function EditTransactionDialog({
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Basic Information</h3>
+            <div className="space-y-2">
+              <Label>Property Address</Label>
+              <GoogleAddressAutocomplete
+                placeholder="Start typing address..."
+                defaultValue={formData.address || ''}
+                onSelect={(result: AddressResult) => {
+                  setFormData(prev => ({
+                    ...prev,
+                    address: result.address,
+                    suburb: result.suburb || prev.suburb,
+                    latitude: result.latitude,
+                    longitude: result.longitude,
+                  }));
+                }}
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="address">Address *</Label>

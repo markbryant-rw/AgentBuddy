@@ -36,6 +36,7 @@ import { BeaconEngagementPanel } from './BeaconEngagementPanel';
 import { BeaconTab } from './BeaconTab';
 import { NewVisitDialog } from './NewVisitDialog';
 import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle } from "lucide-react";
+import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
 import { StageInfoTooltip } from './StageInfoTooltip';
 import {
   AlertDialog,
@@ -365,10 +366,27 @@ const AppraisalDetailDialog = ({
                 {/* Property Details */}
                 <div className="space-y-4 p-4 rounded-lg bg-muted/50">
                   <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Property Details</h3>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Property Address <span className="text-destructive">*</span></Label>
+                    <GoogleAddressAutocomplete
+                      placeholder="Start typing address..."
+                      defaultValue={formData.address || ''}
+                      onSelect={(result: AddressResult) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          address: result.address,
+                          suburb: result.suburb || prev.suburb,
+                          latitude: result.latitude,
+                          longitude: result.longitude,
+                        }));
+                      }}
+                      className="h-10"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="address" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
-                      <Input id="address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="123 Main Street" required className="h-10" />
+                      <Label htmlFor="address-manual" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
+                      <Input id="address-manual" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="123 Main Street" required className="h-10" />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="suburb" className="text-sm font-medium">Suburb <span className="text-destructive">*</span></Label>
@@ -589,6 +607,23 @@ const AppraisalDetailDialog = ({
             <div className="space-y-6 py-4">
               <div className="space-y-4 p-4 rounded-lg bg-muted/50">
                 <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Property Details</h3>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Property Address <span className="text-destructive">*</span></Label>
+                  <GoogleAddressAutocomplete
+                    placeholder="Start typing address..."
+                    defaultValue=""
+                    onSelect={(result: AddressResult) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        address: result.address,
+                        suburb: result.suburb || prev.suburb,
+                        latitude: result.latitude,
+                        longitude: result.longitude,
+                      }));
+                    }}
+                    className="h-10"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="address" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
