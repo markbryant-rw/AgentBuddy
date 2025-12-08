@@ -62,6 +62,7 @@ export type Database = {
           id: string
           invite_code: string | null
           is_archived: boolean
+          is_demo: boolean | null
           logo_url: string | null
           name: string
           office_channel_id: string | null
@@ -77,6 +78,7 @@ export type Database = {
           id?: string
           invite_code?: string | null
           is_archived?: boolean
+          is_demo?: boolean | null
           logo_url?: string | null
           name: string
           office_channel_id?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           id?: string
           invite_code?: string | null
           is_archived?: boolean
+          is_demo?: boolean | null
           logo_url?: string | null
           name?: string
           office_channel_id?: string | null
@@ -933,6 +936,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      demo_reset_logs: {
+        Row: {
+          duration_ms: number | null
+          id: string
+          records_created: number | null
+          records_deleted: number | null
+          reset_at: string | null
+        }
+        Insert: {
+          duration_ms?: number | null
+          id?: string
+          records_created?: number | null
+          records_deleted?: number | null
+          reset_at?: string | null
+        }
+        Update: {
+          duration_ms?: number | null
+          id?: string
+          records_created?: number | null
+          records_deleted?: number | null
+          reset_at?: string | null
+        }
+        Relationships: []
       }
       feature_request_comments: {
         Row: {
@@ -4735,6 +4762,8 @@ export type Database = {
         Args: { _team_id: string; _user_id: string }
         Returns: boolean
       }
+      reset_demo_data: { Args: never; Returns: undefined }
+      seed_demo_data: { Args: never; Returns: undefined }
       set_active_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
