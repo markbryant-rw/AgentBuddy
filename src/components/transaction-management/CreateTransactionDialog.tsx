@@ -219,6 +219,9 @@ export const CreateTransactionDialog = ({ open, onOpenChange }: CreateTransactio
                     suburb: result.suburb || prev.suburb,
                   }));
                 }}
+                showSuburbOverride={true}
+                currentSuburb={formData.suburb}
+                onSuburbChange={(suburb) => setFormData(prev => ({ ...prev, suburb }))}
               />
             </div>
 
