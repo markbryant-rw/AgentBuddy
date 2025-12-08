@@ -53,6 +53,8 @@ export interface LoggedAppraisal {
   beacon_last_activity?: string;
   beacon_first_viewed_at?: string;
   beacon_synced_at?: string;
+  beacon_report_created_at?: string;
+  beacon_report_sent_at?: string;
   // Joined profile data
   agent?: {
     id: string;

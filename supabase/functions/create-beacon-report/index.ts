@@ -138,6 +138,7 @@ Deno.serve(async (req) => {
         beacon_report_id: beaconData.reportId,
         beacon_report_url: beaconData.urls?.edit || beaconData.urls?.publicLink,
         beacon_personalized_url: beaconData.urls?.personalizedLink,
+        beacon_report_created_at: new Date().toISOString(),
         beacon_synced_at: new Date().toISOString(),
       })
       .eq('id', appraisalId);

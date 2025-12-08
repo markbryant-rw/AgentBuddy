@@ -75,6 +75,11 @@ Deno.serve(async (req) => {
       updateData.beacon_first_viewed_at = data.firstViewedAt;
     }
 
+    // Set report sent at when Beacon signals it was sent
+    if (data.reportSentAt) {
+      updateData.beacon_report_sent_at = data.reportSentAt;
+    }
+
     const { error: updateError } = await supabase
       .from('logged_appraisals')
       .update(updateData)
@@ -86,6 +91,32 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: false, error: 'Failed to update appraisal' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Insert individual engagement events if provided
+    if (data.events && Array.isArray(data.events) && data.events.length > 0) {
+      const eventsToInsert = data.events.map((evt: any) => ({
+        appraisal_id: externalLeadId,
+        event_type: evt.type || 'view',
+        occurred_at: evt.occurredAt,
+        duration_seconds: evt.durationSeconds || 0,
+        metadata: evt.metadata || {},
+      }));
+
+      // Use upsert to avoid duplicates (based on unique constraint)
+      const { error: eventsError } = await supabase
+        .from('beacon_engagement_events')
+        .upsert(eventsToInsert, {
+          onConflict: 'appraisal_id,event_type,occurred_at',
+          ignoreDuplicates: true,
+        });
+
+      if (eventsError) {
+        console.error('Failed to insert engagement events:', eventsError);
+        // Don't fail the whole request, just log
+      } else {
+        console.log(`Inserted ${eventsToInsert.length} engagement events`);
+      }
     }
 
     // Also update listings_pipeline if appraisal was converted
