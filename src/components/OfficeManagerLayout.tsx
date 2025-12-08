@@ -21,7 +21,7 @@ export const OfficeManagerLayout = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Professional Office Manager Header */}
-      <header className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      <header className="sticky top-0 z-[100] border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
         <div className="container mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Left: Mobile Menu + Branding */}
