@@ -18,6 +18,8 @@ Deno.serve(async (req) => {
 
     // Validate API key from Beacon
     const providedApiKey = req.headers.get('X-API-Key') || req.headers.get('x-api-key');
+    const webhookSource = req.headers.get('X-Webhook-Source') || req.headers.get('x-webhook-source');
+    
     if (!providedApiKey || providedApiKey !== beaconApiKey) {
       console.error('Invalid or missing API key');
       return new Response(
@@ -25,6 +27,9 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Log webhook source for debugging
+    console.log('Webhook received from source:', webhookSource);
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
