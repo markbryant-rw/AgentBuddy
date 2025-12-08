@@ -8,6 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { 
   ExternalLink, 
   Eye, 
@@ -23,7 +26,10 @@ import {
   Lock,
   Plus,
   ChevronDown,
-  Pencil
+  Pencil,
+  Link2,
+  Search,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -211,10 +217,15 @@ const ReportCard = ({
 };
 
 export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
-  const { isBeaconEnabled, createBeaconReport, isCreatingReport } = useBeaconIntegration();
+  const { isBeaconEnabled, createBeaconReport, isCreatingReport, linkBeaconReport, isLinkingReport, searchBeaconReports } = useBeaconIntegration();
   const { reports, aggregateStats, hasReports, isLoading: reportsLoading } = useBeaconReports(appraisal.id);
   const { events, isLoading: eventsLoading } = useBeaconEngagementEvents(appraisal.id);
   const [copied, setCopied] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [reportIdInput, setReportIdInput] = useState('');
+  const [propertySlugInput, setPropertySlugInput] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -226,6 +237,51 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   const handleCreateReport = (reportType: BeaconReportType) => {
     console.log('BeaconTab: handleCreateReport called with', reportType, 'appraisalId:', appraisal.id);
     createBeaconReport.mutate({ appraisalId: appraisal.id, reportType });
+  };
+
+  const handleLinkReport = () => {
+    if (!reportIdInput && !propertySlugInput) {
+      toast.error('Enter a Report ID or Property Slug');
+      return;
+    }
+    
+    linkBeaconReport.mutate({
+      appraisalId: appraisal.id,
+      reportId: reportIdInput || undefined,
+      propertySlug: propertySlugInput || undefined,
+    }, {
+      onSuccess: () => {
+        setLinkDialogOpen(false);
+        setReportIdInput('');
+        setPropertySlugInput('');
+        setSearchResults([]);
+      }
+    });
+  };
+
+  const handleSearchReports = async () => {
+    setIsSearching(true);
+    try {
+      const results = await searchBeaconReports({
+        address: appraisal.address,
+        ownerName: appraisal.vendor_name || undefined,
+        ownerEmail: appraisal.vendor_email || undefined,
+      });
+      setSearchResults(results);
+      if (results.length === 0) {
+        toast.info('No existing reports found for this property');
+      }
+    } catch (error) {
+      console.error('Search failed:', error);
+      toast.error('Could not search for reports');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectSearchResult = (report: any) => {
+    setReportIdInput(report.id);
+    setPropertySlugInput('');
   };
 
   const formatTime = (seconds: number) => {
@@ -375,47 +431,168 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
         {/* Create New Report Button */}
         <Card>
           <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-semibold">Create New Report</h3>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <h3 className="font-semibold">Reports</h3>
                 <p className="text-sm text-muted-foreground">
                   {hasReports 
                     ? `${reports.length} report${reports.length !== 1 ? 's' : ''} created` 
-                    : 'Opens editor (free) – publishing uses 1 credit'}
+                    : 'Create a new report or link an existing one'}
                 </p>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    disabled={isCreatingReport}
-                    className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
-                  >
-                    {isCreatingReport ? (
-                      <>Creating...</>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4" />
-                        New Report
-                        <ChevronDown className="h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleCreateReport('market_appraisal')}>
-                    <span className="mr-2">📊</span>
-                    Market Appraisal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleCreateReport('proposal')}>
-                    <span className="mr-2">📝</span>
-                    Proposal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleCreateReport('update')}>
-                    <span className="mr-2">🔄</span>
-                    Update Report
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="flex items-center gap-2">
+                {/* Link Existing Report */}
+                <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1.5">
+                      <Link2 className="h-4 w-4" />
+                      Link Existing
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Link Existing Beacon Report</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      {/* Auto-search section */}
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">Search by Property</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Find reports matching this property address
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          onClick={handleSearchReports}
+                          disabled={isSearching}
+                          className="w-full gap-2"
+                        >
+                          {isSearching ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Search className="h-4 w-4" />
+                          )}
+                          Search for "{appraisal.address?.slice(0, 30)}..."
+                        </Button>
+                        
+                        {/* Search results */}
+                        {searchResults.length > 0 && (
+                          <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+                            {searchResults.map((report: any) => (
+                              <button
+                                key={report.id}
+                                type="button"
+                                onClick={() => handleSelectSearchResult(report)}
+                                className={cn(
+                                  "w-full text-left p-2 rounded border transition-colors",
+                                  reportIdInput === report.id 
+                                    ? "border-teal-500 bg-teal-500/10" 
+                                    : "border-border hover:bg-muted"
+                                )}
+                              >
+                                <p className="text-sm font-medium">{report.address || 'Report'}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {report.report_type} • {report.id.slice(0, 8)}...
+                                </p>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+                        </div>
+                      </div>
+
+                      {/* Manual entry */}
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label htmlFor="reportId" className="text-sm">Report ID</Label>
+                          <Input 
+                            id="reportId"
+                            placeholder="beacon-report-uuid"
+                            value={reportIdInput}
+                            onChange={(e) => {
+                              setReportIdInput(e.target.value);
+                              setPropertySlugInput('');
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor="propertySlug" className="text-sm">Or Property Slug</Label>
+                          <Input 
+                            id="propertySlug"
+                            placeholder="123-main-street-auckland"
+                            value={propertySlugInput}
+                            onChange={(e) => {
+                              setPropertySlugInput(e.target.value);
+                              setReportIdInput('');
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            The property slug from the Beacon report URL
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        onClick={handleLinkReport}
+                        disabled={isLinkingReport || (!reportIdInput && !propertySlugInput)}
+                        className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600"
+                      >
+                        {isLinkingReport ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Link2 className="h-4 w-4" />
+                        )}
+                        Link Report
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {/* New Report dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      disabled={isCreatingReport}
+                      className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                    >
+                      {isCreatingReport ? (
+                        <>Creating...</>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          New Report
+                          <ChevronDown className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleCreateReport('market_appraisal')}>
+                      <span className="mr-2">📊</span>
+                      Market Appraisal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleCreateReport('proposal')}>
+                      <span className="mr-2">📝</span>
+                      Proposal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleCreateReport('update')}>
+                      <span className="mr-2">🔄</span>
+                      Update Report
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             </div>
           </CardContent>
         </Card>
