@@ -188,24 +188,6 @@ export function EditTransactionDialog({
                 }}
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="address">Address *</Label>
-                <Input
-                  id="address"
-                  value={formData.address || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, address: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="suburb">Suburb</Label>
-                <Input
-                  id="suburb"
-                  value={formData.suburb || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, suburb: e.target.value }))}
-                />
-              </div>
-            </div>
           </div>
 
           {/* Client Information */}

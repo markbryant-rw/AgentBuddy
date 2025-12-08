@@ -383,16 +383,6 @@ const AppraisalDetailDialog = ({
                       className="h-10"
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="address-manual" className="text-sm font-medium">Address <span className="text-destructive">*</span></Label>
-                      <Input id="address-manual" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder="123 Main Street" required className="h-10" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="suburb" className="text-sm font-medium">Suburb <span className="text-destructive">*</span></Label>
-                      <Input id="suburb" value={formData.suburb || ''} onChange={(e) => setFormData({ ...formData, suburb: e.target.value })} placeholder="Auckland Central" required className="h-10" />
-                    </div>
-                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="vendor_name" className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>
                     <Input id="vendor_name" value={formData.vendor_name} onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })} placeholder="John Smith" required className="h-10" />

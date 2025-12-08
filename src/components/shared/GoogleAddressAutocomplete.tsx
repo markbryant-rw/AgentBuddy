@@ -112,10 +112,11 @@ export function GoogleAddressAutocomplete({
           const lat = place.geometry.location.lat();
           const lng = place.geometry.location.lng();
           
-          // Extract address components
+          // Extract address components with priority-based suburb selection
           let streetNumber = '';
           let streetName = '';
           let suburb = '';
+          let suburbPriority = 0; // Higher = more specific
           
           place.address_components?.forEach((component) => {
             if (component.types.includes('street_number')) {
@@ -124,10 +125,19 @@ export function GoogleAddressAutocomplete({
             if (component.types.includes('route')) {
               streetName = component.long_name;
             }
-            if (component.types.includes('sublocality_level_1') || 
-                component.types.includes('locality') ||
-                component.types.includes('neighborhood')) {
+            // Priority-based suburb selection (most specific wins)
+            if (component.types.includes('sublocality_level_1') && suburbPriority < 4) {
               suburb = component.long_name;
+              suburbPriority = 4; // Most specific - actual suburb like "Glen Eden"
+            } else if (component.types.includes('sublocality') && suburbPriority < 3) {
+              suburb = component.long_name;
+              suburbPriority = 3;
+            } else if (component.types.includes('neighborhood') && suburbPriority < 2) {
+              suburb = component.long_name;
+              suburbPriority = 2;
+            } else if (component.types.includes('locality') && suburbPriority < 1) {
+              suburb = component.long_name;
+              suburbPriority = 1; // Least specific - city like "Auckland"
             }
           });
           
