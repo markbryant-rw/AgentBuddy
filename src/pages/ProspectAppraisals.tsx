@@ -71,21 +71,23 @@ const ProspectAppraisals = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Appraisals</h1>
-              <div className="flex items-center gap-3 mt-1">
-                <p className="text-muted-foreground">
-                  Manage all appraisals, track warmth, and plan follow-ups
-                </p>
-                <Link 
-                  to="/appraisal-templates" 
-                  className="text-sm text-primary hover:underline flex items-center gap-1"
-                >
-                  <FileText className="h-3.5 w-3.5" />
-                  Task Templates
-                </Link>
-              </div>
+              <p className="text-muted-foreground mt-1">
+                Manage all appraisals, track warmth, and plan follow-ups
+              </p>
             </div>
             <div className="flex gap-2 items-center">
               {/* Utility buttons - smaller, less prominent */}
+              <Link to="/appraisal-templates">
+                <Button 
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-1.5 text-xs">Templates</span>
+                </Button>
+              </Link>
+              
               <Button 
                 onClick={handleRemoveDuplicates} 
                 variant="ghost"
