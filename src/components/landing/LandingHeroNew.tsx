@@ -39,6 +39,13 @@ export const LandingHeroNew = () => {
           refresh_token: data.session.session.refresh_token,
         });
         
+        // Trigger demo data reset to ensure fresh data
+        try {
+          await supabase.functions.invoke('reset-demo-data');
+        } catch (e) {
+          console.log('Demo reset skipped:', e);
+        }
+        
         // Invalidate all cached queries to ensure fresh data after demo login
         await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
         await queryClient.invalidateQueries({ queryKey: ['team'] });
