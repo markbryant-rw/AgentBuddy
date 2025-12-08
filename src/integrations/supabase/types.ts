@@ -4763,7 +4763,7 @@ export type Database = {
         Returns: boolean
       }
       reset_demo_data: { Args: never; Returns: undefined }
-      seed_demo_data: { Args: never; Returns: undefined }
+      seed_demo_data: { Args: { p_demo_user_id?: string }; Returns: undefined }
       set_active_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
