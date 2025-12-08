@@ -104,7 +104,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[100]">
                 <SelectItem value="VAP">
                   <div className="flex items-center gap-2">
                     VAP <StageInfoTooltip stage="VAP" />
@@ -136,7 +136,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[100]">
                 <SelectItem value="low">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500" />
