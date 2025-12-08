@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, Sparkles, Shield, Gamepad2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { queryClient } from "@/lib/queryClient";
 
 const floatingWorkspaces = [
   { name: "Plan", emoji: "📋", gradient: "from-blue-500 to-indigo-600", delay: 0 },
@@ -37,6 +38,11 @@ export const LandingHeroNew = () => {
           access_token: data.session.session.access_token,
           refresh_token: data.session.session.refresh_token,
         });
+        
+        // Invalidate all cached queries to ensure fresh data after demo login
+        await queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+        await queryClient.invalidateQueries({ queryKey: ['team'] });
+        await queryClient.invalidateQueries({ queryKey: ['user-roles'] });
         
         // Wait for auth state to stabilize and roles to load before navigating
         await new Promise(resolve => setTimeout(resolve, 500));
