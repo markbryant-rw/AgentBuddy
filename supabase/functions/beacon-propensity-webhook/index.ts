@@ -94,35 +94,49 @@ Deno.serve(async (req) => {
     }
 
     // Also update the appraisal with aggregated "best" metrics
-    // Get all reports for this appraisal to calculate aggregates
+    // Get all reports for this appraisal to calculate aggregates (after the update above)
     const { data: allReports } = await supabase
       .from('beacon_reports')
       .select('*')
       .eq('appraisal_id', externalLeadId);
 
-    // Calculate aggregate metrics (best/highest values across all reports)
-    let bestPropensity = data.propensityScore || 0;
-    let totalViews = data.totalViews || 0;
-    let totalTimeSeconds = data.totalTimeSeconds || 0;
-    let totalEmailOpens = data.emailOpenCount || 0;
-    let anyHotLead = data.isHotLead || false;
-    let latestActivity = data.lastActivity || new Date().toISOString();
-    let earliestFirstViewed = data.firstViewedAt;
+    // Calculate aggregate metrics from stored report data ONLY (not from current event)
+    // This prevents double-counting since the report was already updated above
+    let bestPropensity = 0;
+    let totalViews = 0;
+    let totalTimeSeconds = 0;
+    let totalEmailOpens = 0;
+    let anyHotLead = false;
+    let latestActivity: string | null = null;
+    let earliestFirstViewed: string | null = null;
 
     if (allReports && allReports.length > 0) {
       for (const report of allReports) {
-        if (report.propensity_score > bestPropensity) bestPropensity = report.propensity_score;
+        if ((report.propensity_score || 0) > bestPropensity) {
+          bestPropensity = report.propensity_score || 0;
+        }
         totalViews += report.total_views || 0;
         totalTimeSeconds += report.total_time_seconds || 0;
         totalEmailOpens += report.email_opens || 0;
         if (report.is_hot_lead) anyHotLead = true;
-        if (report.last_activity && report.last_activity > latestActivity) {
+        if (report.last_activity && (!latestActivity || report.last_activity > latestActivity)) {
           latestActivity = report.last_activity;
         }
         if (report.first_viewed_at && (!earliestFirstViewed || report.first_viewed_at < earliestFirstViewed)) {
           earliestFirstViewed = report.first_viewed_at;
         }
       }
+    }
+
+    // Fallback to current event data if no reports found (shouldn't happen normally)
+    if (!allReports || allReports.length === 0) {
+      bestPropensity = data.propensityScore || 0;
+      totalViews = data.totalViews || 0;
+      totalTimeSeconds = data.totalTimeSeconds || 0;
+      totalEmailOpens = data.emailOpenCount || 0;
+      anyHotLead = data.isHotLead || false;
+      latestActivity = data.lastActivity || new Date().toISOString();
+      earliestFirstViewed = data.firstViewedAt;
     }
 
     const updateData: Record<string, any> = {
