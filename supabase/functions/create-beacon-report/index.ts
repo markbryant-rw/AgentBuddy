@@ -12,10 +12,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('create-beacon-report function started');
+    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const beaconApiUrl = Deno.env.get('BEACON_API_URL');
     const beaconApiKey = Deno.env.get('BEACON_API_KEY');
+
+    console.log('BEACON_API_URL configured:', !!beaconApiUrl, beaconApiUrl ? beaconApiUrl.substring(0, 50) : 'not set');
+    console.log('BEACON_API_KEY configured:', !!beaconApiKey);
 
     if (!beaconApiUrl || !beaconApiKey) {
       console.error('Missing Beacon API configuration');
