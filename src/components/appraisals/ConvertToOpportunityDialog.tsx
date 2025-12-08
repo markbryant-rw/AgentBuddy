@@ -94,7 +94,7 @@ const ConvertToOpportunityDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Convert to Opportunity</DialogTitle>
           <DialogDescription>
