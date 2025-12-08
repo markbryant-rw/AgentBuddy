@@ -58,6 +58,20 @@ export const useBeaconIntegration = () => {
 
   const isBeaconEnabled = integrationSettings?.enabled ?? false;
 
+  // Sync team to Beacon
+  const syncTeamToBeacon = async (teamId: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('sync-beacon-team', {
+        body: { teamId },
+      });
+      if (error) {
+        console.error('Failed to sync team to Beacon:', error);
+      }
+    } catch (err) {
+      console.error('Error syncing team to Beacon:', err);
+    }
+  };
+
   // Toggle Beacon integration for team
   const toggleBeaconIntegration = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -79,11 +93,20 @@ export const useBeaconIntegration = () => {
         .single();
 
       if (error) throw error;
+
+      // Sync team to Beacon when enabling
+      if (enabled && team?.id) {
+        await syncTeamToBeacon(team.id);
+      }
+
       return data;
     },
     onSuccess: (_, enabled) => {
       queryClient.invalidateQueries({ queryKey: ['integration-settings', team?.id] });
-      toast.success(enabled ? 'Beacon integration enabled' : 'Beacon integration disabled');
+      toast.success(enabled 
+        ? 'Beacon enabled! $25/month includes 3 reports.' 
+        : 'Beacon integration disabled'
+      );
     },
     onError: (error) => {
       console.error('Failed to toggle Beacon:', error);
@@ -107,7 +130,7 @@ export const useBeaconIntegration = () => {
       queryClient.invalidateQueries({ queryKey: ['beacon_reports'] });
       
       const typeLabel = REPORT_TYPE_LABELS[reportType || 'market_appraisal'];
-      toast.success(`${typeLabel} report created! Opening in new tab...`);
+      toast.success(`${typeLabel} draft created! Publishing will use 1 team credit.`);
       
       // Open the Beacon report edit page in a new tab
       if (data.urls?.edit) {

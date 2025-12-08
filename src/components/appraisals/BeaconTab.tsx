@@ -220,7 +220,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     return `${hours}h ${remainingMinutes}m`;
   };
 
-  // Not enabled - show upgrade prompt
+  // Not enabled - show upgrade prompt with pricing
   if (!isBeaconEnabled) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
@@ -228,9 +228,15 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
           <Lock className="h-8 w-8 text-teal-600" />
         </div>
         <h3 className="text-lg font-semibold mb-2">Beacon Integration</h3>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Connect Beacon to create professional appraisal reports and track vendor engagement in real-time.
+        <p className="text-muted-foreground mb-4 max-w-md">
+          Create professional appraisal reports and track vendor engagement in real-time.
         </p>
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg max-w-sm">
+          <p className="font-semibold text-sm">$25/month includes 3 reports</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Credit packs from $2.50/report for more. Teams share credits across all members.
+          </p>
+        </div>
         <div className="grid grid-cols-3 gap-4 mb-6 text-sm">
           <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
             <FileText className="h-5 w-5 text-teal-600 mb-2" />
@@ -359,7 +365,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                 <p className="text-sm text-muted-foreground">
                   {hasReports 
                     ? `${reports.length} report${reports.length !== 1 ? 's' : ''} created` 
-                    : 'Generate a professional report for this property'}
+                    : 'Opens editor (free) – publishing uses 1 credit'}
                 </p>
               </div>
               <DropdownMenu>
