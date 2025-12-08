@@ -28,7 +28,7 @@ const FAKE_TEAM_MEMBERS = [
     full_name: "Mike Thompson",
     avatar_seed: "mike",
     roles: ["salesperson"],
-    access_level: "member",
+    access_level: "admin",
   },
   {
     id: "c0000000-0000-0000-0000-000000000003",
@@ -36,7 +36,7 @@ const FAKE_TEAM_MEMBERS = [
     full_name: "Emma Chen",
     avatar_seed: "emma",
     roles: ["salesperson"],
-    access_level: "member",
+    access_level: "admin",
   },
   {
     id: "c0000000-0000-0000-0000-000000000004",
@@ -44,16 +44,42 @@ const FAKE_TEAM_MEMBERS = [
     full_name: "Tane Williams",
     avatar_seed: "tane",
     roles: ["assistant"],
-    access_level: "member",
+    access_level: "admin",
   },
 ];
 
-// Helper function to create fake team members
+// Helper function to create fake team members with auth.users entries
 async function ensureFakeTeamMembers(adminClient: any) {
-  console.log("Creating/updating fake team members...");
+  console.log("Creating/updating fake team members with auth.users entries...");
   
   for (const member of FAKE_TEAM_MEMBERS) {
-    // Create profile
+    // First, create auth.users entry (required by profiles FK constraint)
+    const { data: authUser, error: authError } = await adminClient.auth.admin.createUser({
+      email: member.email,
+      password: "FakeUser2024!Disabled",
+      email_confirm: true,
+      user_metadata: {
+        full_name: member.full_name,
+        is_demo: true,
+        is_fake_member: true,
+      },
+      // Use the predefined ID to match seed_demo_data references
+      id: member.id,
+    });
+    
+    if (authError) {
+      // User might already exist, try to get their ID
+      if (authError.message?.includes("already been registered")) {
+        console.log(`Auth user ${member.full_name} already exists`);
+      } else {
+        console.error(`Auth user error for ${member.full_name}:`, authError);
+        continue; // Skip this member if auth creation fails
+      }
+    } else {
+      console.log(`Auth user created for ${member.full_name}: ${authUser?.user?.id}`);
+    }
+
+    // Create profile (should now work since auth.users entry exists)
     const { error: profileError } = await adminClient.from("profiles").upsert({
       id: member.id,
       email: member.email,
