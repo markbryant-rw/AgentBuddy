@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouteRoleSync } from '@/hooks/useRouteRoleSync';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home } from 'lucide-react';
+import agentBuddyLogo from '@/assets/agentbuddy-logo.png';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/NotificationBell';
 import { TaskNotificationBell } from '@/components/layout/TaskNotificationBell';
@@ -141,9 +141,11 @@ const Layout = () => {
               to="/dashboard" 
               className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
             >
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Home className="h-5 w-5 text-primary" />
-              </div>
+              <img 
+                src={agentBuddyLogo} 
+                alt="AgentBuddy" 
+                className="h-10 w-10 rounded-lg"
+              />
               <span className="font-bold text-lg hidden lg:inline">AgentBuddy</span>
             </Link>
 

@@ -2,7 +2,8 @@ import { useNavigate } from 'react-router-dom';
 import { AnimatedOutlet } from '@/components/AnimatedOutlet';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Building2, LayoutDashboard, Menu } from 'lucide-react';
+import { LayoutDashboard, Menu } from 'lucide-react';
+import agentBuddyLogo from '@/assets/agentbuddy-logo.png';
 import { NotificationBell } from '@/components/NotificationBell';
 import { MessagesDropdown } from '@/components/MessagesDropdown';
 import { UserMenuDropdown } from '@/components/UserMenuDropdown';
@@ -41,9 +42,11 @@ export const OfficeManagerLayout = () => {
               </Sheet>
 
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <Building2 className="h-5 w-5 text-primary" />
-                </div>
+                <img 
+                  src={agentBuddyLogo} 
+                  alt="AgentBuddy" 
+                  className="h-10 w-10 rounded-lg"
+                />
                 <div>
                   <h1 className="text-lg font-semibold text-foreground">Office Management</h1>
                   {activeOffice && !isLoading && (
