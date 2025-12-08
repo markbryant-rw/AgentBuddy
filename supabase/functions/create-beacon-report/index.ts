@@ -54,8 +54,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { appraisalId } = await req.json();
-    console.log(`Creating Beacon report for appraisal: ${appraisalId}`);
+    const { appraisalId, reportType = 'market_appraisal' } = await req.json();
+    console.log(`Creating Beacon report for appraisal: ${appraisalId}, type: ${reportType}`);
 
     // Fetch appraisal data
     const { data: appraisal, error: appraisalError } = await supabase
@@ -72,24 +72,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Check if report already exists
-    if (appraisal.beacon_report_id) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          existing: true,
-          reportId: appraisal.beacon_report_id,
-          urls: {
-            edit: appraisal.beacon_report_url,
-            publicLink: appraisal.beacon_report_url,
-            personalizedLink: appraisal.beacon_personalized_url,
-          },
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Call Beacon API to create report
+    // Call Beacon API to create report (always create new)
     const endpoint = `${beaconApiUrl}/create-report-from-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
@@ -97,7 +80,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Environment': 'production', // Use production URLs
+        'X-Environment': 'production',
       },
       body: JSON.stringify({
         apiKey: beaconApiKey,
@@ -108,7 +91,7 @@ Deno.serve(async (req) => {
         ownerEmail: appraisal.vendor_email || '',
         ownerMobile: appraisal.vendor_mobile || '',
         externalLeadId: appraisalId,
-        reportType: 'appraisal',
+        reportType: reportType,
       }),
     });
 
@@ -131,7 +114,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Update appraisal with Beacon report data
+    // Insert new report into beacon_reports table
+    const { data: newReport, error: insertError } = await supabase
+      .from('beacon_reports')
+      .insert({
+        appraisal_id: appraisalId,
+        beacon_report_id: beaconData.reportId,
+        report_type: reportType,
+        report_url: beaconData.urls?.edit || beaconData.urls?.publicLink,
+        personalized_url: beaconData.urls?.personalizedLink,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Failed to insert beacon report:', insertError);
+      // Report was created in Beacon but failed to save locally
+    }
+
+    // Also update the appraisal with latest report info for backwards compatibility
     const { error: updateError } = await supabase
       .from('logged_appraisals')
       .update({
@@ -145,16 +147,17 @@ Deno.serve(async (req) => {
 
     if (updateError) {
       console.error('Failed to update appraisal:', updateError);
-      // Report was created but we failed to save - still return success
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        existing: beaconData.existing || false,
+        existing: false,
         reportId: beaconData.reportId,
         ownerId: beaconData.ownerId,
         urls: beaconData.urls,
+        reportType: reportType,
+        localReportId: newReport?.id,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

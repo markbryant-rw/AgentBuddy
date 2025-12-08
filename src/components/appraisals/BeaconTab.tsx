@@ -1,11 +1,13 @@
 import { LoggedAppraisal } from "@/hooks/useLoggedAppraisals";
-import { useBeaconIntegration } from "@/hooks/useBeaconIntegration";
+import { useBeaconIntegration, REPORT_TYPE_LABELS, REPORT_TYPE_ICONS, BeaconReportType } from "@/hooks/useBeaconIntegration";
+import { useBeaconReports, BeaconReport } from "@/hooks/useBeaconReports";
 import { useBeaconEngagementEvents } from "@/hooks/useBeaconEngagementEvents";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   ExternalLink, 
   Eye, 
@@ -18,7 +20,9 @@ import {
   Copy,
   Check,
   Sparkles,
-  Lock
+  Lock,
+  Plus,
+  ChevronDown
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -29,23 +33,182 @@ interface BeaconTabProps {
   appraisal: LoggedAppraisal;
 }
 
+const ReportCard = ({ 
+  report, 
+  isLatest,
+  onCopyLink 
+}: { 
+  report: BeaconReport; 
+  isLatest: boolean;
+  onCopyLink: (url: string) => void;
+}) => {
+  const isDraft = !report.sent_at;
+  const isSent = !!report.sent_at;
+  const hasViews = report.total_views > 0;
+  const isHotLead = report.is_hot_lead || report.propensity_score >= 70;
+
+  const formatTime = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    return `${hours}h ${minutes % 60}m`;
+  };
+
+  return (
+    <div className={cn(
+      "border rounded-lg p-4 space-y-3",
+      isLatest ? "border-teal-500/50 bg-teal-500/5" : "border-border"
+    )}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{REPORT_TYPE_ICONS[report.report_type as BeaconReportType] || '📊'}</span>
+          <div>
+            <p className="font-medium text-sm">
+              {REPORT_TYPE_LABELS[report.report_type as BeaconReportType] || report.report_type}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {format(new Date(report.created_at), 'MMM d, yyyy h:mm a')}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {isLatest && (
+            <Badge variant="secondary" className="text-[10px]">Latest</Badge>
+          )}
+          {isHotLead && (
+            <Badge className="bg-red-500/10 text-red-600 border-red-500/20 gap-1 text-[10px]">
+              <Flame className="h-3 w-3" />
+              Hot
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* Status Pipeline - 4 steps */}
+      <div className="flex items-center justify-between text-[10px]">
+        {/* Draft */}
+        <div className="flex flex-col items-center">
+          <div className={cn(
+            "h-6 w-6 rounded-full flex items-center justify-center",
+            "bg-teal-500/20 text-teal-600"
+          )}>
+            <FileText className="h-3 w-3" />
+          </div>
+          <span className="mt-1">Draft</span>
+          <Check className="h-3 w-3 text-teal-600" />
+        </div>
+
+        <div className={cn("flex-1 h-0.5 mx-1", isSent ? "bg-teal-500" : "bg-muted")} />
+
+        {/* Sent */}
+        <div className="flex flex-col items-center">
+          <div className={cn(
+            "h-6 w-6 rounded-full flex items-center justify-center",
+            isSent ? "bg-teal-500/20 text-teal-600" : "bg-muted text-muted-foreground"
+          )}>
+            <Send className="h-3 w-3" />
+          </div>
+          <span className="mt-1">Sent</span>
+          {isSent ? <Check className="h-3 w-3 text-teal-600" /> : <span className="h-3" />}
+        </div>
+
+        <div className={cn("flex-1 h-0.5 mx-1", hasViews ? "bg-teal-500" : "bg-muted")} />
+
+        {/* Viewed */}
+        <div className="flex flex-col items-center">
+          <div className={cn(
+            "h-6 w-6 rounded-full flex items-center justify-center",
+            hasViews ? "bg-teal-500/20 text-teal-600" : "bg-muted text-muted-foreground"
+          )}>
+            <Eye className="h-3 w-3" />
+          </div>
+          <span className="mt-1">Viewed</span>
+          {hasViews ? (
+            <span className="text-teal-600">{report.total_views}</span>
+          ) : <span className="h-3" />}
+        </div>
+
+        <div className={cn("flex-1 h-0.5 mx-1", isHotLead ? "bg-red-500" : "bg-muted")} />
+
+        {/* Hot */}
+        <div className="flex flex-col items-center">
+          <div className={cn(
+            "h-6 w-6 rounded-full flex items-center justify-center",
+            isHotLead ? "bg-red-500/20 text-red-600" : "bg-muted text-muted-foreground"
+          )}>
+            <Flame className="h-3 w-3" />
+          </div>
+          <span className="mt-1">Hot</span>
+          {isHotLead ? <Check className="h-3 w-3 text-red-600" /> : <span className="h-3" />}
+        </div>
+      </div>
+
+      {/* Stats row */}
+      {(report.total_views > 0 || report.propensity_score > 0) && (
+        <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+          {report.propensity_score > 0 && (
+            <span className="flex items-center gap-1">
+              <Activity className="h-3 w-3" />
+              Score: {report.propensity_score}%
+            </span>
+          )}
+          {report.total_time_seconds > 0 && (
+            <span className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {formatTime(report.total_time_seconds)}
+            </span>
+          )}
+          {report.email_opens > 0 && (
+            <span className="flex items-center gap-1">
+              <Mail className="h-3 w-3" />
+              {report.email_opens} opens
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-2 pt-2">
+        <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" asChild>
+          <a href={report.report_url || ''} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-3 w-3 mr-1" />
+            Open
+          </a>
+        </Button>
+        {report.personalized_url && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1 h-8 text-xs"
+            onClick={() => onCopyLink(report.personalized_url!)}
+          >
+            <Copy className="h-3 w-3 mr-1" />
+            Copy Link
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   const { isBeaconEnabled, createBeaconReport, isCreatingReport } = useBeaconIntegration();
+  const { reports, aggregateStats, hasReports, isLoading: reportsLoading } = useBeaconReports(appraisal.id);
   const { events, isLoading: eventsLoading } = useBeaconEngagementEvents(appraisal.id);
   const [copied, setCopied] = useState(false);
 
-  const hasReport = !!appraisal.beacon_report_id;
-  const propensityScore = appraisal.beacon_propensity_score || 0;
-  const totalViews = appraisal.beacon_total_views || 0;
-  const totalTimeSeconds = appraisal.beacon_total_time_seconds || 0;
-  const emailOpens = appraisal.beacon_email_opens || 0;
-  const isHotLead = appraisal.beacon_is_hot_lead || propensityScore >= 70;
-  
-  // New fields for Draft/Sent status - fallback to beacon_synced_at for legacy reports
-  const reportCreatedAt = appraisal.beacon_report_created_at || appraisal.beacon_synced_at;
-  const reportSentAt = appraisal.beacon_report_sent_at;
-  const isDraft = hasReport && !reportSentAt;
-  const isSent = hasReport && !!reportSentAt;
+  const handleCopyLink = async (url: string) => {
+    await navigator.clipboard.writeText(url);
+    setCopied(true);
+    toast.success('Vendor link copied to clipboard');
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCreateReport = (reportType: BeaconReportType) => {
+    createBeaconReport.mutate({ appraisalId: appraisal.id, reportType });
+  };
 
   const formatTime = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -55,19 +218,6 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
     return `${hours}h ${remainingMinutes}m`;
-  };
-
-  const handleCopyLink = async () => {
-    if (appraisal.beacon_personalized_url) {
-      await navigator.clipboard.writeText(appraisal.beacon_personalized_url);
-      setCopied(true);
-      toast.success('Vendor link copied to clipboard');
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const handleCreateReport = () => {
-    createBeaconReport.mutate(appraisal.id);
   };
 
   // Not enabled - show upgrade prompt
@@ -109,278 +259,223 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     );
   }
 
-  // Enabled but no report created yet
-  if (!hasReport) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
-        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center mb-4">
-          <FileText className="h-8 w-8 text-teal-600" />
-        </div>
-        <h3 className="text-lg font-semibold mb-2">Create Beacon Report</h3>
-        <p className="text-muted-foreground mb-6 max-w-md">
-          Generate a professional appraisal report for {appraisal.vendor_name || 'the vendor'} and track their engagement.
-        </p>
-        <Button 
-          onClick={handleCreateReport}
-          disabled={isCreatingReport}
-          className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
-        >
-          {isCreatingReport ? (
-            <>Creating Report...</>
-          ) : (
-            <>
-              <FileText className="h-4 w-4" />
-              Create Report
-            </>
-          )}
-        </Button>
-      </div>
-    );
-  }
-
-  // Has report - show full analytics
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Status Overview Card */}
-        <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Activity className="h-5 w-5 text-teal-600" />
-                Vendor Engagement
-              </CardTitle>
-              {isHotLead && (
-                <Badge className="bg-red-500/10 text-red-600 border-red-500/20 gap-1">
-                  <Flame className="h-3.5 w-3.5 animate-pulse" />
-                  Hot Lead
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Propensity Score - Large Display */}
-            <div className="flex items-center gap-4">
-              <div className="relative h-20 w-20">
-                <svg className="h-20 w-20 transform -rotate-90">
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="36"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="8"
-                    className="text-muted/30"
+        {/* Aggregate Stats Card - Only show if we have reports with engagement */}
+        {hasReports && aggregateStats.bestPropensity > 0 && (
+          <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-teal-600" />
+                  Overall Engagement
+                </CardTitle>
+                {aggregateStats.anyHotLead && (
+                  <Badge className="bg-red-500/10 text-red-600 border-red-500/20 gap-1">
+                    <Flame className="h-3.5 w-3.5 animate-pulse" />
+                    Hot Lead
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Propensity Score - Large Display */}
+              <div className="flex items-center gap-4">
+                <div className="relative h-20 w-20">
+                  <svg className="h-20 w-20 transform -rotate-90">
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="8"
+                      className="text-muted/30"
+                    />
+                    <circle
+                      cx="40"
+                      cy="40"
+                      r="36"
+                      fill="none"
+                      stroke="url(#propensity-gradient)"
+                      strokeWidth="8"
+                      strokeLinecap="round"
+                      strokeDasharray={`${(aggregateStats.bestPropensity / 100) * 226} 226`}
+                    />
+                    <defs>
+                      <linearGradient id="propensity-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="hsl(var(--teal-500, 173 80% 40%))" />
+                        <stop offset="100%" stopColor="hsl(var(--cyan-500, 188 80% 45%))" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-2xl font-bold">{aggregateStats.bestPropensity}</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Best Propensity Score</p>
+                  <p className="text-xs text-muted-foreground">
+                    {aggregateStats.bestPropensity >= 70 ? 'High likelihood to list' : 
+                     aggregateStats.bestPropensity >= 40 ? 'Moderate engagement' :
+                     aggregateStats.bestPropensity > 0 ? 'Early interest' : 'Awaiting engagement'}
+                  </p>
+                  <Progress 
+                    value={aggregateStats.bestPropensity} 
+                    className="h-1.5 mt-2"
                   />
-                  <circle
-                    cx="40"
-                    cy="40"
-                    r="36"
-                    fill="none"
-                    stroke="url(#propensity-gradient)"
-                    strokeWidth="8"
-                    strokeLinecap="round"
-                    strokeDasharray={`${(propensityScore / 100) * 226} 226`}
-                  />
-                  <defs>
-                    <linearGradient id="propensity-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="hsl(var(--teal-500, 173 80% 40%))" />
-                      <stop offset="100%" stopColor="hsl(var(--cyan-500, 188 80% 45%))" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-bold">{propensityScore}</span>
                 </div>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">Propensity Score</p>
-                <p className="text-xs text-muted-foreground">
-                  {propensityScore >= 70 ? 'High likelihood to list' : 
-                   propensityScore >= 40 ? 'Moderate engagement' :
-                   propensityScore > 0 ? 'Early interest' : 'Awaiting engagement'}
-                </p>
-                <Progress 
-                  value={propensityScore} 
-                  className="h-1.5 mt-2"
-                />
-              </div>
-            </div>
 
-            {/* Engagement Stats Grid */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
-                <Eye className="h-5 w-5 text-teal-600 mb-1" />
-                <span className="text-2xl font-bold">{totalViews}</span>
-                <span className="text-xs text-muted-foreground">Report Views</span>
+              {/* Engagement Stats Grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
+                  <Eye className="h-5 w-5 text-teal-600 mb-1" />
+                  <span className="text-2xl font-bold">{aggregateStats.totalViews}</span>
+                  <span className="text-xs text-muted-foreground">Total Views</span>
+                </div>
+                <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
+                  <Clock className="h-5 w-5 text-teal-600 mb-1" />
+                  <span className="text-2xl font-bold">{formatTime(aggregateStats.totalTimeSeconds)}</span>
+                  <span className="text-xs text-muted-foreground">Time Spent</span>
+                </div>
+                <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
+                  <Mail className="h-5 w-5 text-teal-600 mb-1" />
+                  <span className="text-2xl font-bold">{aggregateStats.totalEmailOpens}</span>
+                  <span className="text-xs text-muted-foreground">Email Opens</span>
+                </div>
               </div>
-              <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
-                <Clock className="h-5 w-5 text-teal-600 mb-1" />
-                <span className="text-2xl font-bold">{formatTime(totalTimeSeconds)}</span>
-                <span className="text-xs text-muted-foreground">Time Spent</span>
-              </div>
-              <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
-                <Mail className="h-5 w-5 text-teal-600 mb-1" />
-                <span className="text-2xl font-bold">{emailOpens}</span>
-                <span className="text-xs text-muted-foreground">Email Opens</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Report Pipeline Status - 2 Step: Draft → Sent */}
+        {/* Create New Report Button */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Report Status</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              {/* Draft */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex flex-col items-center cursor-help">
-                    <div className={cn(
-                      "h-10 w-10 rounded-full flex items-center justify-center mb-2",
-                      hasReport ? "bg-teal-500/20 text-teal-600" : "bg-muted text-muted-foreground"
-                    )}>
-                      <FileText className="h-5 w-5" />
-                    </div>
-                    <span className="text-xs font-medium">Draft</span>
-                    {hasReport && <Check className="h-3.5 w-3.5 text-teal-600 mt-1" />}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-[200px] text-center">
-                  {reportCreatedAt ? (
-                    <p className="whitespace-normal">Created: {format(new Date(reportCreatedAt), 'MMM d, yyyy h:mm a')}</p>
-                  ) : (
-                    <p>Draft not yet created</p>
-                  )}
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Line */}
-              <div className={cn(
-                "flex-1 h-0.5 mx-4",
-                isSent ? "bg-teal-500" : "bg-muted"
-              )} />
-
-              {/* Sent */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex flex-col items-center cursor-help">
-                    <div className={cn(
-                      "h-10 w-10 rounded-full flex items-center justify-center mb-2",
-                      isSent 
-                        ? "bg-teal-500/20 text-teal-600" 
-                        : "bg-muted text-muted-foreground"
-                    )}>
-                      <Send className="h-5 w-5" />
-                    </div>
-                    <span className="text-xs font-medium">Sent</span>
-                    {isSent ? (
-                      <Check className="h-3.5 w-3.5 text-teal-600 mt-1" />
+              <div>
+                <h3 className="font-semibold">Create New Report</h3>
+                <p className="text-sm text-muted-foreground">
+                  {hasReports 
+                    ? `${reports.length} report${reports.length !== 1 ? 's' : ''} created` 
+                    : 'Generate a professional report for this property'}
+                </p>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    disabled={isCreatingReport}
+                    className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                  >
+                    {isCreatingReport ? (
+                      <>Creating...</>
                     ) : (
-                      <span className="text-[10px] text-muted-foreground mt-1">Pending</span>
+                      <>
+                        <Plus className="h-4 w-4" />
+                        New Report
+                        <ChevronDown className="h-4 w-4" />
+                      </>
                     )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {reportSentAt ? (
-                    <p>Sent: {format(new Date(reportSentAt), 'MMM d, yyyy h:mm a')}</p>
-                  ) : (
-                    <p>Not yet sent to vendor</p>
-                  )}
-                </TooltipContent>
-              </Tooltip>
-            </div>
-
-            {/* Status badges row */}
-            <div className="flex items-center justify-center gap-3 mt-4 pt-4 border-t border-border/50">
-              {totalViews > 0 && (
-                <Badge variant="secondary" className="gap-1">
-                  <Eye className="h-3.5 w-3.5" />
-                  {totalViews} view{totalViews !== 1 ? 's' : ''}
-                </Badge>
-              )}
-              {isHotLead && (
-                <Badge className="bg-red-500/10 text-red-600 border-red-500/20 gap-1">
-                  <Flame className="h-3.5 w-3.5" />
-                  Hot Lead
-                </Badge>
-              )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleCreateReport('market_appraisal')}>
+                    <span className="mr-2">📊</span>
+                    Market Appraisal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleCreateReport('proposal')}>
+                    <span className="mr-2">📝</span>
+                    Proposal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleCreateReport('update')}>
+                    <span className="mr-2">🔄</span>
+                    Update Report
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardContent>
         </Card>
+
+        {/* Report History */}
+        {hasReports && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Report History</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {reportsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading reports...</p>
+              ) : (
+                reports.map((report, index) => (
+                  <ReportCard 
+                    key={report.id} 
+                    report={report} 
+                    isLatest={index === 0}
+                    onCopyLink={handleCopyLink}
+                  />
+                ))
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Engagement Timeline - Individual Events */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Engagement Timeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {eventsLoading ? (
-              <p className="text-sm text-muted-foreground">Loading events...</p>
-            ) : events.length > 0 ? (
-              <div className="space-y-2">
-                {events.map((event) => (
-                  <div key={event.id} className="flex items-center gap-3 text-sm py-1.5 border-b border-border/30 last:border-0">
-                    <div className={cn(
-                      "h-6 w-6 rounded-full flex items-center justify-center",
-                      event.event_type === 'email_open' 
-                        ? "bg-blue-500/20 text-blue-600"
-                        : event.event_type === 'view'
-                        ? "bg-teal-500/20 text-teal-600"
-                        : "bg-amber-500/20 text-amber-600"
-                    )}>
-                      {event.event_type === 'email_open' ? (
-                        <Mail className="h-3.5 w-3.5" />
-                      ) : event.event_type === 'view' ? (
-                        <Eye className="h-3.5 w-3.5" />
-                      ) : (
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <span className="font-medium capitalize">
-                        {event.event_type === 'email_open' ? 'Email opened' : 
-                         event.event_type === 'view' ? 'Report viewed' : 
-                         'Link clicked'}
-                      </span>
-                      {event.event_type === 'view' && event.duration_seconds > 0 && (
-                        <span className="text-muted-foreground ml-1">
-                          ({formatTime(event.duration_seconds)})
+        {hasReports && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Engagement Timeline</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {eventsLoading ? (
+                <p className="text-sm text-muted-foreground">Loading events...</p>
+              ) : events.length > 0 ? (
+                <div className="space-y-2">
+                  {events.map((event) => (
+                    <div key={event.id} className="flex items-center gap-3 text-sm py-1.5 border-b border-border/30 last:border-0">
+                      <div className={cn(
+                        "h-6 w-6 rounded-full flex items-center justify-center",
+                        event.event_type === 'email_open' 
+                          ? "bg-blue-500/20 text-blue-600"
+                          : event.event_type === 'view'
+                          ? "bg-teal-500/20 text-teal-600"
+                          : "bg-amber-500/20 text-amber-600"
+                      )}>
+                        {event.event_type === 'email_open' ? (
+                          <Mail className="h-3.5 w-3.5" />
+                        ) : event.event_type === 'view' ? (
+                          <Eye className="h-3.5 w-3.5" />
+                        ) : (
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <span className="font-medium capitalize">
+                          {event.event_type === 'email_open' ? 'Email opened' : 
+                           event.event_type === 'view' ? 'Report viewed' : 
+                           'Link clicked'}
                         </span>
-                      )}
+                        {event.event_type === 'view' && event.duration_seconds > 0 && (
+                          <span className="text-muted-foreground ml-1">
+                            ({formatTime(event.duration_seconds)})
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(event.occurred_at), 'MMM d, h:mm a')}
+                      </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(event.occurred_at), 'MMM d, h:mm a')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No engagement events yet. Events will appear here once the vendor opens or views the report.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Actions */}
-        <div className="flex gap-3">
-          <Button variant="outline" className="flex-1 gap-2" asChild>
-            <a href={appraisal.beacon_report_url || ''} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-              Open in Beacon
-            </a>
-          </Button>
-          {appraisal.beacon_personalized_url && (
-            <Button variant="outline" className="flex-1 gap-2" onClick={handleCopyLink}>
-              {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-              {copied ? 'Copied!' : 'Copy Vendor Link'}
-            </Button>
-          )}
-        </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No engagement events yet. Events will appear here once the vendor opens or views a report.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </TooltipProvider>
   );

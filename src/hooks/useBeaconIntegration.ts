@@ -14,7 +14,23 @@ export interface BeaconReportResponse {
     publicLink: string;
     personalizedLink: string;
   };
+  reportType?: string;
+  localReportId?: string;
 }
+
+export type BeaconReportType = 'market_appraisal' | 'proposal' | 'update';
+
+export const REPORT_TYPE_LABELS: Record<BeaconReportType, string> = {
+  market_appraisal: 'Market Appraisal',
+  proposal: 'Proposal',
+  update: 'Update',
+};
+
+export const REPORT_TYPE_ICONS: Record<BeaconReportType, string> = {
+  market_appraisal: '📊',
+  proposal: '📝',
+  update: '🔄',
+};
 
 export const useBeaconIntegration = () => {
   const queryClient = useQueryClient();
@@ -77,18 +93,21 @@ export const useBeaconIntegration = () => {
 
   // Create a Beacon report for an appraisal
   const createBeaconReport = useMutation({
-    mutationFn: async (appraisalId: string) => {
+    mutationFn: async ({ appraisalId, reportType = 'market_appraisal' }: { appraisalId: string; reportType?: BeaconReportType }) => {
       const { data, error } = await supabase.functions.invoke('create-beacon-report', {
-        body: { appraisalId },
+        body: { appraisalId, reportType },
       });
 
       if (error) throw error;
       if (!data.success) throw new Error(data.error || 'Failed to create report');
       return data as BeaconReportResponse;
     },
-    onSuccess: (data, appraisalId) => {
+    onSuccess: (data, { reportType }) => {
       queryClient.invalidateQueries({ queryKey: ['logged_appraisals'] });
-      toast.success(data.existing ? 'Opening existing Beacon report...' : 'Beacon report created! Opening in new tab...');
+      queryClient.invalidateQueries({ queryKey: ['beacon_reports'] });
+      
+      const typeLabel = REPORT_TYPE_LABELS[reportType || 'market_appraisal'];
+      toast.success(`${typeLabel} report created! Opening in new tab...`);
       
       // Open the Beacon report edit page in a new tab
       if (data.urls?.edit) {
