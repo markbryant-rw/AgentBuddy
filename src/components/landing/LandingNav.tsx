@@ -33,7 +33,7 @@ export const LandingNav = () => {
             <Button variant="ghost">Sign In</Button>
           </Link>
           <Link to="/auth?tab=signup">
-            <Button>Start Free</Button>
+            <Button>Get Started</Button>
           </Link>
         </div>
       </div>

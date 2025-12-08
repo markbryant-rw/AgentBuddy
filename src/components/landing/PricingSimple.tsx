@@ -1,13 +1,15 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Check, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 
 const plans = [
   {
     name: "Solo Agent",
-    price: "$49.99",
-    period: "/month",
+    monthlyPrice: 49.99,
+    annualPrice: 499.90, // 10 months = 2 months free
     description: "Everything you need as an individual agent",
     features: [
       "Single user license",
@@ -15,7 +17,6 @@ const plans = [
       "Transaction management",
       "All 6 workspaces",
       "AI credits included",
-      "Beacon integration",
       "Email support",
     ],
     cta: "Get Started",
@@ -24,8 +25,8 @@ const plans = [
   },
   {
     name: "Small Team",
-    price: "$99.99",
-    period: "/month",
+    monthlyPrice: 99.99,
+    annualPrice: 999.90, // 10 months = 2 months free
     description: "Perfect for agents with a team",
     features: [
       "Up to 3 team members",
@@ -33,7 +34,6 @@ const plans = [
       "Transaction management",
       "All 6 workspaces",
       "AI credits included",
-      "Beacon integration",
       "Team dashboards",
       "Priority support",
     ],
@@ -44,6 +44,8 @@ const plans = [
 ];
 
 export const PricingSimple = () => {
+  const [isAnnual, setIsAnnual] = useState(false);
+
   return (
     <section className="py-24 bg-muted/30">
       <div className="container mx-auto px-4">
@@ -56,9 +58,25 @@ export const PricingSimple = () => {
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
             Simple, honest pricing
           </h2>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-            No hidden fees. No long-term contracts. Start free and upgrade when you're ready.
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-6">
+            No hidden fees. No long-term contracts. Cancel anytime.
           </p>
+          
+          {/* Annual toggle */}
+          <div className="flex items-center justify-center gap-3">
+            <span className={`text-sm ${!isAnnual ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+              Monthly
+            </span>
+            <Switch checked={isAnnual} onCheckedChange={setIsAnnual} />
+            <span className={`text-sm ${isAnnual ? "text-foreground font-medium" : "text-muted-foreground"}`}>
+              Yearly
+            </span>
+            {isAnnual && (
+              <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-0.5 rounded-full">
+                2 months free!
+              </span>
+            )}
+          </div>
         </motion.div>
 
         <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
@@ -91,10 +109,17 @@ export const PricingSimple = () => {
                   <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
                   <div className="flex items-baseline justify-center gap-1">
                     <span className={`text-4xl font-bold bg-gradient-to-r ${plan.gradient} bg-clip-text text-transparent`}>
-                      {plan.price}
+                      ${isAnnual ? plan.annualPrice.toFixed(2) : plan.monthlyPrice.toFixed(2)}
                     </span>
-                    <span className="text-muted-foreground">{plan.period}</span>
+                    <span className="text-muted-foreground">
+                      {isAnnual ? "/year" : "/month"}
+                    </span>
                   </div>
+                  {isAnnual && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      (${(plan.annualPrice / 12).toFixed(2)}/month)
+                    </p>
+                  )}
                 </div>
 
                 {/* Features */}
