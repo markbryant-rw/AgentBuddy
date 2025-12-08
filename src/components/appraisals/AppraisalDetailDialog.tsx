@@ -34,7 +34,7 @@ import { AppraisalTasksTab } from './AppraisalTasksTab';
 import { BeaconReportButton } from './BeaconReportButton';
 import { BeaconEngagementPanel } from './BeaconEngagementPanel';
 import { BeaconTab } from './BeaconTab';
-import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity } from "lucide-react";
+import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle } from "lucide-react";
 import { StageInfoTooltip } from './StageInfoTooltip';
 import {
   AlertDialog,
@@ -231,31 +231,48 @@ const AppraisalDetailDialog = ({
     }
   };
 
-  const handleLogNewVisit = () => {
-    if (!appraisal) return;
-    // Pre-fill form with address and vendor details from current appraisal
-    setFormData({
-      address: appraisal.address,
-      vendor_name: appraisal.vendor_name,
-      vendor_mobile: appraisal.vendor_mobile,
-      vendor_email: appraisal.vendor_email,
-      suburb: appraisal.suburb,
-      latitude: appraisal.latitude,
-      longitude: appraisal.longitude,
-      appraisal_date: new Date().toISOString().split('T')[0],
-      intent: 'medium',
-      stage: 'VAP',
-      outcome: 'In Progress',
-      estimated_value: appraisal.estimated_value,
-      last_contact: new Date().toISOString().split('T')[0],
-      next_follow_up: '',
-      lead_source: appraisal.lead_source,
-      notes: '',
-      agent_id: user?.id,
-    });
-    // CurrencyInput handles display formatting automatically
-    // This will trigger a re-render with isNew behavior
-    // We need to handle this differently - open a new dialog or switch mode
+  const handleLogNewVisit = async () => {
+    if (!appraisal || !team?.id) return;
+    
+    try {
+      // Create new appraisal with inherited property details
+      const newVisitData = {
+        address: appraisal.address,
+        vendor_name: appraisal.vendor_name,
+        vendor_mobile: appraisal.vendor_mobile,
+        vendor_email: appraisal.vendor_email,
+        suburb: appraisal.suburb,
+        latitude: appraisal.latitude,
+        longitude: appraisal.longitude,
+        appraisal_date: new Date().toISOString().split('T')[0],
+        intent: 'medium' as const,
+        stage: 'VAP' as const,
+        outcome: 'In Progress' as const,
+        estimated_value: appraisal.estimated_value,
+        last_contact: new Date().toISOString().split('T')[0],
+        next_follow_up: null,
+        lead_source: appraisal.lead_source,
+        notes: '',
+        agent_id: user?.id,
+        team_id: team.id,
+      };
+      
+      const result = await addAppraisal(newVisitData as any);
+      if (result) {
+        toast({ 
+          title: "New visit logged", 
+          description: `Visit logged for ${appraisal.address}`,
+        });
+        // Close current dialog - user can reopen from list if needed
+        onOpenChange(false);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to log new visit",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLocationUpdated = (data: { address: string; suburb: string; latitude: number; longitude: number }) => {
@@ -368,6 +385,9 @@ const AppraisalDetailDialog = ({
                       <Input id="vendor_email" type="email" value={formData.vendor_email || ''} onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })} placeholder="john@example.com" className="h-10" />
                     </div>
                   </div>
+                  
+                  {/* Fix Location Section */}
+                  <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
                 </div>
 
                 {/* Appraisal Information */}
@@ -431,17 +451,6 @@ const AppraisalDetailDialog = ({
                   <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
                 </div>
 
-                {/* Beacon Report Button */}
-                <div className="flex items-center gap-3">
-                  <BeaconReportButton
-                    appraisalId={appraisal.id}
-                    beaconReportUrl={appraisal.beacon_report_url}
-                    beaconPersonalizedUrl={appraisal.beacon_personalized_url}
-                  />
-                </div>
-
-                {/* Fix Location Section - moved from Tracking tab */}
-                <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />
               </TabsContent>
 
               {/* Tracking Tab - Progress, Visit Timeline, Location Fix */}
@@ -742,7 +751,15 @@ const AppraisalDetailDialog = ({
               )}
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting || isSaving} className="px-6">Cancel</Button>
               {appraisal && appraisal.outcome === 'In Progress' && !isNew && (
-                <Button type="button" variant="secondary" onClick={handleConvert} disabled={isDeleting || isSaving} className="px-6">Convert to Opportunity</Button>
+                <Button 
+                  type="button" 
+                  onClick={handleConvert} 
+                  disabled={isDeleting || isSaving} 
+                  className="px-8 py-5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-semibold text-base shadow-lg"
+                >
+                  <ArrowRightCircle className="h-5 w-5 mr-2" />
+                  Convert to Opportunity
+                </Button>
               )}
               <Button type="button" onClick={handleSave} disabled={isDeleting || isSaving} className="px-6">
                 {isSaving ? 'Saving...' : (isNew ? 'Log Appraisal' : 'Save Changes')}
