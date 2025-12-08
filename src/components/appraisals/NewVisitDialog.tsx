@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
-  SelectContentInline,
+  SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -104,7 +104,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContentInline>
+              <SelectContent>
                 <SelectItem value="VAP">
                   <div className="flex items-center gap-2">
                     VAP <StageInfoTooltip stage="VAP" />
@@ -120,7 +120,7 @@ export const NewVisitDialog = ({
                     LAP <StageInfoTooltip stage="LAP" />
                   </div>
                 </SelectItem>
-              </SelectContentInline>
+              </SelectContent>
             </Select>
           </div>
 
@@ -136,7 +136,7 @@ export const NewVisitDialog = ({
               <SelectTrigger className="h-10">
                 <SelectValue />
               </SelectTrigger>
-              <SelectContentInline>
+              <SelectContent>
                 <SelectItem value="low">
                   <span className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-blue-500" />
@@ -155,7 +155,7 @@ export const NewVisitDialog = ({
                     High
                   </span>
                 </SelectItem>
-              </SelectContentInline>
+              </SelectContent>
             </Select>
           </div>
         </div>

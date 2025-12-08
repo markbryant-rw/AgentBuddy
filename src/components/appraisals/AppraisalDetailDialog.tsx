@@ -19,7 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
-  SelectContentInline,
+  SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -418,7 +418,7 @@ const AppraisalDetailDialog = ({
                             )}
                           </SelectValue>
                         </SelectTrigger>
-                        <SelectContentInline>
+                        <SelectContent>
                           {members.map((member) => (
                             <SelectItem key={member.user_id} value={member.user_id}>
                               <div className="flex items-center gap-2">
@@ -430,7 +430,7 @@ const AppraisalDetailDialog = ({
                               </div>
                             </SelectItem>
                           ))}
-                        </SelectContentInline>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
@@ -441,9 +441,9 @@ const AppraisalDetailDialog = ({
                       <Label htmlFor="lead_source" className="text-sm font-medium">Lead Source</Label>
                       <Select value={formData.lead_source || ''} onValueChange={(value) => setFormData({ ...formData, lead_source: value })}>
                         <SelectTrigger className="h-10"><SelectValue placeholder="Select lead source" /></SelectTrigger>
-                        <SelectContentInline>
+                        <SelectContent>
                           {activeLeadSources.map((source) => (<SelectItem key={source.id} value={source.value}>{source.label}</SelectItem>))}
-                        </SelectContentInline>
+                        </SelectContent>
                       </Select>
                     </div>
                   </div>
@@ -470,7 +470,7 @@ const AppraisalDetailDialog = ({
                       </Label>
                       <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
                         <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                        <SelectContentInline>
+                        <SelectContent>
                           <SelectItem value="VAP">
                             <div className="flex items-center gap-2">VAP <StageInfoTooltip stage="VAP" /></div>
                           </SelectItem>
@@ -480,14 +480,14 @@ const AppraisalDetailDialog = ({
                           <SelectItem value="LAP">
                             <div className="flex items-center gap-2">LAP <StageInfoTooltip stage="LAP" /></div>
                           </SelectItem>
-                        </SelectContentInline>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="outcome" className="text-sm font-medium">Outcome</Label>
                       <Select value={formData.outcome} onValueChange={(value: 'In Progress' | 'WON' | 'LOST') => setFormData({ ...formData, outcome: value })}>
                         <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                        <SelectContentInline>
+                        <SelectContent>
                           <SelectItem value="In Progress">In Progress</SelectItem>
                           <SelectItem value="WON">
                             <span className="flex items-center gap-2">
@@ -501,18 +501,18 @@ const AppraisalDetailDialog = ({
                               <span className="text-red-700">LOST</span>
                             </span>
                           </SelectItem>
-                        </SelectContentInline>
+                        </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="intent" className="text-sm font-medium">Intent <span className="text-destructive">*</span></Label>
                       <Select value={formData.intent || 'medium'} onValueChange={(value: any) => setFormData({ ...formData, intent: value })}>
                         <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                        <SelectContentInline>
+                        <SelectContent>
                           <SelectItem value="low">Low</SelectItem>
                           <SelectItem value="medium">Medium</SelectItem>
                           <SelectItem value="high">High</SelectItem>
-                        </SelectContentInline>
+                        </SelectContent>
                       </Select>
                     </div>
                   </div>
@@ -638,7 +638,7 @@ const AppraisalDetailDialog = ({
                           )}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContentInline>
+                      <SelectContent>
                         {members.map((member) => (
                           <SelectItem key={member.user_id} value={member.user_id}>
                             <div className="flex items-center gap-2">
@@ -650,7 +650,7 @@ const AppraisalDetailDialog = ({
                             </div>
                           </SelectItem>
                         ))}
-                      </SelectContentInline>
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
@@ -661,9 +661,9 @@ const AppraisalDetailDialog = ({
                     <Label htmlFor="lead_source" className="text-sm font-medium">Lead Source</Label>
                     <Select value={formData.lead_source || ''} onValueChange={(value) => setFormData({ ...formData, lead_source: value })}>
                       <SelectTrigger className="h-10"><SelectValue placeholder="Select lead source" /></SelectTrigger>
-                      <SelectContentInline>
+                      <SelectContent>
                         {activeLeadSources.map((source) => (<SelectItem key={source.id} value={source.value}>{source.label}</SelectItem>))}
-                      </SelectContentInline>
+                      </SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -679,7 +679,7 @@ const AppraisalDetailDialog = ({
                     </Label>
                     <Select value={formData.stage} onValueChange={(value: 'VAP' | 'MAP' | 'LAP') => setFormData({ ...formData, stage: value })}>
                       <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                      <SelectContentInline>
+                      <SelectContent>
                         <SelectItem value="VAP">
                           <div className="flex items-center gap-2">VAP <StageInfoTooltip stage="VAP" /></div>
                         </SelectItem>
@@ -689,29 +689,29 @@ const AppraisalDetailDialog = ({
                         <SelectItem value="LAP">
                           <div className="flex items-center gap-2">LAP <StageInfoTooltip stage="LAP" /></div>
                         </SelectItem>
-                      </SelectContentInline>
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="outcome" className="text-sm font-medium">Outcome</Label>
                     <Select value={formData.outcome} onValueChange={(value: 'In Progress' | 'WON' | 'LOST') => setFormData({ ...formData, outcome: value })}>
                       <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                      <SelectContentInline>
+                      <SelectContent>
                         <SelectItem value="In Progress">In Progress</SelectItem>
                         <SelectItem value="WON">WON</SelectItem>
                         <SelectItem value="LOST">LOST</SelectItem>
-                      </SelectContentInline>
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="intent" className="text-sm font-medium">Intent <span className="text-destructive">*</span></Label>
                     <Select value={formData.intent || 'medium'} onValueChange={(value: any) => setFormData({ ...formData, intent: value })}>
                       <SelectTrigger className="h-10"><SelectValue /></SelectTrigger>
-                      <SelectContentInline>
+                      <SelectContent>
                         <SelectItem value="low">Low - Exploring options</SelectItem>
                         <SelectItem value="medium">Medium - Seriously considering</SelectItem>
                         <SelectItem value="high">High - Ready to list soon</SelectItem>
-                      </SelectContentInline>
+                      </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
