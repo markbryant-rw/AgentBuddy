@@ -91,7 +91,7 @@ const AppraisalTemplateLibrary = () => {
 
   return (
     <div className="min-h-screen">
-      <WorkspaceHeader workspace="prospect" currentPage="Appraisal Templates" backTo="/prospect-appraisals" backLabel="Appraisals" />
+      <WorkspaceHeader workspace="prospect" currentPage="Appraisal Templates" backTo="/prospect-dashboard/appraisals" backLabel="Appraisals" />
       
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
