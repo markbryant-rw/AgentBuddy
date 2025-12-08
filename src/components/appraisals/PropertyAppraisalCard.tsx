@@ -6,6 +6,8 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
 import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
+import { BeaconStatusIndicator } from './BeaconStatusIndicator';
+import { useBeaconIntegration } from '@/hooks/useBeaconIntegration';
 
 interface PropertyAppraisalCardProps {
   property: GroupedProperty;
@@ -14,6 +16,7 @@ interface PropertyAppraisalCardProps {
 
 export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCardProps) => {
   const { latestAppraisal, visitCount } = property;
+  const { isBeaconEnabled } = useBeaconIntegration();
 
   const getIntentColor = (intent?: string) => {
     switch (intent) {
@@ -65,6 +68,18 @@ export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCa
 
         {/* Right: All metadata on one line */}
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Beacon Status - only show if Beacon enabled and report exists */}
+          {isBeaconEnabled && latestAppraisal.beacon_report_id && (
+            <BeaconStatusIndicator
+              hasReport={!!latestAppraisal.beacon_report_id}
+              isSent={!!latestAppraisal.beacon_synced_at}
+              viewCount={latestAppraisal.beacon_total_views || 0}
+              propensityScore={latestAppraisal.beacon_propensity_score || 0}
+              isHotLead={latestAppraisal.beacon_is_hot_lead || false}
+              compact
+            />
+          )}
+
           {/* Visit count */}
           {visitCount > 1 ? (
             <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs px-1.5 py-0">
