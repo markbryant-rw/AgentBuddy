@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { isDemoEmail } from "../_shared/demoCheck.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -131,6 +132,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Use verified domain from env or fallback to test domain
     const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'onboarding@resend.dev';
+
+    // Skip email for demo users
+    if (isDemoEmail(user.email)) {
+      console.log('Demo user - skipping real email resend');
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          demo: true,
+          message: "Invitation resent (email simulated in demo mode)" 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Resend email
     await resend.emails.send({

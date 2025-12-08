@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { isDemoEmail } from "../_shared/demoCheck.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -51,6 +52,28 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ success: false, error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Return mock response for demo users - no external API call
+    if (isDemoEmail(user.email)) {
+      console.log('Demo user - returning mock Beacon report');
+      const mockReportId = `demo-report-${Date.now()}`;
+      return new Response(
+        JSON.stringify({
+          success: true,
+          demo: true,
+          existing: false,
+          reportId: mockReportId,
+          ownerId: 'demo-owner',
+          urls: {
+            edit: '#demo-edit',
+            publicLink: '#demo-public',
+            personalizedLink: '#demo-personalized',
+          },
+          message: 'Beacon reports are simulated in demo mode',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 

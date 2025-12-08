@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { DEMO_USER_EMAIL } from "../_shared/demoCheck.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -104,6 +105,12 @@ serve(async (req) => {
     const errors: string[] = [];
 
     for (const profile of (profiles || []) as Profile[]) {
+      // Skip demo users - don't send real emails
+      if (profile.email?.toLowerCase() === DEMO_USER_EMAIL) {
+        console.log(`Skipping demo user ${profile.email}`);
+        continue;
+      }
+      
       try {
         // Get unread notifications for this user that haven't been included in a digest
         const { data: notifications, error: notifError } = await supabase

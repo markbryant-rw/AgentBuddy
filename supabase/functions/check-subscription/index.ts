@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isDemoEmail } from "../_shared/demoCheck.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,6 +43,23 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
+
+    // Return mock subscription for demo users - they get "full access"
+    if (isDemoEmail(user.email)) {
+      logStep("Demo user - returning mock subscription");
+      return new Response(JSON.stringify({ 
+        subscribed: true,
+        product_id: 'demo_product',
+        subscription_end: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        billing_cycle: 'demo',
+        cancel_at_period_end: false,
+        amount: 0,
+        demo: true,
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });

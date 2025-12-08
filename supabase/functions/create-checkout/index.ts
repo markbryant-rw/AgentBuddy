@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { isDemoEmail } from "../_shared/demoCheck.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,6 +40,17 @@ serve(async (req) => {
     const user = userData.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
+
+    // Block demo users from Stripe checkout
+    if (isDemoEmail(user.email)) {
+      logStep("Demo user blocked from checkout");
+      return new Response(JSON.stringify({ 
+        error: "Billing is disabled in demo mode. Sign up for a real account to subscribe." 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
 
     const { priceId } = await req.json();
     if (!priceId) throw new Error("Price ID is required");
