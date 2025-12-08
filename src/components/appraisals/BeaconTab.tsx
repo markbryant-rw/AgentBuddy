@@ -268,9 +268,8 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Aggregate Stats Card - Only show if we have reports with engagement */}
-        {hasReports && aggregateStats.bestPropensity > 0 && (
-          <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
+        {/* Aggregate Stats Card - Always show */}
+        <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -354,7 +353,6 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
               </div>
             </CardContent>
           </Card>
-        )}
 
         {/* Create New Report Button */}
         <Card>
