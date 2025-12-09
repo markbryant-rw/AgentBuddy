@@ -186,6 +186,44 @@ export type Database = {
           },
         ]
       }
+      appraisal_notes: {
+        Row: {
+          appraisal_id: string
+          author_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          source: string
+        }
+        Insert: {
+          appraisal_id: string
+          author_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          source?: string
+        }
+        Update: {
+          appraisal_id?: string
+          author_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appraisal_notes_appraisal_id_fkey"
+            columns: ["appraisal_id"]
+            isOneToOne: false
+            referencedRelation: "logged_appraisals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appraisal_stage_templates: {
         Row: {
           created_at: string

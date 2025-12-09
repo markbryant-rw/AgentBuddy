@@ -31,12 +31,13 @@ import ConvertToOpportunityDialog from './ConvertToOpportunityDialog';
 import LocationFixSection from '@/components/shared/LocationFixSection';
 import { VisitTimeline } from './VisitTimeline';
 import { AppraisalTasksTab } from './AppraisalTasksTab';
+import { AppraisalNotesTab } from './AppraisalNotesTab';
 import { BeaconReportButton } from './BeaconReportButton';
 import { BeaconEngagementPanel } from './BeaconEngagementPanel';
 import { BeaconTab } from './BeaconTab';
 import { NewVisitDialog } from './NewVisitDialog';
 import { AppraisalTemplatePromptDialog } from './AppraisalTemplatePromptDialog';
-import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle } from "lucide-react";
+import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle, MessageSquare } from "lucide-react";
 import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
 import { StageInfoTooltip } from './StageInfoTooltip';
 import { OwnersEditor, Owner, legacyToOwners, ownersToLegacy, getPrimaryOwner } from '@/components/shared/OwnersEditor';
@@ -370,7 +371,7 @@ const AppraisalDetailDialog = ({
           {/* Tabs for existing appraisals */}
           {!isNew && appraisal ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="details" className="flex items-center gap-2">
                   <FileText className="h-4 w-4" />
                   Details
@@ -382,6 +383,10 @@ const AppraisalDetailDialog = ({
                 <TabsTrigger value="tasks" className="flex items-center gap-2">
                   <ListTodo className="h-4 w-4" />
                   Tasks
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Notes
                 </TabsTrigger>
                 <TabsTrigger value="beacon" className="flex items-center gap-2">
                   <Activity className="h-4 w-4" />
@@ -603,6 +608,11 @@ const AppraisalDetailDialog = ({
                   stage={(formData.stage || appraisal.stage || 'VAP') as AppraisalStage}
                   agentId={formData.agent_id || appraisal.agent_id || undefined}
                 />
+              </TabsContent>
+
+              {/* Notes Tab */}
+              <TabsContent value="notes" className="mt-4">
+                <AppraisalNotesTab appraisalId={appraisal.id} />
               </TabsContent>
 
               {/* Beacon Tab */}
