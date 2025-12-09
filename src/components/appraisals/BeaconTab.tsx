@@ -232,6 +232,17 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     teamId
   } = useBeaconIntegration();
   const { reports, aggregateStats, hasReports, isLoading: reportsLoading } = useBeaconReports(appraisal.id);
+
+  // Fallback to appraisal.beacon_* fields if no beacon_reports records exist
+  const effectiveStats = hasReports ? aggregateStats : {
+    totalViews: appraisal.beacon_total_views || 0,
+    totalTimeSeconds: appraisal.beacon_total_time_seconds || 0,
+    totalEmailOpens: appraisal.beacon_email_opens || 0,
+    bestPropensity: appraisal.beacon_propensity_score || 0,
+    anyHotLead: appraisal.beacon_is_hot_lead || false,
+  };
+  
+  const hasEngagementData = effectiveStats.bestPropensity > 0 || effectiveStats.totalViews > 0;
   const { events, isLoading: eventsLoading } = useBeaconEngagementEvents(appraisal.id);
   const [copied, setCopied] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -377,7 +388,8 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Aggregate Stats Card - Always show */}
+        {/* Aggregate Stats Card - Show when we have engagement data */}
+        {hasEngagementData && (
         <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -385,7 +397,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                   <Activity className="h-5 w-5 text-teal-600" />
                   Overall Engagement
                 </CardTitle>
-                {aggregateStats.anyHotLead && (
+                {effectiveStats.anyHotLead && (
                   <Badge className="bg-red-500/10 text-red-600 border-red-500/20 gap-1">
                     <Flame className="h-3.5 w-3.5 animate-pulse" />
                     Hot Lead
@@ -415,7 +427,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                       stroke="url(#propensity-gradient)"
                       strokeWidth="8"
                       strokeLinecap="round"
-                      strokeDasharray={`${(aggregateStats.bestPropensity / 100) * 226} 226`}
+                      strokeDasharray={`${(effectiveStats.bestPropensity / 100) * 226} 226`}
                     />
                     <defs>
                       <linearGradient id="propensity-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -425,18 +437,18 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                     </defs>
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-2xl font-bold">{aggregateStats.bestPropensity}</span>
+                    <span className="text-2xl font-bold">{effectiveStats.bestPropensity}</span>
                   </div>
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium">Best Propensity Score</p>
                   <p className="text-xs text-muted-foreground">
-                    {aggregateStats.bestPropensity >= 70 ? 'High likelihood to list' : 
-                     aggregateStats.bestPropensity >= 40 ? 'Moderate engagement' :
-                     aggregateStats.bestPropensity > 0 ? 'Early interest' : 'Awaiting engagement'}
+                    {effectiveStats.bestPropensity >= 70 ? 'High likelihood to list' : 
+                     effectiveStats.bestPropensity >= 40 ? 'Moderate engagement' :
+                     effectiveStats.bestPropensity > 0 ? 'Early interest' : 'Awaiting engagement'}
                   </p>
                   <Progress 
-                    value={aggregateStats.bestPropensity} 
+                    value={effectiveStats.bestPropensity} 
                     className="h-1.5 mt-2"
                   />
                 </div>
@@ -446,23 +458,35 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
                   <Eye className="h-5 w-5 text-teal-600 mb-1" />
-                  <span className="text-2xl font-bold">{aggregateStats.totalViews}</span>
+                  <span className="text-2xl font-bold">{effectiveStats.totalViews}</span>
                   <span className="text-xs text-muted-foreground">Total Views</span>
                 </div>
                 <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
                   <Clock className="h-5 w-5 text-teal-600 mb-1" />
-                  <span className="text-2xl font-bold">{formatTime(aggregateStats.totalTimeSeconds)}</span>
+                  <span className="text-2xl font-bold">{formatTime(effectiveStats.totalTimeSeconds)}</span>
                   <span className="text-xs text-muted-foreground">Time Spent</span>
                 </div>
                 <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
                   <Mail className="h-5 w-5 text-teal-600 mb-1" />
-                  <span className="text-2xl font-bold">{aggregateStats.totalEmailOpens}</span>
+                  <span className="text-2xl font-bold">{effectiveStats.totalEmailOpens}</span>
                   <span className="text-xs text-muted-foreground">Email Opens</span>
                 </div>
               </div>
+
+              {/* First viewed / Last activity timestamps */}
+              {(appraisal.beacon_first_viewed_at || appraisal.beacon_last_activity) && (
+                <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+                  {appraisal.beacon_first_viewed_at && (
+                    <span>First viewed: {format(new Date(appraisal.beacon_first_viewed_at), 'MMM d, yyyy h:mm a')}</span>
+                  )}
+                  {appraisal.beacon_last_activity && (
+                    <span>Last activity: {format(new Date(appraisal.beacon_last_activity), 'MMM d, yyyy h:mm a')}</span>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
-
+        )}
         {/* Create New Report Button */}
         <Card>
           <CardContent className="pt-6">
