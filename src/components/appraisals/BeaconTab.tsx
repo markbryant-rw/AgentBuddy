@@ -252,6 +252,41 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [needsSync, setNeedsSync] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
+  const [leadIdCopied, setLeadIdCopied] = useState(false);
+
+  // Auto-search when dialog opens
+  const handleLinkDialogOpen = (open: boolean) => {
+    setLinkDialogOpen(open);
+    if (open && appraisal.address && !needsSync) {
+      // Auto-trigger search when dialog opens
+      handleSearchReportsAuto();
+    }
+  };
+
+  const handleSearchReportsAuto = async () => {
+    if (!appraisal.address) return;
+    
+    setIsSearching(true);
+    setNeedsSync(false);
+    try {
+      const results = await searchBeaconReports({ address: appraisal.address });
+      setSearchResults(results);
+    } catch (error: any) {
+      console.error('Auto-search error:', error);
+      if (error.message?.includes('not synced')) {
+        setNeedsSync(true);
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleCopyLeadId = async () => {
+    await navigator.clipboard.writeText(appraisal.id);
+    setLeadIdCopied(true);
+    toast.success('Lead ID copied to clipboard');
+    setTimeout(() => setLeadIdCopied(false), 2000);
+  };
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
     setCopied(true);
@@ -487,6 +522,24 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
             </CardContent>
           </Card>
         )}
+        {/* Lead ID for Manual Linking */}
+        {!hasReports && (
+          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border/50">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground mb-1">AgentBuddy Lead ID (for manual linking in Beacon)</p>
+              <code className="text-xs font-mono text-foreground/80 truncate block">{appraisal.id}</code>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="shrink-0 h-8 px-2"
+              onClick={handleCopyLeadId}
+            >
+              {leadIdCopied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+            </Button>
+          </div>
+        )}
+
         {/* Create New Report Button */}
         <Card>
           <CardContent className="pt-6">
@@ -512,7 +565,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                 </Button>
                 
                 {/* Link Existing Report */}
-                <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+                <Dialog open={linkDialogOpen} onOpenChange={handleLinkDialogOpen}>
                   <DialogTrigger asChild>
                     <Button variant="outline" size="sm" className="gap-1.5">
                       <Link2 className="h-4 w-4" />
@@ -552,38 +605,43 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                             </Button>
                           </div>
                         ) : (
-                          <Button 
-                            variant="outline" 
-                            className="w-full justify-start gap-2 h-10"
-                            onClick={handleSearchReports}
-                            disabled={isSearching}
-                          >
+                          <>
                             {isSearching ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
+                                <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
+                                <span className="text-sm text-muted-foreground">Searching for matching reports...</span>
+                              </div>
+                            ) : searchResults.length > 0 ? (
+                              <div className="space-y-2">
+                                <p className="text-xs text-muted-foreground">Found {searchResults.length} matching report(s):</p>
+                                {searchResults.map((result) => (
+                                  <button
+                                    key={result.id}
+                                    onClick={() => handleSelectSearchResult(result)}
+                                    className="w-full p-3 border rounded-lg text-left hover:bg-teal-500/5 hover:border-teal-500/30 transition-colors text-sm"
+                                  >
+                                    <p className="font-medium truncate">{result.address || result.property_slug}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {result.report_type} • Created {format(new Date(result.created_at), 'MMM d, yyyy')}
+                                    </p>
+                                  </button>
+                                ))}
+                              </div>
                             ) : (
-                              <Search className="h-4 w-4" />
+                              <div className="p-3 bg-muted/30 rounded-lg text-center">
+                                <p className="text-sm text-muted-foreground mb-2">No matching reports found</p>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={handleSearchReports}
+                                  className="gap-2"
+                                >
+                                  <RefreshCw className="h-3 w-3" />
+                                  Search Again
+                                </Button>
+                              </div>
                             )}
-                            Search for "{appraisal.address?.substring(0, 30)}..."
-                          </Button>
-                        )}
-                        
-                        {/* Search Results */}
-                        {searchResults.length > 0 && (
-                          <div className="space-y-2 mt-2">
-                            <p className="text-xs text-muted-foreground">Found {searchResults.length} report(s):</p>
-                            {searchResults.map((result) => (
-                              <button
-                                key={result.id}
-                                onClick={() => handleSelectSearchResult(result)}
-                                className="w-full p-2 border rounded-lg text-left hover:bg-muted/50 transition-colors text-sm"
-                              >
-                                <p className="font-medium truncate">{result.address || result.property_slug}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {result.report_type} • Created {format(new Date(result.created_at), 'MMM d, yyyy')}
-                                </p>
-                              </button>
-                            ))}
-                          </div>
+                          </>
                         )}
                       </div>
 
