@@ -68,24 +68,26 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
           )}
           {/* Task progress indicator */}
           {taskCount && taskCount.total > 0 && (
-            <div className="flex items-center gap-1 text-xs">
-              <CheckSquare className={cn(
-                "h-3 w-3",
-                taskCount.done === taskCount.total ? "text-emerald-500" : "text-muted-foreground"
-              )} />
-              <span className={cn(
-                taskCount.done === taskCount.total ? "text-emerald-600" : "text-muted-foreground"
-              )}>
-                {taskCount.done}/{taskCount.total}
-              </span>
-            </div>
+            <Badge variant="outline" className={cn(
+              "flex items-center gap-1 text-xs px-1.5 py-0",
+              taskCount.done === taskCount.total 
+                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                : "bg-slate-500/10 text-slate-600 border-slate-500/20"
+            )}>
+              <CheckSquare className="h-3 w-3" />
+              {taskCount.done}/{taskCount.total}
+            </Badge>
           )}
         </div>
 
         {/* Right: All metadata on one line */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Beacon Status - only show if Beacon enabled and report exists */}
-          {isBeaconEnabled && latestAppraisal.beacon_report_id && (
+          {/* Beacon Status - show if Beacon enabled and has any engagement data */}
+          {isBeaconEnabled && (
+            latestAppraisal.beacon_report_id || 
+            (latestAppraisal.beacon_propensity_score && latestAppraisal.beacon_propensity_score > 0) || 
+            (latestAppraisal.beacon_total_views && latestAppraisal.beacon_total_views > 0)
+          ) && (
             <BeaconStatusIndicator
               hasReport={!!latestAppraisal.beacon_report_id}
               viewCount={latestAppraisal.beacon_total_views || 0}
