@@ -28,7 +28,9 @@ import {
   ChevronDown,
   Pencil,
   Link2,
-  Loader2
+  Loader2,
+  Search,
+  RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
@@ -216,13 +218,26 @@ const ReportCard = ({
 };
 
 export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
-  const { isBeaconEnabled, createBeaconReport, isCreatingReport, linkBeaconReport, isLinkingReport } = useBeaconIntegration();
+  const { 
+    isBeaconEnabled, 
+    createBeaconReport, 
+    isCreatingReport, 
+    linkBeaconReport, 
+    isLinkingReport,
+    searchBeaconReports,
+    syncTeamToBeacon,
+    isSyncingTeam,
+    teamId
+  } = useBeaconIntegration();
   const { reports, aggregateStats, hasReports, isLoading: reportsLoading } = useBeaconReports(appraisal.id);
   const { events, isLoading: eventsLoading } = useBeaconEngagementEvents(appraisal.id);
   const [copied, setCopied] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [reportIdInput, setReportIdInput] = useState('');
   const [propertySlugInput, setPropertySlugInput] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [needsSync, setNeedsSync] = useState(false);
 
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -251,8 +266,55 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
         setLinkDialogOpen(false);
         setReportIdInput('');
         setPropertySlugInput('');
+        setSearchResults([]);
       }
     });
+  };
+
+  const handleSearchReports = async () => {
+    if (!appraisal.address) {
+      toast.error('No address to search for');
+      return;
+    }
+    
+    setIsSearching(true);
+    setNeedsSync(false);
+    try {
+      const results = await searchBeaconReports({ address: appraisal.address });
+      setSearchResults(results);
+      if (results.length === 0) {
+        toast.info('No matching reports found');
+      }
+    } catch (error: any) {
+      console.error('Search error:', error);
+      if (error.message?.includes('not synced')) {
+        setNeedsSync(true);
+        toast.error('Team not synced with Beacon. Click "Sync Team" to fix.');
+      } else {
+        toast.error('Could not search for reports');
+      }
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSyncTeam = () => {
+    if (!teamId) {
+      toast.error('No team found');
+      return;
+    }
+    syncTeamToBeacon.mutate(teamId, {
+      onSuccess: () => {
+        setNeedsSync(false);
+        toast.success('Team synced! You can now search for reports.');
+      }
+    });
+  };
+
+  const handleSelectSearchResult = (result: any) => {
+    setPropertySlugInput(result.property_slug || '');
+    setReportIdInput(result.id || '');
+    setSearchResults([]);
   };
 
   const formatTime = (seconds: number) => {
@@ -425,36 +487,93 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                       <DialogTitle>Link Existing Beacon Report</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      {/* Property Slug - Primary method */}
+                      {/* Search by Property - Primary */}
                       <div className="space-y-2">
-                        <Label htmlFor="propertySlug" className="text-sm font-medium">Property Slug (Recommended)</Label>
+                        <Label className="text-sm font-medium">Search by Property</Label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Find reports matching this property address
+                        </p>
+                        
+                        {needsSync ? (
+                          <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg">
+                            <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
+                              Team not synced with Beacon. Sync to enable search.
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={handleSyncTeam}
+                              disabled={isSyncingTeam}
+                              className="gap-2"
+                            >
+                              {isSyncingTeam ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4" />
+                              )}
+                              Sync Team with Beacon
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            className="w-full justify-start gap-2 h-10"
+                            onClick={handleSearchReports}
+                            disabled={isSearching}
+                          >
+                            {isSearching ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Search className="h-4 w-4" />
+                            )}
+                            Search for "{appraisal.address?.substring(0, 30)}..."
+                          </Button>
+                        )}
+                        
+                        {/* Search Results */}
+                        {searchResults.length > 0 && (
+                          <div className="space-y-2 mt-2">
+                            <p className="text-xs text-muted-foreground">Found {searchResults.length} report(s):</p>
+                            {searchResults.map((result) => (
+                              <button
+                                key={result.id}
+                                onClick={() => handleSelectSearchResult(result)}
+                                className="w-full p-2 border rounded-lg text-left hover:bg-muted/50 transition-colors text-sm"
+                              >
+                                <p className="font-medium truncate">{result.address || result.property_slug}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {result.report_type} • Created {format(new Date(result.created_at), 'MMM d, yyyy')}
+                                </p>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+                        </div>
+                      </div>
+                      
+                      {/* Property Slug */}
+                      <div className="space-y-2">
+                        <Label htmlFor="propertySlug" className="text-sm font-medium">Property Slug</Label>
                         <Input 
                           id="propertySlug"
-                          placeholder="216b-sturges-road-henderson-auckland-0612-new-zealand"
+                          placeholder="216b-sturges-road-henderson-auckland"
                           value={propertySlugInput}
                           onChange={(e) => {
                             setPropertySlugInput(e.target.value);
                             setReportIdInput('');
                           }}
                         />
-                        <div className="p-3 bg-muted/50 rounded-lg text-xs space-y-2">
-                          <p className="font-medium">How to find the Property Slug:</p>
-                          <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
-                            <li>Open your Beacon report in the browser</li>
-                            <li>Look at the URL: <span className="font-mono text-foreground">beacon.app/report/<span className="text-teal-600 font-bold">property-slug-here</span>/view</span></li>
-                            <li>Copy the property slug part (the address with dashes)</li>
-                          </ol>
-                          <p className="text-muted-foreground italic">Example: <span className="font-mono text-foreground">216b-sturges-road-henderson-auckland-0612-new-zealand</span></p>
-                        </div>
-                      </div>
-                      
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">Or use Report ID</span>
-                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          From URL: beacon.app/report/<span className="text-teal-600 font-semibold">property-slug</span>/view
+                        </p>
                       </div>
 
                       {/* Report ID - Alternative */}
@@ -470,7 +589,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                           }}
                         />
                         <p className="text-xs text-muted-foreground">
-                          The unique ID from Beacon's Reports dashboard (click the report → Settings → Copy ID)
+                          From Beacon report editor → Click "Copy ID" button
                         </p>
                       </div>
                     </div>
