@@ -176,8 +176,10 @@ export const FeatureRequestKanbanBoard = () => {
       return features.filter((feature) => feature.status === "completed" || feature.status === "archived");
     }
     if (columnId === "triage") {
-      // Include both 'triage' and legacy 'pending' status in triage column
-      return features.filter((feature) => feature.status === "triage" || feature.status === "pending");
+      // Include 'triage', legacy 'pending', and 'submitted' (from external sources) in triage column
+      return features.filter((feature) => 
+        feature.status === "triage" || feature.status === "pending" || feature.status === "submitted"
+      );
     }
     return features.filter((feature) => feature.status === columnId);
   };
