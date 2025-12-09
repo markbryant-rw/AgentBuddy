@@ -10,6 +10,7 @@ import AppraisalDetailDialog from '@/components/appraisals/AppraisalDetailDialog
 import { AppraisalsImportDialog } from '@/components/appraisals/AppraisalsImportDialog';
 import { LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
+import { useAppraisalTaskCounts } from '@/hooks/useAppraisalTaskCounts';
 
 const ProspectAppraisals = () => {
   const { appraisals, loading, refreshAppraisals, removeDuplicates } = useLoggedAppraisals();
@@ -34,6 +35,10 @@ const ProspectAppraisals = () => {
       a.beacon_is_hot_lead === true || (a.beacon_propensity_score && a.beacon_propensity_score >= 70)
     ).length;
   }, [appraisals]);
+
+  // Fetch task counts for ALL appraisals once at parent level - shared across both views
+  const allAppraisalIds = useMemo(() => appraisals.map(a => a.id), [appraisals]);
+  const { data: taskCounts } = useAppraisalTaskCounts(allAppraisalIds);
 
   const handleAppraisalClick = (appraisal: LoggedAppraisal) => {
     setSelectedAppraisal(appraisal);
@@ -151,6 +156,7 @@ const ProspectAppraisals = () => {
             appraisals={filteredAppraisals}
             loading={loading}
             onAppraisalClick={handleAppraisalClick}
+            taskCounts={taskCounts}
           />
 
           {/* Detail Dialog */}

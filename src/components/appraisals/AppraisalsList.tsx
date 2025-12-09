@@ -32,16 +32,19 @@ import { getCurrentQuarter } from '@/utils/quarterCalculations';
 import { cn } from '@/lib/utils';
 import { PropertyAppraisalCard } from './PropertyAppraisalCard';
 
+import { AppraisalTaskCount } from '@/hooks/useAppraisalTaskCounts';
+
 interface AppraisalsListProps {
   appraisals: LoggedAppraisal[];
   loading: boolean;
   onAppraisalClick: (appraisal: LoggedAppraisal) => void;
+  taskCounts?: Record<string, AppraisalTaskCount>;
 }
 
 type DateRange = 'all' | 'week' | 'month' | 'year' | 'currentQuarter' | 'lastQuarter' | 'custom';
 type ViewMode = 'property' | 'visit';
 
-const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsListProps) => {
+const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: externalTaskCounts }: AppraisalsListProps) => {
   const { updateAppraisal, deleteAppraisal } = useLoggedAppraisals();
   const { members } = useTeamMembers();
   const { usesFinancialYear, fyStartMonth } = useFinancialYear();
@@ -54,9 +57,10 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
   const [selectedAppraisals, setSelectedAppraisals] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('property');
 
-  // Fetch task counts for all appraisals in one query
-  const appraisalIds = useMemo(() => appraisals.map(a => a.id), [appraisals]);
-  const { data: taskCounts } = useAppraisalTaskCounts(appraisalIds);
+  // Use external task counts if provided, otherwise fetch internally (fallback for backward compatibility)
+  const appraisalIds = useMemo(() => externalTaskCounts ? [] : appraisals.map(a => a.id), [appraisals, externalTaskCounts]);
+  const { data: internalTaskCounts } = useAppraisalTaskCounts(appraisalIds);
+  const taskCounts = externalTaskCounts || internalTaskCounts;
 
   const filteredAppraisals = useMemo(() => {
     return appraisals.filter(appraisal => {
