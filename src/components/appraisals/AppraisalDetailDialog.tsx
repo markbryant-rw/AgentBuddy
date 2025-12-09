@@ -35,6 +35,7 @@ import { BeaconReportButton } from './BeaconReportButton';
 import { BeaconEngagementPanel } from './BeaconEngagementPanel';
 import { BeaconTab } from './BeaconTab';
 import { NewVisitDialog } from './NewVisitDialog';
+import { AppraisalTemplatePromptDialog } from './AppraisalTemplatePromptDialog';
 import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle } from "lucide-react";
 import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
 import { StageInfoTooltip } from './StageInfoTooltip';
@@ -80,6 +81,13 @@ const AppraisalDetailDialog = ({
   const [syncContactsToAllVisits, setSyncContactsToAllVisits] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const [showNewVisitDialog, setShowNewVisitDialog] = useState(false);
+  const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
+  const [createdAppraisalData, setCreatedAppraisalData] = useState<{
+    id: string;
+    appraisal_date: string;
+    stage: AppraisalStage;
+    agent_id?: string;
+  } | null>(null);
   const originalFollowUpRef = useRef<string | null | undefined>(undefined);
   
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
@@ -174,6 +182,16 @@ const AppraisalDetailDialog = ({
           title: "Success",
           description: "Appraisal logged successfully",
         });
+        
+        // Show template prompt for new appraisals
+        setCreatedAppraisalData({
+          id: result.id,
+          appraisal_date: sanitizedData.appraisal_date || new Date().toISOString().split('T')[0],
+          stage: (sanitizedData.stage as AppraisalStage) || 'VAP',
+          agent_id: sanitizedData.agent_id,
+        });
+        setShowTemplatePrompt(true);
+        return; // Don't close dialog yet - template prompt will handle it
       } else if (appraisal) {
         // Use sync version if checkbox is checked and there are multiple visits
         if (syncContactsToAllVisits && hasMultipleVisits) {
@@ -813,6 +831,27 @@ const AppraisalDetailDialog = ({
           onOpenChange={setShowNewVisitDialog}
           parentAppraisal={appraisal}
           onConfirm={handleConfirmNewVisit}
+        />
+      )}
+
+      {/* Template prompt for new appraisals */}
+      {createdAppraisalData && (
+        <AppraisalTemplatePromptDialog
+          isOpen={showTemplatePrompt}
+          onClose={() => {
+            setShowTemplatePrompt(false);
+            setCreatedAppraisalData(null);
+            onOpenChange(false);
+          }}
+          onComplete={() => {
+            setShowTemplatePrompt(false);
+            setCreatedAppraisalData(null);
+            onOpenChange(false);
+          }}
+          appraisalId={createdAppraisalData.id}
+          appraisalDate={createdAppraisalData.appraisal_date}
+          targetStage={createdAppraisalData.stage}
+          agentId={createdAppraisalData.agent_id}
         />
       )}
     </>

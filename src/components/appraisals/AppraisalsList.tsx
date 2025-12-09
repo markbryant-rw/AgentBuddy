@@ -22,7 +22,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Calendar, Trash2, RotateCcw, X, LayoutList, Building2 } from 'lucide-react';
+import { Search, Calendar, Trash2, RotateCcw, X, LayoutList, Building2, ListTodo } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, parseISO, subMonths } from 'date-fns';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
@@ -31,6 +31,7 @@ import { useFinancialYear } from '@/hooks/useFinancialYear';
 import { getCurrentQuarter } from '@/utils/quarterCalculations';
 import { cn } from '@/lib/utils';
 import { PropertyAppraisalCard } from './PropertyAppraisalCard';
+import { BulkApplyTemplateDialog } from './BulkApplyTemplateDialog';
 
 import { AppraisalTaskCount } from '@/hooks/useAppraisalTaskCounts';
 
@@ -56,6 +57,7 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
   const [selectedAppraisals, setSelectedAppraisals] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('property');
+  const [showBulkTemplateDialog, setShowBulkTemplateDialog] = useState(false);
 
   // Fetch global task counts (single cached query for all appraisals)
   const { data: globalTaskCounts } = useAppraisalTaskCounts();
@@ -351,6 +353,10 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
+            <Button variant="outline" size="sm" onClick={() => setShowBulkTemplateDialog(true)}>
+              <ListTodo className="h-4 w-4 mr-2" />
+              Apply Template
+            </Button>
             <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
               <Trash2 className="h-4 w-4 mr-2" />
               Delete
@@ -358,6 +364,25 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
           </div>
         </div>
       )}
+
+      {/* Bulk Apply Template Dialog */}
+      <BulkApplyTemplateDialog
+        isOpen={showBulkTemplateDialog}
+        onClose={() => setShowBulkTemplateDialog(false)}
+        onComplete={() => {
+          setShowBulkTemplateDialog(false);
+          setSelectedAppraisals(new Set());
+        }}
+        appraisals={Array.from(selectedAppraisals).map(id => {
+          const appraisal = appraisals.find(a => a.id === id);
+          return {
+            id,
+            stage: (appraisal?.stage as AppraisalStage) || 'VAP',
+            appraisal_date: appraisal?.appraisal_date || new Date().toISOString().split('T')[0],
+            agent_id: appraisal?.agent_id,
+          };
+        })}
+      />
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
