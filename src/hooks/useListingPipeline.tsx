@@ -4,6 +4,7 @@ import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import type { Owner } from '@/components/shared/OwnersEditor';
 
 export interface Listing {
   id: string;
@@ -12,6 +13,7 @@ export interface Listing {
   last_edited_by?: string | null;
   address: string;
   vendor_name?: string | null;
+  owners?: Owner[];
   warmth: 'cold' | 'warm' | 'hot';
   likelihood?: number | null;
   expected_month?: string | null;
@@ -79,6 +81,7 @@ export const useListingPipeline = () => {
         ...d,
         last_edited_by: d.last_edited_by || d.created_by || '',
         vendor_name: d.vendor_name || '',
+        owners: (d.owners as unknown as Owner[]) || [],
         likelihood: d.likelihood ?? 50,
         expected_month: d.expected_month || '',
         last_contact: d.last_contact || '',
@@ -99,12 +102,15 @@ export const useListingPipeline = () => {
     if (!user || !team) return false;
 
     try {
+      // Prepare owners as JSONB
+      const { owners, ...rest } = listing;
       const { data, error } = await supabase
         .from('listings_pipeline')
         .insert({
-          ...listing,
+          ...rest,
           team_id: team.id,
           created_by: user.id,
+          owners: owners as any,
         })
         .select()
         .single();
@@ -115,6 +121,7 @@ export const useListingPipeline = () => {
         ...data,
         last_edited_by: user.id,
         vendor_name: listing.vendor_name || '',
+        owners: (data.owners as unknown as Owner[]) || [],
         likelihood: listing.likelihood || 50,
         expected_month: listing.expected_month || '',
         last_contact: listing.last_contact || '',
@@ -156,9 +163,15 @@ export const useListingPipeline = () => {
     try {
       logger.info('Updating listing:', { id, updates });
       
+      // Prepare owners as JSONB
+      const { owners, ...restUpdates } = updates;
       const { data, error } = await supabase
         .from('listings_pipeline')
-        .update({ ...updates, last_edited_by: user.id })
+        .update({ 
+          ...restUpdates, 
+          last_edited_by: user.id,
+          owners: owners as any,
+        })
         .eq('id', id)
         .select()
         .single();
@@ -178,6 +191,7 @@ export const useListingPipeline = () => {
         ...data,
         last_edited_by: data.last_edited_by || user.id,
         vendor_name: data.vendor_name || '',
+        owners: (data.owners as unknown as Owner[]) || [],
         likelihood: data.likelihood ?? 50,
         expected_month: data.expected_month || '',
         last_contact: data.last_contact || '',

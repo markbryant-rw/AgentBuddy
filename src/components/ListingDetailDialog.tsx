@@ -19,6 +19,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import LocationFixSection from '@/components/shared/LocationFixSection';
+import { OwnersEditor, Owner, legacyToOwners, ownersToLegacy, getPrimaryOwner } from '@/components/shared/OwnersEditor';
 
 interface ListingDetailDialogProps {
   listing: Listing | null;
@@ -46,7 +47,9 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
 
   useEffect(() => {
     if (listing) {
-      setEditedListing(listing);
+      // Initialize owners from existing data
+      const owners = legacyToOwners(listing.vendor_name || '', undefined, undefined, listing.owners);
+      setEditedListing({ ...listing, owners });
       fetchComments();
     }
   }, [listing]);
@@ -179,7 +182,9 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editedListing) return;
-    onUpdate(editedListing.id, editedListing);
+    // Sync primary owner back to vendor_name for backward compatibility
+    const legacy = ownersToLegacy(editedListing.owners || []);
+    onUpdate(editedListing.id, { ...editedListing, vendor_name: legacy.vendor_name || editedListing.vendor_name });
     onOpenChange(false);
   };
 
@@ -239,13 +244,17 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
                       className="h-10" 
                     />
                   </div>
-                  <div className="space-y-2 col-span-2">
-                    <Label className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>
-                    <Input 
-                      value={editedListing.vendor_name} 
-                      onChange={(e) => setEditedListing({ ...editedListing, vendor_name: e.target.value })} 
-                      required 
-                      className="h-10" 
+                  <div className="col-span-2">
+                    <OwnersEditor
+                      owners={editedListing.owners || []}
+                      onChange={(owners) => {
+                        const legacy = ownersToLegacy(owners);
+                        setEditedListing({ 
+                          ...editedListing, 
+                          owners, 
+                          vendor_name: legacy.vendor_name || editedListing.vendor_name 
+                        });
+                      }}
                     />
                   </div>
                 </div>
