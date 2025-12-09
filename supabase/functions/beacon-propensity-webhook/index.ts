@@ -41,6 +41,81 @@ Deno.serve(async (req) => {
     // Beacon sends reportType in data, not at top level
     const reportType = data?.reportType || 'appraisal';
 
+    // Handle owner_added event - Beacon created a new owner, update appraisal
+    if (event === 'owner_added') {
+      console.log('Processing owner_added event for lead:', externalLeadId);
+      
+      if (!externalLeadId) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing externalLeadId for owner_added' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Update appraisal with owner info from Beacon
+      const ownerUpdate: Record<string, any> = {};
+      if (data?.ownerName) ownerUpdate.vendor_name = data.ownerName;
+      if (data?.ownerEmail) ownerUpdate.vendor_email = data.ownerEmail;
+      if (data?.ownerPhone) ownerUpdate.vendor_mobile = data.ownerPhone;
+
+      if (Object.keys(ownerUpdate).length > 0) {
+        const { error: updateError } = await supabase
+          .from('logged_appraisals')
+          .update(ownerUpdate)
+          .eq('id', externalLeadId);
+
+        if (updateError) {
+          console.error('Failed to update appraisal with owner info:', updateError);
+        } else {
+          console.log('Updated appraisal with owner info from Beacon');
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Owner info synced' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle report_sent event - update sent_at timestamp
+    if (event === 'report_sent') {
+      console.log('Processing report_sent event for lead:', externalLeadId);
+      
+      if (!externalLeadId) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing externalLeadId for report_sent' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const sentAt = data?.sentAt || new Date().toISOString();
+
+      // Update the specific beacon_report
+      const reportTypeMap: Record<string, string> = {
+        'appraisal': 'market_appraisal',
+        'proposal': 'proposal',
+        'campaign': 'update',
+      };
+      const mappedReportType = reportTypeMap[reportType] || 'market_appraisal';
+
+      await supabase
+        .from('beacon_reports')
+        .update({ sent_at: sentAt })
+        .eq('appraisal_id', externalLeadId)
+        .eq('report_type', mappedReportType);
+
+      // Also update the appraisal's beacon_report_sent_at
+      await supabase
+        .from('logged_appraisals')
+        .update({ beacon_report_sent_at: sentAt })
+        .eq('id', externalLeadId);
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Report sent timestamp updated' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (!externalLeadId) {
       return new Response(
         JSON.stringify({ success: false, error: 'Missing externalLeadId' }),
