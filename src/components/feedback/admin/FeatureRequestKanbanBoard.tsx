@@ -36,7 +36,11 @@ const COLUMNS = [
   { id: "complete", label: "Complete", color: "border-green-500" },
 ];
 
-export const FeatureRequestKanbanBoard = () => {
+interface FeatureRequestKanbanBoardProps {
+  sourceFilter?: 'all' | 'agentbuddy' | 'beacon';
+}
+
+export const FeatureRequestKanbanBoard = ({ sourceFilter = 'all' }: FeatureRequestKanbanBoardProps) => {
   const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -62,13 +66,20 @@ export const FeatureRequestKanbanBoard = () => {
   }, [queryClient]);
 
   const { data: features = [], isLoading } = useQuery({
-    queryKey: ["feature-requests-kanban"],
+    queryKey: ["feature-requests-kanban", sourceFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("feature_requests")
         .select("*")
         .order("position", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
+
+      // Apply source filter if not 'all'
+      if (sourceFilter !== 'all') {
+        query = query.eq('source', sourceFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
@@ -92,8 +103,6 @@ export const FeatureRequestKanbanBoard = () => {
           triggerAutoAnalysis(feature.id);
         }
       });
-
-      return featuresWithProfiles as FeatureRequest[];
 
       return featuresWithProfiles as FeatureRequest[];
     },

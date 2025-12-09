@@ -33,18 +33,29 @@ const COLUMNS = [
   { id: "complete", label: "Complete", color: "border-green-500" },
 ];
 
-export const BugKanbanBoard = () => {
+interface BugKanbanBoardProps {
+  sourceFilter?: 'all' | 'agentbuddy' | 'beacon';
+}
+
+export const BugKanbanBoard = ({ sourceFilter = 'all' }: BugKanbanBoardProps) => {
   const [selectedBug, setSelectedBug] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: bugs = [], isLoading } = useQuery({
-    queryKey: ["bug-reports-kanban"],
+    queryKey: ["bug-reports-kanban", sourceFilter],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("bug_reports")
         .select("*")
         .order("position", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
+
+      // Apply source filter if not 'all'
+      if (sourceFilter !== 'all') {
+        query = query.eq('source', sourceFilter);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
