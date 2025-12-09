@@ -294,8 +294,8 @@ export const TransactionDetailDrawer = ({
       missingFields.push('Settlement Date');
     }
     
-    if (!transaction.team_price && !transaction.vendor_price) {
-      missingFields.push('Sale Price (either Team Price or Vendor Price)');
+  if (!transaction.sale_price) {
+      missingFields.push('Sale Price');
     }
     
     return {
