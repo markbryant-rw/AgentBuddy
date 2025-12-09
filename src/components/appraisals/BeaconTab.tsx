@@ -632,7 +632,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleCreateReport('market_appraisal')}>
+                    <DropdownMenuItem onClick={() => handleCreateReport('appraisal')}>
                       <span className="mr-2">📊</span>
                       Market Appraisal
                     </DropdownMenuItem>
@@ -640,9 +640,9 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                       <span className="mr-2">📝</span>
                       Proposal
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleCreateReport('update')}>
+                    <DropdownMenuItem onClick={() => handleCreateReport('campaign')}>
                       <span className="mr-2">🔄</span>
-                      Update Report
+                      Campaign Update
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

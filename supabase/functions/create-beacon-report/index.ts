@@ -77,11 +77,18 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { appraisalId, reportType: rawReportType = 'market_appraisal' } = await req.json();
+    const { appraisalId, reportType: rawReportType = 'appraisal' } = await req.json();
     
-    // Validate reportType
-    const validReportTypes = ['market_appraisal', 'proposal', 'update'];
-    const reportType = validReportTypes.includes(rawReportType) ? rawReportType : 'market_appraisal';
+    // Map AgentBuddy report types to Beacon's expected values
+    // Beacon accepts: appraisal, proposal, campaign
+    const typeMapping: Record<string, string> = {
+      'market_appraisal': 'appraisal',
+      'appraisal': 'appraisal',
+      'proposal': 'proposal',
+      'update': 'campaign',
+      'campaign': 'campaign',
+    };
+    const reportType = typeMapping[rawReportType] || 'appraisal';
     
     console.log(`Creating Beacon report for appraisal: ${appraisalId}, type: ${reportType}`);
 

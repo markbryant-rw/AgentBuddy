@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     console.log('Calling Beacon API:', endpoint);
     
     const beaconPayload: Record<string, string> = {
-      api_key: beaconApiKey,
+      apiKey: beaconApiKey,
       lead_id: appraisalId,
       owner_name: appraisal.vendor_name || 'Property Owner',
     };
