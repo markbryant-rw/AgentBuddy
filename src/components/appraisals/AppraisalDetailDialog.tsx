@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { LoggedAppraisal, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
+import { LoggedAppraisal, AppraisalOwner, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { useLeadSources } from '@/hooks/useLeadSources';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { useAuth } from '@/hooks/useAuth';
@@ -39,6 +39,7 @@ import { AppraisalTemplatePromptDialog } from './AppraisalTemplatePromptDialog';
 import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle } from "lucide-react";
 import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
 import { StageInfoTooltip } from './StageInfoTooltip';
+import { OwnersEditor, Owner, legacyToOwners, ownersToLegacy, getPrimaryOwner } from '@/components/shared/OwnersEditor';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -95,6 +96,7 @@ const AppraisalDetailDialog = ({
     vendor_name: '',
     vendor_mobile: '',
     vendor_email: '',
+    owners: [],
     suburb: '',
     appraisal_date: new Date().toISOString().split('T')[0],
     intent: 'medium',
@@ -117,7 +119,14 @@ const AppraisalDetailDialog = ({
 
   useEffect(() => {
     if (appraisal && !isNew) {
-      setFormData(appraisal);
+      // Initialize owners from either owners array or legacy fields
+      const owners = legacyToOwners(
+        appraisal.vendor_name,
+        appraisal.vendor_email,
+        appraisal.vendor_mobile,
+        appraisal.owners as Owner[]
+      );
+      setFormData({ ...appraisal, owners });
       originalFollowUpRef.current = appraisal.next_follow_up;
     } else if (isNew) {
       setFormData({
@@ -125,6 +134,7 @@ const AppraisalDetailDialog = ({
         vendor_name: '',
         vendor_mobile: '',
         vendor_email: '',
+        owners: [],
         suburb: '',
         appraisal_date: new Date().toISOString().split('T')[0],
         intent: 'medium',
@@ -403,20 +413,23 @@ const AppraisalDetailDialog = ({
                       onSuburbChange={(suburb) => setFormData(prev => ({ ...prev, suburb }))}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="vendor_name" className="text-sm font-medium">Vendor Name <span className="text-destructive">*</span></Label>
-                    <Input id="vendor_name" value={formData.vendor_name} onChange={(e) => setFormData({ ...formData, vendor_name: e.target.value })} placeholder="John Smith" required className="h-10" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="vendor_mobile" className="text-sm font-medium">Vendor Mobile</Label>
-                      <Input id="vendor_mobile" value={formData.vendor_mobile || ''} onChange={(e) => setFormData({ ...formData, vendor_mobile: e.target.value })} placeholder="021 123 4567" className="h-10" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="vendor_email" className="text-sm font-medium">Vendor Email</Label>
-                      <Input id="vendor_email" type="email" value={formData.vendor_email || ''} onChange={(e) => setFormData({ ...formData, vendor_email: e.target.value })} placeholder="john@example.com" className="h-10" />
-                    </div>
-                  </div>
+                  
+                  {/* Multi-Owner Editor */}
+                  <OwnersEditor
+                    owners={(formData.owners as Owner[]) || []}
+                    onChange={(owners) => {
+                      // Sync primary owner to legacy fields for backward compatibility
+                      const legacy = ownersToLegacy(owners);
+                      setFormData({ 
+                        ...formData, 
+                        owners,
+                        vendor_name: legacy.vendor_name,
+                        vendor_email: legacy.vendor_email,
+                        vendor_mobile: legacy.vendor_mobile,
+                      });
+                    }}
+                    showBeaconSync={!!appraisal?.beacon_report_id}
+                  />
                   
                   {/* Fix Location Section */}
                   <LocationFixSection entityId={appraisal.id} entityType="appraisal" address={formData.address || ''} suburb={formData.suburb || undefined} latitude={formData.latitude} longitude={formData.longitude} geocodeError={formData.geocode_error} geocodedAt={formData.geocoded_at} onLocationUpdated={handleLocationUpdated} />

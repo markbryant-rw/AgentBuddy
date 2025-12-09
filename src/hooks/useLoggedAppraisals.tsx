@@ -6,6 +6,16 @@ import { useGoogleCalendar } from './useGoogleCalendar';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 
+// Owner interface for multi-owner support
+export interface AppraisalOwner {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  is_primary: boolean;
+  beacon_owner_id?: string;
+}
+
 export interface LoggedAppraisal {
   id: string;
   user_id: string;
@@ -14,9 +24,12 @@ export interface LoggedAppraisal {
   last_edited_by?: string;
   agent_id?: string;
   address: string;
+  // Legacy single-owner fields (kept for backward compatibility)
   vendor_name?: string;
   vendor_mobile?: string;
   vendor_email?: string;
+  // New multi-owner field
+  owners?: AppraisalOwner[];
   suburb?: string;
   region?: string;
   appraisal_date: string;
@@ -116,6 +129,7 @@ export const useLoggedAppraisals = () => {
       return (data || []).map(a => ({
         ...a,
         agent: a.agent as LoggedAppraisal['agent'],
+        owners: Array.isArray(a.owners) ? (a.owners as unknown as AppraisalOwner[]) : [],
         visit_number: (a as any).visit_number,
       })) as LoggedAppraisal[];
     },
@@ -190,10 +204,14 @@ export const useLoggedAppraisals = () => {
   ) => {
     if (!user || !team) return null;
     
+    // Prepare data for insert - strip computed fields and cast owners
+    const { agent, visit_number, owners, ...insertData } = appraisal as any;
+    
     const { data, error } = await supabase
       .from('logged_appraisals')
       .insert({
-        ...appraisal,
+        ...insertData,
+        owners: owners || [],
         user_id: user.id,
         team_id: team.id,
         created_by: user.id,
@@ -224,10 +242,14 @@ export const useLoggedAppraisals = () => {
       return;
     }
     
+    // Strip computed/joined fields and prepare for update
+    const { agent, visit_number, owners, ...updateData } = updates as any;
+    
     const { error } = await supabase
       .from('logged_appraisals')
       .update({
-        ...updates,
+        ...updateData,
+        ...(owners !== undefined ? { owners } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);
@@ -252,11 +274,15 @@ export const useLoggedAppraisals = () => {
       return;
     }
 
+    // Strip computed/joined fields and prepare for update
+    const { agent, visit_number, owners, ...updateData } = updates as any;
+
     // First update the main appraisal
     const { error } = await supabase
       .from('logged_appraisals')
       .update({
-        ...updates,
+        ...updateData,
+        ...(owners !== undefined ? { owners } : {}),
         updated_at: new Date().toISOString(),
       })
       .eq('id', id);
@@ -271,7 +297,8 @@ export const useLoggedAppraisals = () => {
     if (syncContactsToAllVisits) {
       const appraisal = appraisals.find(a => a.id === id);
       if (appraisal) {
-        const contactFields: Partial<LoggedAppraisal> = {};
+        // Build contact fields for syncing (excluding computed fields)
+        const contactFields: Record<string, any> = {};
         if (updates.vendor_name !== undefined) contactFields.vendor_name = updates.vendor_name;
         if (updates.vendor_mobile !== undefined) contactFields.vendor_mobile = updates.vendor_mobile;
         if (updates.vendor_email !== undefined) contactFields.vendor_email = updates.vendor_email;
@@ -279,6 +306,7 @@ export const useLoggedAppraisals = () => {
         if (updates.longitude !== undefined) contactFields.longitude = updates.longitude;
         if (updates.geocoded_at !== undefined) contactFields.geocoded_at = updates.geocoded_at;
         if (updates.geocode_error !== undefined) contactFields.geocode_error = updates.geocode_error;
+        if (owners !== undefined) contactFields.owners = owners;
 
         if (Object.keys(contactFields).length > 0) {
           const normalizedAddress = appraisal.address.toLowerCase().trim();

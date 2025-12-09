@@ -1798,6 +1798,7 @@ export type Database = {
           notes: string | null
           open_home_dates: string[] | null
           outcome: string | null
+          owners: Json | null
           region: string | null
           stage: string | null
           suburb: string | null
@@ -1840,6 +1841,7 @@ export type Database = {
           notes?: string | null
           open_home_dates?: string[] | null
           outcome?: string | null
+          owners?: Json | null
           region?: string | null
           stage?: string | null
           suburb?: string | null
@@ -1882,6 +1884,7 @@ export type Database = {
           notes?: string | null
           open_home_dates?: string[] | null
           outcome?: string | null
+          owners?: Json | null
           region?: string | null
           stage?: string | null
           suburb?: string | null
@@ -1950,6 +1953,7 @@ export type Database = {
           next_follow_up: string | null
           notes: string | null
           outcome: string | null
+          owners: Json | null
           stage: string | null
           status: string | null
           suburb: string | null
@@ -1995,6 +1999,7 @@ export type Database = {
           next_follow_up?: string | null
           notes?: string | null
           outcome?: string | null
+          owners?: Json | null
           stage?: string | null
           status?: string | null
           suburb?: string | null
@@ -2040,6 +2045,7 @@ export type Database = {
           next_follow_up?: string | null
           notes?: string | null
           outcome?: string | null
+          owners?: Json | null
           stage?: string | null
           status?: string | null
           suburb?: string | null
@@ -4400,6 +4406,7 @@ export type Database = {
           longitude: number | null
           notes: string | null
           on_hold: boolean | null
+          owners: Json | null
           photoshoot_date: string | null
           pre_settlement_inspection_date: string | null
           price_alignment_status: string | null
@@ -4458,6 +4465,7 @@ export type Database = {
           longitude?: number | null
           notes?: string | null
           on_hold?: boolean | null
+          owners?: Json | null
           photoshoot_date?: string | null
           pre_settlement_inspection_date?: string | null
           price_alignment_status?: string | null
@@ -4516,6 +4524,7 @@ export type Database = {
           longitude?: number | null
           notes?: string | null
           on_hold?: boolean | null
+          owners?: Json | null
           photoshoot_date?: string | null
           pre_settlement_inspection_date?: string | null
           price_alignment_status?: string | null
