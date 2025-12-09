@@ -30,12 +30,14 @@ import {
   Link2,
   Loader2,
   Search,
-  RefreshCw
+  RefreshCw,
+  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { BeaconImportWizard } from "./BeaconImportWizard";
 
 interface BeaconTabProps {
   appraisal: LoggedAppraisal;
@@ -238,7 +240,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [needsSync, setNeedsSync] = useState(false);
-
+  const [importWizardOpen, setImportWizardOpen] = useState(false);
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
     setCopied(true);
@@ -474,6 +476,17 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                {/* Import Historic Reports */}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="gap-1.5"
+                  onClick={() => setImportWizardOpen(true)}
+                >
+                  <Download className="h-4 w-4" />
+                  Import
+                </Button>
+                
                 {/* Link Existing Report */}
                 <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
                   <DialogTrigger asChild>
@@ -729,6 +742,12 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
             </CardContent>
           </Card>
         )}
+
+        {/* Import Wizard */}
+        <BeaconImportWizard 
+          open={importWizardOpen} 
+          onOpenChange={setImportWizardOpen} 
+        />
       </div>
     </TooltipProvider>
   );

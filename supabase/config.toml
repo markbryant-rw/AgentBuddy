@@ -215,3 +215,9 @@ verify_jwt = true
 
 [functions.search-beacon-reports]
 verify_jwt = true
+
+[functions.fetch-all-beacon-reports]
+verify_jwt = true
+
+[functions.sync-beacon-owner]
+verify_jwt = true

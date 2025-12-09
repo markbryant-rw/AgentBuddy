@@ -217,6 +217,50 @@ export const useBeaconIntegration = () => {
     return data?.reports || [];
   };
 
+  // Fetch all team reports for Historic Import
+  const fetchAllTeamReports = async (teamId: string) => {
+    console.log('fetchAllTeamReports:', { teamId });
+    
+    const { data, error } = await supabase.functions.invoke('fetch-all-beacon-reports', {
+      body: { teamId, includeLinked: false },
+    });
+
+    if (error) throw error;
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to fetch reports');
+    }
+    
+    return data.reports || [];
+  };
+
+  // Sync owner contact details to Beacon
+  const syncOwnerToBeacon = useMutation({
+    mutationFn: async ({ externalLeadId, ownerName, ownerEmail, ownerPhone }: {
+      externalLeadId: string;
+      ownerName?: string;
+      ownerEmail?: string;
+      ownerPhone?: string;
+    }) => {
+      console.log('syncOwnerToBeacon:', { externalLeadId, ownerName, ownerEmail, ownerPhone });
+      
+      const { data, error } = await supabase.functions.invoke('sync-beacon-owner', {
+        body: { externalLeadId, ownerName, ownerEmail, ownerPhone },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to sync owner');
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Vendor details synced to Beacon');
+    },
+    onError: (error) => {
+      console.error('Failed to sync owner to Beacon:', error);
+      toast.error('Failed to sync vendor details');
+    },
+  });
+
   return {
     isBeaconEnabled,
     isLoadingSettings,
@@ -227,6 +271,9 @@ export const useBeaconIntegration = () => {
     linkBeaconReport,
     isLinkingReport: linkBeaconReport.isPending,
     searchBeaconReports,
+    fetchAllTeamReports,
+    syncOwnerToBeacon,
+    isSyncingOwner: syncOwnerToBeacon.isPending,
     syncTeamToBeacon,
     isSyncingTeam: syncTeamToBeacon.isPending,
     teamId: team?.id,
