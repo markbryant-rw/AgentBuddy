@@ -75,6 +75,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const hasAnyRole = (checkRoles: AppRole[]): boolean => checkRoles.some(role => roles?.includes(role) ?? false);
   const isInRoleMode = (role: AppRole): boolean => activeRole === role;
 
+  // Check if user's agency is paused - returns true if paused (user should be blocked)
+  const checkAgencyStatus = async (userId: string): Promise<{ isPaused: boolean; deletionDate?: string }> => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('office_id')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error || !profile?.office_id) {
+        // No agency association or error - allow login (fail-open for safety)
+        return { isPaused: false };
+      }
+
+      const { data: agency, error: agencyError } = await supabase
+        .from('agencies')
+        .select('account_status, scheduled_deletion_date')
+        .eq('id', profile.office_id)
+        .maybeSingle();
+
+      if (agencyError || !agency) {
+        // Agency not found or error - allow login (fail-open)
+        return { isPaused: false };
+      }
+
+      if (agency.account_status === 'paused') {
+        return { 
+          isPaused: true, 
+          deletionDate: agency.scheduled_deletion_date 
+        };
+      }
+
+      return { isPaused: false };
+    } catch (error) {
+      console.error('[useAuth] Error checking agency status:', error);
+      // Fail-open: allow login if we can't check status
+      return { isPaused: false };
+    }
+  };
+
   const fetchUserRoles = async (userId: string) => {
     try {
       // Direct query without timeout wrapper - let database handle it
@@ -213,8 +253,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     let cancelled = false;
 
-    const loadRoles = async () => {
+    const loadRolesAndCheckStatus = async () => {
       try {
+        // First check if agency is paused (before loading roles)
+        const { isPaused, deletionDate } = await checkAgencyStatus(realUser.id);
+        
+        if (isPaused) {
+          // Sign out and redirect to account paused page
+          logger.warn('[useAuth] Agency is paused, blocking login');
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          setRoles([]);
+          setActiveRole(null);
+          setLoading(false);
+          // Navigate to paused page with deletion date
+          navigate('/account-paused', { 
+            state: { deletionDate },
+            replace: true 
+          });
+          return;
+        }
+
+        // Agency is active, proceed with role loading
         await fetchUserRoles(realUser.id);
       } catch (error) {
         console.error('[useAuth] Error loading roles:', error);
@@ -225,7 +286,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    loadRoles();
+    loadRolesAndCheckStatus();
 
     return () => {
       cancelled = true;

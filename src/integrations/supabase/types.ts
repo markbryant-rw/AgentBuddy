@@ -52,13 +52,47 @@ export type Database = {
           },
         ]
       }
+      admin_impersonation_log: {
+        Row: {
+          admin_id: string
+          created_at: string | null
+          ended_at: string | null
+          id: string
+          impersonated_user_id: string
+          reason: string | null
+          started_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          impersonated_user_id: string
+          reason?: string | null
+          started_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string | null
+          ended_at?: string | null
+          id?: string
+          impersonated_user_id?: string
+          reason?: string | null
+          started_at?: string
+        }
+        Relationships: []
+      }
       agencies: {
         Row: {
+          account_status:
+            | Database["public"]["Enums"]["agency_account_status"]
+            | null
           bio: string | null
           brand: string | null
           brand_color: string | null
           created_at: string
           created_by: string
+          deletion_requested_by: string | null
           id: string
           invite_code: string | null
           is_archived: boolean
@@ -66,15 +100,21 @@ export type Database = {
           logo_url: string | null
           name: string
           office_channel_id: string | null
+          pause_date: string | null
+          scheduled_deletion_date: string | null
           slug: string
           updated_at: string
         }
         Insert: {
+          account_status?:
+            | Database["public"]["Enums"]["agency_account_status"]
+            | null
           bio?: string | null
           brand?: string | null
           brand_color?: string | null
           created_at?: string
           created_by: string
+          deletion_requested_by?: string | null
           id?: string
           invite_code?: string | null
           is_archived?: boolean
@@ -82,15 +122,21 @@ export type Database = {
           logo_url?: string | null
           name: string
           office_channel_id?: string | null
+          pause_date?: string | null
+          scheduled_deletion_date?: string | null
           slug: string
           updated_at?: string
         }
         Update: {
+          account_status?:
+            | Database["public"]["Enums"]["agency_account_status"]
+            | null
           bio?: string | null
           brand?: string | null
           brand_color?: string | null
           created_at?: string
           created_by?: string
+          deletion_requested_by?: string | null
           id?: string
           invite_code?: string | null
           is_archived?: boolean
@@ -98,6 +144,8 @@ export type Database = {
           logo_url?: string | null
           name?: string
           office_channel_id?: string | null
+          pause_date?: string | null
+          scheduled_deletion_date?: string | null
           slug?: string
           updated_at?: string
         }
@@ -188,6 +236,56 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          agency_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: unknown
+          record_id: string | null
+          table_name: string | null
+          target_user_id: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          agency_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          record_id?: string | null
+          table_name?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          agency_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: unknown
+          record_id?: string | null
+          table_name?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
@@ -4780,6 +4878,7 @@ export type Database = {
     }
     Enums: {
       access_level: "admin" | "view" | "edit"
+      agency_account_status: "active" | "paused" | "pending_deletion"
       app_role:
         | "platform_admin"
         | "office_manager"
@@ -4919,6 +5018,7 @@ export const Constants = {
   public: {
     Enums: {
       access_level: ["admin", "view", "edit"],
+      agency_account_status: ["active", "paused", "pending_deletion"],
       app_role: [
         "platform_admin",
         "office_manager",
