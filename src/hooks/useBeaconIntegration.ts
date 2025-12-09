@@ -58,19 +58,30 @@ export const useBeaconIntegration = () => {
 
   const isBeaconEnabled = integrationSettings?.enabled ?? false;
 
-  // Sync team to Beacon
-  const syncTeamToBeacon = async (teamId: string) => {
-    try {
-      const { error } = await supabase.functions.invoke('sync-beacon-team', {
+  // Sync team to Beacon - exposed as mutation for manual re-sync
+  const syncTeamToBeacon = useMutation({
+    mutationFn: async (teamId: string) => {
+      console.log('syncTeamToBeacon: Starting sync for team', teamId);
+      const { data, error } = await supabase.functions.invoke('sync-beacon-team', {
         body: { teamId },
       });
+      
       if (error) {
         console.error('Failed to sync team to Beacon:', error);
+        throw error;
       }
-    } catch (err) {
-      console.error('Error syncing team to Beacon:', err);
-    }
-  };
+      
+      console.log('syncTeamToBeacon: Response', data);
+      return data;
+    },
+    onSuccess: () => {
+      toast.success('Team synced with Beacon successfully');
+    },
+    onError: (error) => {
+      console.error('Error syncing team to Beacon:', error);
+      toast.error('Failed to sync team with Beacon');
+    },
+  });
 
   // Toggle Beacon integration for team
   const toggleBeaconIntegration = useMutation({
@@ -96,7 +107,7 @@ export const useBeaconIntegration = () => {
 
       // Sync team to Beacon when enabling
       if (enabled && team?.id) {
-        await syncTeamToBeacon(team.id);
+        await syncTeamToBeacon.mutateAsync(team.id);
       }
 
       return data;
@@ -215,5 +226,8 @@ export const useBeaconIntegration = () => {
     linkBeaconReport,
     isLinkingReport: linkBeaconReport.isPending,
     searchBeaconReports,
+    syncTeamToBeacon,
+    isSyncingTeam: syncTeamToBeacon.isPending,
+    teamId: team?.id,
   };
 };
