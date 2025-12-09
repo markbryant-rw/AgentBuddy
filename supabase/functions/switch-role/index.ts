@@ -44,15 +44,11 @@ Deno.serve(async (req) => {
     // Extract JWT from header
     const token = authHeader.replace('Bearer ', '');
     
-    // Create a client with the user's JWT to verify their identity
-    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        headers: { Authorization: authHeader }
-      }
-    });
+    // Create service role client for admin operations
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get user from the auth header
-    const { data: { user }, error: authError } = await supabaseUser.auth.getUser();
+    // Use admin client to verify the JWT token directly
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
     
     console.log('Auth result:', {
       hasUser: !!user,
@@ -68,9 +64,6 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    
-    // Create service role client for admin operations
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     console.log('User authenticated successfully');
 
