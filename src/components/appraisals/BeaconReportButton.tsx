@@ -31,7 +31,7 @@ export const BeaconReportButton = ({
   }
 
   const handleCreateReport = () => {
-    createBeaconReport.mutate({ appraisalId, reportType: 'market_appraisal' });
+    createBeaconReport.mutate({ appraisalId, reportType: 'appraisal' });
   };
 
   const handleCopyLink = async () => {
