@@ -629,9 +629,15 @@ html {
   .stagger-6 { animation-delay: 0.3s; }
 
   /* ========== RADIX PORTAL Z-INDEX ========== */
+  /* Must be ABOVE DialogContent (z-[11001]) so dropdowns work inside dialogs */
   [data-radix-popper-content-wrapper] {
-    z-index: 10000 !important;
+    z-index: 12000 !important;
     pointer-events: auto;
+  }
+  
+  /* Safety: prevent Radix modal bug where body gets pointer-events: none */
+  body {
+    pointer-events: auto !important;
   }
 
   /* Visual highlight class used by the debug panel */
