@@ -203,7 +203,35 @@ Deno.serve(async (req) => {
         console.log(`Updated beacon_report ID: ${matchingReport.id} for type: ${mappedReportType}`);
       }
     } else {
-      console.log(`No matching report found for appraisal ${externalLeadId} type ${mappedReportType}`);
+      // Auto-create beacon_reports record if we have reportId from webhook
+      if (payload.reportId) {
+        console.log(`Auto-creating beacon_reports record for appraisal ${externalLeadId}`);
+        const { error: insertError } = await supabase
+          .from('beacon_reports')
+          .insert({
+            appraisal_id: externalLeadId,
+            beacon_report_id: payload.reportId,
+            report_url: payload.reportUrl || null,
+            personalized_url: payload.personalizedUrl || null,
+            report_type: mappedReportType,
+            propensity_score: data.propensityScore || 0,
+            total_views: data.totalViews || 0,
+            total_time_seconds: data.totalTimeSeconds || 0,
+            email_opens: data.emailOpenCount || 0,
+            is_hot_lead: data.isHotLead || (data.propensityScore >= 70),
+            first_viewed_at: data.firstViewedAt || null,
+            last_activity: data.lastActivity || data.lastViewedAt || new Date().toISOString(),
+            sent_at: data.reportSentAt || null,
+          });
+
+        if (insertError) {
+          console.error('Failed to auto-create beacon_report:', insertError);
+        } else {
+          console.log(`Auto-created beacon_report for appraisal ${externalLeadId} type ${mappedReportType}`);
+        }
+      } else {
+        console.log(`No matching report found and no reportId provided for appraisal ${externalLeadId} type ${mappedReportType}`);
+      }
     }
 
     // Calculate aggregate metrics from ALL reports for this appraisal
