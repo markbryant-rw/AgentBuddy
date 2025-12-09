@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +33,7 @@ export const TemplateSelector = ({ stage, transactionId }: TemplateSelectorProps
   const { templates, isLoading, applyTemplate } = useTransactionTemplates(stage);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [skipDueDates, setSkipDueDates] = useState(false);
 
   const groupedTemplates = useMemo(() => {
     const system = templates.filter(t => t.is_system_template);
@@ -49,10 +52,12 @@ export const TemplateSelector = ({ stage, transactionId }: TemplateSelectorProps
     await applyTemplate.mutateAsync({
       templateId: selectedTemplate.id,
       transactionId,
+      skipDueDates,
     });
     
     setShowConfirm(false);
     setSelectedTemplate(null);
+    setSkipDueDates(false);
   };
 
   if (isLoading || templates.length === 0) {
@@ -142,8 +147,18 @@ export const TemplateSelector = ({ stage, transactionId }: TemplateSelectorProps
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="flex items-center space-x-2 py-4">
+            <Checkbox
+              id="skipDueDates"
+              checked={skipDueDates}
+              onCheckedChange={(checked) => setSkipDueDates(checked === true)}
+            />
+            <Label htmlFor="skipDueDates" className="text-sm cursor-pointer">
+              Let me set due dates manually
+            </Label>
+          </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setSkipDueDates(false)}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmApply}>
               Apply Template
             </AlertDialogAction>

@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { useTransactionTemplates, TransactionStage } from '@/hooks/useTransactionTemplates';
 import { toast } from 'sonner';
@@ -18,6 +20,7 @@ export function DefaultTemplatePrompt({
   const { templates, applyTemplate, isLoading: templatesLoading } = useTransactionTemplates(stage);
   const [isApplying, setIsApplying] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [skipDueDates, setSkipDueDates] = useState(false);
 
   const defaultTemplate = useMemo(() => {
     // Prioritize user's custom default
@@ -42,6 +45,7 @@ export function DefaultTemplatePrompt({
       await applyTemplate.mutateAsync({
         templateId: defaultTemplate.id,
         transactionId,
+        skipDueDates,
       });
       onTemplateApplied();
     } catch (error) {
@@ -105,6 +109,17 @@ export function DefaultTemplatePrompt({
         <p className="text-sm text-muted-foreground">
           This will add <strong>{defaultTemplate.tasks.length} tasks</strong> to help you manage this transaction.
         </p>
+      </div>
+
+      <div className="flex items-center justify-center space-x-2 pb-2">
+        <Checkbox
+          id="skipDueDatesPrompt"
+          checked={skipDueDates}
+          onCheckedChange={(checked) => setSkipDueDates(checked === true)}
+        />
+        <Label htmlFor="skipDueDatesPrompt" className="text-sm cursor-pointer">
+          Let me set due dates manually
+        </Label>
       </div>
 
       <div className="flex items-center justify-center gap-3">
