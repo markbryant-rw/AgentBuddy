@@ -75,16 +75,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Beacon API to search for reports
+    // Call Beacon API to search for reports - standalone endpoint per v2.0 spec (camelCase params)
     const searchParams = new URLSearchParams();
-    searchParams.append('api_key', beaconApiKey);
-    searchParams.append('team_id', teamId);
+    searchParams.append('apiKey', beaconApiKey);
+    searchParams.append('teamId', teamId);
     if (address) searchParams.append('address', address);
-    if (ownerName) searchParams.append('owner_name', ownerName);
-    if (ownerEmail) searchParams.append('owner_email', ownerEmail);
+    if (ownerName) searchParams.append('ownerName', ownerName);
+    if (ownerEmail) searchParams.append('ownerEmail', ownerEmail);
 
     const endpoint = `${beaconApiUrl}/search-reports?${searchParams.toString()}`;
-    console.log('Calling Beacon search API');
+    console.log('Calling Beacon search API:', endpoint);
     
     const beaconResponse = await fetch(endpoint, {
       method: 'GET',
