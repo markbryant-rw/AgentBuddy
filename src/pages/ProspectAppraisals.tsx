@@ -130,15 +130,6 @@ const ProspectAppraisals = () => {
               >
                 <Flame className={`h-4 w-4 ${showHotLeadsOnly ? 'animate-pulse' : ''}`} />
                 Hot Leads
-                {hotLeadsCount > 0 && (
-                  <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${
-                    showHotLeadsOnly 
-                      ? 'bg-white/20 text-white' 
-                      : 'bg-orange-500 text-white'
-                  }`}>
-                    {hotLeadsCount}
-                  </span>
-                )}
               </Toggle>
 
               <Button 
