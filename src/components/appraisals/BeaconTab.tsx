@@ -28,7 +28,6 @@ import {
   ChevronDown,
   Pencil,
   Link2,
-  Search,
   Loader2
 } from "lucide-react";
 import { format } from "date-fns";
@@ -217,15 +216,13 @@ const ReportCard = ({
 };
 
 export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
-  const { isBeaconEnabled, createBeaconReport, isCreatingReport, linkBeaconReport, isLinkingReport, searchBeaconReports } = useBeaconIntegration();
+  const { isBeaconEnabled, createBeaconReport, isCreatingReport, linkBeaconReport, isLinkingReport } = useBeaconIntegration();
   const { reports, aggregateStats, hasReports, isLoading: reportsLoading } = useBeaconReports(appraisal.id);
   const { events, isLoading: eventsLoading } = useBeaconEngagementEvents(appraisal.id);
   const [copied, setCopied] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [reportIdInput, setReportIdInput] = useState('');
   const [propertySlugInput, setPropertySlugInput] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
 
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -254,34 +251,8 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
         setLinkDialogOpen(false);
         setReportIdInput('');
         setPropertySlugInput('');
-        setSearchResults([]);
       }
     });
-  };
-
-  const handleSearchReports = async () => {
-    setIsSearching(true);
-    try {
-      const results = await searchBeaconReports({
-        address: appraisal.address,
-        ownerName: appraisal.vendor_name || undefined,
-        ownerEmail: appraisal.vendor_email || undefined,
-      });
-      setSearchResults(results);
-      if (results.length === 0) {
-        toast.info('No existing reports found for this property');
-      }
-    } catch (error) {
-      console.error('Search failed:', error);
-      toast.error('Could not search for reports');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSelectSearchResult = (report: any) => {
-    setReportIdInput(report.id);
-    setPropertySlugInput('');
   };
 
   const formatTime = (seconds: number) => {
@@ -449,54 +420,32 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                       Link Existing
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="max-w-lg">
                     <DialogHeader>
                       <DialogTitle>Link Existing Beacon Report</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
-                      {/* Auto-search section */}
+                      {/* Property Slug - Primary method */}
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium">Search by Property</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Find reports matching this property address
-                        </p>
-                        <Button 
-                          variant="outline" 
-                          onClick={handleSearchReports}
-                          disabled={isSearching}
-                          className="w-full gap-2"
-                        >
-                          {isSearching ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Search className="h-4 w-4" />
-                          )}
-                          Search for "{appraisal.address?.slice(0, 30)}..."
-                        </Button>
-                        
-                        {/* Search results */}
-                        {searchResults.length > 0 && (
-                          <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-                            {searchResults.map((report: any) => (
-                              <button
-                                key={report.id}
-                                type="button"
-                                onClick={() => handleSelectSearchResult(report)}
-                                className={cn(
-                                  "w-full text-left p-2 rounded border transition-colors",
-                                  reportIdInput === report.id 
-                                    ? "border-teal-500 bg-teal-500/10" 
-                                    : "border-border hover:bg-muted"
-                                )}
-                              >
-                                <p className="text-sm font-medium">{report.address || 'Report'}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {report.report_type} • {report.id.slice(0, 8)}...
-                                </p>
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                        <Label htmlFor="propertySlug" className="text-sm font-medium">Property Slug (Recommended)</Label>
+                        <Input 
+                          id="propertySlug"
+                          placeholder="216b-sturges-road-henderson-auckland-0612-new-zealand"
+                          value={propertySlugInput}
+                          onChange={(e) => {
+                            setPropertySlugInput(e.target.value);
+                            setReportIdInput('');
+                          }}
+                        />
+                        <div className="p-3 bg-muted/50 rounded-lg text-xs space-y-2">
+                          <p className="font-medium">How to find the Property Slug:</p>
+                          <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                            <li>Open your Beacon report in the browser</li>
+                            <li>Look at the URL: <span className="font-mono text-foreground">beacon.app/report/<span className="text-teal-600 font-bold">property-slug-here</span>/view</span></li>
+                            <li>Copy the property slug part (the address with dashes)</li>
+                          </ol>
+                          <p className="text-muted-foreground italic">Example: <span className="font-mono text-foreground">216b-sturges-road-henderson-auckland-0612-new-zealand</span></p>
+                        </div>
                       </div>
                       
                       <div className="relative">
@@ -504,39 +453,25 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                           <span className="w-full border-t" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
+                          <span className="bg-background px-2 text-muted-foreground">Or use Report ID</span>
                         </div>
                       </div>
 
-                      {/* Manual entry */}
-                      <div className="space-y-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor="reportId" className="text-sm">Report ID</Label>
-                          <Input 
-                            id="reportId"
-                            placeholder="beacon-report-uuid"
-                            value={reportIdInput}
-                            onChange={(e) => {
-                              setReportIdInput(e.target.value);
-                              setPropertySlugInput('');
-                            }}
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="propertySlug" className="text-sm">Or Property Slug</Label>
-                          <Input 
-                            id="propertySlug"
-                            placeholder="123-main-street-auckland"
-                            value={propertySlugInput}
-                            onChange={(e) => {
-                              setPropertySlugInput(e.target.value);
-                              setReportIdInput('');
-                            }}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            The property slug from the Beacon report URL
-                          </p>
-                        </div>
+                      {/* Report ID - Alternative */}
+                      <div className="space-y-2">
+                        <Label htmlFor="reportId" className="text-sm">Report ID</Label>
+                        <Input 
+                          id="reportId"
+                          placeholder="abc123-def456-..."
+                          value={reportIdInput}
+                          onChange={(e) => {
+                            setReportIdInput(e.target.value);
+                            setPropertySlugInput('');
+                          }}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          The unique ID from Beacon's Reports dashboard (click the report → Settings → Copy ID)
+                        </p>
                       </div>
                     </div>
                     <DialogFooter>
