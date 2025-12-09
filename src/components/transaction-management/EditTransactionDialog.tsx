@@ -23,6 +23,7 @@ import {
   DateFieldName 
 } from '@/lib/transactionDateValidation';
 import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
+import { OwnersEditor, Owner, legacyToOwners, ownersToLegacy, getPrimaryOwner } from '@/components/shared/OwnersEditor';
 
 interface EditTransactionDialogProps {
   transaction: Transaction;
@@ -80,7 +81,14 @@ export function EditTransactionDialog({
 
   // Sync form data when transaction prop changes
   useEffect(() => {
-    setFormData(transaction);
+    // Initialize owners from existing data
+    const owners = legacyToOwners(
+      transaction.client_name,
+      transaction.client_email,
+      transaction.client_phone,
+      transaction.owners
+    );
+    setFormData({ ...transaction, owners });
   }, [transaction]);
 
   const visibleDateFields = getVisibleDateFields(formData.stage || transaction.stage);
@@ -193,53 +201,39 @@ export function EditTransactionDialog({
             </div>
           </div>
 
-          {/* Client Information */}
+          {/* Owners Section */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Client Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="client_name">Client Name *</Label>
-                <Input
-                  id="client_name"
-                  value={formData.client_name || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, client_name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client_email">Client Email</Label>
-                <Input
-                  id="client_email"
-                  type="email"
-                  value={formData.client_email || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, client_email: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="client_phone">Client Phone</Label>
-                <Input
-                  id="client_phone"
-                  value={formData.client_phone || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, client_phone: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lead_source">Lead Source</Label>
-                <Select
-                  value={formData.lead_source || ''}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, lead_source: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select lead source" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeLeadSources.map((source) => (
-                      <SelectItem key={source.id} value={source.value}>
-                        {source.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <h3 className="text-sm font-semibold">Owners / Vendors</h3>
+            <OwnersEditor
+              owners={formData.owners || []}
+              onChange={(owners) => {
+                const legacy = ownersToLegacy(owners);
+                setFormData(prev => ({
+                  ...prev,
+                  owners,
+                  client_name: legacy.vendor_name || prev.client_name,
+                  client_email: legacy.vendor_email || prev.client_email,
+                  client_phone: legacy.vendor_mobile || prev.client_phone,
+                }));
+              }}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="lead_source">Lead Source</Label>
+              <Select
+                value={formData.lead_source || ''}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, lead_source: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select lead source" />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeLeadSources.map((source) => (
+                    <SelectItem key={source.id} value={source.value}>
+                      {source.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

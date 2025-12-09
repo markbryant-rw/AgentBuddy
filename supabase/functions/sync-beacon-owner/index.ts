@@ -5,6 +5,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface Owner {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  is_primary: boolean;
+  beacon_owner_id?: string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -44,8 +53,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Get request body - only contact details, NOT address
-    const { externalLeadId, ownerName, ownerEmail, ownerPhone } = await req.json();
+    // Get request body - supports both single owner (legacy) and multi-owner format
+    const { externalLeadId, ownerName, ownerEmail, ownerPhone, owners } = await req.json();
 
     if (!externalLeadId) {
       return new Response(
@@ -83,9 +92,37 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Beacon's sync-owner-from-agentbuddy endpoint - standalone endpoint per v2.0 spec
+    // Build owners array for Beacon API
+    let ownersPayload: Array<{ name: string; email?: string; phone?: string; isPrimary: boolean }> = [];
+    
+    if (owners && Array.isArray(owners) && owners.length > 0) {
+      // Multi-owner format
+      ownersPayload = owners.map((o: Owner) => ({
+        name: o.name,
+        email: o.email || '',
+        phone: o.phone || '',
+        isPrimary: o.is_primary || false,
+      }));
+    } else if (ownerName) {
+      // Legacy single-owner format
+      ownersPayload = [{
+        name: ownerName,
+        email: ownerEmail || '',
+        phone: ownerPhone || '',
+        isPrimary: true,
+      }];
+    }
+
+    if (ownersPayload.length === 0) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'No owner data provided' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Call Beacon's sync-owner-from-agentbuddy endpoint with multi-owner support
     const beaconUrl = `${beaconApiUrl}/sync-owner-from-agentbuddy`;
-    console.log('Syncing owner to Beacon:', beaconUrl, { externalLeadId, ownerName, ownerEmail, ownerPhone });
+    console.log('Syncing owners to Beacon:', beaconUrl, { externalLeadId, ownerCount: ownersPayload.length });
 
     const beaconResponse = await fetch(beaconUrl, {
       method: 'POST',
@@ -95,10 +132,11 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         apiKey: beaconApiKey,
         externalLeadId,
-        ownerName,
-        ownerEmail,
-        ownerPhone,
-        // Note: We do NOT send address - per v2.0 spec, address changes are too complex
+        owners: ownersPayload,
+        // Also send primary owner for backward compatibility
+        ownerName: ownersPayload.find(o => o.isPrimary)?.name || ownersPayload[0]?.name,
+        ownerEmail: ownersPayload.find(o => o.isPrimary)?.email || ownersPayload[0]?.email,
+        ownerPhone: ownersPayload.find(o => o.isPrimary)?.phone || ownersPayload[0]?.phone,
       }),
     });
 
@@ -107,24 +145,25 @@ Deno.serve(async (req) => {
       console.error('Beacon API error:', beaconResponse.status, errorText);
       
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to sync owner to Beacon' }),
+        JSON.stringify({ success: false, error: 'Failed to sync owners to Beacon' }),
         { status: beaconResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const beaconData = await beaconResponse.json();
-    console.log('Owner synced to Beacon:', beaconData);
+    console.log('Owners synced to Beacon:', beaconData);
 
     return new Response(
       JSON.stringify({
         success: true,
         message: 'Owner contact details synced to Beacon',
+        ownerCount: ownersPayload.length,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Error syncing owner to Beacon:', error);
+    console.error('Error syncing owners to Beacon:', error);
     return new Response(
       JSON.stringify({ success: false, error: error?.message || 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

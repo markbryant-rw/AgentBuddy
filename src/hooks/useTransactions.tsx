@@ -5,6 +5,7 @@ import { useTeam } from './useTeam';
 import { useGoogleCalendar } from './useGoogleCalendar';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import type { Owner } from '@/components/shared/OwnersEditor';
 
 export type TransactionStage = 'signed' | 'live' | 'contract' | 'unconditional' | 'settled';
 export type TransactionWarmth = 'active' | 'on_hold' | 'paused';
@@ -35,6 +36,7 @@ export interface Transaction {
   buyer_names?: BuyerName[];
   vendor_phone?: string;
   vendor_email?: string;
+  owners?: Owner[];
   lead_source?: string;
   campaign_type?: string;
   live_date?: string;
@@ -96,7 +98,7 @@ export const useTransactions = () => {
           id, team_id, created_by, last_edited_by,
           address, suburb, listing_id, client_name, client_email, client_phone,
           stage, warmth, on_hold, archived,
-          vendor_names, buyer_names, vendor_phone, vendor_email,
+          vendor_names, buyer_names, vendor_phone, vendor_email, owners,
           lead_source, campaign_type,
           sale_price, vendor_price, team_price, price_alignment_status,
           expected_settlement, contract_date, unconditional_date, settlement_date,
@@ -118,7 +120,11 @@ export const useTransactions = () => {
       }
       
       logger.info('Fetched transactions:', { count: data?.length });
-      return data as unknown as Transaction[];
+      // Map owners from JSONB
+      return (data || []).map(t => ({
+        ...t,
+        owners: (t.owners as unknown as Owner[]) || [],
+      })) as unknown as Transaction[];
     },
     enabled: !!user && !!team?.id,
   });
@@ -131,10 +137,11 @@ export const useTransactions = () => {
     mutationFn: async (transaction: Omit<Transaction, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'last_edited_by' | 'team_id'>) => {
       if (!user?.id || !team?.id) throw new Error('User or team not found');
 
+      const { owners, ...rest } = transaction;
       const { data, error} = await supabase
         .from('transactions')
         .insert({
-          ...transaction,
+          ...rest,
           team_id: team.id,
           created_by: user.id,
           last_edited_by: user.id,
@@ -143,6 +150,7 @@ export const useTransactions = () => {
           vendor_names: transaction.vendor_names as any,
           buyer_names: transaction.buyer_names as any,
           attachments: transaction.attachments as any,
+          owners: owners as any,
         } as any)
         .select()
         .single();
@@ -203,10 +211,11 @@ export const useTransactions = () => {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Transaction> }) => {
       if (!user?.id) throw new Error('User not found');
 
+      const { owners, ...restUpdates } = updates;
       const { data, error } = await supabase
         .from('transactions')
         .update({
-          ...updates,
+          ...restUpdates,
           last_edited_by: user.id,
           updated_at: new Date().toISOString(),
           links: updates.links as any,
@@ -214,6 +223,7 @@ export const useTransactions = () => {
           vendor_names: updates.vendor_names as any,
           buyer_names: updates.buyer_names as any,
           attachments: updates.attachments as any,
+          owners: owners as any,
         } as any)
         .eq('id', id)
         .select()

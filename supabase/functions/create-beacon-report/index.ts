@@ -6,6 +6,15 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
 };
 
+interface Owner {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  is_primary: boolean;
+  beacon_owner_id?: string;
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -92,7 +101,7 @@ Deno.serve(async (req) => {
     
     console.log(`Creating Beacon report for appraisal: ${appraisalId}, type: ${reportType}`);
 
-    // Fetch appraisal data with team_id
+    // Fetch appraisal data with team_id and owners
     const { data: appraisal, error: appraisalError } = await supabase
       .from('logged_appraisals')
       .select('*')
@@ -106,6 +115,18 @@ Deno.serve(async (req) => {
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Build owners array for Beacon
+    const owners = (appraisal.owners as Owner[]) || [];
+    const primaryOwner = owners.find(o => o.is_primary) || owners[0];
+    
+    // Format owners for Beacon API (camelCase)
+    const beaconOwners = owners.map(o => ({
+      name: o.name,
+      email: o.email || '',
+      phone: o.phone || '',
+      isPrimary: o.is_primary,
+    }));
 
     // Call Beacon API to create report as draft (no credit consumed until publish)
     const endpoint = `${beaconApiUrl}/create-report-from-agentbuddy`;
@@ -122,9 +143,12 @@ Deno.serve(async (req) => {
         agentEmail: user.email,
         address: appraisal.address,
         suburb: appraisal.suburb || '',
-        ownerName: appraisal.vendor_name || 'Property Owner',
-        ownerEmail: appraisal.vendor_email || '',
-        ownerMobile: appraisal.vendor_mobile || '',
+        // Send all owners
+        owners: beaconOwners,
+        // Also send primary owner for backward compatibility
+        ownerName: primaryOwner?.name || appraisal.vendor_name || 'Property Owner',
+        ownerEmail: primaryOwner?.email || appraisal.vendor_email || '',
+        ownerMobile: primaryOwner?.phone || appraisal.vendor_mobile || '',
         externalLeadId: appraisalId,
         reportType: reportType,
         team_id: appraisal.team_id, // Pass team_id for credit-based billing
@@ -194,6 +218,7 @@ Deno.serve(async (req) => {
         urls: beaconData.urls,
         reportType: reportType,
         localReportId: newReport?.id,
+        ownerCount: beaconOwners.length,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
