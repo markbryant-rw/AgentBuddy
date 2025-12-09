@@ -163,7 +163,7 @@ Deno.serve(async (req) => {
     }
 
     const beaconData = await beaconResponse.json();
-    console.log('Beacon link response:', beaconData);
+    console.log('Beacon link response:', JSON.stringify(beaconData, null, 2));
 
     if (!beaconData.success) {
       return new Response(
@@ -172,12 +172,29 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Extract fields using camelCase (Beacon v2.0 response format)
+    const linkedReportId = beaconData.reportId;
+    const linkedReportType = beaconData.reportType || 'market_appraisal';
+    const editUrl = beaconData.urls?.edit || beaconData.reportUrl;
+    const personalizedUrl = beaconData.urls?.personalizedLink || beaconData.personalizedUrl;
+
+    // Validate we got the required reportId
+    if (!linkedReportId) {
+      console.error('Beacon response missing reportId. Full response:', beaconData);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Beacon response missing report ID' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Extracted report data:', { linkedReportId, linkedReportType, editUrl, personalizedUrl });
+
     // Insert or update report in beacon_reports table
     const { data: existingReport } = await supabase
       .from('beacon_reports')
       .select('id')
       .eq('appraisal_id', appraisalId)
-      .eq('beacon_report_id', beaconData.report_id)
+      .eq('beacon_report_id', linkedReportId)
       .maybeSingle();
 
     if (!existingReport) {
@@ -185,10 +202,10 @@ Deno.serve(async (req) => {
         .from('beacon_reports')
         .insert({
           appraisal_id: appraisalId,
-          beacon_report_id: beaconData.report_id,
-          report_type: beaconData.report_type || 'market_appraisal',
-          report_url: beaconData.report_url,
-          personalized_url: beaconData.report_url,
+          beacon_report_id: linkedReportId,
+          report_type: linkedReportType,
+          report_url: editUrl,
+          personalized_url: personalizedUrl,
           created_at: new Date().toISOString(),
         });
 
@@ -201,9 +218,9 @@ Deno.serve(async (req) => {
     const { error: updateError } = await supabase
       .from('logged_appraisals')
       .update({
-        beacon_report_id: beaconData.report_id,
-        beacon_report_url: beaconData.report_url,
-        beacon_personalized_url: beaconData.report_url,
+        beacon_report_id: linkedReportId,
+        beacon_report_url: editUrl,
+        beacon_personalized_url: personalizedUrl,
         beacon_synced_at: new Date().toISOString(),
       })
       .eq('id', appraisalId);
@@ -216,10 +233,11 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         message: beaconData.message || 'Report linked to AgentBuddy lead',
-        reportId: beaconData.report_id,
-        reportUrl: beaconData.report_url,
+        reportId: linkedReportId,
+        reportUrl: editUrl,
+        personalizedUrl: personalizedUrl,
         address: beaconData.address,
-        reportType: beaconData.report_type,
+        reportType: linkedReportType,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
