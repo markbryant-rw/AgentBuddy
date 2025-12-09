@@ -221,3 +221,6 @@ verify_jwt = true
 
 [functions.sync-beacon-owner]
 verify_jwt = true
+
+[functions.receive-beacon-owner-update]
+verify_jwt = false
