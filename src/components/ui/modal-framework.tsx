@@ -1,11 +1,16 @@
 /**
  * Modal Framework - Standardized z-index and behavior for all dialogs
  * 
- * Z-Index Hierarchy:
+ * Z-Index Hierarchy (CORRECT ORDER - DO NOT OVERRIDE):
+ * - Select/Popover/Dropdown Portals: z-[12000] (HIGHEST - always on top)
+ * - Alert Dialogs: z-[11000] (overlay), z-[11001] (content)
  * - Base Dialogs: z-[9998] (overlay), z-[9999] (content)
- * - Alert Dialogs (confirmations, warnings): z-[11000] (overlay), z-[11001] (content)
- * - Select Dropdowns (within dialogs): z-[10001]
- * - Toasts: z-[12000]
+ * - Navigation: z-[100]
+ * 
+ * IMPORTANT: Never add inline z-index overrides to SelectContent, PopoverContent,
+ * or DropdownMenuContent components. The base components already have the correct
+ * z-index (z-[12000]) to render above all dialogs. Adding inline overrides like
+ * className="z-[10001]" will cause dropdowns to appear BEHIND dialog overlays.
  * 
  * Usage:
  * - Use StandardDialog for main content dialogs

@@ -311,7 +311,7 @@ export const EditUserDialog = ({ user, open, onOpenChange }: EditUserDialogProps
               <SelectTrigger>
                 <SelectValue placeholder="Select a role..." />
               </SelectTrigger>
-              <SelectContent className="z-[11000] bg-popover" position="popper" sideOffset={5}>
+              <SelectContent className="bg-popover" position="popper" sideOffset={5}>
                 {availableRoles.map((role) => (
                   <SelectItem key={role} value={role}>
                     {getRoleDisplayName(role)}

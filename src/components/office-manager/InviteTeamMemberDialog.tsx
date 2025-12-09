@@ -298,7 +298,7 @@ export function InviteTeamMemberDialog({ open, onOpenChange, officeId, defaultTe
               <SelectTrigger id="role">
                 <SelectValue placeholder="Select a role..." />
               </SelectTrigger>
-              <SelectContent position="popper" className="z-[10001] bg-popover border shadow-md" sideOffset={5}>
+              <SelectContent position="popper" className="bg-popover border shadow-md" sideOffset={5}>
                 {invitableRoles.map((role) => (
                   <SelectItem key={role} value={role}>
                     <div className="flex items-center gap-2">
@@ -318,7 +318,7 @@ export function InviteTeamMemberDialog({ open, onOpenChange, officeId, defaultTe
                 <SelectTrigger id="team">
                   <SelectValue placeholder="Select a team or solo agent..." />
                 </SelectTrigger>
-                <SelectContent position="popper" className="z-[10001] bg-popover border shadow-md" sideOffset={5}>
+                <SelectContent position="popper" className="bg-popover border shadow-md" sideOffset={5}>
                   <SelectItem value="solo">Solo Agent (No Team)</SelectItem>
                   {teams.map((team) => (
                     <SelectItem key={team.id} value={team.id}>
