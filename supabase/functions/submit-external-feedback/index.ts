@@ -195,7 +195,7 @@ serve(async (req) => {
           description: description.trim(),
           module: 'BEACON',
           source: 'beacon',
-          status: 'submitted',
+          status: 'triage',
           attachments: uploadedAttachments.length > 0 ? uploadedAttachments : null,
         })
         .select('id')
