@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,11 +12,14 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2, Sheet, Link, HelpCircle, ExternalLink, Download } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2, Sheet, Link, HelpCircle, ExternalLink, Download, ListTodo } from 'lucide-react';
 import { useAppraisalsImport } from '@/hooks/useAppraisalsImport';
 import { useGoogleSheetsImport } from '@/hooks/useGoogleSheetsImport';
 import { FileUploadArea } from '@/components/feedback/FileUploadArea';
 import { useToast } from '@/hooks/use-toast';
+import { BulkApplyTemplateDialog } from './BulkApplyTemplateDialog';
+import { supabase } from '@/integrations/supabase/client';
+import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
 import {
   Tooltip,
   TooltipContent,
@@ -39,12 +42,18 @@ export const AppraisalsImportDialog = ({
 }: AppraisalsImportDialogProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [validatedRows, setValidatedRows] = useState<any[]>([]);
-  const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'complete'>('upload');
+  const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'complete' | 'template'>('upload');
   const [summary, setSummary] = useState<any>(null);
   const [parsing, setParsing] = useState(false);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [importMethod, setImportMethod] = useState<'csv' | 'sheets'>('csv');
   const [filterMode, setFilterMode] = useState<'all' | 'warnings' | 'errors'>('all');
+  const [importedAppraisals, setImportedAppraisals] = useState<Array<{
+    id: string;
+    stage: AppraisalStage;
+    appraisal_date: string;
+    agent_id?: string;
+  }>>([]);
 
   const { parseCSV, parseGoogleSheetData, importAppraisals, isImporting, progress } = useAppraisalsImport();
   const { fetchGoogleSheet, isFetching } = useGoogleSheetsImport();
@@ -117,6 +126,24 @@ export const AppraisalsImportDialog = ({
     setStep('importing');
     const importSummary = await importAppraisals(validatedRows, teamId);
     setSummary(importSummary);
+    
+    // Fetch imported appraisals for template application
+    if (importSummary.importedIds && importSummary.importedIds.length > 0) {
+      const { data: appraisalData } = await supabase
+        .from('logged_appraisals')
+        .select('id, stage, appraisal_date, agent_id')
+        .in('id', importSummary.importedIds);
+      
+      if (appraisalData) {
+        setImportedAppraisals(appraisalData.map(a => ({
+          id: a.id,
+          stage: (a.stage as AppraisalStage) || 'VAP',
+          appraisal_date: a.appraisal_date,
+          agent_id: a.agent_id || undefined,
+        })));
+      }
+    }
+    
     setStep('complete');
   };
 
@@ -129,10 +156,15 @@ export const AppraisalsImportDialog = ({
     setGoogleSheetUrl('');
     setImportMethod('csv');
     setFilterMode('all');
+    setImportedAppraisals([]);
     onOpenChange(false);
-    if (step === 'complete') {
+    if (step === 'complete' || step === 'template') {
       onImportComplete();
     }
+  };
+  
+  const handleApplyTemplates = () => {
+    setStep('template');
   };
 
   const validCount = validatedRows.filter(r => r.valid).length;
@@ -505,10 +537,38 @@ export const AppraisalsImportDialog = ({
               )}
             </div>
 
+            {/* Template prompt for imported appraisals */}
+            {importedAppraisals.length > 0 && (
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <ListTodo className="h-5 w-5 text-primary" />
+                  <span className="font-medium">Apply Task Templates?</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Would you like to apply task templates to the {importedAppraisals.length} imported appraisals?
+                </p>
+                <Button onClick={handleApplyTemplates} variant="outline" className="w-full">
+                  <ListTodo className="h-4 w-4 mr-2" />
+                  Apply Templates to {importedAppraisals.length} Appraisals
+                </Button>
+              </div>
+            )}
+
             <div className="flex justify-center">
-              <Button onClick={handleClose}>Done</Button>
+              <Button onClick={handleClose}>
+                {importedAppraisals.length > 0 ? 'Skip & Close' : 'Done'}
+              </Button>
             </div>
           </div>
+        )}
+
+        {step === 'template' && (
+          <BulkApplyTemplateDialog
+            isOpen={true}
+            onClose={() => setStep('complete')}
+            onComplete={handleClose}
+            appraisals={importedAppraisals}
+          />
         )}
       </DialogContent>
     </Dialog>

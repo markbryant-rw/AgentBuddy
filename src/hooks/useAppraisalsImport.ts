@@ -19,6 +19,7 @@ interface ImportSummary {
   successful: number;
   failed: number;
   warnings: number;
+  importedIds: string[];
 }
 
 export const useAppraisalsImport = () => {
@@ -262,7 +263,8 @@ export const useAppraisalsImport = () => {
       total: validatedRows.length,
       successful: 0,
       failed: 0,
-      warnings: 0
+      warnings: 0,
+      importedIds: []
     };
 
     const validRows = validatedRows.filter(r => r.valid);
@@ -321,8 +323,11 @@ export const useAppraisalsImport = () => {
         } else {
           summary.successful += data?.length || 0;
           
-          // Fire-and-forget geocoding for imported records
+          // Collect imported IDs
           if (data && data.length > 0) {
+            summary.importedIds.push(...data.map(r => r.id));
+            
+            // Fire-and-forget geocoding for imported records
             data.forEach(record => {
               supabase.functions.invoke('geocode-appraisal', {
                 body: { appraisalId: record.id }
