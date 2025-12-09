@@ -184,13 +184,24 @@ export const useBeaconIntegration = () => {
 
   // Search for existing Beacon reports
   const searchBeaconReports = async (params: { address?: string; ownerName?: string; ownerEmail?: string }) => {
-    console.log('searchBeaconReports:', params);
+    if (!team?.id) {
+      console.error('searchBeaconReports: No team ID available');
+      throw new Error('Team not found');
+    }
+    
+    console.log('searchBeaconReports:', { ...params, teamId: team.id });
     
     const { data, error } = await supabase.functions.invoke('search-beacon-reports', {
-      body: params,
+      body: { ...params, teamId: team.id },
     });
 
     if (error) throw error;
+    
+    // Handle team not synced error
+    if (!data.success && data.error?.includes('not synced')) {
+      throw new Error('Team not synced to Beacon. Please enable Beacon integration first.');
+    }
+    
     return data?.reports || [];
   };
 

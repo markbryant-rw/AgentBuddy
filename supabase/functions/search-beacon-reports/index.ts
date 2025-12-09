@@ -57,9 +57,16 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { address, ownerName, ownerEmail } = await req.json();
+    const { address, ownerName, ownerEmail, teamId } = await req.json();
     
-    console.log(`Searching Beacon reports for: ${address || ownerName || ownerEmail}`);
+    console.log(`Searching Beacon reports for: ${address || ownerName || ownerEmail}, teamId: ${teamId}`);
+
+    if (!teamId) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Team ID is required for searching reports' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!address && !ownerName && !ownerEmail) {
       return new Response(
@@ -69,9 +76,9 @@ Deno.serve(async (req) => {
     }
 
     // Call Beacon API to search for reports
-    // Note: This assumes Beacon has a search endpoint - adjust URL as needed
     const searchParams = new URLSearchParams();
     searchParams.append('api_key', beaconApiKey);
+    searchParams.append('team_id', teamId);
     if (address) searchParams.append('address', address);
     if (ownerName) searchParams.append('owner_name', ownerName);
     if (ownerEmail) searchParams.append('owner_email', ownerEmail);
@@ -98,6 +105,20 @@ Deno.serve(async (req) => {
       
       const errorText = await beaconResponse.text();
       console.error('Beacon search error:', beaconResponse.status, errorText);
+      
+      // Handle team not synced error
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error === 'TEAM_NOT_SYNCED') {
+          return new Response(
+            JSON.stringify({ success: false, error: 'Team not synced to Beacon. Please enable Beacon integration first.' }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch {
+        // Not JSON, continue with generic error
+      }
+      
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to search Beacon reports' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
