@@ -30,16 +30,76 @@ export const BeaconStatusIndicator = ({
   reportCreatedAt,
   reportSentAt,
 }: BeaconStatusIndicatorProps) => {
-  // Don't render if no Beacon report
-  if (!hasReport) return null;
+  // Check if we have any engagement data (even without a linked report)
+  const hasEngagement = viewCount > 0 || propensityScore > 0 || isHotLead;
+  
+  // Don't render if no Beacon report AND no engagement data
+  if (!hasReport && !hasEngagement) return null;
 
   // Determine sent status from either prop or reportSentAt
   const isSent = isSentProp ?? !!reportSentAt;
   const isViewed = viewCount > 0;
   const showHotLead = isHotLead || propensityScore >= 70;
+  
+  // If we have engagement but no linked report, show simplified indicator
+  const engagementOnly = !hasReport && hasEngagement;
 
   if (compact) {
-    // Compact version - 4-step pipeline with tooltips
+    // Compact version - show simplified 2-step (Viewed → Hot) if engagement-only, else 4-step pipeline
+    if (engagementOnly) {
+      // Simplified indicator for engagement without linked report
+      return (
+        <TooltipProvider>
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/20">
+            {/* Viewed indicator */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn(
+                  "h-5 w-5 rounded-full flex items-center justify-center transition-colors",
+                  isViewed 
+                    ? "bg-teal-500 text-white" 
+                    : "bg-muted-foreground/20 text-muted-foreground"
+                )}>
+                  <Eye className="h-3 w-3" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                {isViewed ? (
+                  <p className="font-medium">Viewed {viewCount} time{viewCount !== 1 ? 's' : ''}</p>
+                ) : (
+                  <p>Not yet viewed</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+            
+            <div className={cn("w-1.5 h-0.5", showHotLead ? "bg-orange-500" : "bg-muted-foreground/30")} />
+            
+            {/* Hot indicator */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn(
+                  "h-5 w-5 rounded-full flex items-center justify-center transition-colors",
+                  showHotLead 
+                    ? "bg-orange-500 text-white animate-pulse" 
+                    : "bg-muted-foreground/20 text-muted-foreground"
+                )}>
+                  <Flame className="h-3 w-3" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                {showHotLead ? (
+                  <p className="font-medium">🔥 Hot Lead! ({propensityScore}%)</p>
+                ) : (
+                  <p>Propensity: {propensityScore}%</p>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </TooltipProvider>
+      );
+    }
+
+    // Full 4-step pipeline with tooltips
     return (
       <TooltipProvider>
         <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-teal-500/10 border border-teal-500/20">
@@ -137,6 +197,59 @@ export const BeaconStatusIndicator = ({
   }
 
   // Full size indicator (for dialogs/panels)
+  if (engagementOnly) {
+    // Simplified indicator for engagement without linked report
+    return (
+      <TooltipProvider>
+        <div className="flex items-center gap-1">
+          {/* Viewed */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={cn(
+                "flex items-center justify-center h-8 w-8 rounded-full transition-colors",
+                isViewed 
+                  ? "bg-teal-500/20 text-teal-600" 
+                  : "bg-muted text-muted-foreground"
+              )}>
+                <Eye className="h-4 w-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {isViewed ? (
+                <p className="font-medium">Viewed {viewCount} time{viewCount !== 1 ? 's' : ''}</p>
+              ) : (
+                <p>Not yet viewed</p>
+              )}
+            </TooltipContent>
+          </Tooltip>
+          
+          <div className={cn("w-3 h-0.5", showHotLead ? "bg-orange-500" : "bg-muted-foreground/30")} />
+          
+          {/* Hot */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className={cn(
+                "flex items-center justify-center h-8 w-8 rounded-full transition-colors",
+                showHotLead 
+                  ? "bg-orange-500/20 text-orange-600 animate-pulse" 
+                  : "bg-muted text-muted-foreground"
+              )}>
+                <Flame className="h-4 w-4" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              {showHotLead ? (
+                <p className="font-medium">🔥 Hot Lead! ({propensityScore}%)</p>
+              ) : (
+                <p>Propensity: {propensityScore}%</p>
+              )}
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider>
       <div className="flex items-center gap-1">
