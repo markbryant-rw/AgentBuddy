@@ -72,9 +72,11 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
     mutationFn: async ({
       templateId,
       transactionId,
+      skipDueDates = false,
     }: {
       templateId: string;
       transactionId: string;
+      skipDueDates?: boolean;
     }) => {
       const template = templates.find(t => t.id === templateId);
       if (!template) throw new Error('Template not found');
@@ -191,7 +193,7 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
             team_id: transaction.team_id,
             created_by: user?.id,
             order_position: index,
-            due_date: task.due_offset_days != null
+            due_date: (task.due_offset_days != null && !skipDueDates)
               ? format(new Date(anchorDate.getTime() + task.due_offset_days * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
               : null,
             assigned_to: assignedTo,
