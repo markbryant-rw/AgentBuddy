@@ -271,11 +271,27 @@ Links an existing Beacon report to an AgentBuddy appraisal.
   "apiKey": "beacon_api_key_here",
   "reportId": "uuid-of-beacon-report",
   "externalLeadId": "uuid-of-appraisal",
-  "vendorName": "John Smith",
-  "vendorEmail": "john@example.com",
-  "vendorMobile": "+64 21 123 4567"
+  "agentEmail": "mark@raywhite.com",
+  "address": "123 Queen Street, Auckland CBD, Auckland 1010",
+  "ownerName": "John Smith",
+  "ownerEmail": "john@example.com",
+  "ownerPhone": "+64 21 123 4567"
 }
 ```
+
+**Required Fields:**
+| Field | Required | Description |
+|-------|----------|-------------|
+| `apiKey` | Yes | Beacon API key |
+| `reportId` | Yes* | UUID of Beacon report |
+| `externalLeadId` | Yes | UUID of AgentBuddy appraisal |
+| `agentEmail` | Yes | Email of the agent creating link |
+| `address` | Yes | Property address |
+| `ownerName` | No | Vendor/owner name |
+| `ownerEmail` | No | Vendor/owner email |
+| `ownerPhone` | No | Vendor/owner phone |
+
+*Can use `propertySlug` + `reportType` instead of `reportId`
 
 **Alternative - Link by Property Slug:**
 ```json
@@ -284,7 +300,9 @@ Links an existing Beacon report to an AgentBuddy appraisal.
   "propertySlug": "123-queen-street-auckland-cbd",
   "reportType": "appraisal",
   "externalLeadId": "uuid-of-appraisal",
-  "vendorName": "John Smith"
+  "agentEmail": "mark@raywhite.com",
+  "address": "123 Queen Street, Auckland CBD",
+  "ownerName": "John Smith"
 }
 ```
 
