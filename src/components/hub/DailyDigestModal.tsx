@@ -31,6 +31,7 @@ import {
   Bell,
   BellOff,
 } from 'lucide-react';
+import { TeamAppraisalLeaderboard } from './TeamAppraisalLeaderboard';
 import { format, startOfWeek, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -285,6 +286,11 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
                       </div>
                     )}
                   </div>
+                </Card>
+
+                {/* Team Leaderboard */}
+                <Card className="p-6 bg-gradient-to-br from-amber-50/80 to-yellow-50/80 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800 backdrop-blur-sm">
+                  <TeamAppraisalLeaderboard />
                 </Card>
 
                 {/* Tasks & Pipeline in a Row */}
