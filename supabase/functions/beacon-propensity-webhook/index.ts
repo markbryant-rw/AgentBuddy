@@ -5,6 +5,58 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key, x-webhook-source, x-idempotency-key',
 };
 
+// Map Beacon selling plans to readable text
+const SELLING_PLANS_MAP: Record<string, string> = {
+  'next_3_months': 'Thinking of selling in the next 3 months',
+  'next_6_months': 'Thinking of selling in the next 6 months',
+  'next_12_months': 'Thinking of selling in the next 12 months',
+  'not_sure': 'Not sure about timing',
+  'just_curious': 'Just curious about property value',
+};
+
+const WANTS_MORE_INFO_MAP: Record<string, string> = {
+  'recent_sales': 'Recent sales in my area',
+  'market_trends': 'Market trends and timing advice',
+  'property_improvements': 'Property improvements to maximize value',
+  'selling_process': 'Information about the selling process',
+};
+
+function formatBeaconSurveyNote(data: any): string {
+  const feedbackDate = data.feedbackSubmittedAt 
+    ? new Date(data.feedbackSubmittedAt).toLocaleDateString('en-NZ', { month: 'short', day: 'numeric', year: 'numeric' })
+    : new Date().toLocaleDateString('en-NZ', { month: 'short', day: 'numeric', year: 'numeric' });
+  
+  const lines: string[] = [`📋 Beacon Survey Response (${feedbackDate})`];
+  lines.push('');
+  
+  if (data.usefulnessRating) {
+    lines.push(`⭐ Rating: ${data.usefulnessRating}/5 stars`);
+  }
+  
+  if (data.sellingPlans) {
+    const planText = SELLING_PLANS_MAP[data.sellingPlans] || data.sellingPlans;
+    lines.push(`📅 Selling Plans: ${planText}`);
+  }
+  
+  if (data.wantsMoreInfo && data.wantsMoreInfo.length > 0) {
+    const infoItems = data.wantsMoreInfo.map((item: string) => WANTS_MORE_INFO_MAP[item] || item);
+    lines.push(`📚 Wants More Info: ${infoItems.join(', ')}`);
+  }
+  
+  if (data.questionsComments) {
+    lines.push(`💬 Comments: "${data.questionsComments}"`);
+  }
+  
+  // Add high intent indicator
+  const isHighIntent = data.sellingPlans === 'next_3_months' || data.sellingPlans === 'next_6_months';
+  if (isHighIntent) {
+    lines.push('');
+    lines.push('🔥 High Intent Lead');
+  }
+  
+  return lines.join('\n');
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -40,6 +92,77 @@ Deno.serve(async (req) => {
     
     // Beacon sends reportType in data, not at top level
     const reportType = data?.reportType || 'appraisal';
+
+    // Handle feedback_submitted event - Create appraisal note with survey data
+    if (event === 'feedback_submitted') {
+      console.log('Processing feedback_submitted event for lead:', externalLeadId);
+      
+      if (!externalLeadId) {
+        return new Response(
+          JSON.stringify({ success: false, error: 'Missing externalLeadId for feedback_submitted' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Fetch the appraisal to verify it exists and get user_id for notification
+      const { data: appraisal, error: fetchError } = await supabase
+        .from('logged_appraisals')
+        .select('id, user_id, address, vendor_name')
+        .eq('id', externalLeadId)
+        .single();
+
+      if (fetchError || !appraisal) {
+        console.error('Appraisal not found for feedback:', fetchError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Appraisal not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Format survey as readable note
+      const noteContent = formatBeaconSurveyNote(data);
+
+      // Insert into appraisal_notes
+      const { error: noteError } = await supabase
+        .from('appraisal_notes')
+        .insert({
+          appraisal_id: externalLeadId,
+          author_id: null, // System-generated
+          source: 'beacon_survey',
+          content: noteContent,
+          metadata: data, // Store raw survey data
+        });
+
+      if (noteError) {
+        console.error('Failed to create appraisal note:', noteError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to create note' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Created appraisal note from Beacon survey for:', externalLeadId);
+
+      // Create notification for high-intent leads
+      const isHighIntent = data.sellingPlans === 'next_3_months' || data.sellingPlans === 'next_6_months';
+      if (isHighIntent) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: appraisal.user_id,
+            title: '🔥 High Intent Survey Response!',
+            message: `${appraisal.vendor_name || 'A vendor'} at ${appraisal.address} submitted a survey indicating they want to sell soon!`,
+            type: 'beacon_survey',
+            action_url: `/prospect-appraisals?appraisal=${externalLeadId}`,
+          });
+        console.log('Created high intent notification for user:', appraisal.user_id);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Survey feedback saved as note' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Handle owner_added event - Beacon created a new owner, update appraisal
     if (event === 'owner_added') {
