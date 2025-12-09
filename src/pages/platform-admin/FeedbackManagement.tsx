@@ -5,11 +5,13 @@ import { BugIntelligenceTab } from "@/components/feedback/admin/BugIntelligenceT
 import { BugKanbanBoard } from "@/components/feedback/admin/BugKanbanBoard";
 import { FeatureRequestKanbanBoard } from "@/components/feedback/admin/FeatureRequestKanbanBoard";
 import { FeedbackMetricsSummary } from "@/components/feedback/admin/FeedbackMetricsSummary";
+import { SourceFilter, SourceType } from "@/components/feedback/admin/SourceFilter";
 import { useBugKanbanMetrics, useFeatureKanbanMetrics } from "@/hooks/useKanbanMetrics";
 import { Lightbulb, BarChart3, Target } from "lucide-react";
 
 export default function FeedbackManagement() {
   const [activeTab, setActiveTab] = useState("hunt");
+  const [sourceFilter, setSourceFilter] = useState<SourceType>("all");
   const { data: bugMetrics } = useBugKanbanMetrics();
   const { data: featureMetrics } = useFeatureKanbanMetrics();
 
@@ -23,20 +25,26 @@ export default function FeedbackManagement() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3 lg:w-[420px]">
-          <TabsTrigger value="hunt" className="gap-2">
-            <Target className="h-4 w-4" />
-            Bug Hunt
-          </TabsTrigger>
-          <TabsTrigger value="features" className="gap-2">
-            <Lightbulb className="h-4 w-4" />
-            Features
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[420px]">
+            <TabsTrigger value="hunt" className="gap-2">
+              <Target className="h-4 w-4" />
+              Bug Hunt
+            </TabsTrigger>
+            <TabsTrigger value="features" className="gap-2">
+              <Lightbulb className="h-4 w-4" />
+              Features
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          {activeTab !== "analytics" && (
+            <SourceFilter value={sourceFilter} onChange={setSourceFilter} />
+          )}
+        </div>
 
         <TabsContent value="hunt" className="mt-6 space-y-4">
           {bugMetrics && (
@@ -49,7 +57,7 @@ export default function FeedbackManagement() {
               type="bugs"
             />
           )}
-          <BugKanbanBoard />
+          <BugKanbanBoard sourceFilter={sourceFilter} />
         </TabsContent>
 
         <TabsContent value="features" className="mt-6 space-y-4">
@@ -63,7 +71,7 @@ export default function FeedbackManagement() {
               type="features"
             />
           )}
-          <FeatureRequestKanbanBoard />
+          <FeatureRequestKanbanBoard sourceFilter={sourceFilter} />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-6">
