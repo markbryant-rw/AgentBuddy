@@ -57,10 +57,9 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
   const [selectedAppraisals, setSelectedAppraisals] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('property');
 
-  // Use external task counts if provided, otherwise fetch internally (fallback for backward compatibility)
-  const appraisalIds = useMemo(() => externalTaskCounts ? [] : appraisals.map(a => a.id), [appraisals, externalTaskCounts]);
-  const { data: internalTaskCounts } = useAppraisalTaskCounts(appraisalIds);
-  const taskCounts = externalTaskCounts || internalTaskCounts;
+  // Fetch global task counts (single cached query for all appraisals)
+  const { data: globalTaskCounts } = useAppraisalTaskCounts();
+  const taskCounts = externalTaskCounts || globalTaskCounts;
 
   const filteredAppraisals = useMemo(() => {
     return appraisals.filter(appraisal => {
