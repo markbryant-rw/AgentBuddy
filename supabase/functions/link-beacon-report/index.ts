@@ -99,26 +99,42 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Beacon API to link the report
+    // Get agent email for the appraisal
+    let agentEmail = user.email;
+    if (appraisal.agent_id && appraisal.agent_id !== user.id) {
+      const { data: agentProfile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', appraisal.agent_id)
+        .single();
+      if (agentProfile?.email) {
+        agentEmail = agentProfile.email;
+      }
+    }
+
+    // Call Beacon API to link the report - standalone endpoint per v2.0 spec
     const endpoint = `${beaconApiUrl}/link-report-to-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
+    // Build payload with required fields per v2.0 spec (camelCase)
     const beaconPayload: Record<string, string> = {
       apiKey: beaconApiKey,
-      lead_id: appraisalId,
-      owner_name: appraisal.vendor_name || 'Property Owner',
+      externalLeadId: appraisalId,
+      agentEmail: agentEmail || '',
+      address: appraisal.address,
+      ownerName: appraisal.vendor_name || 'Property Owner',
     };
 
     // Add optional fields
-    if (appraisal.vendor_email) beaconPayload.owner_email = appraisal.vendor_email;
-    if (appraisal.vendor_mobile) beaconPayload.owner_mobile = appraisal.vendor_mobile;
+    if (appraisal.vendor_email) beaconPayload.ownerEmail = appraisal.vendor_email;
+    if (appraisal.vendor_mobile) beaconPayload.ownerPhone = appraisal.vendor_mobile;
     
     // Either reportId or propertySlug
     if (reportId) {
-      beaconPayload.report_id = reportId;
+      beaconPayload.reportId = reportId;
     } else if (propertySlug) {
-      beaconPayload.property_slug = propertySlug;
-      if (reportType) beaconPayload.report_type = reportType;
+      beaconPayload.propertySlug = propertySlug;
+      if (reportType) beaconPayload.reportType = reportType;
     }
 
     const beaconResponse = await fetch(endpoint, {

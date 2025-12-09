@@ -83,17 +83,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Beacon's sync-owner-from-agentbuddy endpoint
-    const beaconUrl = `${beaconApiUrl}/functions/v1/sync-owner-from-agentbuddy`;
+    // Call Beacon's sync-owner-from-agentbuddy endpoint - standalone endpoint per v2.0 spec
+    const beaconUrl = `${beaconApiUrl}/sync-owner-from-agentbuddy`;
     console.log('Syncing owner to Beacon:', beaconUrl, { externalLeadId, ownerName, ownerEmail, ownerPhone });
 
     const beaconResponse = await fetch(beaconUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': beaconApiKey,
       },
       body: JSON.stringify({
+        apiKey: beaconApiKey,
         externalLeadId,
         ownerName,
         ownerEmail,

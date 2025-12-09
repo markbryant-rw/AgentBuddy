@@ -88,20 +88,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Beacon's get-all-team-reports endpoint
-    const beaconUrl = `${beaconApiUrl}/functions/v1/get-all-team-reports`;
+    // Call Beacon's get-all-team-reports endpoint - standalone endpoint per v2.0 spec
+    // Uses GET with query params per Beacon API spec
+    const searchParams = new URLSearchParams();
+    searchParams.append('apiKey', beaconApiKey);
+    searchParams.append('teamId', teamId);
+    if (!includeLinked) searchParams.append('status', 'all');
+    
+    const beaconUrl = `${beaconApiUrl}/get-all-team-reports?${searchParams.toString()}`;
     console.log('Fetching all team reports from Beacon:', beaconUrl);
 
     const beaconResponse = await fetch(beaconUrl, {
-      method: 'POST',
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-API-Key': beaconApiKey,
       },
-      body: JSON.stringify({
-        teamId,
-        includeLinked,
-      }),
     });
 
     if (!beaconResponse.ok) {
