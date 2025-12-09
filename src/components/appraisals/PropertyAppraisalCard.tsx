@@ -1,20 +1,22 @@
 import { GroupedProperty, LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, RotateCcw } from 'lucide-react';
+import { MapPin, RotateCcw, CheckSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { StageInfoTooltip } from '@/components/appraisals/StageInfoTooltip';
 import { AppraisalStage } from '@/hooks/useAppraisalTemplates';
 import { BeaconStatusIndicator } from './BeaconStatusIndicator';
 import { useBeaconIntegration } from '@/hooks/useBeaconIntegration';
+import { AppraisalTaskCount } from '@/hooks/useAppraisalTaskCounts';
 
 interface PropertyAppraisalCardProps {
   property: GroupedProperty;
   onClick: (appraisal: LoggedAppraisal) => void;
+  taskCount?: AppraisalTaskCount;
 }
 
-export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCardProps) => {
+export const PropertyAppraisalCard = ({ property, onClick, taskCount }: PropertyAppraisalCardProps) => {
   const { latestAppraisal, visitCount } = property;
   const { isBeaconEnabled } = useBeaconIntegration();
 
@@ -63,6 +65,20 @@ export const PropertyAppraisalCard = ({ property, onClick }: PropertyAppraisalCa
                 {latestAppraisal.vendor_name}
               </span>
             </>
+          )}
+          {/* Task progress indicator */}
+          {taskCount && taskCount.total > 0 && (
+            <div className="flex items-center gap-1 text-xs">
+              <CheckSquare className={cn(
+                "h-3 w-3",
+                taskCount.done === taskCount.total ? "text-emerald-500" : "text-muted-foreground"
+              )} />
+              <span className={cn(
+                taskCount.done === taskCount.total ? "text-emerald-600" : "text-muted-foreground"
+              )}>
+                {taskCount.done}/{taskCount.total}
+              </span>
+            </div>
           )}
         </div>
 

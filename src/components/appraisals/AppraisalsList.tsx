@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { LoggedAppraisal, GroupedProperty, useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useAppraisalTaskCounts } from '@/hooks/useAppraisalTaskCounts';
 import {
   Table,
   TableBody,
@@ -52,6 +53,10 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
   const [selectedAppraisals, setSelectedAppraisals] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<ViewMode>('property');
+
+  // Fetch task counts for all appraisals in one query
+  const appraisalIds = useMemo(() => appraisals.map(a => a.id), [appraisals]);
+  const { data: taskCounts } = useAppraisalTaskCounts(appraisalIds);
 
   const filteredAppraisals = useMemo(() => {
     return appraisals.filter(appraisal => {
@@ -452,6 +457,7 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick }: AppraisalsLis
                 key={property.normalizedAddress}
                 property={property}
                 onClick={onAppraisalClick}
+                taskCount={taskCounts?.[property.latestAppraisal.id]}
               />
             ))
           )}
