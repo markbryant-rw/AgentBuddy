@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.76.1';
-import { getCorsHeaders, corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async (req) => {
   const origin = req.headers.get('origin');
@@ -11,11 +11,17 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+    // Auth client to verify user
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: req.headers.get('Authorization')! } }
+    });
+
+    // Service role client for database operations (bypasses RLS)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
     
@@ -27,7 +33,7 @@ serve(async (req) => {
     }
 
     // Verify user is platform admin
-    const { data: roles, error: rolesError } = await supabaseClient
+    const { data: roles, error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
@@ -51,7 +57,7 @@ serve(async (req) => {
     }
 
     // Verify target user exists
-    const { data: targetProfile, error: profileError } = await supabaseClient
+    const { data: targetProfile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('id, full_name, email')
       .eq('id', targetUserId)
@@ -64,8 +70,8 @@ serve(async (req) => {
       );
     }
 
-    // Log impersonation
-    const { error: logError } = await supabaseClient
+    // Log impersonation using service role
+    const { error: logError } = await supabaseAdmin
       .from('admin_impersonation_log')
       .insert({
         admin_id: user.id,
@@ -78,8 +84,8 @@ serve(async (req) => {
       console.error('Failed to log impersonation:', logError);
     }
 
-    // Log to audit_logs
-    await supabaseClient
+    // Log to audit_logs using service role
+    const { error: auditError } = await supabaseAdmin
       .from('audit_logs')
       .insert({
         user_id: user.id,
@@ -87,6 +93,12 @@ serve(async (req) => {
         target_user_id: targetUserId,
         details: { reason, target_name: targetProfile.full_name },
       });
+
+    if (auditError) {
+      console.error('Failed to create audit log:', auditError);
+    }
+
+    console.log(`Impersonation started: ${user.email} -> ${targetProfile.email}`);
 
     return new Response(
       JSON.stringify({ 

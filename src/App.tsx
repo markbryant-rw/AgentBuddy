@@ -108,6 +108,7 @@ const ReferralsComingSoon = lazy(() => import("./pages/referrals/ComingSoon"));
 const ComplianceComingSoon = lazy(() => import("./pages/compliance/ComingSoon"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AccountPaused = lazy(() => import("./pages/AccountPaused"));
 const EngageDashboard = lazy(() => import("./pages/EngageDashboard"));
 const Leaderboards = lazy(() => import("./pages/engage/Leaderboards"));
 const EngageSocialFeed = lazy(() => import("./pages/engage/SocialFeed"));
@@ -163,6 +164,7 @@ const AppContent = () => {
                 <Route path="/accept-invitation/:token" element={<AcceptInvitation />} />
                 <Route path="/onboarding/complete-profile" element={<CompleteProfile />} />
                 <Route path="/access-denied" element={<AccessDenied />} />
+                <Route path="/account-paused" element={<AccountPaused />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 {/* Salesperson/Workspace Routes */}
                 <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>

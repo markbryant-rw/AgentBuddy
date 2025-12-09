@@ -224,3 +224,18 @@ verify_jwt = true
 
 [functions.receive-beacon-owner-update]
 verify_jwt = false
+
+[functions.pause-agency]
+verify_jwt = true
+
+[functions.unpause-agency]
+verify_jwt = true
+
+[functions.cleanup-expired-accounts]
+verify_jwt = false
+
+[functions.start-impersonation]
+verify_jwt = true
+
+[functions.stop-impersonation]
+verify_jwt = true
