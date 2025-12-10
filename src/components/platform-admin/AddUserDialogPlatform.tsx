@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import { validateEmail } from '@/lib/validation';
 import { Loader2, UserPlus } from 'lucide-react';
 import { RoleBadge } from '@/components/RoleBadge';
 import { InvitationWarningDialog } from '@/components/office-manager/InvitationWarningDialog';
-import { ApplyLicenseDialog } from './ApplyLicenseDialog';
+import { VoucherSelect } from './VoucherSelect';
 import { toast } from 'sonner';
 
 interface AddUserDialogPlatformProps {
@@ -29,17 +29,14 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
   const [fullName, setFullName] = useState('');
   const [selectedRole, setSelectedRole] = useState<AppRole | ''>('');
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
+  const [selectedVoucher, setSelectedVoucher] = useState<string>('standard');
   const [emailError, setEmailError] = useState('');
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
     type: 'already_invited' | 'user_exists' | 'user_inactive' | null;
     data?: any;
   }>({ open: false, type: null });
-  const [licenseDialog, setLicenseDialog] = useState<{
-    open: boolean;
-    teamId: string;
-    teamName: string;
-  }>({ open: false, teamId: '', teamName: '' });
 
   const primaryRole = roles[0] as AppRole;
   const invitableRoles = getInvitableRoles(primaryRole);
@@ -62,6 +59,16 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
     },
     enabled: open && !!officeId,
   });
+
+  const applyVoucherToTeam = async (teamId: string, voucherCode: string) => {
+    const { data, error } = await supabase.functions.invoke('redeem-voucher', {
+      body: { code: voucherCode, teamId },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,19 +103,19 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
           setWarningDialog({ open: true, type: 'user_inactive', data });
         }
       } else {
-        // Success - check if we should show license dialog
-        const selectedTeam = teams.find(t => t.id === selectedTeamId);
-        if (selectedTeamId && selectedTeam && selectedTeam.license_type !== 'admin_unlimited') {
-          // Team doesn't have unlimited license - prompt to apply one
-          setLicenseDialog({
-            open: true,
-            teamId: selectedTeamId,
-            teamName: selectedTeam.name,
-          });
-        } else {
-          // Clear form and close
-          resetFormAndClose();
+        // Success - apply voucher if selected and team assigned
+        if (selectedTeamId && selectedVoucher && selectedVoucher !== 'standard') {
+          try {
+            setIsApplyingVoucher(true);
+            await applyVoucherToTeam(selectedTeamId, selectedVoucher);
+            toast.success(`User invited and ${selectedVoucher} license applied`);
+          } catch (voucherError: any) {
+            toast.error(`User invited but license failed: ${voucherError.message}`);
+          } finally {
+            setIsApplyingVoucher(false);
+          }
         }
+        resetFormAndClose();
       }
     } catch (error) {
       // Error handled by mutation
@@ -120,6 +127,7 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
     setFullName('');
     setSelectedRole('');
     setSelectedTeamId('');
+    setSelectedVoucher('standard');
     onOpenChange(false);
   };
 
@@ -181,9 +189,12 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
       setFullName('');
       setSelectedRole('');
       setSelectedTeamId('');
+      setSelectedVoucher('standard');
     }
     onOpenChange(open);
   };
+
+  const showVoucherSelect = selectedTeamId && selectedTeamId !== 'solo';
 
   return (
     <>
@@ -263,20 +274,28 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
               </Select>
             </div>
 
+            {showVoucherSelect && (
+              <VoucherSelect
+                value={selectedVoucher}
+                onValueChange={setSelectedVoucher}
+                disabled={isInviting || isApplyingVoucher}
+              />
+            )}
+
             <div className="flex justify-end gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
-                disabled={isInviting}
+                disabled={isInviting || isApplyingVoucher}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isInviting || !email || !selectedRole || warningDialog.open}>
-                {isInviting ? (
+              <Button type="submit" disabled={isInviting || isApplyingVoucher || !email || !selectedRole || warningDialog.open}>
+                {isInviting || isApplyingVoucher ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Sending...
+                    {isApplyingVoucher ? 'Applying License...' : 'Sending...'}
                   </>
                 ) : (
                   <>
@@ -298,14 +317,6 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
         onConfirm={handleWarningConfirm}
         onCancel={() => setWarningDialog({ open: false, type: null, data: undefined })}
         data={warningDialog.data}
-      />
-
-      <ApplyLicenseDialog
-        open={licenseDialog.open}
-        onOpenChange={(open) => setLicenseDialog({ ...licenseDialog, open })}
-        teamId={licenseDialog.teamId}
-        teamName={licenseDialog.teamName}
-        onComplete={resetFormAndClose}
       />
     </>
   );
