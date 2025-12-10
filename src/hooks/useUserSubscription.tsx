@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { getPlanByProductId, PlanId, STRIPE_PLANS } from '@/lib/stripe-plans';
 
 export type SubscriptionPlan = PlanId;
-export type SubscriptionStatus = 'active' | 'cancelled' | 'past_due' | 'trial' | 'inactive';
+export type SubscriptionStatus = 'active' | 'cancelled' | 'past_due' | 'trial' | 'inactive' | 'grace_period' | 'expired';
 export type LicenseType = 'standard' | 'admin_unlimited' | null;
 
 export interface UserSubscription {
@@ -24,6 +24,12 @@ export interface UserSubscription {
   voucherName: string | null;
   voucherExpiresAt: Date | null;
   isVoucherBased: boolean;
+  // Grace period fields
+  isInGracePeriod: boolean;
+  gracePeriodDays: number | null;
+  gracePeriodEndsAt: Date | null;
+  daysUntilExpiry: number | null;
+  daysUntilAccessLoss: number | null;
 }
 
 export const useUserSubscription = () => {
@@ -57,7 +63,8 @@ export const useUserSubscription = () => {
                 admin_voucher_codes (
                   code,
                   name,
-                  license_duration_days
+                  license_duration_days,
+                  grace_period_days
                 )
               `)
               .eq('team_id', profile.primary_team_id)
@@ -68,21 +75,45 @@ export const useUserSubscription = () => {
             if (redemption) {
               const voucher = redemption.admin_voucher_codes as any;
               let expiresAt: Date | null = null;
+              let gracePeriodEndsAt: Date | null = null;
               let isExpired = false;
+              let isInGracePeriod = false;
+              let daysUntilExpiry: number | null = null;
+              let daysUntilAccessLoss: number | null = null;
+              const gracePeriodDays = voucher?.grace_period_days ?? 7;
 
               // Calculate expiry if duration is set
               if (voucher?.license_duration_days) {
                 const redeemedAt = new Date(redemption.redeemed_at);
                 expiresAt = new Date(redeemedAt.getTime() + voucher.license_duration_days * 24 * 60 * 60 * 1000);
-                isExpired = new Date() > expiresAt;
+                
+                const now = new Date();
+                isExpired = now > expiresAt;
+                
+                // Calculate days until expiry
+                const msUntilExpiry = expiresAt.getTime() - now.getTime();
+                daysUntilExpiry = Math.ceil(msUntilExpiry / (24 * 60 * 60 * 1000));
+                
+                // Calculate grace period
+                if (gracePeriodDays) {
+                  gracePeriodEndsAt = new Date(expiresAt.getTime() + gracePeriodDays * 24 * 60 * 60 * 1000);
+                  isInGracePeriod = isExpired && now <= gracePeriodEndsAt;
+                  
+                  if (isInGracePeriod || isExpired) {
+                    const msUntilAccessLoss = gracePeriodEndsAt.getTime() - now.getTime();
+                    daysUntilAccessLoss = Math.ceil(msUntilAccessLoss / (24 * 60 * 60 * 1000));
+                  }
+                }
               }
 
-              // Only return voucher-based if not expired
-              if (!isExpired) {
+              // Return voucher-based subscription if not fully expired (past grace period)
+              const isPastGracePeriod = isExpired && gracePeriodEndsAt && new Date() > gracePeriodEndsAt;
+              
+              if (!isPastGracePeriod) {
                 return {
                   plan: 'team', // Voucher users get team-level access
                   productId: null,
-                  status: 'active',
+                  status: isInGracePeriod ? 'grace_period' : isExpired ? 'expired' : 'active',
                   amount: 0,
                   currency: 'NZD',
                   billingCycle: 'monthly',
@@ -95,6 +126,11 @@ export const useUserSubscription = () => {
                   voucherName: voucher?.name || 'Unlimited Access',
                   voucherExpiresAt: expiresAt,
                   isVoucherBased: true,
+                  isInGracePeriod,
+                  gracePeriodDays,
+                  gracePeriodEndsAt,
+                  daysUntilExpiry,
+                  daysUntilAccessLoss,
                 };
               }
             }
@@ -129,6 +165,11 @@ export const useUserSubscription = () => {
             voucherName: null,
             voucherExpiresAt: null,
             isVoucherBased: false,
+            isInGracePeriod: false,
+            gracePeriodDays: null,
+            gracePeriodEndsAt: null,
+            daysUntilExpiry: null,
+            daysUntilAccessLoss: null,
           };
         }
 
@@ -149,6 +190,11 @@ export const useUserSubscription = () => {
           voucherName: null,
           voucherExpiresAt: null,
           isVoucherBased: false,
+          isInGracePeriod: false,
+          gracePeriodDays: null,
+          gracePeriodEndsAt: null,
+          daysUntilExpiry: null,
+          daysUntilAccessLoss: null,
         };
       } catch (error) {
         console.error('Subscription check failed:', error);
@@ -169,6 +215,11 @@ export const useUserSubscription = () => {
           voucherName: null,
           voucherExpiresAt: null,
           isVoucherBased: false,
+          isInGracePeriod: false,
+          gracePeriodDays: null,
+          gracePeriodEndsAt: null,
+          daysUntilExpiry: null,
+          daysUntilAccessLoss: null,
         };
       }
     },

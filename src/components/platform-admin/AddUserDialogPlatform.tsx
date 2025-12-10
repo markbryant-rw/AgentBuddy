@@ -13,6 +13,7 @@ import { validateEmail } from '@/lib/validation';
 import { Loader2, UserPlus } from 'lucide-react';
 import { RoleBadge } from '@/components/RoleBadge';
 import { InvitationWarningDialog } from '@/components/office-manager/InvitationWarningDialog';
+import { ApplyLicenseDialog } from './ApplyLicenseDialog';
 import { toast } from 'sonner';
 
 interface AddUserDialogPlatformProps {
@@ -34,6 +35,11 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
     type: 'already_invited' | 'user_exists' | 'user_inactive' | null;
     data?: any;
   }>({ open: false, type: null });
+  const [licenseDialog, setLicenseDialog] = useState<{
+    open: boolean;
+    teamId: string;
+    teamName: string;
+  }>({ open: false, teamId: '', teamName: '' });
 
   const primaryRole = roles[0] as AppRole;
   const invitableRoles = getInvitableRoles(primaryRole);
@@ -44,7 +50,7 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teams')
-        .select('id, name')
+        .select('id, name, license_type')
         .eq('agency_id', officeId)
         .eq('is_personal_team', false)
         .eq('is_archived', false)
@@ -90,16 +96,31 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
           setWarningDialog({ open: true, type: 'user_inactive', data });
         }
       } else {
-        // Success - clear form and close
-        setEmail('');
-        setFullName('');
-        setSelectedRole('');
-        setSelectedTeamId('');
-        onOpenChange(false);
+        // Success - check if we should show license dialog
+        const selectedTeam = teams.find(t => t.id === selectedTeamId);
+        if (selectedTeamId && selectedTeam && selectedTeam.license_type !== 'admin_unlimited') {
+          // Team doesn't have unlimited license - prompt to apply one
+          setLicenseDialog({
+            open: true,
+            teamId: selectedTeamId,
+            teamName: selectedTeam.name,
+          });
+        } else {
+          // Clear form and close
+          resetFormAndClose();
+        }
       }
     } catch (error) {
       // Error handled by mutation
     }
+  };
+
+  const resetFormAndClose = () => {
+    setEmail('');
+    setFullName('');
+    setSelectedRole('');
+    setSelectedTeamId('');
+    onOpenChange(false);
   };
 
   const handleWarningConfirm = async () => {
@@ -107,11 +128,7 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
       try {
         await resendInvitation(warningDialog.data.invitation_id);
         setWarningDialog({ open: false, type: null, data: undefined });
-        setEmail('');
-        setFullName('');
-        setSelectedRole('');
-        setSelectedTeamId('');
-        onOpenChange(false);
+        resetFormAndClose();
       } catch (error) {
         // Error handled by mutation
       }
@@ -126,11 +143,7 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
           officeId,
         });
         setWarningDialog({ open: false, type: null, data: undefined });
-        setEmail('');
-        setFullName('');
-        setSelectedRole('');
-        setSelectedTeamId('');
-        onOpenChange(false);
+        resetFormAndClose();
       } catch (error) {
         // Error handled by mutation
       }
@@ -152,11 +165,7 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
 
         toast.success(`Account repaired for ${warningDialog.data.profile.email}`);
         setWarningDialog({ open: false, type: null, data: undefined });
-        setEmail('');
-        setFullName('');
-        setSelectedRole('');
-        setSelectedTeamId('');
-        onOpenChange(false);
+        resetFormAndClose();
       } catch (error: any) {
         toast.error(error.message || 'Failed to repair account');
       }
@@ -289,6 +298,14 @@ export function AddUserDialogPlatform({ open, onOpenChange, officeId }: AddUserD
         onConfirm={handleWarningConfirm}
         onCancel={() => setWarningDialog({ open: false, type: null, data: undefined })}
         data={warningDialog.data}
+      />
+
+      <ApplyLicenseDialog
+        open={licenseDialog.open}
+        onOpenChange={(open) => setLicenseDialog({ ...licenseDialog, open })}
+        teamId={licenseDialog.teamId}
+        teamName={licenseDialog.teamName}
+        onComplete={resetFormAndClose}
       />
     </>
   );

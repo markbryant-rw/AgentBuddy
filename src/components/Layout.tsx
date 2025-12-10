@@ -21,11 +21,14 @@ import { RoleModeBadge } from '@/components/RoleModeBadge';
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
 import { DemoBanner } from '@/components/demo/DemoBanner';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { VoucherExpiryBanner } from '@/components/billing/VoucherExpiryBanner';
+import { useUserSubscription } from '@/hooks/useUserSubscription';
 
 const Layout = () => {
   const { roles, activeRole, loading } = useAuth();
   const location = useLocation();
   const { isDemoMode } = useDemoMode();
+  const { subscription } = useUserSubscription();
   
   // Get workspace items, but ensure we have items during initial load
   // This prevents the navigation from being empty while auth is loading
@@ -126,13 +129,29 @@ const Layout = () => {
   const isFullHeightPage = location.pathname.startsWith('/projects/') || 
                            location.pathname.startsWith('/tasks/');
 
+  // Check if voucher expiry banner should show
+  const showVoucherBanner = subscription?.isVoucherBased && 
+    subscription?.voucherExpiresAt && 
+    (subscription?.isInGracePeriod || (subscription?.daysUntilExpiry !== null && subscription?.daysUntilExpiry <= 14));
+
   return (
     <div className={cn(
       "bg-background flex flex-col",
       isFullHeightPage ? "h-screen overflow-hidden" : "min-h-screen",
-      isDemoMode && "pt-11" // Add padding for fixed demo banner
+      isDemoMode && "pt-11", // Add padding for fixed demo banner
+      showVoucherBanner && "pt-11" // Add padding for voucher expiry banner
     )}>
       {isDemoMode && <DemoBanner />}
+      {!isDemoMode && subscription?.isVoucherBased && (
+        <VoucherExpiryBanner
+          expiresAt={subscription.voucherExpiresAt}
+          gracePeriodDays={subscription.gracePeriodDays || 7}
+          voucherName={subscription.voucherName || 'Access'}
+          isInGracePeriod={subscription.isInGracePeriod}
+          daysUntilExpiry={subscription.daysUntilExpiry}
+          daysUntilAccessLoss={subscription.daysUntilAccessLoss}
+        />
+      )}
       <ViewAsBanner />
       <ImpersonationAlertBanner />
       <nav className="sticky top-0 z-[100] border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
