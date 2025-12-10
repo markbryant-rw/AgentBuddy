@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { usePresence } from '@/hooks/usePresence';
+import { useTeamMemberAnalytics } from '@/hooks/useTeamMemberAnalytics';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,6 +16,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { format, differenceInDays, setYear } from 'date-fns';
 import { QuickMessageDialog } from '@/components/team/QuickMessageDialog';
+import { TeamAnalyticsSummary } from '@/components/team-management/TeamAnalyticsSummary';
+import { MemberPerformanceStats } from '@/components/team-management/MemberPerformanceStats';
 
 // Helper to get display name and variant for roles
 const getRoleDisplay = (role: string): { label: string; variant: 'default' | 'secondary' | 'outline' } | null => {
@@ -83,6 +86,7 @@ export default function TeamManagement() {
   const { team } = useTeam();
   const { members } = useTeamMembers();
   const { allPresence } = usePresence();
+  const { data: analyticsData, isLoading: analyticsLoading } = useTeamMemberAnalytics(team?.id);
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [messageRecipient, setMessageRecipient] = useState<{
@@ -127,6 +131,11 @@ export default function TeamManagement() {
       />
       
       <div className="max-w-6xl mx-auto p-6 space-y-6">
+
+      {/* Team Analytics Summary */}
+        {analyticsData && (
+          <TeamAnalyticsSummary summary={analyticsData.summary} isLoading={analyticsLoading} />
+        )}
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -298,6 +307,9 @@ export default function TeamManagement() {
                             ))}
                           </div>
                         )}
+
+                        {/* Performance Stats */}
+                        <MemberPerformanceStats analytics={analyticsData?.members[member.id]} />
                       </div>
 
                       {/* Message Panel - Full height right side */}
