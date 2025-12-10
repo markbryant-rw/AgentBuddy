@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Trash2, Send, MessageSquare, Activity, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import ReactMarkdown from 'react-markdown';
 import {
   Collapsible,
   CollapsibleContent,
@@ -173,7 +174,9 @@ export const AppraisalNotesTab = ({ appraisalId }: AppraisalNotesTabProps) => {
                 )}
               </div>
             </div>
-            <p className="mt-1 text-sm whitespace-pre-wrap">{note.content}</p>
+            <div className="mt-1 text-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1">
+              <ReactMarkdown>{note.content}</ReactMarkdown>
+            </div>
           </div>
         </div>
       </Card>
@@ -203,6 +206,9 @@ export const AppraisalNotesTab = ({ appraisalId }: AppraisalNotesTabProps) => {
             onChange={(e) => setNewNote(e.target.value)}
             className="min-h-[80px] resize-none"
           />
+          <p className="text-xs text-muted-foreground">
+            Supports markdown: *bold*, _italic_, - lists, etc.
+          </p>
         </div>
         <div className="flex justify-end">
           <Button
