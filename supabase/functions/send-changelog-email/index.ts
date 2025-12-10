@@ -25,33 +25,78 @@ serve(async (req) => {
     const resend = new Resend(resendApiKey);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check for test mode
+    let testEmail: string | null = null;
+    try {
+      const body = await req.json();
+      testEmail = body.test_email || null;
+      console.log(`Test mode: ${testEmail ? 'YES - ' + testEmail : 'NO'}`);
+    } catch {
+      // No body, that's fine for cron calls
+    }
+
     // Get today's date for the changelog
     const today = new Date();
     const entryDate = today.toISOString().split('T')[0];
 
-    // Also check yesterday's entry in case we're running early morning
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayDate = yesterday.toISOString().split('T')[0];
+    let changelog;
+    let isTestSample = false;
 
-    console.log(`Looking for changelog entries for ${entryDate} or ${yesterdayDate}`);
+    if (testEmail) {
+      // For test mode, try to get most recent entry first
+      const { data: recentChangelog } = await supabase
+        .from('changelog_entries')
+        .select('*')
+        .order('entry_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    // Fetch the most recent unsent changelog entry
-    const { data: changelog, error: fetchError } = await supabase
-      .from('changelog_entries')
-      .select('*')
-      .is('email_sent_at', null)
-      .order('entry_date', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      if (recentChangelog?.ai_summary) {
+        changelog = recentChangelog;
+        console.log(`Using existing changelog from ${changelog.entry_date}`);
+      } else {
+        // Generate a sample changelog for testing
+        isTestSample = true;
+        changelog = {
+          entry_date: entryDate,
+          ai_summary: `Hey there! 👋
 
-    if (fetchError) {
-      console.error('Error fetching changelog:', fetchError);
-      throw fetchError;
+Here's what the AgentBuddy team has been working on:
+
+**🔧 Bug Fixes**
+• Fixed an issue where some notifications weren't displaying correctly
+• Resolved a glitch in the appraisal tracking system that was causing delays
+
+**✨ New Features**
+• Added daily product update emails - you're reading one right now! 🎉
+• Improved the team management dashboard with better performance
+
+Thanks for being part of the AgentBuddy family! We're always working to make your day easier. 💙`,
+          bug_count: 2,
+          feature_count: 2
+        };
+        console.log('Using sample changelog for test');
+      }
+    } else {
+      // Production mode - get most recent unsent changelog
+      const { data, error: fetchError } = await supabase
+        .from('changelog_entries')
+        .select('*')
+        .is('email_sent_at', null)
+        .order('entry_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching changelog:', fetchError);
+        throw fetchError;
+      }
+
+      changelog = data;
     }
 
     if (!changelog) {
-      console.log('No unsent changelog entries found');
+      console.log('No changelog entries found');
       return new Response(
         JSON.stringify({ message: "No changelog to send" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -66,48 +111,47 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Sending changelog for ${changelog.entry_date}`);
+    console.log(`Preparing to send changelog for ${changelog.entry_date}`);
 
-    // Fetch all active users who want product updates
-    const { data: users, error: usersError } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        email,
-        full_name
-      `)
-      .neq('email', 'demo@agentbuddy.co');
+    // Determine recipients
+    let eligibleUsers: { id: string; email: string; full_name: string | null }[];
 
-    if (usersError) {
-      console.error('Error fetching users:', usersError);
-      throw usersError;
+    if (testEmail) {
+      // Test mode - send only to specified email
+      eligibleUsers = [{ id: 'test', email: testEmail, full_name: 'Test User' }];
+      console.log(`Test mode: sending to ${testEmail}`);
+    } else {
+      // Production mode - fetch all active users who want product updates
+      const { data: users, error: usersError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name')
+        .neq('email', 'demo@agentbuddy.co');
+
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        throw usersError;
+      }
+
+      // Filter users who have opted in to product updates
+      const { data: preferences } = await supabase
+        .from('notification_preferences')
+        .select('user_id, receive_product_updates')
+        .eq('receive_product_updates', true);
+
+      const optedInUserIds = new Set(preferences?.map(p => p.user_id) || []);
+      
+      const { data: allPrefs } = await supabase
+        .from('notification_preferences')
+        .select('user_id');
+      
+      const usersWithPrefs = new Set(allPrefs?.map(p => p.user_id) || []);
+
+      eligibleUsers = (users || []).filter(user => {
+        return optedInUserIds.has(user.id) || !usersWithPrefs.has(user.id);
+      });
+
+      console.log(`Production mode: sending to ${eligibleUsers.length} users`);
     }
-
-    // Filter users who have opted in to product updates
-    const { data: preferences, error: prefsError } = await supabase
-      .from('notification_preferences')
-      .select('user_id, receive_product_updates')
-      .eq('receive_product_updates', true);
-
-    if (prefsError) {
-      console.error('Error fetching preferences:', prefsError);
-    }
-
-    const optedInUserIds = new Set(preferences?.map(p => p.user_id) || []);
-    
-    // Include users who haven't set preferences yet (default is true)
-    const { data: allPrefs } = await supabase
-      .from('notification_preferences')
-      .select('user_id');
-    
-    const usersWithPrefs = new Set(allPrefs?.map(p => p.user_id) || []);
-
-    const eligibleUsers = users?.filter(user => {
-      // User either opted in explicitly, or hasn't set preferences (default true)
-      return optedInUserIds.has(user.id) || !usersWithPrefs.has(user.id);
-    }) || [];
-
-    console.log(`Sending to ${eligibleUsers.length} users`);
 
     if (eligibleUsers.length === 0) {
       console.log('No eligible users to send to');
@@ -164,17 +208,19 @@ serve(async (req) => {
       }
     }
 
-    // Mark changelog as sent
-    const { error: updateError } = await supabase
-      .from('changelog_entries')
-      .update({ email_sent_at: new Date().toISOString() })
-      .eq('id', changelog.id);
+    // Mark changelog as sent (only in production mode, not test mode)
+    if (!testEmail && !isTestSample && changelog.id) {
+      const { error: updateError } = await supabase
+        .from('changelog_entries')
+        .update({ email_sent_at: new Date().toISOString() })
+        .eq('id', changelog.id);
 
-    if (updateError) {
-      console.error('Error marking changelog as sent:', updateError);
+      if (updateError) {
+        console.error('Error marking changelog as sent:', updateError);
+      }
     }
 
-    console.log(`Changelog emails sent: ${sentCount} success, ${errorCount} errors`);
+    console.log(`Changelog emails sent: ${sentCount} success, ${errorCount} errors${testEmail ? ' (TEST MODE)' : ''}`);
 
     return new Response(
       JSON.stringify({ 
