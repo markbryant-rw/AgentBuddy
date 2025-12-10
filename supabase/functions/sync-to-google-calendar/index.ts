@@ -189,6 +189,62 @@ Deno.serve(async (req) => {
         start: startTime,
         allDay: !plannerItem.time,
       };
+    } else if (type === 'birthday') {
+      // Handle birthday sync - create recurring annual event
+      const birthdayData = data;
+      if (!birthdayData.birthday || !birthdayData.name) {
+        return new Response(JSON.stringify({ error: 'Invalid birthday data' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      // Parse birthday and get month/day for this year
+      const birthDate = new Date(birthdayData.birthday);
+      const thisYear = new Date().getFullYear();
+      const birthdayThisYear = new Date(thisYear, birthDate.getMonth(), birthDate.getDate());
+      const birthdayDateStr = birthdayThisYear.toISOString().split('T')[0];
+      
+      // Create recurring annual event
+      const eventBody: any = {
+        summary: `🎂 ${birthdayData.name}'s Birthday`,
+        description: `Team member birthday - ${birthdayData.name}`,
+        start: { date: birthdayDateStr },
+        end: { date: birthdayDateStr },
+        recurrence: ['RRULE:FREQ=YEARLY'],
+        reminders: {
+          useDefault: false,
+          overrides: [
+            { method: 'popup', minutes: 1440 }, // 1 day before
+          ],
+        },
+      };
+      
+      const response = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(connection.calendar_id)}/events`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(eventBody),
+        }
+      );
+      
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Failed to create birthday event:', error);
+        return new Response(JSON.stringify({ error: 'Failed to create birthday event' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
+      const result = await response.json();
+      return new Response(JSON.stringify({ success: true, event: result }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     } else if (type === 'appraisal') {
       const appraisal = data;
       event = {

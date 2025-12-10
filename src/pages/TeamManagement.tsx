@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useTeam } from '@/hooks/useTeam';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { usePresence } from '@/hooks/usePresence';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,21 +29,23 @@ const getRoleDisplay = (role: string): { label: string; variant: 'default' | 'se
   }
 };
 
-// Helper to check if birthday should be visible
+// Helper to check if birthday should be visible - only show within 14 days
 const canSeeBirthday = (visibility: string | null | undefined, isOwnCard: boolean): boolean => {
   if (isOwnCard) return true;
   if (!visibility || visibility === 'private') return false;
   return visibility === 'team_only' || visibility === 'public';
 };
 
-// Helper to get birthday display info
+// Helper to get birthday display info - only returns if within 14 days
 const getBirthdayDisplay = (birthday: string | null | undefined) => {
   if (!birthday) return null;
   
   try {
     const birthDate = new Date(birthday);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const thisYearBirthday = setYear(birthDate, today.getFullYear());
+    thisYearBirthday.setHours(0, 0, 0, 0);
     
     let nextBirthday = thisYearBirthday;
     if (thisYearBirthday < today) {
@@ -52,13 +55,18 @@ const getBirthdayDisplay = (birthday: string | null | undefined) => {
     const daysUntil = differenceInDays(nextBirthday, today);
     const formattedDate = format(birthDate, 'MMM d');
     
+    // Only show if within 14 days
+    if (daysUntil > 14) return null;
+    
     if (daysUntil === 0) {
       return { text: "Today! 🎉", isToday: true, isUpcoming: false, daysUntil: 0 };
     } else if (daysUntil <= 7 && daysUntil > 0) {
+      return { text: `${formattedDate} (${daysUntil}d 🎂)`, isToday: false, isUpcoming: true, daysUntil };
+    } else if (daysUntil <= 14) {
       return { text: `${formattedDate} (${daysUntil}d)`, isToday: false, isUpcoming: true, daysUntil };
     }
     
-    return { text: formattedDate, isToday: false, isUpcoming: false, daysUntil };
+    return null;
   } catch {
     return null;
   }
@@ -68,6 +76,7 @@ export default function TeamManagement() {
   const { user, hasAnyRole } = useAuth();
   const { team } = useTeam();
   const { members } = useTeamMembers();
+  const { allPresence } = usePresence();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
@@ -176,38 +185,41 @@ export default function TeamManagement() {
                   const isCurrentUser = member.id === user?.id;
                   const birthdayVisible = canSeeBirthday(member.birthday_visibility, isCurrentUser);
                   const birthdayInfo = birthdayVisible ? getBirthdayDisplay(member.birthday) : null;
+                  
+                  // Use real-time presence if available, fallback to stored presence
+                  const effectivePresence = allPresence[member.id] || member.presence_status || 'offline';
 
                   return (
                     <div
                       key={member.user_id}
-                      className={`flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors ${
+                      className={`flex items-stretch rounded-lg border bg-card hover:bg-accent/50 transition-colors overflow-hidden ${
                         birthdayInfo?.isToday ? 'bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800' : ''
                       } ${birthdayInfo?.isUpcoming ? 'bg-pink-50/50 dark:bg-pink-950/10' : ''}`}
                     >
-                      <div className="flex items-center gap-4">
-                        {/* Avatar with Presence */}
-                        <div className="relative">
-                          <Avatar className="h-14 w-14">
-                            <AvatarImage src={member.avatar_url || undefined} />
-                            <AvatarFallback className="text-lg">
-                              {member.full_name?.[0] || member.email?.[0] || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="absolute -bottom-0.5 -right-0.5">
-                            <PresenceDot 
-                              status={member.presence_status || 'offline'} 
-                              lastActive={member.last_active_at}
-                              size="md"
-                            />
-                          </div>
-                          {birthdayInfo?.isToday && (
-                            <div className="absolute -top-1 -right-1 text-lg">🎂</div>
-                          )}
+                      {/* Avatar - Full height */}
+                      <div className="relative flex-shrink-0">
+                        <Avatar className="h-full w-24 rounded-none">
+                          <AvatarImage src={member.avatar_url || undefined} className="object-cover" />
+                          <AvatarFallback className="text-2xl bg-primary/10 text-primary rounded-none h-full">
+                            {member.full_name?.[0] || member.email?.[0] || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute bottom-2 right-2">
+                          <PresenceDot 
+                            status={effectivePresence} 
+                            lastActive={member.last_active_at}
+                            size="md"
+                          />
                         </div>
+                        {birthdayInfo?.isToday && (
+                          <div className="absolute top-1 right-1 text-lg">🎂</div>
+                        )}
+                      </div>
 
+                      <div className="flex-1 min-w-0 p-4 flex items-center justify-between">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2">
-                            <p className="font-medium">
+                            <p className="font-medium text-lg">
                               {member.full_name || member.email || 'Unknown'}
                             </p>
                             {birthdayInfo?.isUpcoming && !birthdayInfo.isToday && (
@@ -226,10 +238,15 @@ export default function TeamManagement() {
                                 <span className="hidden sm:inline">{member.email}</span>
                               </a>
                             )}
-                            <div className="flex items-center gap-1">
-                              <Phone className="h-3.5 w-3.5" />
-                              <span>{member.mobile || '—'}</span>
-                            </div>
+                            {member.mobile && (
+                              <a
+                                href={`tel:${member.mobile}`}
+                                className="flex items-center gap-1 hover:text-primary transition-colors"
+                              >
+                                <Phone className="h-3.5 w-3.5" />
+                                <span>{member.mobile}</span>
+                              </a>
+                            )}
                             {birthdayInfo && (
                               <div className={`flex items-center gap-1 ${
                                 birthdayInfo.isToday ? 'text-pink-600 font-medium' : 
@@ -241,38 +258,38 @@ export default function TeamManagement() {
                             )}
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex items-center gap-3">
-                        {/* Roles */}
-                        <div className="flex items-center gap-2">
-                          {displayRoles.map((role, idx) => (
-                            <Badge key={idx} variant={role.variant}>
-                              {role.label}
-                            </Badge>
-                          ))}
+                        <div className="flex items-center gap-3">
+                          {/* Roles */}
+                          <div className="flex items-center gap-2">
+                            {displayRoles.map((role, idx) => (
+                              <Badge key={idx} variant={role.variant}>
+                                {role.label}
+                              </Badge>
+                            ))}
+                          </div>
+
+                          {/* Message Button */}
+                          {!isCurrentUser && (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground/50 cursor-not-allowed"
+                                    disabled
+                                  >
+                                    <MessageCircle className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Direct messaging coming soon</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          )}
                         </div>
-
-                        {/* Message Button */}
-                        {!isCurrentUser && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8 text-muted-foreground/50 cursor-not-allowed"
-                                  disabled
-                                >
-                                  <MessageCircle className="h-4 w-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Direct messaging coming soon</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
                       </div>
                     </div>
                   );

@@ -1,4 +1,4 @@
-import { Calendar, Check, Loader2, RefreshCw, Unlink } from 'lucide-react';
+import { Calendar, Check, Loader2, RefreshCw, Unlink, Cake } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -10,12 +10,15 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useTeam } from '@/hooks/useTeam';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { format } from 'date-fns';
 
 export function GoogleCalendarCard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { team } = useTeam();
+  const { members } = useTeamMembers();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncingBirthdays, setIsSyncingBirthdays] = useState(false);
   const {
     isConnected,
     isLoadingConnection,
@@ -29,6 +32,37 @@ export function GoogleCalendarCard() {
     isUpdatingSettings,
     syncEvent,
   } = useGoogleCalendar();
+
+  // Sync team birthdays to calendar
+  const handleSyncBirthdays = async () => {
+    if (!team?.id) return;
+    
+    setIsSyncingBirthdays(true);
+    let syncedCount = 0;
+    
+    try {
+      // Filter members with visible birthdays
+      const membersWithBirthdays = members.filter(m => 
+        m.birthday && 
+        (m.birthday_visibility === 'team_only' || m.birthday_visibility === 'public')
+      );
+      
+      for (const member of membersWithBirthdays) {
+        syncEvent({ type: 'birthday', data: { 
+          name: member.full_name,
+          birthday: member.birthday
+        }});
+        syncedCount++;
+      }
+      
+      toast.success(`Synced ${syncedCount} birthdays to Google Calendar`);
+    } catch (error) {
+      console.error('Birthday sync failed:', error);
+      toast.error('Failed to sync birthdays');
+    } finally {
+      setIsSyncingBirthdays(false);
+    }
+  };
 
   // Manual sync function
   const handleManualSync = async () => {
@@ -236,19 +270,34 @@ export function GoogleCalendarCard() {
             <p className="text-xs text-muted-foreground">
               Events sync one-way to a dedicated "AgentBuddy" calendar.
             </p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleManualSync}
-              disabled={isSyncing}
-            >
-              {isSyncing ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Sync Now
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncBirthdays}
+                disabled={isSyncingBirthdays}
+              >
+                {isSyncingBirthdays ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Cake className="h-4 w-4 mr-2" />
+                )}
+                Sync Birthdays
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleManualSync}
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Sync Now
+              </Button>
+            </div>
           </div>
         </CardContent>
       )}

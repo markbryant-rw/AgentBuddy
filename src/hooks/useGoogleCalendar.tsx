@@ -106,7 +106,7 @@ export function useGoogleCalendar() {
   });
 
   const syncEventMutation = useMutation({
-    mutationFn: async ({ type, data }: { type: 'planner' | 'appraisal' | 'transaction'; data: any }) => {
+    mutationFn: async ({ type, data }: { type: 'planner' | 'appraisal' | 'transaction' | 'birthday'; data: any }) => {
       const { data: result, error } = await supabase.functions.invoke('sync-to-google-calendar', {
         body: { type, data },
       });
