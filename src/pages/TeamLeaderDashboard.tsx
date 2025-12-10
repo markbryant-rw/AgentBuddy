@@ -91,7 +91,7 @@ export default function TeamLeaderDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card 
             className="cursor-pointer hover:border-primary transition-colors"
-            onClick={() => navigate('/invite-user')}
+            onClick={() => navigate('/invite')}
           >
             <CardHeader>
               <div className="flex items-center gap-2">

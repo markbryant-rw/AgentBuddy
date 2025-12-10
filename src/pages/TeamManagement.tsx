@@ -162,7 +162,7 @@ export default function TeamManagement() {
             }`}
             onClick={() => {
               if (seatInfo.canAddMember) {
-                navigate('/invite-user');
+                navigate('/invite');
               } else {
                 setShowUpgradeDialog(true);
               }
