@@ -17,6 +17,7 @@ import {
   Building2,
   FolderKanban,
   RefreshCw,
+  Home,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -95,12 +96,19 @@ function TriageTaskCard({ task, onTriage, isTriaging }: TriageTaskCardProps) {
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {/* Source Badge */}
         <div className="flex-shrink-0 flex items-center gap-1.5">
-          {task.source === 'transaction' ? (
+          {task.source === 'transaction' && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400">
               <Building2 className="h-3.5 w-3.5" />
               <span className="text-xs font-medium">TC</span>
             </div>
-          ) : (
+          )}
+          {task.source === 'appraisal' && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-teal-500/10 text-teal-600 dark:text-teal-400">
+              <Home className="h-3.5 w-3.5" />
+              <span className="text-xs font-medium">Appraisal</span>
+            </div>
+          )}
+          {task.source === 'project' && (
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <FolderKanban className="h-3.5 w-3.5" />
               <span className="text-xs font-medium">Project</span>
@@ -121,6 +129,11 @@ function TriageTaskCard({ task, onTriage, isTriaging }: TriageTaskCardProps) {
           {task.transaction && (
             <p className="text-xs text-muted-foreground truncate">
               {task.transaction.address}
+            </p>
+          )}
+          {task.appraisal && (
+            <p className="text-xs text-muted-foreground truncate">
+              {task.appraisal.address}
             </p>
           )}
           {task.project && (
