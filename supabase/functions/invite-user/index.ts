@@ -315,6 +315,55 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check seat availability for the target team
+    if (finalTeamId) {
+      // Use service role for admin operations
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+
+      // Get team license info
+      const { data: teamData } = await supabaseAdmin
+        .from('teams')
+        .select('license_type, extra_seats_purchased')
+        .eq('id', finalTeamId)
+        .single();
+
+      // Skip seat check for unlimited teams
+      if (teamData?.license_type !== 'admin_unlimited') {
+        // Count current members
+        const { count: memberCount } = await supabaseAdmin
+          .from('team_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', finalTeamId);
+
+        // Count pending invitations
+        const { count: pendingCount } = await supabaseAdmin
+          .from('pending_invitations')
+          .select('*', { count: 'exact', head: true })
+          .eq('team_id', finalTeamId)
+          .eq('status', 'pending');
+
+        // Calculate available seats (base 3 for teams + extra seats)
+        const baseSeats = 3; // Default team plan
+        const extraSeats = teamData?.extra_seats_purchased || 0;
+        const maxSeats = baseSeats + extraSeats;
+        const currentOccupied = (memberCount || 0) + (pendingCount || 0);
+
+        if (currentOccupied >= maxSeats) {
+          return new Response(
+            JSON.stringify({ 
+              error: 'seat_limit_reached',
+              message: `Team seat limit reached (${currentOccupied}/${maxSeats}). Purchase additional seats or upgrade your plan.`,
+              upgrade_required: true,
+              current_seats: currentOccupied,
+              max_seats: maxSeats,
+            }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
     // Validate inviter can invite this role
     const highestInviterRole = inviterRoles[0].role;
     const canInvite = INVITATION_HIERARCHY[highestInviterRole]?.includes(role);

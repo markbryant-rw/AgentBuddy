@@ -82,6 +82,56 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_voucher_codes: {
+        Row: {
+          code: string
+          created_at: string | null
+          created_by: string | null
+          current_redemptions: number | null
+          description: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          license_type: string
+          max_redemptions: number | null
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          created_by?: string | null
+          current_redemptions?: number | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          license_type: string
+          max_redemptions?: number | null
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          created_by?: string | null
+          current_redemptions?: number | null
+          description?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          license_type?: string
+          max_redemptions?: number | null
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_voucher_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agencies: {
         Row: {
           account_status:
@@ -4159,13 +4209,16 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           description: string | null
+          extra_seats_purchased: number | null
           financial_year_start_month: number | null
           id: string
           is_archived: boolean | null
           is_orphan_team: boolean | null
           is_personal_team: boolean | null
+          license_type: string | null
           logo_url: string | null
           name: string
+          subscription_owner_id: string | null
           team_code: string | null
           team_type: string | null
           updated_at: string | null
@@ -4177,13 +4230,16 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          extra_seats_purchased?: number | null
           financial_year_start_month?: number | null
           id?: string
           is_archived?: boolean | null
           is_orphan_team?: boolean | null
           is_personal_team?: boolean | null
+          license_type?: string | null
           logo_url?: string | null
           name: string
+          subscription_owner_id?: string | null
           team_code?: string | null
           team_type?: string | null
           updated_at?: string | null
@@ -4195,13 +4251,16 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           description?: string | null
+          extra_seats_purchased?: number | null
           financial_year_start_month?: number | null
           id?: string
           is_archived?: boolean | null
           is_orphan_team?: boolean | null
           is_personal_team?: boolean | null
+          license_type?: string | null
           logo_url?: string | null
           name?: string
+          subscription_owner_id?: string | null
           team_code?: string | null
           team_type?: string | null
           updated_at?: string | null
@@ -4213,6 +4272,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teams_subscription_owner_id_fkey"
+            columns: ["subscription_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4786,6 +4852,52 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "listings_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voucher_redemptions: {
+        Row: {
+          id: string
+          redeemed_at: string | null
+          redeemed_by: string | null
+          team_id: string | null
+          voucher_id: string | null
+        }
+        Insert: {
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          team_id?: string | null
+          voucher_id?: string | null
+        }
+        Update: {
+          id?: string
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          team_id?: string | null
+          voucher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voucher_redemptions_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voucher_redemptions_voucher_id_fkey"
+            columns: ["voucher_id"]
+            isOneToOne: false
+            referencedRelation: "admin_voucher_codes"
             referencedColumns: ["id"]
           },
         ]
