@@ -151,8 +151,8 @@ const Layout = () => {
               <span className="font-bold text-lg hidden lg:inline">AgentBuddy</span>
             </Link>
 
-            {/* Role Mode Badge - only show on role-specific dashboards */}
-            {(['/platform-admin', '/office-manager', '/team-leader'].some(path => 
+            {/* Role Mode Badge - only show on admin role dashboards */}
+            {(['/platform-admin', '/office-manager'].some(path => 
               location.pathname === path || location.pathname.startsWith(path + '/')
             )) && <RoleModeBadge role={activeRole} />}
 

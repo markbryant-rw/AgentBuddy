@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search, User, Users, Settings as SettingsIcon, HelpCircle, Sparkles, CreditCard, Plug } from "lucide-react";
@@ -48,15 +47,23 @@ const Setup = () => {
         </p>
       </div>
 
-      {/* Search Bar */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search settings..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
+      {/* Search Bar with inline tip */}
+      <div className="flex items-center gap-4 max-w-2xl">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search settings..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        {!searchQuery && (
+          <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span>Search to quickly find any setting</span>
+          </div>
+        )}
       </div>
 
       {/* Main Settings Tabs */}
@@ -111,23 +118,6 @@ const Setup = () => {
           <AccountManagementCard />
         </TabsContent>
       </Tabs>
-
-      {/* Quick Tips */}
-      {!searchQuery && (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Quick Tip
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Use the search bar above to quickly find any setting.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 };

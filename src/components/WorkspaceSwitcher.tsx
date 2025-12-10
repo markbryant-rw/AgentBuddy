@@ -30,10 +30,11 @@ export function WorkspaceSwitcher({ currentWorkspace }: WorkspaceSwitcherProps) 
     return null;
   }
 
+  // Only admin roles have separate management dashboards
+  // Team leaders now use the salesperson workspace with "Manage Team" button access
   const managementRoutes = {
     platform_admin: '/platform-admin',
     office_manager: '/office-manager',
-    team_leader: '/team-leader',
   };
 
   const route = managementRoutes[activeRole as keyof typeof managementRoutes];

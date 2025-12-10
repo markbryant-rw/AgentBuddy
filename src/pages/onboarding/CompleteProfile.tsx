@@ -204,11 +204,11 @@ export default function CompleteProfile() {
 
       toast.success('Welcome to AgentBuddy!');
 
-      // Redirect based on role
+      // Redirect based on role - team leaders go to dashboard like salespeople
       const roleRedirects: Record<AppRole, string> = {
         platform_admin: '/platform-admin',
         office_manager: '/office-manager',
-        team_leader: '/team-leader',
+        team_leader: '/dashboard',
         salesperson: '/dashboard',
         assistant: '/dashboard',
       };

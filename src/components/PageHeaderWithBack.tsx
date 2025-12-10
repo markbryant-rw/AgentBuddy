@@ -23,7 +23,7 @@ export function PageHeaderWithBack({ title, description, backPath }: PageHeaderW
       case 'office_manager':
         return '/office-manager';
       case 'team_leader':
-        return '/team-leader';
+        return '/dashboard'; // Team leaders use salesperson workspace
       default:
         return '/dashboard';
     }
