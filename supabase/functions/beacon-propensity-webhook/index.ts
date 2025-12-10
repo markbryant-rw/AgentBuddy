@@ -57,10 +57,55 @@ function formatBeaconSurveyNote(data: any): string {
   return lines.join('\n');
 }
 
+// Helper to mask API keys for logging (show first 8 and last 4 chars)
+function maskApiKey(key: string | null): string {
+  if (!key) return '[missing]';
+  if (key.length <= 12) return '[too-short]';
+  return `${key.substring(0, 8)}...${key.substring(key.length - 4)}`;
+}
+
+// Generate unique request ID for log correlation
+function generateRequestId(): string {
+  return Math.random().toString(36).substring(2, 10);
+}
+
 Deno.serve(async (req) => {
+  const requestId = generateRequestId();
+  const timestamp = new Date().toISOString();
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // ========== PRE-AUTH LOGGING ==========
+  // Log ALL incoming requests BEFORE any authentication
+  console.log(`[${requestId}] ========== INCOMING BEACON REQUEST ==========`);
+  console.log(`[${requestId}] Timestamp: ${timestamp}`);
+  console.log(`[${requestId}] Method: ${req.method}`);
+  console.log(`[${requestId}] URL: ${req.url}`);
+  
+  // Log all headers (with API key masked)
+  const headersObj: Record<string, string> = {};
+  req.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'x-api-key') {
+      headersObj[key] = maskApiKey(value);
+    } else if (key.toLowerCase() === 'authorization') {
+      headersObj[key] = '[redacted]';
+    } else {
+      headersObj[key] = value;
+    }
+  });
+  console.log(`[${requestId}] Headers:`, JSON.stringify(headersObj));
+
+  // Clone request to read body (we may need it later)
+  const bodyText = await req.text();
+  let payload: any = null;
+  try {
+    payload = JSON.parse(bodyText);
+    console.log(`[${requestId}] Body: ${bodyText.substring(0, 500)}${bodyText.length > 500 ? '...[truncated]' : ''}`);
+  } catch {
+    console.log(`[${requestId}] Body (not JSON): ${bodyText.substring(0, 200)}`);
   }
 
   try {
@@ -68,25 +113,33 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const beaconApiKey = Deno.env.get('BEACON_API_KEY');
 
-    // Validate API key from Beacon
+    // Extract auth-related headers
     const providedApiKey = req.headers.get('X-API-Key') || req.headers.get('x-api-key');
     const webhookSource = req.headers.get('X-Webhook-Source') || req.headers.get('x-webhook-source');
     const idempotencyKey = req.headers.get('X-Idempotency-Key') || req.headers.get('x-idempotency-key');
     
+    // ========== API KEY COMPARISON LOGGING ==========
+    console.log(`[${requestId}] API Key Comparison:`);
+    console.log(`[${requestId}]   Received: ${maskApiKey(providedApiKey)}`);
+    console.log(`[${requestId}]   Expected: ${maskApiKey(beaconApiKey || null)}`);
+    console.log(`[${requestId}]   Match: ${providedApiKey === beaconApiKey ? '✅ YES' : '❌ NO'}`);
+    
+    // Validate API key from Beacon
     if (!providedApiKey || providedApiKey !== beaconApiKey) {
-      console.error('Invalid or missing API key');
+      console.error(`[${requestId}] AUTH FAILED - Invalid or missing API key`);
+      console.error(`[${requestId}] Returning 401 Unauthorized`);
       return new Response(
-        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        JSON.stringify({ success: false, error: 'Unauthorized', requestId }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('Webhook received from source:', webhookSource, 'idempotency:', idempotencyKey);
+    console.log(`[${requestId}] AUTH SUCCESS - Processing webhook from: ${webhookSource}, idempotency: ${idempotencyKey}`);
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const payload = await req.json();
-    console.log('Beacon webhook received:', JSON.stringify(payload));
+    // payload already parsed above
+    console.log(`[${requestId}] Beacon webhook payload:`, JSON.stringify(payload));
 
     const { event, externalLeadId, data, timestamp } = payload;
     
