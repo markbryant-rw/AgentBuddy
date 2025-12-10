@@ -92,6 +92,7 @@ export type Database = {
           expires_at: string | null
           id: string
           is_active: boolean | null
+          license_duration_days: number | null
           license_type: string
           max_redemptions: number | null
           name: string
@@ -105,6 +106,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean | null
+          license_duration_days?: number | null
           license_type: string
           max_redemptions?: number | null
           name: string
@@ -118,6 +120,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           is_active?: boolean | null
+          license_duration_days?: number | null
           license_type?: string
           max_redemptions?: number | null
           name?: string
