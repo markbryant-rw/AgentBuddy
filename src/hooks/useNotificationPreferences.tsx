@@ -18,6 +18,7 @@ export interface NotificationPreferences {
   email_digest_enabled: boolean;
   email_digest_frequency: 'daily' | 'weekly' | 'none';
   email_digest_hour: number;
+  receive_product_updates: boolean;
 }
 
 const DEFAULT_PREFERENCES: Omit<NotificationPreferences, 'id' | 'user_id'> = {
@@ -33,6 +34,7 @@ const DEFAULT_PREFERENCES: Omit<NotificationPreferences, 'id' | 'user_id'> = {
   email_digest_enabled: true,
   email_digest_frequency: 'daily',
   email_digest_hour: 8,
+  receive_product_updates: true,
 };
 
 export function useNotificationPreferences() {

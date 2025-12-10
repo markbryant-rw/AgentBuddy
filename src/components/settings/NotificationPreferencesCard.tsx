@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
-import { Bell, Mail, Users, Home, CheckSquare, Clock } from 'lucide-react';
+import { Bell, Mail, Users, Home, CheckSquare, Clock, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export function NotificationPreferencesCard() {
@@ -204,6 +204,30 @@ export function NotificationPreferencesCard() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+
+        {/* Product Updates */}
+        <div className="space-y-4 pt-4 border-t">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-muted-foreground" />
+            <Label className="text-sm font-semibold">Product Updates</Label>
+          </div>
+
+          <div className="space-y-4 pl-6">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="text-sm">Receive product updates</Label>
+                <p className="text-xs text-muted-foreground">
+                  Daily email about new features and bug fixes
+                </p>
+              </div>
+              <Switch
+                checked={preferences.receive_product_updates}
+                onCheckedChange={(checked) => updatePreferences({ receive_product_updates: checked })}
+                disabled={isUpdating}
+              />
+            </div>
           </div>
         </div>
       </CardContent>
