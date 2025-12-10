@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,9 @@ import {
   ChevronRight, 
   ListTodo,
   FileText,
-  CalendarIcon
+  CalendarIcon,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { useAppraisalTasks } from '@/hooks/useAppraisalTasks';
 import { useAppraisalTemplates, AppraisalStage, APPRAISAL_STAGE_DISPLAY_NAMES } from '@/hooks/useAppraisalTemplates';
@@ -43,6 +45,21 @@ export const AppraisalTasksTab = ({
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [addingToSection, setAddingToSection] = useState<string | null>(null);
+  const [hideCompleted, setHideCompleted] = useState(true); // Hide completed by default
+
+  // Filter tasks based on hideCompleted toggle
+  const filteredTasksBySection = useMemo(() => {
+    if (!hideCompleted) return tasksBySection;
+    
+    const filtered: Record<string, typeof tasks> = {};
+    for (const [section, sectionTasks] of Object.entries(tasksBySection)) {
+      const incompleteTasks = sectionTasks.filter(t => !t.completed);
+      if (incompleteTasks.length > 0) {
+        filtered[section] = incompleteTasks;
+      }
+    }
+    return filtered;
+  }, [tasksBySection, hideCompleted]);
 
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
@@ -118,7 +135,7 @@ export const AppraisalTasksTab = ({
     );
   }
 
-  const sections = Object.keys(tasksBySection);
+  const sections = Object.keys(filteredTasksBySection);
   const isSingleSection = sections.length === 1;
 
   // Task rendering component
@@ -229,6 +246,25 @@ export const AppraisalTasksTab = ({
           )}
         </div>
         <div className="flex gap-2">
+          {stats.completed > 0 && (
+            <Button 
+              variant={hideCompleted ? "outline" : "default"}
+              size="sm"
+              onClick={() => setHideCompleted(!hideCompleted)}
+            >
+              {hideCompleted ? (
+                <>
+                  <Eye className="h-4 w-4 mr-1" />
+                  Show Completed
+                </>
+              ) : (
+                <>
+                  <EyeOff className="h-4 w-4 mr-1" />
+                  Hide Completed
+                </>
+              )}
+            </Button>
+          )}
           <Button 
             variant="outline" 
             size="sm"
@@ -252,7 +288,7 @@ export const AppraisalTasksTab = ({
       {/* Single section: render tasks directly without collapsible */}
       {isSingleSection ? (
         <div className="border rounded-lg p-3 space-y-2">
-          {tasksBySection[sections[0]].map((task) => (
+          {filteredTasksBySection[sections[0]].map((task) => (
             <TaskItem key={task.id} task={task} section={sections[0]} />
           ))}
           <AddTaskInline section={sections[0]} />
@@ -260,9 +296,10 @@ export const AppraisalTasksTab = ({
       ) : (
         /* Multiple sections: render with collapsibles */
         sections.map((section) => {
-          const sectionTasks = tasksBySection[section];
+          const sectionTasks = filteredTasksBySection[section];
+          const allSectionTasks = tasksBySection[section] || [];
           const isRollover = isAppraisalRolloverSection(section);
-          const completedInSection = sectionTasks.filter(t => t.completed).length;
+          const completedInSection = allSectionTasks.filter(t => t.completed).length;
 
           return (
             <Collapsible
@@ -290,7 +327,7 @@ export const AppraisalTasksTab = ({
                       )}
                     </div>
                     <Badge variant="secondary" className="text-xs">
-                      {completedInSection}/{sectionTasks.length}
+                      {completedInSection}/{allSectionTasks.length}
                     </Badge>
                   </div>
                 </CollapsibleTrigger>

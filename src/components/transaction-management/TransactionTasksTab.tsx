@@ -39,7 +39,7 @@ export const TransactionTasksTab = ({ transaction, onTasksUpdate }: TransactionT
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<any | null>(null);
-  const [hideCompleted, setHideCompleted] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(true); // Hide completed by default
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['transaction-tasks', transaction.id],
