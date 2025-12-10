@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Handle owner_added event - Beacon created a new owner, update appraisal
+    // Handle owner_added event - Beacon created a new owner, append to owners array
     if (event === 'owner_added') {
       console.log('Processing owner_added event for lead:', externalLeadId);
       
@@ -175,27 +175,82 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Update appraisal with owner info from Beacon
-      const ownerUpdate: Record<string, any> = {};
-      if (data?.ownerName) ownerUpdate.vendor_name = data.ownerName;
-      if (data?.ownerEmail) ownerUpdate.vendor_email = data.ownerEmail;
-      if (data?.ownerPhone) ownerUpdate.vendor_mobile = data.ownerPhone;
+      // Fetch current appraisal with owners array
+      const { data: currentAppraisal, error: fetchErr } = await supabase
+        .from('logged_appraisals')
+        .select('id, owners, vendor_name, vendor_email, vendor_mobile')
+        .eq('id', externalLeadId)
+        .single();
 
-      if (Object.keys(ownerUpdate).length > 0) {
-        const { error: updateError } = await supabase
-          .from('logged_appraisals')
-          .update(ownerUpdate)
-          .eq('id', externalLeadId);
-
-        if (updateError) {
-          console.error('Failed to update appraisal with owner info:', updateError);
-        } else {
-          console.log('Updated appraisal with owner info from Beacon');
-        }
+      if (fetchErr || !currentAppraisal) {
+        console.error('Appraisal not found for owner_added:', fetchErr);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Appraisal not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
 
+      // Parse existing owners array or initialize empty
+      const currentOwners: any[] = Array.isArray(currentAppraisal.owners) 
+        ? currentAppraisal.owners 
+        : [];
+
+      // Build new owner object
+      const newOwner = {
+        id: crypto.randomUUID(),
+        name: data?.ownerName || '',
+        email: data?.ownerEmail || '',
+        phone: data?.ownerPhone || '',
+        is_primary: currentOwners.length === 0, // First owner becomes primary
+        beacon_owner_id: data?.beaconOwnerId || null,
+      };
+
+      // Check for duplicates by email, phone, or beacon_owner_id
+      const isDuplicate = currentOwners.some(o => 
+        (newOwner.email && o.email === newOwner.email) || 
+        (newOwner.phone && o.phone === newOwner.phone) ||
+        (newOwner.beacon_owner_id && o.beacon_owner_id === newOwner.beacon_owner_id)
+      );
+
+      if (isDuplicate) {
+        console.log('Owner already exists, skipping duplicate');
+        return new Response(
+          JSON.stringify({ success: true, message: 'Owner already exists' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Append new owner to array
+      const updatedOwners = [...currentOwners, newOwner];
+
+      // Update appraisal with new owners array + legacy fields for backward compatibility
+      const updateData: Record<string, any> = { owners: updatedOwners };
+      
+      // Update legacy fields with primary owner info
+      const primaryOwner = updatedOwners.find(o => o.is_primary) || updatedOwners[0];
+      if (primaryOwner) {
+        updateData.vendor_name = primaryOwner.name;
+        updateData.vendor_email = primaryOwner.email;
+        updateData.vendor_mobile = primaryOwner.phone;
+      }
+
+      const { error: updateError } = await supabase
+        .from('logged_appraisals')
+        .update(updateData)
+        .eq('id', externalLeadId);
+
+      if (updateError) {
+        console.error('Failed to update appraisal with owner info:', updateError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Failed to update owners' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Appended new owner to appraisal, total owners:', updatedOwners.length);
+
       return new Response(
-        JSON.stringify({ success: true, message: 'Owner info synced' }),
+        JSON.stringify({ success: true, message: 'Owner added to array', ownerCount: updatedOwners.length }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }

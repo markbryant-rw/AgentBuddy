@@ -361,10 +361,12 @@ const AppraisalDetailDialog = ({
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">
-              {isNew ? 'Log New Appraisal' : 'Appraisal Details'}
+              {isNew ? 'Log New Appraisal' : appraisal?.address || 'Appraisal Details'}
             </DialogTitle>
             <DialogDescription>
-              {isNew ? 'Enter the details of the appraisal you conducted' : 'View and edit appraisal information'}
+              {isNew 
+                ? 'Enter the details of the appraisal you conducted' 
+                : appraisal?.suburb || 'View and edit appraisal information'}
             </DialogDescription>
           </DialogHeader>
 
