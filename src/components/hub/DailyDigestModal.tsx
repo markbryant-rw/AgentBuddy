@@ -5,34 +5,28 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useCCH } from '@/hooks/useCCH';
 import { useQuarterlyAppraisals } from '@/hooks/useQuarterlyAppraisals';
-import { useWorkspaceStatuses } from '@/hooks/useWorkspaceStatuses';
+import { useTeamQuarterlyListingsSales } from '@/hooks/useTeamQuarterlyListingsSales';
+import { useOvernightHotLeads } from '@/hooks/useOvernightHotLeads';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Sunrise,
   Target,
-  TrendingUp,
   AlertCircle,
   CheckCircle2,
   Clock,
   Flame,
   FileText,
-  Plus,
-  Phone,
-  Home as HomeIcon,
-  ListChecks,
-  ArrowRight,
-  X,
-  Bell,
+  Trophy,
   BellOff,
+  AlertTriangle,
+  TrendingUp,
 } from 'lucide-react';
 import { TeamAppraisalLeaderboard } from './TeamAppraisalLeaderboard';
-import { format, startOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DailyDigestModalProps {
@@ -43,21 +37,24 @@ interface DailyDigestModalProps {
 }
 
 export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyDigestModalProps) => {
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
   const { updatePreferences } = useUserPreferences();
-  const { weeklyCCH, weeklyCCHTarget, dailyCCHTarget, weeklyBreakdown } = useCCH();
   const { data: quarterlyAppraisals } = useQuarterlyAppraisals(user?.id || '');
-  const { data: workspaceStatuses } = useWorkspaceStatuses();
+  const { data: hotLeads } = useOvernightHotLeads();
 
-  const [hotLeads, setHotLeads] = useState(0);
+  const [teamId, setTeamId] = useState<string | null>(null);
+  const [weeklyAppraisals, setWeeklyAppraisals] = useState(0);
   const [upcomingSettlements, setUpcomingSettlements] = useState(0);
   const [expiringListings, setExpiringListings] = useState(0);
-  const [underContractCount, setUnderContractCount] = useState(0);
+  const [activeTransactions, setActiveTransactions] = useState(0);
+  const [overdueTasks, setOverdueTasks] = useState(0);
+  const [dueTodayTasks, setDueTodayTasks] = useState(0);
+
+  const { data: listingsSalesData } = useTeamQuarterlyListingsSales(teamId || undefined);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
-  const currentTime = format(new Date(), 'EEEE, MMMM d, yyyy · h:mm a');
+  const currentTime = format(new Date(), 'EEEE, MMMM d, yyyy');
 
   // Fetch additional data
   useEffect(() => {
@@ -65,62 +62,83 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
 
     const fetchAdditionalData = async () => {
       try {
-        // Hot leads (warmth = hot)
-        const { count: hotCount } = await (supabase as any)
-          .from('logged_appraisals')
-          .select('*', { count: 'exact', head: true })
-          .eq('created_by', user.id)
-          .eq('outcome', 'In Progress')
-          .in('stage', ['MAP', 'LAP']);
-
-        setHotLeads(hotCount || 0);
-
         // Get team ID
-        const { data: teamMember } = await (supabase as any)
+        const { data: teamMember } = await supabase
           .from('team_members')
           .select('team_id')
           .eq('user_id', user.id)
           .maybeSingle();
 
         if (teamMember?.team_id) {
-          // Upcoming settlements (next 7 days)
-          const today = new Date();
-          const nextWeek = addDays(today, 7);
+          setTeamId(teamMember.team_id);
 
-          const { count: settlementsCount } = await (supabase as any)
+          const today = new Date();
+          const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+          const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+          const nextWeek = addDays(today, 7);
+          const thirtyDaysLater = addDays(today, 30);
+
+          // Weekly appraisals count
+          const { count: weekAppraisalsCount } = await supabase
+            .from('logged_appraisals')
+            .select('*', { count: 'exact', head: true })
+            .eq('team_id', teamMember.team_id)
+            .in('stage', ['MAP', 'LAP'])
+            .gte('appraisal_date', format(weekStart, 'yyyy-MM-dd'))
+            .lte('appraisal_date', format(weekEnd, 'yyyy-MM-dd'));
+
+          setWeeklyAppraisals(weekAppraisalsCount || 0);
+
+          // Active transactions
+          const { count: activeCount } = await supabase
             .from('transactions')
             .select('*', { count: 'exact', head: true })
             .eq('team_id', teamMember.team_id)
-            .eq('stage', 'settled')
+            .in('stage', ['signed', 'live', 'contract', 'unconditional']);
+
+          setActiveTransactions(activeCount || 0);
+
+          // Upcoming settlements (next 7 days)
+          const { count: settlementsCount } = await supabase
+            .from('transactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('team_id', teamMember.team_id)
+            .in('stage', ['unconditional', 'contract'])
             .gte('settlement_date', format(today, 'yyyy-MM-dd'))
             .lte('settlement_date', format(nextWeek, 'yyyy-MM-dd'));
 
           setUpcomingSettlements(settlementsCount || 0);
 
           // Expiring listings (within 30 days)
-          const thirtyDaysLater = addDays(today, 30);
-
-          const { count: expiringCount } = await (supabase as any)
+          const { count: expiringCount } = await supabase
             .from('transactions')
             .select('*', { count: 'exact', head: true })
             .eq('team_id', teamMember.team_id)
-            .neq('stage', 'settled')
+            .in('stage', ['live', 'contract'])
             .lte('listing_expiry', format(thirtyDaysLater, 'yyyy-MM-dd'));
 
           setExpiringListings(expiringCount || 0);
-
-          // Under contract yesterday (for celebration)
-          const yesterday = addDays(today, -1);
-          const { count: underContractYesterday } = await (supabase as any)
-            .from('transactions')
-            .select('*', { count: 'exact', head: true })
-            .eq('team_id', teamMember.team_id)
-            .eq('stage', 'signed')
-            .gte('created_at', format(yesterday, 'yyyy-MM-dd'))
-            .lt('created_at', format(today, 'yyyy-MM-dd'));
-
-          setUnderContractCount(underContractYesterday || 0);
         }
+
+        // Overdue tasks
+        const { count: overdueCount } = await supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('assigned_to', user.id)
+          .eq('completed', false)
+          .lt('due_date', format(new Date(), 'yyyy-MM-dd'));
+
+        setOverdueTasks(overdueCount || 0);
+
+        // Tasks due today
+        const { count: todayCount } = await supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('assigned_to', user.id)
+          .eq('completed', false)
+          .eq('due_date', format(new Date(), 'yyyy-MM-dd'));
+
+        setDueTodayTasks(todayCount || 0);
       } catch (error) {
         console.error('Error fetching digest data:', error);
       }
@@ -130,16 +148,21 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
   }, [user, open]);
 
   // Calculate metrics
-  const cchProgress = weeklyCCHTarget > 0 ? (weeklyCCH / weeklyCCHTarget) * 100 : 0;
-  const cchRemaining = Math.max(0, weeklyCCHTarget - weeklyCCH);
-  const quarterlyAppraisalsTarget = 65; // Default target
+  const quarterlyAppraisalsTarget = quarterlyAppraisals?.monthlyPace 
+    ? Math.round(quarterlyAppraisals.monthlyPace * 3) 
+    : 65;
   const appraisalsProgress = quarterlyAppraisalsTarget > 0 
     ? ((quarterlyAppraisals?.total || 0) / quarterlyAppraisalsTarget) * 100 
     : 0;
 
-  const openTasks = workspaceStatuses?.operate?.count || 0;
-  const overdueTasks = workspaceStatuses?.operate?.overdueCount || 0;
-  const activeTransactions = workspaceStatuses?.transact?.count || 0;
+  const listingsTarget = listingsSalesData?.listingsTarget || 8;
+  const salesTarget = listingsSalesData?.salesTarget || 6;
+  const listingsProgress = listingsTarget > 0 
+    ? ((listingsSalesData?.totalListings || 0) / listingsTarget) * 100 
+    : 0;
+  const salesProgress = salesTarget > 0 
+    ? ((listingsSalesData?.totalSales || 0) / salesTarget) * 100 
+    : 0;
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -157,9 +180,12 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
     }
   };
 
+  const hasUrgentItems = overdueTasks > 0 || dueTodayTasks > 0;
+  const hasHotLeads = (hotLeads?.length || 0) > 0;
+
   return (
     <Dialog open={open} onOpenChange={onDismiss}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
         <AnimatePresence>
           {open && (
             <motion.div
@@ -168,299 +194,178 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {/* Hero Header */}
-              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-8 relative overflow-hidden">
+              {/* Hero Header - Compact */}
+              <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6 relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/10" />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 text-white mb-2">
-                    <Sunrise className="h-10 w-10" />
+                <div className="relative z-10 flex items-center justify-between">
+                  <div className="flex items-center gap-3 text-white">
+                    <Sunrise className="h-8 w-8" />
                     <div>
-                      <h2 className="text-3xl font-bold">{getGreeting()}, {firstName}!</h2>
+                      <h2 className="text-2xl font-bold">{getGreeting()}, {firstName}!</h2>
                       <p className="text-indigo-100 text-sm">{currentTime}</p>
                     </div>
                   </div>
-                  <p className="text-white/90 text-lg mt-4">Here's your Daily Digest</p>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
-                {/* Today's Targets Section */}
-                <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-                    <h3 className="text-xl font-bold">Today's Targets</h3>
+              <div className="p-6 space-y-5">
+                {/* Your Progress Section - 3 Columns */}
+                <Card className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Target className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <h3 className="font-bold">Your Progress</h3>
                   </div>
 
-                  <div className="space-y-4">
-                    {/* Weekly CCH Progress */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">Weekly CCH Progress</span>
-                        <span className="text-lg font-bold">
-                          {weeklyCCH.toFixed(1)} / {weeklyCCHTarget.toFixed(1)} hrs
-                        </span>
+                  <div className="grid grid-cols-3 gap-4">
+                    {/* Appraisals */}
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                        {quarterlyAppraisals?.total || 0}
+                        <span className="text-lg text-muted-foreground font-normal"> / {quarterlyAppraisalsTarget}</span>
                       </div>
-                      <Progress value={cchProgress} className="h-3" />
-                      {cchProgress >= 100 ? (
-                        <div className="flex items-center gap-2 mt-2 text-green-600 dark:text-green-400">
-                          <CheckCircle2 className="h-4 w-4" />
-                          <span className="text-sm font-medium">Target exceeded! 🎯</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 mt-2 text-amber-600 dark:text-amber-400">
-                          <Clock className="h-4 w-4" />
-                          <span className="text-sm font-medium">
-                            Need {cchRemaining.toFixed(1)} hrs this week ⚡
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Daily Target Remaining */}
-                    <div className="p-3 bg-white dark:bg-gray-900 rounded-lg border">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Daily Target Remaining</span>
-                        <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                          {dailyCCHTarget.toFixed(1)} hrs
-                        </span>
+                      <p className="text-sm text-muted-foreground">Quarterly Appraisals</p>
+                      <div className="mt-2">
+                        <Progress value={appraisalsProgress} className="h-2" />
                       </div>
-                    </div>
-
-                    {/* Quarterly Appraisals */}
-                    <div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium text-muted-foreground">Quarterly Appraisals</span>
-                        <span className="text-lg font-bold">
-                          {quarterlyAppraisals?.total || 0} / {quarterlyAppraisalsTarget}
-                        </span>
-                      </div>
-                      <Progress value={appraisalsProgress} className="h-3" />
-                      <p className="text-sm text-muted-foreground mt-2">
-                        ↑ {weeklyBreakdown.appraisals} this week
+                      <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        {weeklyAppraisals} this week
                       </p>
+                    </div>
+
+                    {/* Listings */}
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
+                        {listingsSalesData?.totalListings || 0}
+                        <span className="text-lg text-muted-foreground font-normal"> / {listingsTarget}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Quarterly Listings</p>
+                      <div className="mt-2">
+                        <Progress value={listingsProgress} className="h-2 [&>div]:bg-emerald-500" />
+                      </div>
+                    </div>
+
+                    {/* Sales */}
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-amber-600 dark:text-amber-400">
+                        {listingsSalesData?.totalSales || 0}
+                        <span className="text-lg text-muted-foreground font-normal"> / {salesTarget}</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Quarterly Sales</p>
+                      <div className="mt-2">
+                        <Progress value={salesProgress} className="h-2 [&>div]:bg-amber-500" />
+                      </div>
                     </div>
                   </div>
                 </Card>
 
-                {/* Active Listings Section */}
-                <Card className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
-                  <div className="flex items-center gap-3 mb-4">
-                    <FileText className="h-6 w-6 text-green-600 dark:text-green-400" />
-                    <h3 className="text-xl font-bold">Stock at a Glance</h3>
+                {/* Stock at a Glance */}
+                <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <h3 className="font-bold">Stock at a Glance</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                        <span className="text-xl font-bold text-green-600 dark:text-green-400">
-                          {activeTransactions}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Active</p>
-                        <p className="font-semibold">Transactions</p>
-                      </div>
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">{activeTransactions}</span>
+                      <span className="text-muted-foreground">Active</span>
                     </div>
-
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                        <span className="text-xl font-bold text-blue-600 dark:text-blue-400">
-                          {upcomingSettlements}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Settlements</p>
-                        <p className="font-semibold">This Week</p>
-                      </div>
+                    <div className="h-6 w-px bg-border" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{upcomingSettlements}</span>
+                      <span className="text-muted-foreground">Settlements This Week</span>
                     </div>
-
                     {expiringListings > 0 && (
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                          <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <>
+                        <div className="h-6 w-px bg-border" />
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
+                          <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">{expiringListings}</span>
+                          <span className="text-muted-foreground">Expiring Soon</span>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">{expiringListings} Listings</p>
-                          <p className="font-semibold text-amber-600 dark:text-amber-400">Expiring Soon</p>
-                        </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 </Card>
 
                 {/* Team Leaderboard */}
-                <Card className="p-6 bg-gradient-to-br from-amber-50/80 to-yellow-50/80 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800 backdrop-blur-sm">
+                <Card className="p-5 bg-gradient-to-br from-amber-50/80 to-yellow-50/80 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800 backdrop-blur-sm">
                   <TeamAppraisalLeaderboard />
                 </Card>
 
-                {/* Tasks & Pipeline in a Row */}
+                {/* Urgent Attention & Hot Leads Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Tasks Section */}
-                  <Card className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 border-purple-200 dark:border-purple-800">
-                    <div className="flex items-center gap-3 mb-4">
-                      <ListChecks className="h-6 w-6 text-purple-600 dark:text-purple-400" />
-                      <h3 className="text-lg font-bold">Your Tasks</h3>
+                  {/* Urgent Attention */}
+                  <Card className={`p-5 ${hasUrgentItems ? 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-red-200 dark:border-red-800' : 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800'}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      {hasUrgentItems ? (
+                        <AlertTriangle className="h-5 w-5 text-red-500" />
+                      ) : (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      )}
+                      <h3 className="font-bold">Urgent Attention</h3>
                     </div>
 
-                    {overdueTasks > 0 ? (
+                    {hasUrgentItems ? (
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                          <AlertCircle className="h-5 w-5" />
-                          <span className="font-bold">{overdueTasks} overdue tasks</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{openTasks} total open tasks</p>
-                      </div>
-                    ) : openTasks > 0 ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                          <span className="font-bold">{openTasks} open tasks</span>
-                        </div>
-                        <p className="text-sm text-muted-foreground">All on track!</p>
+                        {overdueTasks > 0 && (
+                          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="font-medium">{overdueTasks} overdue {overdueTasks === 1 ? 'task' : 'tasks'}</span>
+                          </div>
+                        )}
+                        {dueTodayTasks > 0 && (
+                          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                            <Clock className="h-4 w-4" />
+                            <span className="font-medium">{dueTodayTasks} due today</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                        <CheckCircle2 className="h-5 w-5" />
-                        <span className="font-medium">All tasks complete ✅</span>
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span className="font-medium">All caught up!</span>
                       </div>
                     )}
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4 w-full"
-                      onClick={() => {
-                        onDismiss();
-                        navigate('/operate-dashboard');
-                      }}
-                    >
-                      View All Tasks <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
                   </Card>
 
-                  {/* Pipeline Highlights */}
-                  <Card className="p-6 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Flame className="h-6 w-6 text-orange-600 dark:text-orange-400" />
-                      <h3 className="text-lg font-bold">Pipeline Activity</h3>
-                    </div>
-
-                    <div className="space-y-3">
-                      {hotLeads > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">🔥 HOT appraisals</span>
-                          <Badge variant="secondary" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
-                            {hotLeads} need follow-up
-                          </Badge>
-                        </div>
-                      )}
-
-                      {underContractCount > 0 && (
-                        <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
-                          <TrendingUp className="h-4 w-4" />
-                          <span className="text-sm font-medium">
-                            {underContractCount} moved to "Under Contract" yesterday 🎉
-                          </span>
-                        </div>
-                      )}
-
-                      {hotLeads === 0 && underContractCount === 0 && (
-                        <p className="text-sm text-muted-foreground">
-                          Time to heat up your pipeline! 🔥
-                        </p>
+                  {/* Hot Leads */}
+                  <Card className={`p-5 ${hasHotLeads ? 'bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 border-orange-200 dark:border-orange-800' : 'bg-muted/30 border-muted'}`}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Flame className={`h-5 w-5 ${hasHotLeads ? 'text-orange-500' : 'text-muted-foreground'}`} />
+                      <h3 className="font-bold">Hot Leads</h3>
+                      {hasHotLeads && (
+                        <Badge variant="secondary" className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 text-xs">
+                          Last 24h
+                        </Badge>
                       )}
                     </div>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-4 w-full"
-                      onClick={() => {
-                        onDismiss();
-                        navigate('/prospect-dashboard');
-                      }}
-                    >
-                      View Pipeline <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
+                    {hasHotLeads ? (
+                      <div className="space-y-2">
+                        {hotLeads?.slice(0, 3).map((lead) => (
+                          <div key={lead.id} className="flex items-center justify-between text-sm">
+                            <span className="truncate flex-1">{lead.address}</span>
+                            <Badge variant="outline" className="ml-2 text-xs bg-orange-100/50 border-orange-300 text-orange-700">
+                              {lead.propensityScore}%
+                            </Badge>
+                          </div>
+                        ))}
+                        {(hotLeads?.length || 0) > 3 && (
+                          <p className="text-xs text-muted-foreground">+{(hotLeads?.length || 0) - 3} more</p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No hot leads in the last 24 hours</p>
+                    )}
                   </Card>
                 </div>
 
-                {/* Quick Actions Bar */}
-                <Card className="p-4 bg-gradient-to-r from-primary/5 to-primary/10">
-                  <h4 className="text-sm font-semibold mb-3 text-center">Quick Actions</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        onDismiss();
-                        navigate('/plan-dashboard');
-                      }}
-                    >
-                      <Phone className="mr-2 h-4 w-4" />
-                      Log Call
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        onDismiss();
-                        navigate('/prospect-dashboard');
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Appraisal
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        onDismiss();
-                        navigate('/transact-dashboard');
-                      }}
-                    >
-                      <FileText className="mr-2 h-4 w-4" />
-                      View Stock
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => {
-                        onDismiss();
-                        navigate('/prospect-dashboard');
-                      }}
-                    >
-                      <HomeIcon className="mr-2 h-4 w-4" />
-                      View Pipeline
-                    </Button>
-                  </div>
-                </Card>
-
                 <Separator />
 
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-3">
-                  <div className="flex gap-3">
-                    <Button
-                      onClick={onDismiss}
-                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                    >
-                      Got it, let's go! 🚀
-                    </Button>
-                    <Button
-                      onClick={onSnooze}
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Bell className="mr-2 h-4 w-4" />
-                      Remind me in 1 hour
-                    </Button>
-                  </div>
-
+                {/* Action Buttons - Simplified */}
+                <div className="flex items-center justify-between">
                   <Button
                     onClick={handleOptOutClick}
                     variant="ghost"
@@ -468,7 +373,14 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <BellOff className="mr-2 h-4 w-4" />
-                    Don't show me this again
+                    Don't show again
+                  </Button>
+
+                  <Button
+                    onClick={onDismiss}
+                    className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
+                  >
+                    Dismiss
                   </Button>
                 </div>
               </div>

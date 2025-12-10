@@ -16,6 +16,7 @@ interface LeaderboardData {
   maxCount: number;
   currentUserRank: number | null;
   isLoading: boolean;
+  shouldShow: boolean;
 }
 
 export const useTeamAppraisalLeaderboard = () => {
@@ -23,8 +24,8 @@ export const useTeamAppraisalLeaderboard = () => {
 
   const { data, isLoading } = useQuery({
     queryKey: ['team-appraisal-leaderboard', user?.id],
-    queryFn: async (): Promise<{ entries: LeaderboardEntry[]; maxCount: number }> => {
-      if (!user?.id) return { entries: [], maxCount: 0 };
+    queryFn: async (): Promise<{ entries: LeaderboardEntry[]; maxCount: number; shouldShow: boolean }> => {
+      if (!user?.id) return { entries: [], maxCount: 0, shouldShow: false };
 
       // Get user's team
       const { data: teamMember } = await supabase
@@ -33,7 +34,7 @@ export const useTeamAppraisalLeaderboard = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (!teamMember?.team_id) return { entries: [], maxCount: 0 };
+      if (!teamMember?.team_id) return { entries: [], maxCount: 0, shouldShow: false };
 
       // Get all team members
       const { data: teamMembers } = await supabase
@@ -48,7 +49,26 @@ export const useTeamAppraisalLeaderboard = () => {
         `)
         .eq('team_id', teamMember.team_id);
 
-      if (!teamMembers?.length) return { entries: [], maxCount: 0 };
+      if (!teamMembers?.length) return { entries: [], maxCount: 0, shouldShow: false };
+
+      // Get user roles for team members - filter to salesperson and team_leader only
+      const userIds = teamMembers.map((tm) => tm.user_id);
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds)
+        .in('role', ['salesperson', 'team_leader']);
+
+      // Get unique user IDs that have salesperson or team_leader roles
+      const qualifiedUserIds = new Set(userRoles?.map((ur) => ur.user_id) || []);
+
+      // Filter team members to only those with qualifying roles
+      const qualifiedMembers = teamMembers.filter((tm) => qualifiedUserIds.has(tm.user_id));
+
+      // Don't show leaderboard if only 1 qualifying member
+      if (qualifiedMembers.length <= 1) {
+        return { entries: [], maxCount: 0, shouldShow: false };
+      }
 
       // Get current quarter dates
       const now = new Date();
@@ -72,8 +92,8 @@ export const useTeamAppraisalLeaderboard = () => {
         }
       });
 
-      // Build leaderboard entries
-      const entries: LeaderboardEntry[] = teamMembers
+      // Build leaderboard entries from qualified members only
+      const entries: LeaderboardEntry[] = qualifiedMembers
         .map((tm) => {
           const profile = tm.profiles as any;
           return {
@@ -93,7 +113,7 @@ export const useTeamAppraisalLeaderboard = () => {
 
       const maxCount = entries.length > 0 ? entries[0].appraisalCount : 0;
 
-      return { entries, maxCount };
+      return { entries, maxCount, shouldShow: true };
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -106,5 +126,6 @@ export const useTeamAppraisalLeaderboard = () => {
     maxCount: data?.maxCount || 0,
     currentUserRank,
     isLoading,
+    shouldShow: data?.shouldShow ?? false,
   } as LeaderboardData;
 };
