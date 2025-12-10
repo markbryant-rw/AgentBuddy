@@ -64,45 +64,92 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // First fetch current appraisal to get existing owners
+    const { data: currentAppraisal, error: fetchErr } = await supabase
+      .from('logged_appraisals')
+      .select('id, owners, vendor_name, vendor_email, vendor_mobile')
+      .eq('id', externalLeadId)
+      .single();
+
+    if (fetchErr || !currentAppraisal) {
+      console.error('Appraisal not found:', fetchErr);
+      return new Response(
+        JSON.stringify({ error: 'Appraisal not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Build update object
     const updateData: Record<string, any> = {};
     
     // Handle multi-owner format from Beacon
     if (owners && Array.isArray(owners) && owners.length > 0) {
-      // Convert Beacon owners to our format
-      const convertedOwners: Owner[] = owners.map((o: BeaconOwner, index: number) => ({
+      // Get existing owners
+      const existingOwners: Owner[] = Array.isArray(currentAppraisal.owners) 
+        ? currentAppraisal.owners as Owner[]
+        : [];
+
+      // Convert incoming Beacon owners to our format
+      const incomingOwners: Owner[] = owners.map((o: BeaconOwner, index: number) => ({
         id: crypto.randomUUID(),
         name: o.name,
         email: o.email || '',
         phone: o.phone || '',
-        is_primary: o.isPrimary ?? (index === 0),
+        is_primary: o.isPrimary ?? (existingOwners.length === 0 && index === 0),
         beacon_owner_id: o.beaconOwnerId,
       }));
+
+      // Merge: add incoming owners that don't already exist
+      const mergedOwners = [...existingOwners];
+      for (const incoming of incomingOwners) {
+        const isDuplicate = mergedOwners.some(o => 
+          (incoming.email && o.email === incoming.email) || 
+          (incoming.phone && o.phone === incoming.phone) ||
+          (incoming.beacon_owner_id && o.beacon_owner_id === incoming.beacon_owner_id)
+        );
+        if (!isDuplicate) {
+          mergedOwners.push(incoming);
+        }
+      }
+
+      updateData.owners = mergedOwners;
       
-      updateData.owners = convertedOwners;
-      
-      // Also update legacy fields with primary owner for backward compatibility
-      const primary = convertedOwners.find(o => o.is_primary) || convertedOwners[0];
+      // Update legacy fields with primary owner for backward compatibility
+      const primary = mergedOwners.find(o => o.is_primary) || mergedOwners[0];
       if (primary) {
         updateData.vendor_name = primary.name;
         updateData.vendor_email = primary.email;
         updateData.vendor_mobile = primary.phone;
       }
     } else {
-      // Legacy single-owner format
-      if (vendorName !== undefined) updateData.vendor_name = vendorName;
-      if (vendorEmail !== undefined) updateData.vendor_email = vendorEmail;
-      if (vendorMobile !== undefined) updateData.vendor_mobile = vendorMobile;
-      
-      // Also update owners array for new format
+      // Legacy single-owner format - append to owners array
       if (vendorName) {
-        updateData.owners = [{
+        const existingOwners: Owner[] = Array.isArray(currentAppraisal.owners) 
+          ? currentAppraisal.owners as Owner[]
+          : [];
+
+        const newOwner: Owner = {
           id: crypto.randomUUID(),
           name: vendorName,
           email: vendorEmail || '',
           phone: vendorMobile || '',
-          is_primary: true,
-        }];
+          is_primary: existingOwners.length === 0,
+        };
+
+        // Check for duplicates
+        const isDuplicate = existingOwners.some(o => 
+          (newOwner.email && o.email === newOwner.email) || 
+          (newOwner.phone && o.phone === newOwner.phone)
+        );
+
+        if (!isDuplicate) {
+          updateData.owners = [...existingOwners, newOwner];
+        }
+
+        // Also update legacy fields
+        if (vendorName !== undefined) updateData.vendor_name = vendorName;
+        if (vendorEmail !== undefined) updateData.vendor_email = vendorEmail;
+        if (vendorMobile !== undefined) updateData.vendor_mobile = vendorMobile;
       }
     }
 
