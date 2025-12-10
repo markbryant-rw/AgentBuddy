@@ -154,6 +154,27 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
     },
   });
 
+  // Update task due date
+  const updateDueDate = useMutation({
+    mutationFn: async ({ taskId, dueDate }: { taskId: string; dueDate: Date | null }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ due_date: dueDate ? dueDate.toISOString().split('T')[0] : null })
+        .eq('id', taskId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appraisal-tasks', appraisalId] });
+      queryClient.invalidateQueries({ queryKey: ['my-assigned-tasks'] });
+      toast.success('Due date updated');
+    },
+    onError: (error) => {
+      toast.error('Failed to update due date');
+      console.error(error);
+    },
+  });
+
   // Group tasks by section
   const tasksBySection = tasks.reduce((acc, task) => {
     const section = task.section || 'General';
@@ -178,5 +199,6 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
     addTask,
     updateAssignee,
     deleteTask,
+    updateDueDate,
   };
 };
