@@ -39,6 +39,7 @@ export const BillingTab = () => {
   useEffect(() => {
     if (autoCheckoutTriggered.current) return;
     if (isDemoMode) return; // Don't auto-checkout for demo users
+    if (subscription?.isVoucherBased) return; // Don't auto-checkout for voucher users
     
     const autoCheckout = searchParams.get('auto_checkout') === 'true';
     const pendingPlan = localStorage.getItem('pending_plan') as PlanId | null;
@@ -57,7 +58,7 @@ export const BillingTab = () => {
       // Trigger checkout
       startCheckout(pendingPlan, isAnnual);
     }
-  }, [searchParams, setSearchParams, startCheckout, isDemoMode]);
+  }, [searchParams, setSearchParams, startCheckout, isDemoMode, subscription?.isVoucherBased]);
 
   if (isLoading) {
     return (
@@ -93,9 +94,12 @@ export const BillingTab = () => {
       {/* Subscription Overview */}
       <SubscriptionOverview canManage={!isDemoMode} />
 
-      {/* Plan Selector - disable for demo users */}
+      {/* Plan Selector - always show but disable for voucher users */}
       {!isDemoMode && (
-        <PlanSelector currentPlan={subscription?.plan || ''} />
+        <PlanSelector 
+          currentPlan={subscription?.plan || ''} 
+          isVoucherBased={subscription?.isVoucherBased || false}
+        />
       )}
     </div>
   );

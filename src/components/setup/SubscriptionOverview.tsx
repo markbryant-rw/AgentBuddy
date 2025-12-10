@@ -1,11 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Calendar, TrendingUp, Settings, Loader2 } from 'lucide-react';
+import { CreditCard, Calendar, TrendingUp, Settings, Loader2, Sparkles, Crown } from 'lucide-react';
 import { useUserSubscription, SubscriptionPlan } from '@/hooks/useUserSubscription';
 import { format } from 'date-fns';
 import { useCustomerPortal } from '@/hooks/useCustomerPortal';
-import { STRIPE_PLANS } from '@/lib/stripe-plans';
 
 interface SubscriptionOverviewProps {
   canManage: boolean;
@@ -30,12 +29,47 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
 
   if (!subscription) return null;
 
+  const getVoucherBadge = () => {
+    if (!subscription.isVoucherBased) return null;
+    
+    const voucherName = subscription.voucherName?.toLowerCase() || '';
+    
+    if (voucherName.includes('founder')) {
+      return {
+        label: 'Founder Unlimited',
+        variant: 'default' as const,
+        icon: Crown,
+        className: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-0',
+      };
+    }
+    
+    if (voucherName.includes('tester')) {
+      return {
+        label: 'Tester Access',
+        variant: 'default' as const,
+        icon: Sparkles,
+        className: 'bg-gradient-to-r from-purple-500 to-violet-500 text-white border-0',
+      };
+    }
+    
+    return {
+      label: 'Unlimited Access',
+      variant: 'default' as const,
+      icon: Sparkles,
+      className: 'bg-gradient-to-r from-teal-500 to-cyan-500 text-white border-0',
+    };
+  };
+
   const getPlanBadge = () => {
-    const badges: Record<SubscriptionPlan, { label: string; variant: 'secondary' | 'default'; icon: typeof CreditCard }> = {
+    // Check voucher-based first
+    const voucherBadge = getVoucherBadge();
+    if (voucherBadge) return voucherBadge;
+    
+    const badges: Record<SubscriptionPlan, { label: string; variant: 'secondary' | 'default'; icon: typeof CreditCard; className?: string }> = {
       solo: { label: 'Solo Agent', variant: 'default', icon: CreditCard },
       team: { label: 'Small Team', variant: 'default', icon: TrendingUp },
     };
-    return badges[subscription.plan] || { label: 'No Plan', variant: 'secondary' as const, icon: CreditCard };
+    return subscription.plan ? badges[subscription.plan] : { label: 'No Plan', variant: 'secondary' as const, icon: CreditCard };
   };
 
   const badge = getPlanBadge();
@@ -52,7 +86,8 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
             </CardTitle>
             <CardDescription>Your billing plan and details</CardDescription>
           </div>
-          <Badge variant={badge.variant} className="gap-1">
+          <Badge variant={badge.variant} className={`gap-1 ${badge.className || ''}`}>
+            <BadgeIcon className="h-3 w-3" />
             {badge.label}
           </Badge>
         </div>
@@ -66,15 +101,45 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
           <span className="text-muted-foreground">
             /{subscription.billingCycle === 'monthly' ? 'month' : 'year'}
           </span>
+          {subscription.isVoucherBased && (
+            <Badge variant="outline" className="ml-2 text-emerald-600 border-emerald-300">
+              Voucher Applied
+            </Badge>
+          )}
         </div>
 
-        {/* Next Billing Date */}
+        {/* Voucher Info */}
+        {subscription.isVoucherBased && subscription.voucherCode && (
+          <div className="p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                  {subscription.voucherName}
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Code: {subscription.voucherCode}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Next Billing Date / Expiry */}
         {subscription.nextBillingDate && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="h-4 w-4" />
             <span>
-              Next billing date: {format(new Date(subscription.nextBillingDate), 'MMM dd, yyyy')}
+              {subscription.isVoucherBased ? 'Access expires' : 'Next billing date'}: {format(new Date(subscription.nextBillingDate), 'MMM dd, yyyy')}
             </span>
+          </div>
+        )}
+
+        {/* Permanent access indicator for Founder vouchers */}
+        {subscription.isVoucherBased && !subscription.voucherExpiresAt && (
+          <div className="flex items-center gap-2 text-sm text-emerald-600">
+            <Sparkles className="h-4 w-4" />
+            <span>Lifetime access - no expiration</span>
           </div>
         )}
 
@@ -112,8 +177,8 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
           </div>
         )}
 
-        {/* Action Buttons */}
-        {canManage && subscription.plan && (
+        {/* Action Buttons - Only show for Stripe subscriptions */}
+        {canManage && subscription.plan && !subscription.isVoucherBased && (
           <div className="flex gap-2 pt-2">
             <Button 
               variant="outline" 
@@ -136,7 +201,7 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
           </div>
         )}
 
-        {!canManage && (
+        {!canManage && !subscription.isVoucherBased && (
           <p className="text-xs text-muted-foreground text-center pt-2">
             Contact your administrator to make changes to your subscription
           </p>

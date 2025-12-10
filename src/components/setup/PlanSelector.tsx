@@ -4,12 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Sparkles } from 'lucide-react';
 import { STRIPE_PLANS, PlanId } from '@/lib/stripe-plans';
 import { useSubscriptionCheckout } from '@/hooks/useSubscriptionCheckout';
 
 interface PlanSelectorProps {
   currentPlan: string;
+  isVoucherBased?: boolean;
 }
 
 const planFeatures: Record<PlanId, string[]> = {
@@ -32,12 +33,13 @@ const planFeatures: Record<PlanId, string[]> = {
   ],
 };
 
-export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
+export const PlanSelector = ({ currentPlan, isVoucherBased = false }: PlanSelectorProps) => {
   const [isAnnual, setIsAnnual] = useState(false);
   const { startCheckout, isLoading } = useSubscriptionCheckout();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
 
   const handleUpgrade = async (planId: PlanId) => {
+    if (isVoucherBased) return; // Prevent checkout for voucher users
     setLoadingPlan(planId);
     await startCheckout(planId, isAnnual);
     setLoadingPlan(null);
@@ -46,27 +48,47 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
   const plans: PlanId[] = ['solo', 'team'];
 
   return (
-    <Card>
+    <Card className={isVoucherBased ? 'opacity-75' : ''}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Choose Your Plan</CardTitle>
-            <CardDescription>Select the plan that best fits your needs</CardDescription>
+            <CardDescription>
+              {isVoucherBased 
+                ? 'Your team has unlimited access via voucher' 
+                : 'Select the plan that best fits your needs'
+              }
+            </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="billing-toggle" className={!isAnnual ? 'font-semibold' : 'text-muted-foreground'}>
-              Monthly
-            </Label>
-            <Switch
-              id="billing-toggle"
-              checked={isAnnual}
-              onCheckedChange={setIsAnnual}
-            />
-            <Label htmlFor="billing-toggle" className={isAnnual ? 'font-semibold' : 'text-muted-foreground'}>
-              Annual <span className="text-emerald-600 text-xs">(2 months free!)</span>
-            </Label>
-          </div>
+          {!isVoucherBased && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="billing-toggle" className={!isAnnual ? 'font-semibold' : 'text-muted-foreground'}>
+                Monthly
+              </Label>
+              <Switch
+                id="billing-toggle"
+                checked={isAnnual}
+                onCheckedChange={setIsAnnual}
+                disabled={isVoucherBased}
+              />
+              <Label htmlFor="billing-toggle" className={isAnnual ? 'font-semibold' : 'text-muted-foreground'}>
+                Annual <span className="text-emerald-600 text-xs">(2 months free!)</span>
+              </Label>
+            </div>
+          )}
         </div>
+
+        {/* Voucher access banner */}
+        {isVoucherBased && (
+          <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-600" />
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                Your team has unlimited access - no subscription needed!
+              </p>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-2">
@@ -77,20 +99,23 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
             const isPopular = planId === 'team';
             const price = isAnnual ? plan.amountAnnual : plan.amountMonthly;
             const isLoadingThis = loadingPlan === planId;
+            const isDisabled = isVoucherBased || isCurrent || isLoading;
 
             return (
               <div
                 key={planId}
-                className={`relative rounded-lg border p-4 ${
-                  isPopular ? 'border-primary shadow-md' : 'border-border'
-                } ${isCurrent ? 'bg-muted/50' : ''}`}
+                className={`relative rounded-lg border p-4 transition-all ${
+                  isPopular && !isVoucherBased ? 'border-primary shadow-md' : 'border-border'
+                } ${isCurrent && !isVoucherBased ? 'bg-muted/50' : ''} ${
+                  isVoucherBased ? 'opacity-60 grayscale' : ''
+                }`}
               >
-                {isPopular && (
+                {isPopular && !isVoucherBased && (
                   <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2">
                     Best Value
                   </Badge>
                 )}
-                {isCurrent && (
+                {isCurrent && !isVoucherBased && (
                   <Badge variant="secondary" className="absolute -top-2.5 right-4">
                     Current Plan
                   </Badge>
@@ -126,7 +151,7 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
                 <Button
                   className="w-full"
                   variant={isCurrent ? 'outline' : isPopular ? 'default' : 'outline'}
-                  disabled={isCurrent || isLoading}
+                  disabled={isDisabled}
                   onClick={() => handleUpgrade(planId)}
                 >
                   {isLoadingThis ? (
@@ -134,6 +159,8 @@ export const PlanSelector = ({ currentPlan }: PlanSelectorProps) => {
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       Loading...
                     </>
+                  ) : isVoucherBased ? (
+                    'Included with Voucher'
                   ) : isCurrent ? (
                     'Current Plan'
                   ) : (
