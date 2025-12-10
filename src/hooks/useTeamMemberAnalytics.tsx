@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { startOfQuarter, endOfQuarter, format } from 'date-fns';
+import { startOfQuarter, endOfQuarter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from 'date-fns';
 
 export interface MemberAnalytics {
   userId: string;
@@ -10,6 +10,16 @@ export interface MemberAnalytics {
   openTasks: number;
   overdueTasks: number;
   pipelineValue: number;
+  // Weekly task stats
+  weeklyTasksCompleted: number;
+  weeklyTasksOpen: number;
+  weeklyTasksOverdue: number;
+  weeklyCompletionRate: number;
+  // Monthly task stats
+  monthlyTasksCompleted: number;
+  monthlyTasksOpen: number;
+  monthlyTasksOverdue: number;
+  monthlyCompletionRate: number;
 }
 
 export interface TeamAnalyticsSummary {
@@ -31,6 +41,10 @@ export const useTeamMemberAnalytics = (teamId: string | undefined) => {
       const now = new Date();
       const quarterStart = format(startOfQuarter(now), 'yyyy-MM-dd');
       const quarterEnd = format(endOfQuarter(now), 'yyyy-MM-dd');
+      const weekStart = format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+      const weekEnd = format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+      const monthStart = format(startOfMonth(now), 'yyyy-MM-dd');
+      const monthEnd = format(endOfMonth(now), 'yyyy-MM-dd');
       const today = format(now, 'yyyy-MM-dd');
 
       // Get team members first
@@ -56,7 +70,7 @@ export const useTeamMemberAnalytics = (teamId: string | undefined) => {
       }
 
       // Fetch all data in parallel
-      const [appraisalsRes, listingsRes, transactionsRes, pastSalesRes, tasksRes] = await Promise.all([
+      const [appraisalsRes, listingsRes, transactionsRes, pastSalesRes, openTasksRes, weeklyTasksRes, monthlyTasksRes] = await Promise.all([
         // Quarterly appraisals by agent
         supabase
           .from('logged_appraisals')
@@ -91,12 +105,26 @@ export const useTeamMemberAnalytics = (teamId: string | undefined) => {
           .gte('unconditional_date', quarterStart)
           .lte('unconditional_date', quarterEnd),
 
-        // Tasks for team members
+        // Open tasks for team members
         supabase
           .from('tasks')
           .select('assigned_to, due_date, completed')
           .eq('team_id', teamId)
           .eq('completed', false),
+
+        // Weekly tasks (all tasks created/due this week)
+        supabase
+          .from('tasks')
+          .select('assigned_to, due_date, completed, completed_at')
+          .eq('team_id', teamId)
+          .or(`due_date.gte.${weekStart},due_date.lte.${weekEnd},and(completed.eq.true,completed_at.gte.${weekStart})`),
+
+        // Monthly tasks
+        supabase
+          .from('tasks')
+          .select('assigned_to, due_date, completed, completed_at')
+          .eq('team_id', teamId)
+          .or(`due_date.gte.${monthStart},due_date.lte.${monthEnd},and(completed.eq.true,completed_at.gte.${monthStart})`),
       ]);
 
       // Build member analytics
@@ -112,6 +140,14 @@ export const useTeamMemberAnalytics = (teamId: string | undefined) => {
           openTasks: 0,
           overdueTasks: 0,
           pipelineValue: 0,
+          weeklyTasksCompleted: 0,
+          weeklyTasksOpen: 0,
+          weeklyTasksOverdue: 0,
+          weeklyCompletionRate: 0,
+          monthlyTasksCompleted: 0,
+          monthlyTasksOpen: 0,
+          monthlyTasksOverdue: 0,
+          monthlyCompletionRate: 0,
         };
       });
 
@@ -145,14 +181,51 @@ export const useTeamMemberAnalytics = (teamId: string | undefined) => {
         }
       });
 
-      // Count tasks
-      tasksRes.data?.forEach(task => {
+      // Count open tasks
+      openTasksRes.data?.forEach(task => {
         if (task.assigned_to && memberAnalytics[task.assigned_to]) {
           memberAnalytics[task.assigned_to].openTasks++;
           if (task.due_date && task.due_date < today) {
             memberAnalytics[task.assigned_to].overdueTasks++;
           }
         }
+      });
+
+      // Process weekly tasks
+      weeklyTasksRes.data?.forEach(task => {
+        if (task.assigned_to && memberAnalytics[task.assigned_to]) {
+          if (task.completed) {
+            memberAnalytics[task.assigned_to].weeklyTasksCompleted++;
+          } else {
+            memberAnalytics[task.assigned_to].weeklyTasksOpen++;
+            if (task.due_date && task.due_date < today) {
+              memberAnalytics[task.assigned_to].weeklyTasksOverdue++;
+            }
+          }
+        }
+      });
+
+      // Process monthly tasks
+      monthlyTasksRes.data?.forEach(task => {
+        if (task.assigned_to && memberAnalytics[task.assigned_to]) {
+          if (task.completed) {
+            memberAnalytics[task.assigned_to].monthlyTasksCompleted++;
+          } else {
+            memberAnalytics[task.assigned_to].monthlyTasksOpen++;
+            if (task.due_date && task.due_date < today) {
+              memberAnalytics[task.assigned_to].monthlyTasksOverdue++;
+            }
+          }
+        }
+      });
+
+      // Calculate completion rates
+      Object.values(memberAnalytics).forEach(m => {
+        const weeklyTotal = m.weeklyTasksCompleted + m.weeklyTasksOpen;
+        m.weeklyCompletionRate = weeklyTotal > 0 ? Math.round((m.weeklyTasksCompleted / weeklyTotal) * 100) : 0;
+        
+        const monthlyTotal = m.monthlyTasksCompleted + m.monthlyTasksOpen;
+        m.monthlyCompletionRate = monthlyTotal > 0 ? Math.round((m.monthlyTasksCompleted / monthlyTotal) * 100) : 0;
       });
 
       // Calculate summary
