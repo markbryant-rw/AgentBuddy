@@ -8,7 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTeamCRUD } from '@/hooks/useTeamCRUD';
 import { useAgencies } from '@/hooks/useAgencies';
-import { ApplyLicenseDialog } from '@/components/platform-admin/ApplyLicenseDialog';
+import { VoucherSelect } from '@/components/platform-admin/VoucherSelect';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 interface CreateTeamDialogProps {
   open: boolean;
@@ -22,11 +25,8 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
   const [bio, setBio] = useState('');
   const [usesFinancialYear, setUsesFinancialYear] = useState(false);
   const [fyStartMonth, setFyStartMonth] = useState(7);
-  const [licenseDialog, setLicenseDialog] = useState<{
-    open: boolean;
-    teamId: string;
-    teamName: string;
-  }>({ open: false, teamId: '', teamName: '' });
+  const [selectedVoucher, setSelectedVoucher] = useState<string>('standard');
+  const [isApplyingVoucher, setIsApplyingVoucher] = useState(false);
   
   const { createTeam } = useTeamCRUD();
   const { agencies } = useAgencies();
@@ -42,6 +42,17 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
     setBio('');
     setUsesFinancialYear(false);
     setFyStartMonth(7);
+    setSelectedVoucher('standard');
+  };
+
+  const applyVoucherToTeam = async (teamId: string, voucherCode: string) => {
+    const { data, error } = await supabase.functions.invoke('redeem-voucher', {
+      body: { code: voucherCode, teamId },
+    });
+
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -57,21 +68,19 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
       financial_year_start_month: fyStartMonth,
     });
 
-    // Show license dialog for the new team
-    if (result?.id) {
-      setLicenseDialog({
-        open: true,
-        teamId: result.id,
-        teamName: name,
-      });
-    } else {
-      // If no result, just close
-      resetForm();
-      onOpenChange(false);
+    // Apply voucher if selected
+    if (result?.id && selectedVoucher && selectedVoucher !== 'standard') {
+      try {
+        setIsApplyingVoucher(true);
+        await applyVoucherToTeam(result.id, selectedVoucher);
+        toast.success(`Team created with ${selectedVoucher} license applied`);
+      } catch (voucherError: any) {
+        toast.error(`Team created but license failed: ${voucherError.message}`);
+      } finally {
+        setIsApplyingVoucher(false);
+      }
     }
-  };
 
-  const handleLicenseComplete = () => {
     resetForm();
     onOpenChange(false);
   };
@@ -91,111 +100,116 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
     { value: 12, label: 'December' },
   ];
 
+  const isPending = createTeam.isPending || isApplyingVoucher;
+
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Create New Team</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="name">Team Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Sales Team A"
-                required
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create New Team</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name">Team Name</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Sales Team A"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="agency">Office</Label>
+            <Select 
+              value={agencyId} 
+              onValueChange={setAgencyId}
+              disabled={!!defaultOfficeId}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an office" />
+              </SelectTrigger>
+              <SelectContent>
+                {agencies?.map((agency) => (
+                  <SelectItem key={agency.id} value={agency.id}>
+                    {agency.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {defaultOfficeId && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Office pre-selected for this team
+              </p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="bio">Description</Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="Optional description..."
+              rows={3}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="usesFinancialYear"
+                checked={usesFinancialYear}
+                onCheckedChange={(checked) => setUsesFinancialYear(checked as boolean)}
               />
+              <Label htmlFor="usesFinancialYear" className="text-sm font-normal">
+                Use Financial Year
+              </Label>
             </div>
 
-            <div>
-              <Label htmlFor="agency">Office</Label>
-              <Select 
-                value={agencyId} 
-                onValueChange={setAgencyId}
-                disabled={!!defaultOfficeId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an office" />
-                </SelectTrigger>
-                <SelectContent>
-                  {agencies?.map((agency) => (
-                    <SelectItem key={agency.id} value={agency.id}>
-                      {agency.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {defaultOfficeId && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Office pre-selected for this team
-                </p>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="bio">Description</Label>
-              <Textarea
-                id="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Optional description..."
-                rows={3}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="usesFinancialYear"
-                  checked={usesFinancialYear}
-                  onCheckedChange={(checked) => setUsesFinancialYear(checked as boolean)}
-                />
-                <Label htmlFor="usesFinancialYear" className="text-sm font-normal">
-                  Use Financial Year
-                </Label>
+            {usesFinancialYear && (
+              <div>
+                <Label htmlFor="fyStartMonth">Financial Year Start Month</Label>
+                <Select value={fyStartMonth.toString()} onValueChange={(v) => setFyStartMonth(Number(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {months.map((month) => (
+                      <SelectItem key={month.value} value={month.value.toString()}>
+                        {month.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            )}
+          </div>
 
-              {usesFinancialYear && (
-                <div>
-                  <Label htmlFor="fyStartMonth">Financial Year Start Month</Label>
-                  <Select value={fyStartMonth.toString()} onValueChange={(v) => setFyStartMonth(Number(v))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {months.map((month) => (
-                        <SelectItem key={month.value} value={month.value.toString()}>
-                          {month.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          <VoucherSelect
+            value={selectedVoucher}
+            onValueChange={setSelectedVoucher}
+            disabled={isPending}
+          />
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending}>
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  {isApplyingVoucher ? 'Applying License...' : 'Creating...'}
+                </>
+              ) : (
+                'Create Team'
               )}
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={createTeam.isPending}>
-                {createTeam.isPending ? 'Creating...' : 'Create Team'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      <ApplyLicenseDialog
-        open={licenseDialog.open}
-        onOpenChange={(open) => setLicenseDialog({ ...licenseDialog, open })}
-        teamId={licenseDialog.teamId}
-        teamName={licenseDialog.teamName}
-        onComplete={handleLicenseComplete}
-      />
-    </>
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
