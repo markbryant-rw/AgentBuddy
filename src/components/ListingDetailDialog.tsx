@@ -139,6 +139,11 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
           vendor_names: editedListing!.vendor_name 
             ? [{ first_name: editedListing!.vendor_name, last_name: '' }] 
             : [],
+          owners: (editedListing as any)?.owners?.length 
+            ? (editedListing as any).owners 
+            : editedListing!.vendor_name 
+              ? [{ id: crypto.randomUUID(), name: editedListing!.vendor_name, is_primary: true }] 
+              : [],
           listing_signed_date: new Date().toISOString().split('T')[0],
         };
 
