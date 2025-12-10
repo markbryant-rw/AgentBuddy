@@ -4,11 +4,12 @@ import { useTeam } from '@/hooks/useTeam';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { usePresence } from '@/hooks/usePresence';
 import { useTeamMemberAnalytics } from '@/hooks/useTeamMemberAnalytics';
+import { useTeamGoals } from '@/hooks/useTeamGoals';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Copy, Check, Phone, Cake, Mail, MessageCircle } from 'lucide-react';
+import { Users, UserPlus, Copy, Check, Phone, Cake, Mail, MessageCircle, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeaderWithBack } from '@/components/PageHeaderWithBack';
 import { PresenceDot } from '@/components/people/PresenceDot';
@@ -16,8 +17,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { format, differenceInDays, setYear } from 'date-fns';
 import { QuickMessageDialog } from '@/components/team/QuickMessageDialog';
-import { TeamAnalyticsSummary } from '@/components/team-management/TeamAnalyticsSummary';
-import { MemberPerformanceStats } from '@/components/team-management/MemberPerformanceStats';
+import { MemberExpandedStats } from '@/components/team-management/MemberExpandedStats';
 
 // Helper to get display name and variant for roles
 const getRoleDisplay = (role: string): { label: string; variant: 'default' | 'secondary' | 'outline' } | null => {
@@ -86,9 +86,11 @@ export default function TeamManagement() {
   const { team } = useTeam();
   const { members } = useTeamMembers();
   const { allPresence } = usePresence();
-  const { data: analyticsData, isLoading: analyticsLoading } = useTeamMemberAnalytics(team?.id);
+  const { data: analyticsData } = useTeamMemberAnalytics(team?.id);
+  const { memberGoals } = useTeamGoals();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
+  const [expandedMemberIds, setExpandedMemberIds] = useState<Set<string>>(new Set());
   const [messageRecipient, setMessageRecipient] = useState<{
     id: string;
     full_name: string;
@@ -104,6 +106,18 @@ export default function TeamManagement() {
       toast.success("Team code copied to clipboard");
       setTimeout(() => setCopied(false), 2000);
     }
+  };
+
+  const toggleMemberExpand = (memberId: string) => {
+    setExpandedMemberIds(prev => {
+      const next = new Set(prev);
+      if (next.has(memberId)) {
+        next.delete(memberId);
+      } else {
+        next.add(memberId);
+      }
+      return next;
+    });
   };
 
   if (!canManageTeam) {
@@ -131,12 +145,6 @@ export default function TeamManagement() {
       />
       
       <div className="max-w-6xl mx-auto p-6 space-y-6">
-
-      {/* Team Analytics Summary */}
-        {analyticsData && (
-          <TeamAnalyticsSummary summary={analyticsData.summary} isLoading={analyticsLoading} />
-        )}
-
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/invite-user')}>
@@ -162,7 +170,7 @@ export default function TeamManagement() {
             </CardContent>
           </Card>
 
-          {/* Team Code Card - Moved here from Settings */}
+          {/* Team Code Card */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Team Code</CardTitle>
@@ -191,7 +199,7 @@ export default function TeamManagement() {
           <CardHeader>
             <CardTitle>Team Members</CardTitle>
             <CardDescription>
-              {team?.name || 'Your Team'} - {members?.length || 0} members
+              {team?.name || 'Your Team'} - {members?.length || 0} members • Click to view stats
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -208,140 +216,161 @@ export default function TeamManagement() {
                   
                   // Use real-time presence if available, fallback to stored presence
                   const effectivePresence = allPresence[member.id] || member.presence_status || 'offline';
+                  const isExpanded = expandedMemberIds.has(member.id);
 
                   return (
                     <div
                       key={member.user_id}
-                      className={`flex items-stretch rounded-lg border bg-card hover:bg-accent/50 transition-colors overflow-hidden ${
+                      className={`rounded-lg border bg-card overflow-hidden transition-all ${
                         birthdayInfo?.isToday ? 'bg-pink-50 dark:bg-pink-950/20 border-pink-200 dark:border-pink-800' : ''
                       } ${birthdayInfo?.isUpcoming ? 'bg-pink-50/50 dark:bg-pink-950/10' : ''}`}
                     >
-                      {/* Avatar - Full height */}
-                      <div className="relative flex-shrink-0">
-                        <Avatar className="h-full w-24 rounded-none">
-                          <AvatarImage src={member.avatar_url || undefined} className="object-cover" />
-                          <AvatarFallback className="text-2xl bg-primary/10 text-primary rounded-none h-full">
-                            {member.full_name?.[0] || member.email?.[0] || '?'}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute bottom-2 right-2">
-                          <PresenceDot 
-                            status={effectivePresence} 
-                            lastActive={member.last_active_at}
-                            size="md"
-                          />
-                        </div>
-                        {birthdayInfo?.isToday && (
-                          <div className="absolute top-1 right-1 text-lg">🎂</div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0 p-4 flex flex-col justify-center">
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-lg">
-                            {member.full_name || member.email || 'Unknown'}
-                          </p>
-                          {birthdayInfo?.isUpcoming && !birthdayInfo.isToday && (
-                            <Cake className="h-4 w-4 text-pink-500" />
-                          )}
-                        </div>
-
-                        {/* Contact Details Row with Copy Icons */}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
-                          {member.email && (
-                            <div className="flex items-center gap-1 group">
-                              <a
-                                href={`mailto:${member.email}`}
-                                className="flex items-center gap-1 hover:text-primary transition-colors"
-                              >
-                                <Mail className="h-3.5 w-3.5" />
-                                <span className="hidden sm:inline">{member.email}</span>
-                              </a>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => copyToClipboard(member.email!, 'Email')}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
-                          {member.mobile && (
-                            <div className="flex items-center gap-1 group">
-                              <a
-                                href={`tel:${member.mobile}`}
-                                className="flex items-center gap-1 hover:text-primary transition-colors"
-                              >
-                                <Phone className="h-3.5 w-3.5" />
-                                <span>{member.mobile}</span>
-                              </a>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => copyToClipboard(member.mobile!, 'Phone number')}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
-                          {birthdayInfo && (
-                            <div className={`flex items-center gap-1 ${
-                              birthdayInfo.isToday ? 'text-pink-600 font-medium' : 
-                              birthdayInfo.isUpcoming ? 'text-pink-500' : ''
-                            }`}>
-                              <Cake className="h-3.5 w-3.5" />
-                              <span>{birthdayInfo.text}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Roles */}
-                        {displayRoles.length > 0 && (
-                          <div className="flex items-center gap-2 mt-2">
-                            {displayRoles.map((role, idx) => (
-                              <Badge key={idx} variant={role.variant}>
-                                {role.label}
-                              </Badge>
-                            ))}
+                      {/* Clickable header area */}
+                      <div
+                        className="flex items-stretch cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => toggleMemberExpand(member.id)}
+                      >
+                        {/* Avatar - Full height */}
+                        <div className="relative flex-shrink-0">
+                          <Avatar className="h-full w-24 rounded-none">
+                            <AvatarImage src={member.avatar_url || undefined} className="object-cover" />
+                            <AvatarFallback className="text-2xl bg-primary/10 text-primary rounded-none h-full">
+                              {member.full_name?.[0] || member.email?.[0] || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="absolute bottom-2 right-2">
+                            <PresenceDot 
+                              status={effectivePresence} 
+                              lastActive={member.last_active_at}
+                              size="md"
+                            />
                           </div>
-                        )}
+                          {birthdayInfo?.isToday && (
+                            <div className="absolute top-1 right-1 text-lg">🎂</div>
+                          )}
+                        </div>
 
-                        {/* Performance Stats */}
-                        <MemberPerformanceStats analytics={analyticsData?.members[member.id]} />
+                        <div className="flex-1 min-w-0 p-4 flex flex-col justify-center">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-lg">
+                              {member.full_name || member.email || 'Unknown'}
+                            </p>
+                            {birthdayInfo?.isUpcoming && !birthdayInfo.isToday && (
+                              <Cake className="h-4 w-4 text-pink-500" />
+                            )}
+                            <ChevronDown 
+                              className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                            />
+                          </div>
+
+                          {/* Contact Details Row with Copy Icons */}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            {member.email && (
+                              <div className="flex items-center gap-1 group">
+                                <a
+                                  href={`mailto:${member.email}`}
+                                  className="flex items-center gap-1 hover:text-primary transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Mail className="h-3.5 w-3.5" />
+                                  <span className="hidden sm:inline">{member.email}</span>
+                                </a>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => { e.stopPropagation(); copyToClipboard(member.email!, 'Email'); }}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                            {member.mobile && (
+                              <div className="flex items-center gap-1 group">
+                                <a
+                                  href={`tel:${member.mobile}`}
+                                  className="flex items-center gap-1 hover:text-primary transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Phone className="h-3.5 w-3.5" />
+                                  <span>{member.mobile}</span>
+                                </a>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={(e) => { e.stopPropagation(); copyToClipboard(member.mobile!, 'Phone number'); }}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                            {birthdayInfo && (
+                              <div className={`flex items-center gap-1 ${
+                                birthdayInfo.isToday ? 'text-pink-600 font-medium' : 
+                                birthdayInfo.isUpcoming ? 'text-pink-500' : ''
+                              }`}>
+                                <Cake className="h-3.5 w-3.5" />
+                                <span>{birthdayInfo.text}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Roles */}
+                          {displayRoles.length > 0 && (
+                            <div className="flex items-center gap-2 mt-2">
+                              {displayRoles.map((role, idx) => (
+                                <Badge key={idx} variant={role.variant}>
+                                  {role.label}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Message Panel - Full height right side */}
+                        {!isCurrentUser && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div 
+                                  className="group flex items-center justify-center border-l bg-muted/30 
+                                             w-14 hover:w-28 transition-all duration-300 cursor-pointer
+                                             hover:bg-primary/5"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMessageRecipient({
+                                      id: member.id,
+                                      full_name: member.full_name || 'Unknown',
+                                      avatar_url: member.avatar_url
+                                    });
+                                  }}
+                                >
+                                  <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
+                                    <MessageCircle className="h-5 w-5" />
+                                    <span className="text-[10px] font-medium opacity-0 group-hover:opacity-100 
+                                                     transition-opacity whitespace-nowrap">
+                                      Send Message
+                                    </span>
+                                  </div>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent side="left">
+                                <p>Send a quick message</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
 
-                      {/* Message Panel - Full height right side */}
-                      {!isCurrentUser && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div 
-                                className="group flex items-center justify-center border-l bg-muted/30 
-                                           w-14 hover:w-28 transition-all duration-300 cursor-pointer
-                                           hover:bg-primary/5"
-                                onClick={() => setMessageRecipient({
-                                  id: member.id,
-                                  full_name: member.full_name || 'Unknown',
-                                  avatar_url: member.avatar_url
-                                })}
-                              >
-                                <div className="flex flex-col items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
-                                  <MessageCircle className="h-5 w-5" />
-                                  <span className="text-[10px] font-medium opacity-0 group-hover:opacity-100 
-                                                   transition-opacity whitespace-nowrap">
-                                    Send Message
-                                  </span>
-                                </div>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="left">
-                              <p>Send a quick message</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
+                      {/* Expanded Stats Section */}
+                      <MemberExpandedStats
+                        memberId={member.id}
+                        analytics={analyticsData?.members[member.id]}
+                        memberGoals={memberGoals}
+                        roles={member.roles || []}
+                        isExpanded={isExpanded}
+                      />
                     </div>
                   );
                 })
