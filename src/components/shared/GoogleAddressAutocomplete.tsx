@@ -106,6 +106,13 @@ export function GoogleAddressAutocomplete({
     setSuburbValue(currentSuburb);
   }, [currentSuburb]);
 
+  // Sync query when defaultValue changes (e.g., when appraisal data loads)
+  useEffect(() => {
+    if (defaultValue) {
+      setQuery(defaultValue);
+    }
+  }, [defaultValue]);
+
   const handleSelect = useCallback((prediction: google.maps.places.AutocompletePrediction) => {
     if (!placesServiceRef.current) return;
     

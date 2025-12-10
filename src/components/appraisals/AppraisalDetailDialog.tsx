@@ -497,12 +497,6 @@ const AppraisalDetailDialog = ({
                   </div>
                 </div>
 
-                {/* Notes */}
-                <div className="space-y-4 p-4 rounded-lg bg-muted/50">
-                  <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
-                  <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
-                </div>
-
               </TabsContent>
 
               {/* Tracking Tab - Progress, Visit Timeline, Location Fix */}
