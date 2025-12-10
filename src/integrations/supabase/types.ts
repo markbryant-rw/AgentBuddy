@@ -709,6 +709,39 @@ export type Database = {
           },
         ]
       }
+      changelog_entries: {
+        Row: {
+          ai_summary: string | null
+          bug_count: number | null
+          created_at: string | null
+          email_sent_at: string | null
+          entry_date: string
+          feature_count: number | null
+          id: string
+          raw_changes: Json
+        }
+        Insert: {
+          ai_summary?: string | null
+          bug_count?: number | null
+          created_at?: string | null
+          email_sent_at?: string | null
+          entry_date: string
+          feature_count?: number | null
+          id?: string
+          raw_changes?: Json
+        }
+        Update: {
+          ai_summary?: string | null
+          bug_count?: number | null
+          created_at?: string | null
+          email_sent_at?: string | null
+          entry_date?: string
+          feature_count?: number | null
+          id?: string
+          raw_changes?: Json
+        }
+        Relationships: []
+      }
       coaching_conversation_messages: {
         Row: {
           content: string
@@ -2406,6 +2439,7 @@ export type Database = {
           notify_task_due_soon: boolean | null
           notify_team_member_joined: boolean | null
           push_enabled: boolean | null
+          receive_product_updates: boolean | null
           updated_at: string | null
           user_id: string
         }
@@ -2424,6 +2458,7 @@ export type Database = {
           notify_task_due_soon?: boolean | null
           notify_team_member_joined?: boolean | null
           push_enabled?: boolean | null
+          receive_product_updates?: boolean | null
           updated_at?: string | null
           user_id: string
         }
@@ -2442,6 +2477,7 @@ export type Database = {
           notify_task_due_soon?: boolean | null
           notify_team_member_joined?: boolean | null
           push_enabled?: boolean | null
+          receive_product_updates?: boolean | null
           updated_at?: string | null
           user_id?: string
         }

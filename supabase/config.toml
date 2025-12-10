@@ -242,3 +242,9 @@ verify_jwt = true
 
 [functions.sync-beacon-engagement]
 verify_jwt = true
+
+[functions.generate-daily-changelog]
+verify_jwt = false
+
+[functions.send-changelog-email]
+verify_jwt = false
