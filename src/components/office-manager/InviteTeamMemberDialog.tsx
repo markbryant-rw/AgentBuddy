@@ -65,6 +65,7 @@ export function InviteTeamMemberDialog({ open, onOpenChange, officeId, defaultTe
         .select('id, name')
         .eq('agency_id', officeId)
         .eq('is_personal_team', false)
+        .eq('is_archived', false)
         .order('name');
       
       if (error) throw error;

@@ -22,7 +22,7 @@ export default function OfficeManagerDashboard() {
 
       const [tasks, teams] = await Promise.all([
         supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('completed', false),
-        supabase.from('teams').select('id', { count: 'exact', head: true }).eq('agency_id', activeOffice.id).eq('is_personal_team', false),
+        supabase.from('teams').select('id', { count: 'exact', head: true }).eq('agency_id', activeOffice.id).eq('is_personal_team', false).eq('is_archived', false),
       ]);
 
       return {

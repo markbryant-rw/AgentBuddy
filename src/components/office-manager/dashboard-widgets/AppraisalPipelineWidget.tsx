@@ -14,7 +14,7 @@ export const AppraisalPipelineWidget = () => {
     queryKey: ['office-appraisal-stats', activeOffice?.id],
     queryFn: async () => {
       if (!activeOffice?.id) return null;
-      const { data: teams } = await supabase.from('teams').select('id').eq('agency_id', activeOffice.id);
+      const { data: teams } = await supabase.from('teams').select('id').eq('agency_id', activeOffice.id).eq('is_archived', false);
       if (!teams) return null;
       const teamIds = teams.map(t => t.id);
       const { data: appraisals } = await supabase.from('logged_appraisals').select('intent, status').in('team_id', teamIds);
