@@ -90,6 +90,7 @@ export type Database = {
           current_redemptions: number | null
           description: string | null
           expires_at: string | null
+          grace_period_days: number | null
           id: string
           is_active: boolean | null
           license_duration_days: number | null
@@ -104,6 +105,7 @@ export type Database = {
           current_redemptions?: number | null
           description?: string | null
           expires_at?: string | null
+          grace_period_days?: number | null
           id?: string
           is_active?: boolean | null
           license_duration_days?: number | null
@@ -118,6 +120,7 @@ export type Database = {
           current_redemptions?: number | null
           description?: string | null
           expires_at?: string | null
+          grace_period_days?: number | null
           id?: string
           is_active?: boolean | null
           license_duration_days?: number | null
@@ -140,6 +143,7 @@ export type Database = {
           account_status:
             | Database["public"]["Enums"]["agency_account_status"]
             | null
+          billing_type: string | null
           bio: string | null
           brand: string | null
           brand_color: string | null
@@ -162,6 +166,7 @@ export type Database = {
           account_status?:
             | Database["public"]["Enums"]["agency_account_status"]
             | null
+          billing_type?: string | null
           bio?: string | null
           brand?: string | null
           brand_color?: string | null
@@ -184,6 +189,7 @@ export type Database = {
           account_status?:
             | Database["public"]["Enums"]["agency_account_status"]
             | null
+          billing_type?: string | null
           bio?: string | null
           brand?: string | null
           brand_color?: string | null

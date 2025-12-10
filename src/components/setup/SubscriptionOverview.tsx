@@ -1,10 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CreditCard, Calendar, TrendingUp, Settings, Loader2, Sparkles, Crown } from 'lucide-react';
+import { CreditCard, Calendar, TrendingUp, Settings, Loader2, Sparkles, Crown, AlertTriangle, Clock } from 'lucide-react';
 import { useUserSubscription, SubscriptionPlan } from '@/hooks/useUserSubscription';
 import { format } from 'date-fns';
 import { useCustomerPortal } from '@/hooks/useCustomerPortal';
+import { Link } from 'react-router-dom';
 
 interface SubscriptionOverviewProps {
   canManage: boolean;
@@ -93,6 +94,44 @@ export const SubscriptionOverview = ({ canManage }: SubscriptionOverviewProps) =
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Grace Period Warning */}
+        {subscription.isInGracePeriod && (
+          <div className="p-4 bg-destructive/10 border border-destructive/30 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-destructive">
+                  Your access has expired
+                </p>
+                <p className="text-xs text-destructive/80 mt-1">
+                  You have {subscription.daysUntilAccessLoss} day{subscription.daysUntilAccessLoss !== 1 ? 's' : ''} remaining in your grace period. 
+                  Upgrade now to maintain access.
+                </p>
+                <Button asChild size="sm" className="mt-3">
+                  <Link to="/setup?tab=billing">Upgrade Now</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Expiring Soon Warning */}
+        {!subscription.isInGracePeriod && subscription.isVoucherBased && subscription.daysUntilExpiry !== null && subscription.daysUntilExpiry <= 14 && subscription.daysUntilExpiry > 0 && (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+            <div className="flex items-start gap-3">
+              <Clock className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                  Access expires soon
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-500 mt-1">
+                  Your {subscription.voucherName} access expires in {subscription.daysUntilExpiry} day{subscription.daysUntilExpiry !== 1 ? 's' : ''}.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Plan Details */}
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-bold">

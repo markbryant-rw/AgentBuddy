@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useTeamCRUD } from '@/hooks/useTeamCRUD';
 import { useAgencies } from '@/hooks/useAgencies';
+import { ApplyLicenseDialog } from '@/components/platform-admin/ApplyLicenseDialog';
 
 interface CreateTeamDialogProps {
   open: boolean;
@@ -21,6 +22,11 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
   const [bio, setBio] = useState('');
   const [usesFinancialYear, setUsesFinancialYear] = useState(false);
   const [fyStartMonth, setFyStartMonth] = useState(7);
+  const [licenseDialog, setLicenseDialog] = useState<{
+    open: boolean;
+    teamId: string;
+    teamName: string;
+  }>({ open: false, teamId: '', teamName: '' });
   
   const { createTeam } = useTeamCRUD();
   const { agencies } = useAgencies();
@@ -30,12 +36,20 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
     setAgencyId(defaultOfficeId);
   }
 
+  const resetForm = () => {
+    setName('');
+    setAgencyId('');
+    setBio('');
+    setUsesFinancialYear(false);
+    setFyStartMonth(7);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!agencyId) return;
 
-    await createTeam.mutateAsync({
+    const result = await createTeam.mutateAsync({
       name,
       agency_id: agencyId,
       bio: bio || undefined,
@@ -43,12 +57,22 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
       financial_year_start_month: fyStartMonth,
     });
 
-    // Reset form
-    setName('');
-    setAgencyId('');
-    setBio('');
-    setUsesFinancialYear(false);
-    setFyStartMonth(7);
+    // Show license dialog for the new team
+    if (result?.id) {
+      setLicenseDialog({
+        open: true,
+        teamId: result.id,
+        teamName: name,
+      });
+    } else {
+      // If no result, just close
+      resetForm();
+      onOpenChange(false);
+    }
+  };
+
+  const handleLicenseComplete = () => {
+    resetForm();
     onOpenChange(false);
   };
 
@@ -68,100 +92,110 @@ export const CreateTeamDialog = ({ open, onOpenChange, defaultOfficeId }: Create
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>Create New Team</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">Team Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Sales Team A"
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="agency">Office</Label>
-            <Select 
-              value={agencyId} 
-              onValueChange={setAgencyId}
-              disabled={!!defaultOfficeId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select an office" />
-              </SelectTrigger>
-              <SelectContent>
-                {agencies?.map((agency) => (
-                  <SelectItem key={agency.id} value={agency.id}>
-                    {agency.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {defaultOfficeId && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Office pre-selected for this team
-              </p>
-            )}
-          </div>
-
-          <div>
-            <Label htmlFor="bio">Description</Label>
-            <Textarea
-              id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Optional description..."
-              rows={3}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="usesFinancialYear"
-                checked={usesFinancialYear}
-                onCheckedChange={(checked) => setUsesFinancialYear(checked as boolean)}
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Team</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Team Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Sales Team A"
+                required
               />
-              <Label htmlFor="usesFinancialYear" className="text-sm font-normal">
-                Use Financial Year
-              </Label>
             </div>
 
-            {usesFinancialYear && (
-              <div>
-                <Label htmlFor="fyStartMonth">Financial Year Start Month</Label>
-                <Select value={fyStartMonth.toString()} onValueChange={(v) => setFyStartMonth(Number(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {months.map((month) => (
-                      <SelectItem key={month.value} value={month.value.toString()}>
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
+            <div>
+              <Label htmlFor="agency">Office</Label>
+              <Select 
+                value={agencyId} 
+                onValueChange={setAgencyId}
+                disabled={!!defaultOfficeId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an office" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agencies?.map((agency) => (
+                    <SelectItem key={agency.id} value={agency.id}>
+                      {agency.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {defaultOfficeId && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Office pre-selected for this team
+                </p>
+              )}
+            </div>
 
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createTeam.isPending}>
-              {createTeam.isPending ? 'Creating...' : 'Create Team'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <div>
+              <Label htmlFor="bio">Description</Label>
+              <Textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Optional description..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="usesFinancialYear"
+                  checked={usesFinancialYear}
+                  onCheckedChange={(checked) => setUsesFinancialYear(checked as boolean)}
+                />
+                <Label htmlFor="usesFinancialYear" className="text-sm font-normal">
+                  Use Financial Year
+                </Label>
+              </div>
+
+              {usesFinancialYear && (
+                <div>
+                  <Label htmlFor="fyStartMonth">Financial Year Start Month</Label>
+                  <Select value={fyStartMonth.toString()} onValueChange={(v) => setFyStartMonth(Number(v))}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {months.map((month) => (
+                        <SelectItem key={month.value} value={month.value.toString()}>
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createTeam.isPending}>
+                {createTeam.isPending ? 'Creating...' : 'Create Team'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <ApplyLicenseDialog
+        open={licenseDialog.open}
+        onOpenChange={(open) => setLicenseDialog({ ...licenseDialog, open })}
+        teamId={licenseDialog.teamId}
+        teamName={licenseDialog.teamName}
+        onComplete={handleLicenseComplete}
+      />
+    </>
   );
 };
