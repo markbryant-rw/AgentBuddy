@@ -2,6 +2,7 @@ import { LoggedAppraisal } from "@/hooks/useLoggedAppraisals";
 import { useBeaconIntegration, REPORT_TYPE_LABELS, REPORT_TYPE_ICONS, BeaconReportType } from "@/hooks/useBeaconIntegration";
 import { useBeaconReports, BeaconReport } from "@/hooks/useBeaconReports";
 import { useBeaconEngagementEvents } from "@/hooks/useBeaconEngagementEvents";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -231,7 +232,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     isSyncingTeam,
     teamId
   } = useBeaconIntegration();
-  const { reports, aggregateStats, hasReports, isLoading: reportsLoading } = useBeaconReports(appraisal.id);
+  const { reports, aggregateStats, hasReports, isLoading: reportsLoading, refetch: refetchReports } = useBeaconReports(appraisal.id);
 
   // Fallback to appraisal.beacon_* fields if no beacon_reports records exist
   const effectiveStats = hasReports ? aggregateStats : {
@@ -253,6 +254,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   const [needsSync, setNeedsSync] = useState(false);
   const [importWizardOpen, setImportWizardOpen] = useState(false);
   const [leadIdCopied, setLeadIdCopied] = useState(false);
+  const [isSyncingEngagement, setIsSyncingEngagement] = useState(false);
 
   // Auto-search when dialog opens
   const handleLinkDialogOpen = (open: boolean) => {
@@ -375,7 +377,55 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     return `${hours}h ${remainingMinutes}m`;
   };
 
-  // Not enabled - show upgrade prompt with pricing
+  const handleSyncEngagement = async () => {
+    // Check if we have any linked reports
+    const beaconReportId = reports[0]?.beacon_report_id || appraisal.beacon_report_id;
+    
+    if (!beaconReportId && !hasReports) {
+      toast.error('No Beacon report linked to sync');
+      return;
+    }
+
+    setIsSyncingEngagement(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch(
+        'https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1/sync-beacon-engagement',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            appraisalId: appraisal.id,
+            beaconReportId,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to sync engagement');
+      }
+
+      toast.success('Engagement data synced from Beacon');
+      // Refetch reports to update the UI
+      refetchReports();
+    } catch (error: any) {
+      console.error('Sync error:', error);
+      toast.error(error.message || 'Failed to sync from Beacon');
+    } finally {
+      setIsSyncingEngagement(false);
+    }
+  };
   if (!isBeaconEnabled) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
@@ -432,12 +482,35 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                   <Activity className="h-5 w-5 text-teal-600" />
                   Overall Engagement
                 </CardTitle>
-                {effectiveStats.anyHotLead && (
-                  <Badge className="bg-red-500/10 text-red-600 border-red-500/20 gap-1">
-                    <Flame className="h-3.5 w-3.5 animate-pulse" />
-                    Hot Lead
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs gap-1"
+                        onClick={handleSyncEngagement}
+                        disabled={isSyncingEngagement}
+                      >
+                        {isSyncingEngagement ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
+                        Sync
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Fetch latest engagement data from Beacon</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  {effectiveStats.anyHotLead && (
+                    <Badge className="bg-red-500/10 text-red-600 border-red-500/20 gap-1">
+                      <Flame className="h-3.5 w-3.5 animate-pulse" />
+                      Hot Lead
+                    </Badge>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -750,7 +823,30 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
         {hasReports && (
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Report History</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium">Report History</CardTitle>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 px-2 text-xs gap-1"
+                      onClick={handleSyncEngagement}
+                      disabled={isSyncingEngagement}
+                    >
+                      {isSyncingEngagement ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-3.5 w-3.5" />
+                      )}
+                      Sync from Beacon
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Fetch latest engagement data from Beacon</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {reportsLoading ? (

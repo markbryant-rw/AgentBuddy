@@ -239,3 +239,6 @@ verify_jwt = true
 
 [functions.stop-impersonation]
 verify_jwt = true
+
+[functions.sync-beacon-engagement]
+verify_jwt = true
