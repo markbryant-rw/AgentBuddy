@@ -24,7 +24,12 @@ export const useTeamMembers = () => {
             id,
             full_name,
             avatar_url,
-            email
+            email,
+            mobile,
+            birthday,
+            birthday_visibility,
+            presence_status,
+            last_active_at
           )
         `)
         .eq("team_id", team.id);
@@ -60,9 +65,24 @@ export const useTeamMembers = () => {
         };
       });
 
-      logger.log('[useTeamMembers] Fetched members', { count: mappedMembers.length });
+      // Sort by role priority: team_leader -> salesperson -> assistant
+      const rolePriority: Record<string, number> = { 
+        team_leader: 0, 
+        salesperson: 1, 
+        assistant: 2 
+      };
+      
+      const sortedMembers = mappedMembers.sort((a, b) => {
+        const aRole = a.roles?.find((r: string) => rolePriority[r] !== undefined);
+        const bRole = b.roles?.find((r: string) => rolePriority[r] !== undefined);
+        const aPriority = aRole ? rolePriority[aRole] : 99;
+        const bPriority = bRole ? rolePriority[bRole] : 99;
+        return aPriority - bPriority;
+      });
 
-      return mappedMembers;
+      logger.log('[useTeamMembers] Fetched members', { count: sortedMembers.length });
+
+      return sortedMembers;
     },
     enabled: !!team,
   });
