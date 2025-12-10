@@ -8,6 +8,7 @@ export type SubscriptionStatus = 'active' | 'cancelled' | 'past_due' | 'trial' |
 
 export interface UserSubscription {
   plan: SubscriptionPlan | null;
+  productId: string | null;
   status: SubscriptionStatus;
   amount: number;
   currency: string;
@@ -38,6 +39,7 @@ export const useUserSubscription = () => {
 
           return {
             plan: planId,
+            productId: data.product_id || null,
             status: data.cancel_at_period_end ? 'cancelled' : 'active',
             amount: data.amount || (plan?.amountMonthly ?? 0),
             currency: 'NZD',
@@ -52,6 +54,7 @@ export const useUserSubscription = () => {
         // No active subscription
         return {
           plan: null,
+          productId: null,
           status: 'inactive',
           amount: 0,
           currency: 'NZD',
@@ -66,6 +69,7 @@ export const useUserSubscription = () => {
         // Return no subscription on error
         return {
           plan: null,
+          productId: null,
           status: 'inactive',
           amount: 0,
           currency: 'NZD',

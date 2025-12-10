@@ -5,11 +5,12 @@ import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { usePresence } from '@/hooks/usePresence';
 import { useTeamMemberAnalytics } from '@/hooks/useTeamMemberAnalytics';
 import { useTeamGoals } from '@/hooks/useTeamGoals';
+import { useSeatManagement } from '@/hooks/useSeatManagement';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Copy, Check, Phone, Cake, Mail, MessageCircle, ChevronDown } from 'lucide-react';
+import { Users, UserPlus, Copy, Check, Phone, Cake, Mail, MessageCircle, ChevronDown, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeaderWithBack } from '@/components/PageHeaderWithBack';
 import { PresenceDot } from '@/components/people/PresenceDot';
@@ -18,6 +19,9 @@ import { toast } from 'sonner';
 import { format, differenceInDays, setYear } from 'date-fns';
 import { QuickMessageDialog } from '@/components/team/QuickMessageDialog';
 import { MemberExpandedStats } from '@/components/team-management/MemberExpandedStats';
+import { SeatUsageCard } from '@/components/team-management/SeatUsageCard';
+import { SeatUpgradeDialog } from '@/components/team-management/SeatUpgradeDialog';
+import { RedeemVoucherDialog } from '@/components/team-management/RedeemVoucherDialog';
 
 // Helper to get display name and variant for roles
 const getRoleDisplay = (role: string): { label: string; variant: 'default' | 'secondary' | 'outline' } | null => {
@@ -88,6 +92,7 @@ export default function TeamManagement() {
   const { allPresence } = usePresence();
   const { data: analyticsData } = useTeamMemberAnalytics(team?.id);
   const { memberGoals } = useTeamGoals();
+  const { seatInfo } = useSeatManagement();
   const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [expandedMemberIds, setExpandedMemberIds] = useState<Set<string>>(new Set());
@@ -96,6 +101,8 @@ export default function TeamManagement() {
     full_name: string;
     avatar_url?: string | null;
   } | null>(null);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [showVoucherDialog, setShowVoucherDialog] = useState(false);
 
   const canManageTeam = hasAnyRole(['platform_admin', 'office_manager', 'team_leader']);
 
@@ -146,29 +153,40 @@ export default function TeamManagement() {
       
       <div className="max-w-6xl mx-auto p-6 space-y-6">
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="cursor-pointer hover:border-primary transition-colors" onClick={() => navigate('/invite-user')}>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card 
+            className={`cursor-pointer transition-colors ${
+              seatInfo.canAddMember 
+                ? 'hover:border-primary' 
+                : 'hover:border-amber-500 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20'
+            }`}
+            onClick={() => {
+              if (seatInfo.canAddMember) {
+                navigate('/invite-user');
+              } else {
+                setShowUpgradeDialog(true);
+              }
+            }}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Invite Member</CardTitle>
-              <UserPlus className="h-4 w-4 text-muted-foreground" />
+              {seatInfo.canAddMember ? (
+                <UserPlus className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-amber-500" />
+              )}
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground">
-                Add new team members to your team
+                {seatInfo.canAddMember 
+                  ? 'Add new team members to your team'
+                  : 'Upgrade to add more members'}
               </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Team Size</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{members?.length || 0}</div>
-              <p className="text-xs text-muted-foreground">Active members</p>
-            </CardContent>
-          </Card>
+          {/* Seat Usage Card */}
+          <SeatUsageCard />
 
           {/* Team Code Card */}
           <Card>
@@ -389,6 +407,17 @@ export default function TeamManagement() {
         open={!!messageRecipient}
         onOpenChange={(open) => !open && setMessageRecipient(null)}
         recipient={messageRecipient}
+      />
+
+      <SeatUpgradeDialog
+        open={showUpgradeDialog}
+        onOpenChange={setShowUpgradeDialog}
+        onRedeemVoucher={() => setShowVoucherDialog(true)}
+      />
+
+      <RedeemVoucherDialog
+        open={showVoucherDialog}
+        onOpenChange={setShowVoucherDialog}
       />
     </div>
   );

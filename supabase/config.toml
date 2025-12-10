@@ -248,3 +248,12 @@ verify_jwt = false
 
 [functions.send-changelog-email]
 verify_jwt = false
+
+[functions.redeem-voucher]
+verify_jwt = true
+
+[functions.check-seat-availability]
+verify_jwt = true
+
+[functions.purchase-extra-seat]
+verify_jwt = true

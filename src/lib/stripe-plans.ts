@@ -1,5 +1,5 @@
 // Stripe Plan Configuration
-// Updated: December 2024 - New pricing structure
+// Updated: December 2024 - New pricing structure with seat management
 
 export const STRIPE_PLANS = {
   solo: {
@@ -12,6 +12,7 @@ export const STRIPE_PLANS = {
     amountAnnual: 499.90,
     currency: 'NZD',
     description: 'Everything you need as an individual agent',
+    seats: 1,
   },
   team: {
     id: 'team',
@@ -23,7 +24,18 @@ export const STRIPE_PLANS = {
     amountAnnual: 999.90,
     currency: 'NZD',
     description: 'Perfect for agents with a team - up to 3 users',
+    seats: 3,
   },
+} as const;
+
+// Extra seat product for purchasing additional team members
+export const EXTRA_SEAT = {
+  productId: 'prod_Ta6nXaftbBQApZ',
+  priceId: 'price_1ScwaGDXjWR7yUDdDR6vCeg6',
+  amountMonthly: 24.99,
+  currency: 'NZD',
+  name: 'Extra Team Seat',
+  description: 'Add an additional team member',
 } as const;
 
 export type PlanId = keyof typeof STRIPE_PLANS;
@@ -43,4 +55,21 @@ export function getPlanByProductId(productId: string | null): PlanId | null {
 export function getPriceId(planId: PlanId, isAnnual: boolean): string {
   const plan = STRIPE_PLANS[planId];
   return isAnnual ? plan.priceAnnual : plan.priceMonthly;
+}
+
+// Helper to get base seats for a plan
+export function getBaseSeatCount(planId: PlanId | null): number {
+  if (!planId) return 0;
+  return STRIPE_PLANS[planId]?.seats || 0;
+}
+
+// Calculate total available seats
+export function calculateTotalSeats(
+  planId: PlanId | null,
+  extraSeats: number,
+  licenseType: string | null
+): number {
+  if (licenseType === 'admin_unlimited') return 999;
+  const baseSeats = getBaseSeatCount(planId);
+  return baseSeats + (extraSeats || 0);
 }
