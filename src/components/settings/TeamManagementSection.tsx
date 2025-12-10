@@ -1,22 +1,37 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useTeam } from "@/hooks/useTeam";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useAuth } from "@/hooks/useAuth";
-import { Users, Building2, Copy, Check, Mail } from "lucide-react";
+import { Users, Building2, Copy, Check, Mail, Settings } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
+
+// Helper to get display name and variant for roles
+const getRoleDisplay = (role: string): { label: string; variant: 'default' | 'secondary' | 'outline' } | null => {
+  switch (role) {
+    case 'team_leader':
+      return { label: 'Team Leader', variant: 'default' };
+    case 'salesperson':
+      return { label: 'Salesperson', variant: 'secondary' };
+    case 'assistant':
+      return { label: 'Assistant', variant: 'outline' };
+    default:
+      return null; // Hide platform_admin, office_manager in this context
+  }
+};
 
 export const TeamManagementSection = () => {
   const { team } = useTeam();
   const { members, isLoading } = useTeamMembers();
-  const { user } = useAuth();
+  const { user, hasAnyRole } = useAuth();
   const [copied, setCopied] = useState(false);
+  const navigate = useNavigate();
   
-  // Find current user's membership to determine their role
-  const currentUserMembership = members.find(m => m.user_id === user?.id);
-  const isTeamLeader = currentUserMembership?.access_level === 'admin';
+  const canManageTeam = hasAnyRole(['team_leader', 'platform_admin', 'office_manager']);
 
   const handleCopyCode = () => {
     if (team?.team_code) {
@@ -29,30 +44,38 @@ export const TeamManagementSection = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Your Team
-        </CardTitle>
-        <CardDescription>
-          View your team information
-        </CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Your Team
+          </CardTitle>
+          <CardDescription>
+            View your team information
+          </CardDescription>
+        </div>
+        {canManageTeam && team && (
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={() => navigate('/team-management')}
+            className="gap-2"
+          >
+            <Settings className="h-4 w-4" />
+            Manage Team
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {team ? (
           <div className="space-y-6">
-            {/* Team Name & Badge */}
+            {/* Team Name */}
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Building2 className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-lg">{team.name}</h3>
-                  <Badge variant={isTeamLeader ? "default" : "secondary"}>
-                    {isTeamLeader ? "Team Leader" : "Team Member"}
-                  </Badge>
-                </div>
+                <h3 className="font-semibold text-lg">{team.name}</h3>
                 {team.bio && (
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {team.bio}
@@ -94,33 +117,49 @@ export const TeamManagementSection = () => {
                 <div className="text-sm text-muted-foreground">Loading members...</div>
               ) : members.length > 0 ? (
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-start gap-3 p-3 rounded-lg border bg-card"
-                    >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={member.avatar_url || ''} />
-                        <AvatarFallback className="text-sm bg-primary/10 text-primary">
-                          {member.full_name?.[0] || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {member.full_name || 'Unknown'}
-                        </p>
-                        {member.email && (
-                          <a
-                            href={`mailto:${member.email}`}
-                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors mt-1"
-                          >
-                            <Mail className="h-3 w-3" />
-                            <span className="truncate">{member.email}</span>
-                          </a>
-                        )}
+                  {members.map((member) => {
+                    // Filter and map roles to display
+                    const displayRoles = (member.roles || [])
+                      .map(getRoleDisplay)
+                      .filter(Boolean) as { label: string; variant: 'default' | 'secondary' | 'outline' }[];
+
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex items-start gap-3 p-3 rounded-lg border bg-card"
+                      >
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={member.avatar_url || ''} />
+                          <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                            {member.full_name?.[0] || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">
+                            {member.full_name || 'Unknown'}
+                          </p>
+                          {member.email && (
+                            <a
+                              href={`mailto:${member.email}`}
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors mt-1"
+                            >
+                              <Mail className="h-3 w-3" />
+                              <span className="truncate">{member.email}</span>
+                            </a>
+                          )}
+                          {displayRoles.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {displayRoles.map((role, idx) => (
+                                <Badge key={idx} variant={role.variant} className="text-xs">
+                                  {role.label}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No team members found</p>
