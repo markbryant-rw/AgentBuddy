@@ -29,10 +29,25 @@ export const useTeamMembers = () => {
         `)
         .eq("team_id", team.id);
 
+      // Fetch roles for all team members
+      const userIds = data?.map(m => m.user_id) || [];
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", userIds)
+        .is("revoked_at", null);
+
       if (error) {
         logger.error('[useTeamMembers] Error fetching members', error);
         throw error;
       }
+
+      // Group roles by user_id
+      const rolesByUser = (rolesData || []).reduce((acc, r) => {
+        if (!acc[r.user_id]) acc[r.user_id] = [];
+        acc[r.user_id].push(r.role);
+        return acc;
+      }, {} as Record<string, string[]>);
 
       const mappedMembers = data.map((member) => {
         const profile = member.profiles as any;
@@ -41,6 +56,7 @@ export const useTeamMembers = () => {
           ...profile,
           // Explicitly set id to user_id to ensure it matches listings.assigned_to
           id: profile?.id || member.user_id,
+          roles: rolesByUser[member.user_id] || [],
         };
       });
 
