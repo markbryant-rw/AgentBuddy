@@ -28,6 +28,7 @@ export const useOfficeTeamsUsers = () => {
         `)
         .eq('agency_id', activeOffice.id)
         .eq('is_personal_team', false)
+        .eq('is_archived', false)
         .order('name');
 
       if (teamsError) throw teamsError;

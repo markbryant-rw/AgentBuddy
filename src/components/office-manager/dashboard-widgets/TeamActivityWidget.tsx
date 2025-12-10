@@ -14,7 +14,7 @@ export const TeamActivityWidget = () => {
       if (!activeOffice?.id) return null;
 
       const [teams, messages, tasks] = await Promise.all([
-        supabase.from('teams').select('id', { count: 'exact', head: true }).eq('agency_id', activeOffice.id).eq('is_personal_team', false),
+        supabase.from('teams').select('id', { count: 'exact', head: true }).eq('agency_id', activeOffice.id).eq('is_personal_team', false).eq('is_archived', false),
         supabase.from('messages').select('id', { count: 'exact', head: true }).gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
         supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('completed', false),
       ]);

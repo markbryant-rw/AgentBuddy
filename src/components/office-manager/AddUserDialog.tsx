@@ -51,6 +51,7 @@ export function AddUserDialog({ open, onOpenChange }: AddUserDialogProps) {
         .from('teams')
         .select('id, name')
         .eq('agency_id', activeOffice.id)
+        .eq('is_archived', false)
         .order('name');
       
       if (error) throw error;

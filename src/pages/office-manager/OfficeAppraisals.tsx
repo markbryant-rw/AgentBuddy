@@ -21,7 +21,7 @@ export default function OfficeAppraisals() {
     queryKey: ['office-appraisals', activeOffice?.id],
     queryFn: async () => {
       if (!activeOffice?.id) return [];
-      const { data: teams } = await supabase.from('teams').select('id, name').eq('agency_id', activeOffice.id);
+      const { data: teams } = await supabase.from('teams').select('id, name').eq('agency_id', activeOffice.id).eq('is_archived', false);
       if (!teams) return [];
       const teamIds = teams.map(t => t.id);
       const { data, error } = await supabase.from('logged_appraisals').select('id, address, suburb, vendor_name, appraisal_date, estimated_value, intent, status, team_id, created_by').in('team_id', teamIds).order('appraisal_date', { ascending: false });
