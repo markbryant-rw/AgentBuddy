@@ -2,7 +2,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { useTeam } from "@/hooks/useTeam";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
-import { Users, Building2, Copy, Check, Mail, Phone } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Users, Building2, Copy, Check, Mail } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,7 +11,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export const TeamManagementSection = () => {
   const { team } = useTeam();
   const { members, isLoading } = useTeamMembers();
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
+  
+  // Find current user's membership to determine their role
+  const currentUserMembership = members.find(m => m.user_id === user?.id);
+  const isTeamLeader = currentUserMembership?.access_level === 'admin';
 
   const handleCopyCode = () => {
     if (team?.team_code) {
@@ -43,7 +49,9 @@ export const TeamManagementSection = () => {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-lg">{team.name}</h3>
-                  <Badge variant="secondary">Team Member</Badge>
+                  <Badge variant={isTeamLeader ? "default" : "secondary"}>
+                    {isTeamLeader ? "Team Leader" : "Team Member"}
+                  </Badge>
                 </div>
                 {team.bio && (
                   <p className="text-sm text-muted-foreground mt-0.5">
