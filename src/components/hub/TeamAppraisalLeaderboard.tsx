@@ -3,9 +3,9 @@ import { useTeamAppraisalLeaderboard } from '@/hooks/useTeamAppraisalLeaderboard
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Trophy, Medal, Award, Users } from 'lucide-react';
+import { Trophy, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { startOfQuarter, differenceInWeeks, endOfQuarter } from 'date-fns';
+import { startOfQuarter, endOfQuarter } from 'date-fns';
 
 const getRankIcon = (rank: number) => {
   switch (rank) {
@@ -31,12 +31,10 @@ const getInitials = (name: string) => {
 
 export const TeamAppraisalLeaderboard = () => {
   const { user } = useAuth();
-  const { entries, maxCount, isLoading } = useTeamAppraisalLeaderboard();
+  const { entries, maxCount, isLoading, shouldShow } = useTeamAppraisalLeaderboard();
 
   // Get current quarter info
   const now = new Date();
-  const quarterStart = startOfQuarter(now);
-  const quarterEnd = endOfQuarter(now);
   const currentQuarter = `Q${Math.floor(now.getMonth() / 3) + 1}`;
 
   if (isLoading) {
@@ -59,27 +57,22 @@ export const TeamAppraisalLeaderboard = () => {
     );
   }
 
+  // Don't render if shouldShow is false (solo or no qualifying members)
+  if (!shouldShow) {
+    return null;
+  }
+
   if (entries.length === 0) {
     return (
-      <div className="text-center py-6">
-        <Users className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+      <div className="text-center py-4">
+        <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">No team data available</p>
       </div>
     );
   }
 
-  if (entries.length === 1) {
-    return (
-      <div className="text-center py-6">
-        <Trophy className="h-10 w-10 mx-auto text-amber-500 mb-2" />
-        <p className="text-sm text-muted-foreground">You're the only one here!</p>
-        <p className="text-xs text-muted-foreground mt-1">Invite teammates to compete 🎯</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -92,7 +85,7 @@ export const TeamAppraisalLeaderboard = () => {
       </div>
 
       {/* Leaderboard Entries */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {entries.slice(0, 5).map((entry, index) => {
           const isCurrentUser = entry.userId === user?.id;
           const barWidth = maxCount > 0 ? (entry.appraisalCount / maxCount) * 100 : 0;
@@ -103,7 +96,7 @@ export const TeamAppraisalLeaderboard = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.3, delay: index * 0.1 }}
-              className={`relative rounded-lg p-3 ${
+              className={`relative rounded-lg p-2.5 ${
                 isCurrentUser
                   ? 'bg-primary/10 ring-2 ring-primary/30'
                   : entry.rank <= 3
@@ -113,10 +106,10 @@ export const TeamAppraisalLeaderboard = () => {
             >
               <div className="flex items-center gap-3">
                 {/* Rank */}
-                <div className="w-8 flex justify-center">{getRankIcon(entry.rank)}</div>
+                <div className="w-7 flex justify-center">{getRankIcon(entry.rank)}</div>
 
                 {/* Avatar */}
-                <Avatar className="h-8 w-8 border-2 border-background shadow-sm">
+                <Avatar className="h-7 w-7 border-2 border-background shadow-sm">
                   <AvatarImage src={entry.avatar || undefined} />
                   <AvatarFallback className="text-xs bg-gradient-to-br from-teal-500 to-cyan-500 text-white">
                     {getInitials(entry.name)}
@@ -137,7 +130,7 @@ export const TeamAppraisalLeaderboard = () => {
                   </div>
 
                   {/* Animated Progress Bar */}
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${barWidth}%` }}
@@ -163,7 +156,7 @@ export const TeamAppraisalLeaderboard = () => {
                 >
                   <Badge
                     variant="secondary"
-                    className={`min-w-[40px] justify-center font-bold ${
+                    className={`min-w-[36px] justify-center font-bold text-xs ${
                       entry.rank === 1
                         ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300'
                         : ''
