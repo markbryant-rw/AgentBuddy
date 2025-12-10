@@ -4,7 +4,6 @@ import { useProfile } from '@/hooks/useProfile';
 import { usePresence } from '@/hooks/usePresence';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { DailyCheckIn } from '@/components/playbook/DailyCheckIn';
 import { BugReportDialog } from '@/components/feedback/BugReportDialog';
 import { FeatureRequestDialog } from '@/components/feedback/FeatureRequestDialog';
 import { useState } from 'react';
@@ -20,7 +19,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, Users, Settings, LogOut, ChevronDown, Lightbulb, Bug, Circle, RefreshCw, Eye, CheckSquare, ListTodo } from 'lucide-react';
+import { User, Users, Settings, LogOut, ChevronDown, Lightbulb, Bug, Circle, RefreshCw, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -35,7 +34,6 @@ const UserMenuDropdownComponent = () => {
   const { profile, loading } = useProfile();
   const { myPresence, updatePresence } = usePresence();
   const queryClient = useQueryClient();
-  const [dailyCheckInOpen, setDailyCheckInOpen] = useState(false);
   const [bugReportOpen, setBugReportOpen] = useState(false);
   const [featureRequestOpen, setFeatureRequestOpen] = useState(false);
 
@@ -123,19 +121,6 @@ const UserMenuDropdownComponent = () => {
         <RoleSwitcher />
         
         <DropdownMenuSeparator />
-        
-        <div className="p-2">
-          <Button
-            onClick={() => setDailyCheckInOpen(true)}
-            className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary hover:to-primary/70 text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-200"
-            size="lg"
-          >
-            <CheckSquare className="h-5 w-5" />
-            <span>Daily Check-In</span>
-          </Button>
-        </div>
-
-        <DropdownMenuSeparator />
 
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>
@@ -213,16 +198,6 @@ const UserMenuDropdownComponent = () => {
           Sign Out
         </DropdownMenuItem>
       </DropdownMenuContent>
-      
-      <DailyCheckIn
-        open={dailyCheckInOpen}
-        onOpenChange={setDailyCheckInOpen}
-        userId={user?.id || ''}
-        onSuccess={() => {
-          setDailyCheckInOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['daily-activities'] });
-        }}
-      />
       
       <BugReportDialog open={bugReportOpen} onOpenChange={setBugReportOpen} />
       <FeatureRequestDialog open={featureRequestOpen} onOpenChange={setFeatureRequestOpen} />

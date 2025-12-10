@@ -16,7 +16,6 @@ import { ViewAsBanner } from '@/components/ViewAsBanner';
 import { ImpersonationAlertBanner } from '@/components/ImpersonationAlertBanner';
 import { useModuleUsageTracking } from '@/hooks/useModuleUsageTracking';
 import { PomodoroTimer } from '@/components/pomodoro/PomodoroTimer';
-import { PomodoroProvider } from '@/contexts/PomodoroContext';
 import { getWorkspaceItemsForActiveRole } from '@/lib/navigation';
 import { RoleModeBadge } from '@/components/RoleModeBadge';
 import { FloatingFeedbackButton } from '@/components/feedback/FloatingFeedbackButton';
@@ -128,13 +127,11 @@ const Layout = () => {
                            location.pathname.startsWith('/tasks/');
 
   return (
-    // Phase 3: Wrap with PomodoroProvider to share session data across components
-    <PomodoroProvider date={new Date()}>
-      <div className={cn(
-        "bg-background flex flex-col",
-        isFullHeightPage ? "h-screen overflow-hidden" : "min-h-screen",
-        isDemoMode && "pt-11" // Add padding for fixed demo banner
-      )}>
+    <div className={cn(
+      "bg-background flex flex-col",
+      isFullHeightPage ? "h-screen overflow-hidden" : "min-h-screen",
+      isDemoMode && "pt-11" // Add padding for fixed demo banner
+    )}>
       {isDemoMode && <DemoBanner />}
       <ViewAsBanner />
       <ImpersonationAlertBanner />
@@ -248,7 +245,6 @@ const Layout = () => {
         </div>
       </div>
     </div>
-    </PomodoroProvider>
   );
 };
 
