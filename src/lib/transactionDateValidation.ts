@@ -34,6 +34,9 @@ export const DATE_FIELD_LABELS: Record<DateFieldName, string> = {
 
 // Fields that can be in the future (expiry/deadline dates)
 export const FUTURE_ALLOWED_FIELDS: DateFieldName[] = [
+  'photoshoot_date',
+  'building_report_date',
+  'live_date',
   'auction_deadline_date',
   'listing_expires_date',
   'conditional_date',
