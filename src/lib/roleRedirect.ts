@@ -11,7 +11,7 @@ import type { AppRole } from './rbac';
 const ROLE_DASHBOARD_MAP: Record<AppRole, string> = {
   platform_admin: '/platform-admin',
   office_manager: '/office-manager',
-  team_leader: '/team-leader',
+  team_leader: '/dashboard', // Team leaders use salesperson workspace, access team management via button
   salesperson: '/dashboard',
   assistant: '/dashboard',
 };
@@ -41,7 +41,7 @@ export const getRoleBasedRedirect = (
   }
   
   if (allRoles.includes('team_leader')) {
-    return '/team-leader';
+    return '/dashboard';
   }
   
   if (allRoles.includes('salesperson')) {

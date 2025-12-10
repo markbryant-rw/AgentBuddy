@@ -6,10 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import type { AppRole } from '@/lib/rbac';
 
 // Map routes to their corresponding roles
+// Note: /team-leader removed - team leaders now use salesperson workspace
 const ROUTE_ROLE_MAP: Record<string, AppRole> = {
   '/platform-admin': 'platform_admin',
   '/office-manager': 'office_manager',
-  '/team-leader': 'team_leader',
   '/dashboard': 'salesperson',
   '/plan-dashboard': 'salesperson',
   '/prospect-dashboard': 'salesperson',

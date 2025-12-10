@@ -16,18 +16,21 @@ import { Button } from '@/components/ui/button';
 // Role seniority order: highest first
 const ROLE_SENIORITY: AppRole[] = ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'];
 
+// Only these roles can use the role switcher (admin-level roles with separate dashboards)
+const ADMIN_ROLES: AppRole[] = ['platform_admin', 'office_manager'];
+
 export function RoleSwitcher() {
   const { activeRole, availableRoles, switchRole, isSwitching, isLoading } = useRoleSwitcher();
 
-  // Sort available roles by seniority
-  const sortedRoles = useMemo(() => {
-    return [...availableRoles].sort((a, b) => {
-      return ROLE_SENIORITY.indexOf(a) - ROLE_SENIORITY.indexOf(b);
-    });
+  // Filter to only admin roles that have separate dashboards
+  const switchableRoles = useMemo(() => {
+    return availableRoles
+      .filter(role => ADMIN_ROLES.includes(role))
+      .sort((a, b) => ROLE_SENIORITY.indexOf(a) - ROLE_SENIORITY.indexOf(b));
   }, [availableRoles]);
 
-  // Don't show switcher if user has only one role
-  if (isLoading || !availableRoles || availableRoles.length <= 1) {
+  // Don't show switcher if user doesn't have multiple admin roles
+  if (isLoading || switchableRoles.length <= 1) {
     return null;
   }
 
@@ -56,7 +59,7 @@ export function RoleSwitcher() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>Switch View</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {sortedRoles.map((role) => (
+        {switchableRoles.map((role) => (
           <DropdownMenuItem
             key={role}
             onClick={() => switchRole(role)}
