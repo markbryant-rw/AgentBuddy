@@ -590,7 +590,7 @@ Deno.serve(async (req) => {
     const wasHotLead = appraisal.beacon_is_hot_lead;
     
     // Hot lead notification (only if newly hot)
-    if (event === 'hot_lead' && anyHotLead && !wasHotLead) {
+    if (anyHotLead && !wasHotLead) {
       console.log('Creating hot lead notification for user:', appraisal.user_id);
       await supabase
         .from('notifications')
@@ -601,6 +601,73 @@ Deno.serve(async (req) => {
           type: 'hot_lead',
           action_url: `/prospect-appraisals?appraisal=${externalLeadId}`,
         });
+
+      // Create follow-up task for hot lead
+      console.log('Creating hot lead follow-up task for appraisal:', externalLeadId);
+      
+      // Check if a hot lead task already exists for this appraisal
+      const { data: existingTask } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('appraisal_id', externalLeadId)
+        .eq('section', 'Hot Lead Follow-ups')
+        .maybeSingle();
+
+      if (!existingTask) {
+        // Get the appraisal's agent_id, team_id, and stage
+        const { data: fullAppraisal } = await supabase
+          .from('logged_appraisals')
+          .select('agent_id, team_id, vendor_mobile, stage')
+          .eq('id', externalLeadId)
+          .single();
+
+        const assignTo = fullAppraisal?.agent_id || appraisal.user_id;
+        const teamId = fullAppraisal?.team_id;
+        const vendorPhone = fullAppraisal?.vendor_mobile;
+        const appraisalStage = fullAppraisal?.stage || 'MAP';
+
+        // Build task description with engagement context
+        const engagementMins = Math.round(totalTimeSeconds / 60);
+        const description = [
+          `🔥 This prospect has high engagement with their Beacon report!`,
+          ``,
+          `📊 Engagement Stats:`,
+          `• Propensity Score: ${bestPropensity}%`,
+          `• Total Views: ${totalViews}`,
+          `• Time Spent: ${engagementMins} minutes`,
+          ``,
+          vendorPhone ? `📞 Phone: ${vendorPhone}` : null,
+          ``,
+          `💡 Tip: Strike while the iron is hot! Call or message them today.`,
+        ].filter(Boolean).join('\n');
+
+        // Create the follow-up task
+        const { error: taskError } = await supabase
+          .from('tasks')
+          .insert({
+            title: `🔥 Hot Lead: Call ${appraisal.vendor_name || 'prospect'} - ${appraisal.address}`,
+            description,
+            section: 'Hot Lead Follow-ups',
+            priority: 'high',
+            due_date: new Date().toISOString().split('T')[0], // Due today
+            appraisal_id: externalLeadId,
+            appraisal_stage: appraisalStage,
+            assigned_to: assignTo,
+            team_id: teamId,
+            created_by: assignTo,
+            completed: false,
+            is_urgent: true,
+            is_important: true,
+          });
+
+        if (taskError) {
+          console.error('Failed to create hot lead follow-up task:', taskError);
+        } else {
+          console.log('Created hot lead follow-up task for agent:', assignTo);
+        }
+      } else {
+        console.log('Hot lead task already exists for appraisal:', externalLeadId);
+      }
     }
 
     // Proposal accepted notification
