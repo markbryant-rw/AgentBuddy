@@ -11,7 +11,7 @@ export interface TriageTask {
   description: string | null;
   due_date: string;
   priority: string | null;
-  source: 'transaction' | 'project';
+  source: 'transaction' | 'project' | 'appraisal';
   is_weekly_recurring?: boolean;
   transaction?: {
     id: string;
@@ -23,6 +23,11 @@ export interface TriageTask {
     title: string;
     icon: string | null;
     color: string | null;
+  } | null;
+  appraisal?: {
+    id: string;
+    address: string;
+    stage: string | null;
   } | null;
 }
 
@@ -61,7 +66,8 @@ export function useTriageQueue(date: Date) {
         `)
         .eq('assigned_to', user.id)
         .eq('due_date', dateStr)
-        .eq('completed', false);
+        .eq('completed', false)
+        .not('transaction_id', 'is', null);
 
       transactionTasks?.forEach((task: any) => {
         if (!seenIds.has(task.id) && !linkedTaskIds.has(task.id)) {
@@ -79,7 +85,35 @@ export function useTriageQueue(date: Date) {
         }
       });
 
-      // 2. Fetch project tasks assigned to user via junction, due today
+      // 2. Fetch appraisal tasks assigned to user, due today
+      const { data: appraisalTasks } = await (supabase as any)
+        .from('tasks')
+        .select(`
+          id, title, description, due_date, priority, completed, appraisal_stage,
+          appraisal_id,
+          appraisal:appraisal_id(id, address, stage)
+        `)
+        .eq('assigned_to', user.id)
+        .eq('due_date', dateStr)
+        .eq('completed', false)
+        .not('appraisal_id', 'is', null);
+
+      appraisalTasks?.forEach((task: any) => {
+        if (!seenIds.has(task.id) && !linkedTaskIds.has(task.id)) {
+          seenIds.add(task.id);
+          tasks.push({
+            id: task.id,
+            title: task.title,
+            description: task.description,
+            due_date: task.due_date,
+            priority: task.priority,
+            source: 'appraisal',
+            appraisal: task.appraisal,
+          });
+        }
+      });
+
+      // 3. Fetch project tasks assigned to user via junction, due today
       const { data: projectAssignments } = await (supabase as any)
         .from('task_assignees')
         .select(`

@@ -77,10 +77,22 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
       priority?: string;
       appraisal_stage?: string;
       assigned_to?: string | null;
+      team_id?: string | null;
     }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       if (!appraisalId) throw new Error('No appraisal selected');
+
+      // Get user's team_id if not provided
+      let teamId = task.team_id;
+      if (!teamId) {
+        const { data: teamMember } = await supabase
+          .from('team_members')
+          .select('team_id')
+          .eq('user_id', user.id)
+          .single();
+        teamId = teamMember?.team_id || null;
+      }
 
       const { data, error } = await supabase
         .from('tasks')
@@ -94,6 +106,7 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
           assigned_to: task.assigned_to ?? user.id,
           created_by: user.id,
           completed: false,
+          team_id: teamId,
         })
         .select()
         .single();
@@ -104,6 +117,7 @@ export const useAppraisalTasks = (appraisalId: string | null) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appraisal-tasks', appraisalId] });
       queryClient.invalidateQueries({ queryKey: ['my-assigned-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['triage-queue'] });
       toast.success('Task added');
     },
     onError: (error) => {
