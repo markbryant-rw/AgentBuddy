@@ -83,7 +83,7 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
         {/* Right: All metadata on one line */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Beacon Status - show if Beacon enabled and has any engagement data */}
-          {isBeaconEnabled && (
+          {isBeaconEnabled && !!(
             latestAppraisal.beacon_report_id || 
             (latestAppraisal.beacon_propensity_score && latestAppraisal.beacon_propensity_score > 0) || 
             (latestAppraisal.beacon_total_views && latestAppraisal.beacon_total_views > 0)
