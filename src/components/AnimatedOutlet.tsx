@@ -2,24 +2,15 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, type Variants, type Transition } from 'framer-motion';
 
 const pageVariants: Variants = {
-  initial: {
-    opacity: 0,
-    y: 8,
-  },
-  animate: {
-    opacity: 1,
-    y: 0,
-  },
-  exit: {
-    opacity: 0,
-    y: -4,
-  },
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
 const pageTransition: Transition = {
   type: 'tween',
   ease: 'easeOut',
-  duration: 0.2,
+  duration: 0.15,
 };
 
 interface AnimatedOutletProps {
@@ -30,7 +21,7 @@ export function AnimatedOutlet({ className }: AnimatedOutletProps) {
   const location = useLocation();
 
   return (
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="sync" initial={false}>
       <motion.div
         key={location.pathname}
         initial="initial"

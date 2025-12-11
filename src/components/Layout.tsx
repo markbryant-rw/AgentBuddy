@@ -1,8 +1,6 @@
-import { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouteRoleSync } from '@/hooks/useRouteRoleSync';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import agentBuddyLogo from '@/assets/agentbuddy-logo.png';
 import { cn } from '@/lib/utils';
@@ -23,6 +21,7 @@ import { DemoBanner } from '@/components/demo/DemoBanner';
 import { useDemoMode } from '@/hooks/useDemoMode';
 import { VoucherExpiryBanner } from '@/components/billing/VoucherExpiryBanner';
 import { useUserSubscription } from '@/hooks/useUserSubscription';
+import { prefetchRoute } from '@/lib/routePrefetch';
 
 const Layout = () => {
   const { roles, activeRole, loading } = useAuth();
@@ -185,6 +184,7 @@ const Layout = () => {
                   <Link 
                     key={item.path}
                     to={item.path}
+                    onMouseEnter={() => prefetchRoute(item.path)}
                     className={cn(
                       "group relative px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300",
                       "flex items-center gap-2",
@@ -240,7 +240,7 @@ const Layout = () => {
             const Icon = item.icon;
             const isActive = isNavItemActive(item.path, location.pathname);
             return (
-              <Link key={item.path} to={item.path} className="flex-1">
+              <Link key={item.path} to={item.path} onMouseEnter={() => prefetchRoute(item.path)} className="flex-1">
                 <button
                   className={cn(
                     'w-full h-full flex flex-col items-center justify-center space-y-1 relative',
