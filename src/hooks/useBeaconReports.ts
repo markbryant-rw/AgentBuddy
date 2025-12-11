@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface BeaconReport {
   id: string;
   appraisal_id: string;
+  property_id?: string;
   beacon_report_id: string;
   report_type: string;
   report_url: string | null;
@@ -19,10 +20,47 @@ export interface BeaconReport {
   last_activity: string | null;
 }
 
-export const useBeaconReports = (appraisalId: string | undefined) => {
+interface UseBeaconReportsOptions {
+  appraisalId?: string;
+  propertyId?: string;
+}
+
+/**
+ * Fetch beacon reports - can query by property_id (preferred) or appraisal_id (legacy).
+ * When propertyId is provided, returns ALL reports for that property across all modules.
+ */
+export const useBeaconReports = (idOrOptions: string | undefined | UseBeaconReportsOptions) => {
+  // Support both legacy single-arg (appraisalId) and new options object
+  let options: UseBeaconReportsOptions;
+  if (typeof idOrOptions === 'string') {
+    options = { appraisalId: idOrOptions };
+  } else if (idOrOptions === undefined) {
+    options = {};
+  } else {
+    options = idOrOptions;
+  }
+
+  const { appraisalId, propertyId } = options;
+
   const { data: reports = [], isLoading, refetch } = useQuery({
-    queryKey: ['beacon_reports', appraisalId],
+    queryKey: ['beacon_reports', propertyId || appraisalId],
     queryFn: async () => {
+      // Prefer property_id query (shows all reports for a property)
+      if (propertyId) {
+        const { data, error } = await supabase
+          .from('beacon_reports')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching beacon reports by property:', error);
+          return [] as BeaconReport[];
+        }
+        return (data || []) as BeaconReport[];
+      }
+      
+      // Fallback to appraisal_id query (legacy)
       if (!appraisalId) return [] as BeaconReport[];
       
       const { data, error } = await supabase
@@ -38,7 +76,7 @@ export const useBeaconReports = (appraisalId: string | undefined) => {
 
       return (data || []) as BeaconReport[];
     },
-    enabled: !!appraisalId,
+    enabled: !!(appraisalId || propertyId),
   });
 
   // Get the latest report

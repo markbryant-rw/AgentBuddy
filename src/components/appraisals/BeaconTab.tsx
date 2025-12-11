@@ -32,6 +32,7 @@ import { BeaconDevTools } from "./BeaconDevTools";
 
 interface BeaconTabProps {
   appraisal: LoggedAppraisal;
+  propertyId?: string; // Optional - if provided, fetches all reports for the property
 }
 
 const ReportCard = ({ 
@@ -207,13 +208,18 @@ const ReportCard = ({
   );
 };
 
-export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
+export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
   const { 
     isBeaconEnabled, 
     createBeaconReport, 
     isCreatingReport, 
   } = useBeaconIntegration();
-  const { reports, aggregateStats, hasReports, isLoading: reportsLoading, refetch: refetchReports } = useBeaconReports(appraisal.id);
+  
+  // Use property_id for fetching if available, otherwise fall back to appraisal_id
+  const effectivePropertyId = propertyId || appraisal.property_id;
+  const { reports, aggregateStats, hasReports, isLoading: reportsLoading, refetch: refetchReports } = useBeaconReports(
+    effectivePropertyId ? { propertyId: effectivePropertyId } : { appraisalId: appraisal.id }
+  );
 
   // Fallback to appraisal.beacon_* fields if no beacon_reports records exist
   const effectiveStats = hasReports ? aggregateStats : {
