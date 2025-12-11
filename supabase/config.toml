@@ -1,5 +1,8 @@
 project_id = "mxsefnpxrnamupatgrlb"
 
+[functions.fetch-beacon-subscription]
+verify_jwt = true
+
 [functions.submit-external-feedback]
 verify_jwt = false
 
