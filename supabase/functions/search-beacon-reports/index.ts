@@ -6,6 +6,91 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-requested-with',
 };
 
+// Self-healing: Auto-sync team to Beacon when not synced
+async function autoSyncTeamToBeacon(
+  teamId: string,
+  beaconApiUrl: string,
+  beaconApiKey: string,
+  supabaseUrl: string,
+  supabaseKey: string
+): Promise<boolean> {
+  console.log('autoSyncTeamToBeacon: Auto-syncing team', teamId);
+  
+  try {
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    
+    // Fetch team data
+    const { data: team, error: teamError } = await supabase
+      .from('teams')
+      .select('id, name')
+      .eq('id', teamId)
+      .single();
+
+    if (teamError || !team) {
+      console.error('autoSyncTeamToBeacon: Team not found:', teamError);
+      return false;
+    }
+
+    // Fetch team members with profile info
+    const { data: members, error: membersError } = await supabase
+      .from('team_members')
+      .select(`
+        user_id,
+        access_level,
+        profiles:user_id (
+          email,
+          full_name,
+          mobile
+        )
+      `)
+      .eq('team_id', teamId);
+
+    if (membersError) {
+      console.error('autoSyncTeamToBeacon: Failed to fetch members:', membersError);
+      return false;
+    }
+
+    // Format members for Beacon API
+    const formattedMembers = (members || [])
+      .filter((m: any) => m.profiles)
+      .map((m: any) => ({
+        email: m.profiles.email,
+        name: m.profiles.full_name || m.profiles.email,
+        phone: m.profiles.mobile || '',
+        role: m.access_level || 'member',
+      }));
+
+    console.log('autoSyncTeamToBeacon: Syncing', formattedMembers.length, 'members');
+
+    // Call Beacon sync endpoint
+    const syncResponse = await fetch(`${beaconApiUrl}/sync-team-from-agentbuddy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Environment': 'production',
+      },
+      body: JSON.stringify({
+        apiKey: beaconApiKey,
+        team_id: teamId,
+        team_name: team.name,
+        members: formattedMembers,
+      }),
+    });
+
+    if (!syncResponse.ok) {
+      const errorText = await syncResponse.text();
+      console.error('autoSyncTeamToBeacon: Beacon sync failed:', errorText);
+      return false;
+    }
+
+    console.log('autoSyncTeamToBeacon: Team synced successfully');
+    return true;
+  } catch (error) {
+    console.error('autoSyncTeamToBeacon: Error:', error);
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -16,6 +101,7 @@ Deno.serve(async (req) => {
     console.log('search-beacon-reports function started');
     
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const beaconApiUrl = Deno.env.get('BEACON_API_URL');
     const beaconApiKey = Deno.env.get('BEACON_API_KEY');
 
@@ -75,7 +161,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Call Beacon API to search for reports - standalone endpoint per v2.0 spec (camelCase params)
+    // Build search params
     const searchParams = new URLSearchParams();
     searchParams.append('apiKey', beaconApiKey);
     searchParams.append('teamId', teamId);
@@ -84,49 +170,69 @@ Deno.serve(async (req) => {
     if (ownerEmail) searchParams.append('ownerEmail', ownerEmail);
 
     const endpoint = `${beaconApiUrl}/search-reports?${searchParams.toString()}`;
-    console.log('Calling Beacon search API:', endpoint);
+    console.log('Calling Beacon search API');
     
-    const beaconResponse = await fetch(endpoint, {
+    let beaconResponse = await fetch(endpoint, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
+
+    // Self-healing: If team not synced, auto-sync and retry
+    if (!beaconResponse.ok && beaconResponse.status === 400) {
+      const errorText = await beaconResponse.text();
+      console.log('Beacon search error:', errorText);
+      
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error === 'TEAM_NOT_SYNCED') {
+          console.log('Team not synced - attempting auto-sync...');
+          
+          const syncSuccess = await autoSyncTeamToBeacon(
+            teamId,
+            beaconApiUrl,
+            beaconApiKey,
+            supabaseUrl,
+            supabaseKey
+          );
+          
+          if (syncSuccess) {
+            console.log('Auto-sync successful, retrying search...');
+            // Retry the search
+            beaconResponse = await fetch(endpoint, {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            });
+          } else {
+            return new Response(
+              JSON.stringify({ success: false, error: 'Could not sync team with Beacon. Please try again.' }),
+              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+      } catch {
+        // Not JSON or other error
+      }
+    }
 
     if (!beaconResponse.ok) {
       // If search endpoint doesn't exist, return empty results gracefully
       if (beaconResponse.status === 404) {
         console.log('Beacon search endpoint not found - returning empty results');
         return new Response(
-          JSON.stringify({ success: true, reports: [], message: 'Search not available' }),
+          JSON.stringify({ success: true, reports: [] }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      const errorText = await beaconResponse.text();
-      console.error('Beacon search error:', beaconResponse.status, errorText);
-      
-      // Handle team not synced error
-      try {
-        const errorJson = JSON.parse(errorText);
-        if (errorJson.error === 'TEAM_NOT_SYNCED') {
-          return new Response(
-            JSON.stringify({ success: false, error: 'Team not synced to Beacon. Please enable Beacon integration first.' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-      } catch {
-        // Not JSON, continue with generic error
-      }
-      
+      console.error('Beacon search error:', beaconResponse.status);
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to search Beacon reports' }),
+        JSON.stringify({ success: false, error: 'Could not search reports' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const beaconData = await beaconResponse.json();
-    console.log('Beacon search response:', beaconData);
+    console.log('Beacon search found', beaconData.reports?.length || 0, 'reports');
 
     return new Response(
       JSON.stringify({
@@ -138,7 +244,7 @@ Deno.serve(async (req) => {
   } catch (error: any) {
     console.error('Error searching Beacon reports:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error?.message || 'Unknown error' }),
+      JSON.stringify({ success: false, error: 'Search temporarily unavailable' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

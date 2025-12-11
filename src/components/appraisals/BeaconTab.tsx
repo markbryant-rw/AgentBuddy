@@ -1,17 +1,11 @@
 import { LoggedAppraisal } from "@/hooks/useLoggedAppraisals";
 import { useBeaconIntegration, REPORT_TYPE_LABELS, REPORT_TYPE_ICONS, BeaconReportType } from "@/hooks/useBeaconIntegration";
 import { useBeaconReports, BeaconReport } from "@/hooks/useBeaconReports";
-import { useBeaconEngagementEvents } from "@/hooks/useBeaconEngagementEvents";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { 
   ExternalLink, 
   Eye, 
@@ -26,19 +20,14 @@ import {
   Sparkles,
   Lock,
   Plus,
-  ChevronDown,
   Pencil,
-  Link2,
   Loader2,
-  Search,
   RefreshCw,
-  Download
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { BeaconImportWizard } from "./BeaconImportWizard";
 
 interface BeaconTabProps {
   appraisal: LoggedAppraisal;
@@ -180,9 +169,8 @@ const ReportCard = ({
         </div>
       )}
 
-      {/* Actions */}
+      {/* Actions - Simple: Edit | View | Copy */}
       <div className="flex gap-2 pt-2">
-        {/* Edit - opens Beacon editor */}
         {report.report_url && (
           <Button 
             size="sm" 
@@ -195,7 +183,6 @@ const ReportCard = ({
             </a>
           </Button>
         )}
-        {/* View - opens vendor view */}
         {report.personalized_url && (
           <Button variant="outline" size="sm" className="flex-1 h-8 text-xs" asChild>
             <a href={report.personalized_url} target="_blank" rel="noopener noreferrer">
@@ -204,7 +191,6 @@ const ReportCard = ({
             </a>
           </Button>
         )}
-        {/* Copy Link */}
         {report.personalized_url && (
           <Button 
             variant="outline" 
@@ -225,12 +211,6 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     isBeaconEnabled, 
     createBeaconReport, 
     isCreatingReport, 
-    linkBeaconReport, 
-    isLinkingReport,
-    searchBeaconReports,
-    syncTeamToBeacon,
-    isSyncingTeam,
-    teamId
   } = useBeaconIntegration();
   const { reports, aggregateStats, hasReports, isLoading: reportsLoading, refetch: refetchReports } = useBeaconReports(appraisal.id);
 
@@ -244,51 +224,9 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   };
   
   const hasEngagementData = effectiveStats.bestPropensity > 0 || effectiveStats.totalViews > 0;
-  const { events, isLoading: eventsLoading } = useBeaconEngagementEvents(appraisal.id);
   const [copied, setCopied] = useState(false);
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [reportIdInput, setReportIdInput] = useState('');
-  const [propertySlugInput, setPropertySlugInput] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [needsSync, setNeedsSync] = useState(false);
-  const [importWizardOpen, setImportWizardOpen] = useState(false);
-  const [leadIdCopied, setLeadIdCopied] = useState(false);
   const [isSyncingEngagement, setIsSyncingEngagement] = useState(false);
 
-  // Auto-search when dialog opens
-  const handleLinkDialogOpen = (open: boolean) => {
-    setLinkDialogOpen(open);
-    if (open && appraisal.address && !needsSync) {
-      // Auto-trigger search when dialog opens
-      handleSearchReportsAuto();
-    }
-  };
-
-  const handleSearchReportsAuto = async () => {
-    if (!appraisal.address) return;
-    
-    setIsSearching(true);
-    setNeedsSync(false);
-    try {
-      const results = await searchBeaconReports({ address: appraisal.address });
-      setSearchResults(results);
-    } catch (error: any) {
-      console.error('Auto-search error:', error);
-      if (error.message?.includes('not synced')) {
-        setNeedsSync(true);
-      }
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleCopyLeadId = async () => {
-    await navigator.clipboard.writeText(appraisal.id);
-    setLeadIdCopied(true);
-    toast.success('Lead ID copied to clipboard');
-    setTimeout(() => setLeadIdCopied(false), 2000);
-  };
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
     setCopied(true);
@@ -296,75 +234,9 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleCreateReport = (reportType: BeaconReportType) => {
-    console.log('BeaconTab: handleCreateReport called with', reportType, 'appraisalId:', appraisal.id);
-    createBeaconReport.mutate({ appraisalId: appraisal.id, reportType });
-  };
-
-  const handleLinkReport = () => {
-    if (!reportIdInput && !propertySlugInput) {
-      toast.error('Enter a Report ID or Property Slug');
-      return;
-    }
-    
-    linkBeaconReport.mutate({
-      appraisalId: appraisal.id,
-      reportId: reportIdInput || undefined,
-      propertySlug: propertySlugInput || undefined,
-    }, {
-      onSuccess: () => {
-        setLinkDialogOpen(false);
-        setReportIdInput('');
-        setPropertySlugInput('');
-        setSearchResults([]);
-      }
-    });
-  };
-
-  const handleSearchReports = async () => {
-    if (!appraisal.address) {
-      toast.error('No address to search for');
-      return;
-    }
-    
-    setIsSearching(true);
-    setNeedsSync(false);
-    try {
-      const results = await searchBeaconReports({ address: appraisal.address });
-      setSearchResults(results);
-      if (results.length === 0) {
-        toast.info('No matching reports found');
-      }
-    } catch (error: any) {
-      console.error('Search error:', error);
-      if (error.message?.includes('not synced')) {
-        setNeedsSync(true);
-        toast.error('Team not synced with Beacon. Click "Sync Team" to fix.');
-      } else {
-        toast.error('Could not search for reports');
-      }
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleSyncTeam = () => {
-    if (!teamId) {
-      toast.error('No team found');
-      return;
-    }
-    syncTeamToBeacon.mutate(teamId, {
-      onSuccess: () => {
-        setNeedsSync(false);
-        toast.success('Team synced! You can now search for reports.');
-      }
-    });
-  };
-
-  const handleSelectSearchResult = (result: any) => {
-    setPropertySlugInput(result.property_slug || '');
-    setReportIdInput(result.id || '');
-    setSearchResults([]);
+  // Simple one-click create - defaults to 'appraisal' type
+  const handleCreateReport = () => {
+    createBeaconReport.mutate({ appraisalId: appraisal.id, reportType: 'appraisal' });
   };
 
   const formatTime = (seconds: number) => {
@@ -378,7 +250,6 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   };
 
   const handleSyncEngagement = async () => {
-    // Check if we have any linked reports
     const beaconReportId = reports[0]?.beacon_report_id || appraisal.beacon_report_id;
     
     if (!beaconReportId && !hasReports) {
@@ -388,60 +259,28 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
 
     setIsSyncingEngagement(true);
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const accessToken = sessionData.session?.access_token;
-      
-      if (!accessToken) {
-        throw new Error('Not authenticated');
-      }
-
-      const response = await fetch(
-        'https://mxsefnpxrnamupatgrlb.supabase.co/functions/v1/sync-beacon-engagement',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            appraisalId: appraisal.id,
-            beaconReportId,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Failed to sync engagement');
-      }
-
-      toast.success('Engagement data synced from Beacon');
-      // Refetch reports to update the UI
-      refetchReports();
+      // Just refetch reports - engagement is synced via webhooks
+      await refetchReports();
+      toast.success('Engagement data refreshed');
     } catch (error: any) {
       console.error('Sync error:', error);
-      toast.error(error.message || 'Failed to sync from Beacon');
+      toast.error('Failed to refresh data');
     } finally {
       setIsSyncingEngagement(false);
     }
   };
+
+  // Not enabled state
   if (!isBeaconEnabled) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
         <div className="h-16 w-16 rounded-full bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center mb-4">
           <Lock className="h-8 w-8 text-teal-600" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">Beacon Integration</h3>
+        <h3 className="text-lg font-semibold mb-2">Beacon Property Reports</h3>
         <p className="text-muted-foreground mb-4 max-w-md">
-          Create professional appraisal reports and track vendor engagement in real-time.
+          Create professional property reports and track vendor engagement in real-time.
         </p>
-        <div className="mb-6 p-4 bg-muted/50 rounded-lg max-w-sm">
-          <p className="font-semibold text-sm">$25/month includes 3 reports</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Credit packs from $2.50/report for more. Teams share credits across all members.
-          </p>
-        </div>
         <div className="grid grid-cols-3 gap-4 mb-6 text-sm">
           <div className="flex flex-col items-center p-3 rounded-lg bg-muted/50">
             <FileText className="h-5 w-5 text-teal-600 mb-2" />
@@ -459,12 +298,8 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
             <span className="text-xs text-muted-foreground">AI Scoring</span>
           </div>
         </div>
-        <Button className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700">
-          <Sparkles className="h-4 w-4" />
-          Enable Beacon Integration
-        </Button>
-        <p className="text-xs text-muted-foreground mt-3">
-          Contact your team leader to enable this feature
+        <p className="text-sm text-muted-foreground">
+          Enable Beacon in <span className="font-medium">Settings → Integrations</span>
         </p>
       </div>
     );
@@ -473,14 +308,14 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
   return (
     <TooltipProvider>
       <div className="space-y-6">
-        {/* Aggregate Stats Card - Show when we have engagement data */}
+        {/* Engagement Stats Card - Show when we have engagement data */}
         {hasEngagementData && (
-        <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
+          <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                   <Activity className="h-5 w-5 text-teal-600" />
-                  Overall Engagement
+                  Vendor Engagement
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Tooltip>
@@ -497,11 +332,11 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                         ) : (
                           <RefreshCw className="h-3.5 w-3.5" />
                         )}
-                        Sync
+                        Refresh
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Fetch latest engagement data from Beacon</p>
+                      <p>Refresh engagement data</p>
                     </TooltipContent>
                   </Tooltip>
                   {effectiveStats.anyHotLead && (
@@ -514,7 +349,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Propensity Score - Large Display */}
+              {/* Propensity Score */}
               <div className="flex items-center gap-4">
                 <div className="relative h-20 w-20">
                   <svg className="h-20 w-20 transform -rotate-90">
@@ -549,7 +384,7 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium">Best Propensity Score</p>
+                  <p className="text-sm font-medium">Propensity Score</p>
                   <p className="text-xs text-muted-foreground">
                     {effectiveStats.bestPropensity >= 70 ? 'High likelihood to list' : 
                      effectiveStats.bestPropensity >= 40 ? 'Moderate engagement' :
@@ -562,58 +397,41 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                 </div>
               </div>
 
-              {/* Engagement Stats Grid */}
+              {/* Stats Grid */}
               <div className="grid grid-cols-3 gap-3">
                 <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
                   <Eye className="h-5 w-5 text-teal-600 mb-1" />
                   <span className="text-2xl font-bold">{effectiveStats.totalViews}</span>
-                  <span className="text-xs text-muted-foreground">Total Views</span>
+                  <span className="text-xs text-muted-foreground">Views</span>
                 </div>
                 <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
                   <Clock className="h-5 w-5 text-teal-600 mb-1" />
                   <span className="text-2xl font-bold">{formatTime(effectiveStats.totalTimeSeconds)}</span>
-                  <span className="text-xs text-muted-foreground">Time Spent</span>
+                  <span className="text-xs text-muted-foreground">Time</span>
                 </div>
                 <div className="flex flex-col items-center p-3 rounded-xl bg-background/50 border border-border/50">
                   <Mail className="h-5 w-5 text-teal-600 mb-1" />
                   <span className="text-2xl font-bold">{effectiveStats.totalEmailOpens}</span>
-                  <span className="text-xs text-muted-foreground">Email Opens</span>
+                  <span className="text-xs text-muted-foreground">Opens</span>
                 </div>
               </div>
 
-              {/* First viewed / Last activity timestamps */}
+              {/* Timestamps */}
               {(appraisal.beacon_first_viewed_at || appraisal.beacon_last_activity) && (
                 <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
                   {appraisal.beacon_first_viewed_at && (
-                    <span>First viewed: {format(new Date(appraisal.beacon_first_viewed_at), 'MMM d, yyyy h:mm a')}</span>
+                    <span>First viewed: {format(new Date(appraisal.beacon_first_viewed_at), 'MMM d, yyyy')}</span>
                   )}
                   {appraisal.beacon_last_activity && (
-                    <span>Last activity: {format(new Date(appraisal.beacon_last_activity), 'MMM d, yyyy h:mm a')}</span>
+                    <span>Last activity: {format(new Date(appraisal.beacon_last_activity), 'MMM d, yyyy')}</span>
                   )}
                 </div>
               )}
             </CardContent>
           </Card>
         )}
-        {/* Lead ID for Manual Linking */}
-        {!hasReports && (
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border border-border/50">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground mb-1">AgentBuddy Lead ID (for manual linking in Beacon)</p>
-              <code className="text-xs font-mono text-foreground/80 truncate block">{appraisal.id}</code>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="shrink-0 h-8 px-2"
-              onClick={handleCopyLeadId}
-            >
-              {leadIdCopied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
-            </Button>
-          </div>
-        )}
 
-        {/* Create New Report Button */}
+        {/* Create Report Section */}
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between gap-4">
@@ -622,199 +440,26 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
                 <p className="text-sm text-muted-foreground">
                   {hasReports 
                     ? `${reports.length} report${reports.length !== 1 ? 's' : ''} created` 
-                    : 'Create a new report or link an existing one'}
+                    : 'Create a property report to share with your vendor'}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                {/* Import Historic Reports */}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-1.5"
-                  onClick={() => setImportWizardOpen(true)}
-                >
-                  <Download className="h-4 w-4" />
-                  Import
-                </Button>
-                
-                {/* Link Existing Report */}
-                <Dialog open={linkDialogOpen} onOpenChange={handleLinkDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5">
-                      <Link2 className="h-4 w-4" />
-                      Link Existing
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Link Existing Beacon Report</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      {/* Search by Property - Primary */}
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium">Search by Property</Label>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Find reports matching this property address
-                        </p>
-                        
-                        {needsSync ? (
-                          <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg">
-                            <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
-                              Team not synced with Beacon. Sync to enable search.
-                            </p>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={handleSyncTeam}
-                              disabled={isSyncingTeam}
-                              className="gap-2"
-                            >
-                              {isSyncingTeam ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-4 w-4" />
-                              )}
-                              Sync Team with Beacon
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            {isSearching ? (
-                              <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg">
-                                <Loader2 className="h-4 w-4 animate-spin text-teal-600" />
-                                <span className="text-sm text-muted-foreground">Searching for matching reports...</span>
-                              </div>
-                            ) : searchResults.length > 0 ? (
-                              <div className="space-y-2">
-                                <p className="text-xs text-muted-foreground">Found {searchResults.length} matching report(s):</p>
-                                {searchResults.map((result) => (
-                                  <button
-                                    key={result.id}
-                                    onClick={() => handleSelectSearchResult(result)}
-                                    className="w-full p-3 border rounded-lg text-left hover:bg-teal-500/5 hover:border-teal-500/30 transition-colors text-sm"
-                                  >
-                                    <p className="font-medium truncate">{result.address || result.property_slug}</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {result.report_type} • Created {format(new Date(result.created_at), 'MMM d, yyyy')}
-                                    </p>
-                                  </button>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="p-3 bg-muted/30 rounded-lg text-center">
-                                <p className="text-sm text-muted-foreground mb-2">No matching reports found</p>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={handleSearchReports}
-                                  className="gap-2"
-                                >
-                                  <RefreshCw className="h-3 w-3" />
-                                  Search Again
-                                </Button>
-                              </div>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">Or enter manually</span>
-                        </div>
-                      </div>
-                      
-                      {/* Property Slug */}
-                      <div className="space-y-2">
-                        <Label htmlFor="propertySlug" className="text-sm font-medium">Property Slug</Label>
-                        <Input 
-                          id="propertySlug"
-                          placeholder="216b-sturges-road-henderson-auckland"
-                          value={propertySlugInput}
-                          onChange={(e) => {
-                            setPropertySlugInput(e.target.value);
-                            setReportIdInput('');
-                          }}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          From URL: beacon.app/report/<span className="text-teal-600 font-semibold">property-slug</span>/view
-                        </p>
-                      </div>
-
-                      {/* Report ID - Alternative */}
-                      <div className="space-y-2">
-                        <Label htmlFor="reportId" className="text-sm">Report ID</Label>
-                        <Input 
-                          id="reportId"
-                          placeholder="abc123-def456-..."
-                          value={reportIdInput}
-                          onChange={(e) => {
-                            setReportIdInput(e.target.value);
-                            setPropertySlugInput('');
-                          }}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          From Beacon report editor → Click "Copy ID" button
-                        </p>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button 
-                        onClick={handleLinkReport}
-                        disabled={isLinkingReport || (!reportIdInput && !propertySlugInput)}
-                        className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600"
-                      >
-                        {isLinkingReport ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Link2 className="h-4 w-4" />
-                        )}
-                        Link Report
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                {/* New Report dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      disabled={isCreatingReport}
-                      className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
-                    >
-                      {isCreatingReport ? (
-                        <>Creating...</>
-                      ) : (
-                        <>
-                          <Plus className="h-4 w-4" />
-                          New Report
-                          <ChevronDown className="h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleCreateReport('appraisal')}>
-                      <span className="mr-2">📊</span>
-                      Market Appraisal
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleCreateReport('proposal')}>
-                      <span className="mr-2">📝</span>
-                      Proposal
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleCreateReport('campaign')}>
-                      <span className="mr-2">🔄</span>
-                      Campaign Update
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              <Button 
+                onClick={handleCreateReport}
+                disabled={isCreatingReport}
+                className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+              >
+                {isCreatingReport ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Create Report
+                  </>
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -823,34 +468,14 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
         {hasReports && (
           <Card>
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Report History</CardTitle>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-7 px-2 text-xs gap-1"
-                      onClick={handleSyncEngagement}
-                      disabled={isSyncingEngagement}
-                    >
-                      {isSyncingEngagement ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      )}
-                      Sync from Beacon
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Fetch latest engagement data from Beacon</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              <CardTitle className="text-sm font-medium">Report History</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {reportsLoading ? (
-                <p className="text-sm text-muted-foreground">Loading reports...</p>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading reports...
+                </div>
               ) : (
                 reports.map((report, index) => (
                   <ReportCard 
@@ -865,67 +490,18 @@ export const BeaconTab = ({ appraisal }: BeaconTabProps) => {
           </Card>
         )}
 
-        {/* Engagement Timeline - Individual Events */}
-        {hasReports && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Engagement Timeline</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {eventsLoading ? (
-                <p className="text-sm text-muted-foreground">Loading events...</p>
-              ) : events.length > 0 ? (
-                <div className="space-y-2">
-                  {events.map((event) => (
-                    <div key={event.id} className="flex items-center gap-3 text-sm py-1.5 border-b border-border/30 last:border-0">
-                      <div className={cn(
-                        "h-6 w-6 rounded-full flex items-center justify-center",
-                        event.event_type === 'email_open' 
-                          ? "bg-blue-500/20 text-blue-600"
-                          : event.event_type === 'view'
-                          ? "bg-teal-500/20 text-teal-600"
-                          : "bg-amber-500/20 text-amber-600"
-                      )}>
-                        {event.event_type === 'email_open' ? (
-                          <Mail className="h-3.5 w-3.5" />
-                        ) : event.event_type === 'view' ? (
-                          <Eye className="h-3.5 w-3.5" />
-                        ) : (
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <span className="font-medium capitalize">
-                          {event.event_type === 'email_open' ? 'Email opened' : 
-                           event.event_type === 'view' ? 'Report viewed' : 
-                           'Link clicked'}
-                        </span>
-                        {event.event_type === 'view' && event.duration_seconds > 0 && (
-                          <span className="text-muted-foreground ml-1">
-                            ({formatTime(event.duration_seconds)})
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(event.occurred_at), 'MMM d, h:mm a')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No engagement events yet. Events will appear here once the vendor opens or views a report.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Empty state - no reports yet */}
+        {!hasReports && !hasEngagementData && (
+          <div className="text-center py-8 px-4">
+            <div className="h-12 w-12 rounded-full bg-gradient-to-br from-teal-500/20 to-cyan-500/20 flex items-center justify-center mx-auto mb-3">
+              <Sparkles className="h-6 w-6 text-teal-600" />
+            </div>
+            <h4 className="font-medium mb-1">Ready to impress your vendor?</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create a professional report and track when they view it.
+            </p>
+          </div>
         )}
-
-        {/* Import Wizard */}
-        <BeaconImportWizard 
-          open={importWizardOpen} 
-          onOpenChange={setImportWizardOpen} 
-        />
       </div>
     </TooltipProvider>
   );
