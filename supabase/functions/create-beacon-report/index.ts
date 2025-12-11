@@ -46,7 +46,7 @@ async function syncTeamToBeacon(
         profiles:user_id (
           email,
           full_name,
-          phone
+          mobile
         )
       `)
       .eq('team_id', teamId);
@@ -62,7 +62,7 @@ async function syncTeamToBeacon(
       .map((m: any) => ({
         email: m.profiles.email,
         name: m.profiles.full_name || m.profiles.email,
-        phone: m.profiles.phone || '',
+        phone: m.profiles.mobile || '',
         role: m.access_level || 'member',
       }));
 
