@@ -19,12 +19,24 @@ import { validateEmail } from '@/lib/validation';
 import { format } from 'date-fns';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PageHeaderWithBack } from '@/components/PageHeaderWithBack';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function InviteUser() {
   const { roles, user, hasRole } = useAuth();
   const { profile } = useProfile();
   const { team } = useTeam();
-  const { pendingInvitations, isLoading, inviteUser, resendInvitation, revokeInvitation, isInviting, isResending } = useInvitations();
+  
+  // Smart context assignment based on inviter's role
+  const isPlatformAdmin = hasRole('platform_admin');
+  const isOfficeManager = hasRole('office_manager');
+  const isTeamLeader = hasRole('team_leader');
+
+  // Filter invitations by user context
+  const { pendingInvitations, isLoading, inviteUser, resendInvitation, revokeInvitation, isInviting, isResending } = useInvitations({
+    teamId: isTeamLeader ? team?.id : undefined,
+    officeId: isOfficeManager && !isTeamLeader ? profile?.office_id : undefined,
+    showAll: isPlatformAdmin,
+  });
   
   const [email, setEmail] = useState('');
   const [selectedRole, setSelectedRole] = useState<AppRole | ''>('');
@@ -32,11 +44,6 @@ export default function InviteUser() {
   const [selectedTeamId, setSelectedTeamId] = useState<string>('');
   const [selectedOfficeId, setSelectedOfficeId] = useState<string>('');
   const [emailError, setEmailError] = useState('');
-
-  // Smart context assignment based on inviter's role
-  const isPlatformAdmin = hasRole('platform_admin');
-  const isOfficeManager = hasRole('office_manager');
-  const isTeamLeader = hasRole('team_leader');
 
   // Note: Server now handles context validation
   // Team Leaders: server forces their office + team
@@ -282,21 +289,31 @@ export default function InviteUser() {
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => resendInvitation(invitation.id)}
-                          disabled={isResending}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => revokeInvitation(invitation.id)}
-                        >
-                          <XCircle className="h-4 w-4" />
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => resendInvitation(invitation.id)}
+                              disabled={isResending}
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Resend invitation email</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => revokeInvitation(invitation.id)}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Revoke invitation</TooltipContent>
+                        </Tooltip>
                       </div>
                     </div>
                   </div>
