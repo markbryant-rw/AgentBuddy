@@ -42,6 +42,7 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [lossReason, setLossReason] = useState('');
   const [moveToTC, setMoveToTC] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
   const { user } = useAuth();
   const { team } = useTeam();
   const { assignableMembers, isLoading: membersLoading } = useAssignableTeamMembers();
@@ -225,8 +226,6 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
   };
 
   if (!editedListing) return null;
-
-  const [activeTab, setActiveTab] = useState('details');
 
   return (
     <>
