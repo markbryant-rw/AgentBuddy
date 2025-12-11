@@ -55,9 +55,9 @@ export default function InviteUser() {
   // Office Managers: server forces their office, allows team selection
   // Platform Admins: use InviteUserPlatform.tsx (full control)
 
-  // Get roles current user can invite
-  const primaryRole = roles[0] as AppRole;
-  const invitableRoles = getInvitableRoles(primaryRole);
+  // Get roles current user can invite based on ACTIVE ROLE (not all roles)
+  const effectiveRole = activeRole || roles[0] as AppRole;
+  const invitableRoles = getInvitableRoles(effectiveRole);
 
   // Fetch teams for team selection
   const { data: teams = [] } = useQuery({
