@@ -55,8 +55,17 @@ export default function InviteUser() {
   // Office Managers: server forces their office, allows team selection
   // Platform Admins: use InviteUserPlatform.tsx (full control)
 
-  // Get roles current user can invite based on ACTIVE ROLE (not all roles)
-  const effectiveRole = activeRole || roles[0] as AppRole;
+  // Get roles current user can invite based on their HIGHEST-PRIVILEGE role
+  // This ensures team leaders can always invite their full hierarchy even if active_role is salesperson
+  const getHighestPrivilegeRole = (userRoles: string[]): AppRole => {
+    const hierarchy: AppRole[] = ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'];
+    for (const role of hierarchy) {
+      if (userRoles.includes(role)) return role;
+    }
+    return 'assistant';
+  };
+
+  const effectiveRole = getHighestPrivilegeRole(roles);
   const invitableRoles = getInvitableRoles(effectiveRole);
 
   // Fetch teams for team selection
