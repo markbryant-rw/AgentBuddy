@@ -9,7 +9,7 @@ import { DailyCheckIn } from '@/components/playbook/DailyCheckIn';
 import { MotivationalQuote } from '@/components/hub/MotivationalQuote';
 import { WeatherWidget } from '@/components/hub/WeatherWidget';
 import { DashboardQuickAccess } from '@/components/hub/DashboardQuickAccess';
-import { useQuarterlyAppraisals } from '@/hooks/useQuarterlyAppraisals';
+import { useTeamQuarterlyAppraisals } from '@/hooks/useTeamQuarterlyAppraisals';
 import { useTeamQuarterlyListingsSales } from '@/hooks/useTeamQuarterlyListingsSales';
 import { usePlaybookQuarterlyGoals } from '@/hooks/usePlaybookQuarterlyGoals';
 import { useWorkspaceStatuses } from '@/hooks/useWorkspaceStatuses';
@@ -100,7 +100,7 @@ export default function Home() {
   const { shouldShow, handleDismiss, handleSnooze, handleOptOut } = useDailyDigest();
   
   // Fetch quarterly appraisals
-  const { data: quarterlyAppraisals } = useQuarterlyAppraisals(user?.id || '');
+  const { data: quarterlyAppraisals } = useTeamQuarterlyAppraisals(team?.id);
   const { data: quarterlyGoals } = usePlaybookQuarterlyGoals(user?.id || '');
   const { data: workspaceStatuses } = useWorkspaceStatuses();
   

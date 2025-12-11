@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePlaybookQuarterlyGoals } from '@/hooks/usePlaybookQuarterlyGoals';
-import { useQuarterlyAppraisals } from '@/hooks/useQuarterlyAppraisals';
+import { useTeamQuarterlyAppraisals } from '@/hooks/useTeamQuarterlyAppraisals';
 import { useTeamQuarterlyListingsSales } from '@/hooks/useTeamQuarterlyListingsSales';
 import { useTeam } from '@/hooks/useTeam';
 import { HeroMetrics } from '@/components/playbook/HeroMetrics';
@@ -20,7 +20,7 @@ export default function PlaybookDashboard() {
   const [checkInOpen, setCheckInOpen] = useState(false);
 
   const { data: playbookGoals } = usePlaybookQuarterlyGoals(user?.id || '');
-  const { data: quarterlyAppraisals, refetch: refetchAppraisals } = useQuarterlyAppraisals(user?.id || '');
+  const { data: quarterlyAppraisals, refetch: refetchAppraisals } = useTeamQuarterlyAppraisals(team?.id);
   const { data: listingsSalesData } = useTeamQuarterlyListingsSales(team?.id);
 
   const quarterlyTarget = (playbookGoals && typeof playbookGoals === 'object' && 'appraisals_target' in playbookGoals)
