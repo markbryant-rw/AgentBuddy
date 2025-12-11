@@ -22,20 +22,25 @@ import { PageHeaderWithBack } from '@/components/PageHeaderWithBack';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function InviteUser() {
-  const { roles, user, hasRole } = useAuth();
+  const { roles, user, hasRole, activeRole } = useAuth();
   const { profile } = useProfile();
   const { team } = useTeam();
   
-  // Smart context assignment based on inviter's role
+  // Use activeRole for view-based filtering (not hasRole which checks all roles)
+  const isPlatformAdminView = activeRole === 'platform_admin';
+  const isOfficeManagerView = activeRole === 'office_manager';
+  const isTeamLeaderView = activeRole === 'team_leader' || activeRole === 'salesperson' || activeRole === 'assistant';
+  
+  // Legacy role checks for form behavior (what roles user CAN invite)
   const isPlatformAdmin = hasRole('platform_admin');
   const isOfficeManager = hasRole('office_manager');
   const isTeamLeader = hasRole('team_leader');
 
-  // Filter invitations by user context
+  // Filter invitations by ACTIVE ROLE context (not all roles user has)
   const { pendingInvitations, isLoading, inviteUser, resendInvitation, revokeInvitation, isInviting, isResending } = useInvitations({
-    teamId: isTeamLeader ? team?.id : undefined,
-    officeId: isOfficeManager && !isTeamLeader ? profile?.office_id : undefined,
-    showAll: isPlatformAdmin,
+    teamId: isTeamLeaderView ? team?.id : undefined,
+    officeId: isOfficeManagerView ? profile?.office_id : undefined,
+    showAll: isPlatformAdminView,
   });
   
   const [email, setEmail] = useState('');

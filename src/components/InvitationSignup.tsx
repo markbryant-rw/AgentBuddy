@@ -265,8 +265,8 @@ export const InvitationSignup = ({ inviteCode }: InvitationSignupProps) => {
         description: `Joining ${teamData.name}...`,
       });
 
-      // Redirect to dashboard immediately (auto-friend trigger handles teammate connections)
-      navigate('/');
+      // Redirect to dashboard directly (avoid race condition with Landing page redirect)
+      navigate('/dashboard');
     } catch (error: any) {
       console.error('Signup error:', error);
       

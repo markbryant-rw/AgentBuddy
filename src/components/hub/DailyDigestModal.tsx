@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useQuarterlyAppraisals } from '@/hooks/useQuarterlyAppraisals';
+import { useTeamQuarterlyAppraisals } from '@/hooks/useTeamQuarterlyAppraisals';
 import { useTeamQuarterlyListingsSales } from '@/hooks/useTeamQuarterlyListingsSales';
 import { useOvernightHotLeads } from '@/hooks/useOvernightHotLeads';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
@@ -40,7 +40,6 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
   const { user } = useAuth();
   const { profile } = useProfile();
   const { updatePreferences } = useUserPreferences();
-  const { data: quarterlyAppraisals } = useQuarterlyAppraisals(user?.id || '');
   const { data: hotLeads } = useOvernightHotLeads();
 
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -51,6 +50,8 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
   const [overdueTasks, setOverdueTasks] = useState(0);
   const [dueTodayTasks, setDueTodayTasks] = useState(0);
 
+  // Team-based quarterly appraisals (shows team totals, not just personal)
+  const { data: quarterlyAppraisals } = useTeamQuarterlyAppraisals(teamId || undefined);
   const { data: listingsSalesData } = useTeamQuarterlyListingsSales(teamId || undefined);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
