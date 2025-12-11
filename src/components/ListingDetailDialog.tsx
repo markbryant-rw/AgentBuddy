@@ -145,6 +145,8 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
               ? [{ id: crypto.randomUUID(), name: editedListing!.vendor_name, is_primary: true }] 
               : [],
           listing_signed_date: new Date().toISOString().split('T')[0],
+          listing_id: editedListing!.id, // Link to source opportunity
+          property_id: (editedListing as any)?.property_id, // Copy property_id for lifecycle tracking
         };
 
         const { error } = await supabase

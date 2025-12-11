@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useTeam } from './useTeam';
 import { useGoogleCalendar } from './useGoogleCalendar';
+import { useProperties } from './useProperties';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 
@@ -49,6 +50,7 @@ export interface LoggedAppraisal {
   longitude?: number;
   geocoded_at?: string;
   geocode_error?: string;
+  property_id?: string; // Links to properties table
   status?: string;
   notes?: string;
   attachments?: any[];
@@ -93,6 +95,7 @@ export const useLoggedAppraisals = () => {
   const { team } = useTeam();
   const queryClient = useQueryClient();
   const { isConnected, settings, syncEvent } = useGoogleCalendar();
+  const { getOrCreateProperty } = useProperties();
 
   const { data: appraisals = [], isLoading: loading } = useQuery({
     queryKey: ['logged_appraisals', team?.id],
@@ -204,6 +207,22 @@ export const useLoggedAppraisals = () => {
   ) => {
     if (!user || !team) return null;
     
+    // Get or create a property for this address
+    let propertyId: string | undefined;
+    try {
+      const property = await getOrCreateProperty({
+        address: appraisal.address,
+        suburb: appraisal.suburb,
+        region: appraisal.region,
+        latitude: appraisal.latitude,
+        longitude: appraisal.longitude,
+      });
+      propertyId = property?.id;
+    } catch (error) {
+      console.error('Error getting/creating property:', error);
+      // Continue without property_id - not critical
+    }
+    
     // Prepare data for insert - strip computed fields and cast owners
     const { agent, visit_number, owners, ...insertData } = appraisal as any;
     
@@ -216,6 +235,7 @@ export const useLoggedAppraisals = () => {
         team_id: team.id,
         created_by: user.id,
         agent_id: appraisal.agent_id || user.id,
+        property_id: propertyId,
       })
       .select()
       .single();
@@ -415,7 +435,7 @@ export const useLoggedAppraisals = () => {
     if (!user || !team) return null;
     
     try {
-      // Get the appraisal to carry over agent_id
+      // Get the appraisal to carry over agent_id and property_id
       const appraisal = appraisals.find(a => a.id === appraisalId);
       
       const { data: opportunity, error } = await supabase
@@ -431,6 +451,7 @@ export const useLoggedAppraisals = () => {
           expected_month: opportunityData.expected_month,
           notes: opportunityData.notes,
           appraisal_id: appraisalId, // Link opportunity to source appraisal
+          property_id: appraisal?.property_id, // Copy property_id for lifecycle tracking
         })
         .select()
         .single();

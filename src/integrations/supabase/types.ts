@@ -439,6 +439,7 @@ export type Database = {
           last_activity: string | null
           personalized_url: string | null
           propensity_score: number | null
+          property_id: string | null
           proposal_accepted_at: string | null
           proposal_decline_reason: string | null
           proposal_declined_at: string | null
@@ -461,6 +462,7 @@ export type Database = {
           last_activity?: string | null
           personalized_url?: string | null
           propensity_score?: number | null
+          property_id?: string | null
           proposal_accepted_at?: string | null
           proposal_decline_reason?: string | null
           proposal_declined_at?: string | null
@@ -483,6 +485,7 @@ export type Database = {
           last_activity?: string | null
           personalized_url?: string | null
           propensity_score?: number | null
+          property_id?: string | null
           proposal_accepted_at?: string | null
           proposal_decline_reason?: string | null
           proposal_declined_at?: string | null
@@ -498,6 +501,13 @@ export type Database = {
             columns: ["appraisal_id"]
             isOneToOne: false
             referencedRelation: "logged_appraisals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "beacon_reports_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
         ]
@@ -1929,6 +1939,7 @@ export type Database = {
           open_home_dates: string[] | null
           outcome: string | null
           owners: Json | null
+          property_id: string | null
           region: string | null
           stage: string | null
           suburb: string | null
@@ -1972,6 +1983,7 @@ export type Database = {
           open_home_dates?: string[] | null
           outcome?: string | null
           owners?: Json | null
+          property_id?: string | null
           region?: string | null
           stage?: string | null
           suburb?: string | null
@@ -2015,6 +2027,7 @@ export type Database = {
           open_home_dates?: string[] | null
           outcome?: string | null
           owners?: Json | null
+          property_id?: string | null
           region?: string | null
           stage?: string | null
           suburb?: string | null
@@ -2036,6 +2049,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_pipeline_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {
@@ -2084,6 +2104,7 @@ export type Database = {
           notes: string | null
           outcome: string | null
           owners: Json | null
+          property_id: string | null
           stage: string | null
           status: string | null
           suburb: string | null
@@ -2130,6 +2151,7 @@ export type Database = {
           notes?: string | null
           outcome?: string | null
           owners?: Json | null
+          property_id?: string | null
           stage?: string | null
           status?: string | null
           suburb?: string | null
@@ -2176,6 +2198,7 @@ export type Database = {
           notes?: string | null
           outcome?: string | null
           owners?: Json | null
+          property_id?: string | null
           stage?: string | null
           status?: string | null
           suburb?: string | null
@@ -2199,6 +2222,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logged_appraisals_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {
@@ -3018,6 +3048,60 @@ export type Database = {
           },
           {
             foreignKeyName: "projects_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      properties: {
+        Row: {
+          address: string
+          created_at: string
+          created_by: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          region: string | null
+          suburb: string | null
+          team_id: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          region?: string | null
+          suburb?: string | null
+          team_id: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          region?: string | null
+          suburb?: string | null
+          team_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "properties_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
@@ -4559,6 +4643,7 @@ export type Database = {
           photoshoot_date: string | null
           pre_settlement_inspection_date: string | null
           price_alignment_status: string | null
+          property_id: string | null
           sale_price: number | null
           settlement_date: string | null
           stage: string | null
@@ -4618,6 +4703,7 @@ export type Database = {
           photoshoot_date?: string | null
           pre_settlement_inspection_date?: string | null
           price_alignment_status?: string | null
+          property_id?: string | null
           sale_price?: number | null
           settlement_date?: string | null
           stage?: string | null
@@ -4677,6 +4763,7 @@ export type Database = {
           photoshoot_date?: string | null
           pre_settlement_inspection_date?: string | null
           price_alignment_status?: string | null
+          property_id?: string | null
           sale_price?: number | null
           settlement_date?: string | null
           stage?: string | null
@@ -4715,6 +4802,20 @@ export type Database = {
             columns: ["last_edited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings_pipeline"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
             referencedColumns: ["id"]
           },
           {

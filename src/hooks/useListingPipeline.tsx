@@ -39,6 +39,8 @@ export interface Listing {
   longitude?: number;
   geocoded_at?: string;
   geocode_error?: string;
+  property_id?: string; // Links to properties table
+  appraisal_id?: string; // Links to source appraisal
   created_at: string;
   updated_at: string;
 }
