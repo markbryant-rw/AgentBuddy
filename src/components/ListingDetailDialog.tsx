@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StarRating } from '@/components/ui/star-rating';
 import { Listing, ListingComment } from '@/hooks/useListingPipeline';
 import { useAssignableTeamMembers } from '@/hooks/useAssignableTeamMembers';
@@ -20,6 +21,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import LocationFixSection from '@/components/shared/LocationFixSection';
 import { OwnersEditor, Owner, legacyToOwners, ownersToLegacy, getPrimaryOwner } from '@/components/shared/OwnersEditor';
+import { BeaconPropertyTab } from '@/components/shared/BeaconPropertyTab';
+import { FileText, Activity } from 'lucide-react';
 
 interface ListingDetailDialogProps {
   listing: Listing | null;
@@ -223,13 +226,29 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
 
   if (!editedListing) return null;
 
+  const [activeTab, setActiveTab] = useState('details');
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[90vh]">
           <DialogHeader><DialogTitle className="text-2xl">Opportunity Details</DialogTitle></DialogHeader>
-          <ScrollArea className="max-h-[calc(90vh-8rem)] pr-4">
-            <form onSubmit={handleSave} className="space-y-6">
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="w-full justify-start h-auto bg-transparent border-b rounded-none mb-4">
+              <TabsTrigger value="details" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none gap-2">
+                <FileText className="h-4 w-4" />
+                Details
+              </TabsTrigger>
+              <TabsTrigger value="beacon" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none gap-2">
+                <Activity className="h-4 w-4" />
+                Beacon
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="details" className="mt-0 flex-1">
+              <ScrollArea className="max-h-[calc(90vh-12rem)] pr-4">
+                <form onSubmit={handleSave} className="space-y-6">
               {/* Property Details Section */}
               <div className="space-y-4 p-4 rounded-lg bg-muted/50">
                 <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Property Details</h3>
@@ -457,8 +476,33 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
                 <Button type="button" variant="destructive" onClick={handleDelete} className="px-6">Delete</Button>
                 <div className="flex gap-3"><Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="px-6">Cancel</Button><Button type="submit" className="px-6">Save Changes</Button></div>
               </div>
-            </form>
-          </ScrollArea>
+                </form>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="beacon" className="mt-0 flex-1">
+              <ScrollArea className="max-h-[calc(90vh-12rem)] pr-4">
+                {(editedListing as any)?.property_id ? (
+                  <BeaconPropertyTab 
+                    propertyId={(editedListing as any).property_id}
+                    appraisalId={(editedListing as any)?.appraisal_id}
+                    module="opportunity"
+                    fallbackStats={{
+                      propensity_score: (editedListing as any).beacon_propensity_score || 0,
+                      is_hot_lead: (editedListing as any).beacon_is_hot_lead || false,
+                      last_activity: (editedListing as any).beacon_last_activity || undefined,
+                    }}
+                  />
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium">No property linked</p>
+                    <p className="text-sm mt-1">This opportunity needs a linked property to show Beacon reports.</p>
+                  </div>
+                )}
+              </ScrollArea>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
       
