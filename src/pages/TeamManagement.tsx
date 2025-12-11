@@ -149,6 +149,7 @@ export default function TeamManagement() {
       <PageHeaderWithBack
         title="Team Management"
         description="Manage your team members, roles, and settings"
+        backPath="/setup?tab=team"
       />
       
       <div className="max-w-6xl mx-auto p-6 space-y-6">
