@@ -20,13 +20,16 @@ import {
   Clock,
   Flame,
   FileText,
-  Trophy,
   BellOff,
   AlertTriangle,
   TrendingUp,
+  PartyPopper,
+  Phone,
+  Calendar,
+  Home,
 } from 'lucide-react';
 import { TeamAppraisalLeaderboard } from './TeamAppraisalLeaderboard';
-import { format, startOfWeek, endOfWeek, addDays } from 'date-fns';
+import { format, startOfWeek, endOfWeek, addDays, differenceInDays, isToday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DailyDigestModalProps {
@@ -34,6 +37,32 @@ interface DailyDigestModalProps {
   onDismiss: () => void;
   onSnooze: () => void;
   onOptOut: () => void;
+}
+
+interface SettlementDetail {
+  id: string;
+  address: string;
+  settlement_date: string;
+  vendor_names: string | null;
+  client_name: string | null;
+  isToday: boolean;
+}
+
+interface OverdueTaskDetail {
+  id: string;
+  title: string;
+  due_date: string;
+  daysOverdue: number;
+  address: string | null;
+  context: string;
+}
+
+interface MissedFollowup {
+  id: string;
+  address: string;
+  vendor_name: string | null;
+  next_follow_up: string;
+  daysOverdue: number;
 }
 
 export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyDigestModalProps) => {
@@ -44,11 +73,14 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
 
   const [teamId, setTeamId] = useState<string | null>(null);
   const [weeklyAppraisals, setWeeklyAppraisals] = useState(0);
-  const [upcomingSettlements, setUpcomingSettlements] = useState(0);
-  const [expiringListings, setExpiringListings] = useState(0);
   const [activeTransactions, setActiveTransactions] = useState(0);
-  const [overdueTasks, setOverdueTasks] = useState(0);
-  const [dueTodayTasks, setDueTodayTasks] = useState(0);
+  const [expiringListings, setExpiringListings] = useState(0);
+  
+  // Enhanced detailed state
+  const [settlementDetails, setSettlementDetails] = useState<SettlementDetail[]>([]);
+  const [overdueTaskDetails, setOverdueTaskDetails] = useState<OverdueTaskDetail[]>([]);
+  const [dueTodayTaskDetails, setDueTodayTaskDetails] = useState<OverdueTaskDetail[]>([]);
+  const [missedFollowups, setMissedFollowups] = useState<MissedFollowup[]>([]);
 
   // Team-based quarterly appraisals (shows team totals, not just personal)
   const { data: quarterlyAppraisals } = useTeamQuarterlyAppraisals(teamId || undefined);
@@ -63,6 +95,9 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
 
     const fetchAdditionalData = async () => {
       try {
+        const today = new Date();
+        const todayStr = format(today, 'yyyy-MM-dd');
+
         // Get team ID
         const { data: teamMember } = await supabase
           .from('team_members')
@@ -73,7 +108,6 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
         if (teamMember?.team_id) {
           setTeamId(teamMember.team_id);
 
-          const today = new Date();
           const weekStart = startOfWeek(today, { weekStartsOn: 1 });
           const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
           const nextWeek = addDays(today, 7);
@@ -99,16 +133,26 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
 
           setActiveTransactions(activeCount || 0);
 
-          // Upcoming settlements (next 7 days)
-          const { count: settlementsCount } = await supabase
+          // Settlement details (next 7 days) - ENHANCED
+          const { data: settlements } = await supabase
             .from('transactions')
-            .select('*', { count: 'exact', head: true })
+            .select('id, address, settlement_date, vendor_names, client_name')
             .eq('team_id', teamMember.team_id)
             .in('stage', ['unconditional', 'contract'])
-            .gte('settlement_date', format(today, 'yyyy-MM-dd'))
-            .lte('settlement_date', format(nextWeek, 'yyyy-MM-dd'));
+            .gte('settlement_date', todayStr)
+            .lte('settlement_date', format(nextWeek, 'yyyy-MM-dd'))
+            .order('settlement_date', { ascending: true });
 
-          setUpcomingSettlements(settlementsCount || 0);
+          if (settlements) {
+            setSettlementDetails(settlements.map(s => ({
+              id: s.id,
+              address: s.address,
+              settlement_date: s.settlement_date,
+              vendor_names: typeof s.vendor_names === 'string' ? s.vendor_names : Array.isArray(s.vendor_names) ? s.vendor_names.join(', ') : null,
+              client_name: s.client_name,
+              isToday: s.settlement_date === todayStr
+            })));
+          }
 
           // Expiring listings (within 30 days)
           const { count: expiringCount } = await supabase
@@ -119,27 +163,92 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
             .lte('listing_expiry', format(thirtyDaysLater, 'yyyy-MM-dd'));
 
           setExpiringListings(expiringCount || 0);
+
+          // Missed appraisal follow-ups - NEW
+          const { data: missedFollowupsData } = await supabase
+            .from('logged_appraisals')
+            .select('id, address, vendor_name, next_follow_up')
+            .eq('agent_id', user.id)
+            .lt('next_follow_up', todayStr)
+            .is('outcome', null)
+            .order('next_follow_up', { ascending: true })
+            .limit(5);
+
+          if (missedFollowupsData) {
+            setMissedFollowups(missedFollowupsData.map(f => ({
+              ...f,
+              daysOverdue: differenceInDays(today, new Date(f.next_follow_up))
+            })));
+          }
         }
 
-        // Overdue tasks
-        const { count: overdueCount } = await supabase
+        // Overdue tasks with details - ENHANCED
+        const { data: overdueTasks } = await supabase
           .from('tasks')
-          .select('*', { count: 'exact', head: true })
+          .select(`
+            id, title, due_date, transaction_id, appraisal_id,
+            transactions(address),
+            logged_appraisals(address)
+          `)
           .eq('assigned_to', user.id)
           .eq('completed', false)
-          .lt('due_date', format(new Date(), 'yyyy-MM-dd'));
+          .lt('due_date', todayStr)
+          .order('due_date', { ascending: true })
+          .limit(10);
 
-        setOverdueTasks(overdueCount || 0);
+        if (overdueTasks) {
+          // Group by address/context
+          const grouped = overdueTasks.map(task => {
+            const transactions = task.transactions as { address: string } | null;
+            const appraisals = task.logged_appraisals as { address: string } | null;
+            const address = transactions?.address || appraisals?.address || null;
+            const context = task.transaction_id ? 'transaction' : task.appraisal_id ? 'appraisal' : 'general';
+            
+            return {
+              id: task.id,
+              title: task.title,
+              due_date: task.due_date,
+              daysOverdue: differenceInDays(today, new Date(task.due_date)),
+              address,
+              context
+            };
+          });
+          setOverdueTaskDetails(grouped);
+        }
 
-        // Tasks due today
-        const { count: todayCount } = await supabase
+        // Tasks due today with details
+        const { data: todayTasks } = await supabase
           .from('tasks')
-          .select('*', { count: 'exact', head: true })
+          .select(`
+            id, title, due_date, transaction_id, appraisal_id,
+            transactions(address),
+            logged_appraisals(address)
+          `)
           .eq('assigned_to', user.id)
           .eq('completed', false)
-          .eq('due_date', format(new Date(), 'yyyy-MM-dd'));
+          .eq('due_date', todayStr)
+          .order('created_at', { ascending: true })
+          .limit(5);
 
-        setDueTodayTasks(todayCount || 0);
+        if (todayTasks) {
+          const mapped = todayTasks.map(task => {
+            const transactions = task.transactions as { address: string } | null;
+            const appraisals = task.logged_appraisals as { address: string } | null;
+            const address = transactions?.address || appraisals?.address || null;
+            const context = task.transaction_id ? 'transaction' : task.appraisal_id ? 'appraisal' : 'general';
+            
+            return {
+              id: task.id,
+              title: task.title,
+              due_date: task.due_date,
+              daysOverdue: 0,
+              address,
+              context
+            };
+          });
+          setDueTodayTaskDetails(mapped);
+        }
+
       } catch (error) {
         console.error('Error fetching digest data:', error);
       }
@@ -181,8 +290,19 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
     }
   };
 
-  const hasUrgentItems = overdueTasks > 0 || dueTodayTasks > 0;
+  const hasUrgentItems = overdueTaskDetails.length > 0 || dueTodayTaskDetails.length > 0;
   const hasHotLeads = (hotLeads?.length || 0) > 0;
+  const hasMissedFollowups = missedFollowups.length > 0;
+  const todaySettlements = settlementDetails.filter(s => s.isToday);
+  const thisWeekSettlements = settlementDetails.filter(s => !s.isToday);
+
+  // Group overdue tasks by address
+  const groupedOverdueTasks = overdueTaskDetails.reduce((acc, task) => {
+    const key = task.address || 'General Tasks';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(task);
+    return acc;
+  }, {} as Record<string, OverdueTaskDetail[]>);
 
   return (
     <Dialog open={open} onOpenChange={onDismiss}>
@@ -210,6 +330,37 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
               </div>
 
               <div className="p-6 space-y-5">
+                {/* Settlement TODAY Alert - Only show if settling today */}
+                {todaySettlements.length > 0 && (
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <Card className="p-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0 shadow-lg">
+                      <div className="flex items-center gap-3 mb-3">
+                        <PartyPopper className="h-6 w-6" />
+                        <h3 className="font-bold text-lg">🎉 Settling TODAY!</h3>
+                      </div>
+                      <div className="space-y-2">
+                        {todaySettlements.map(settlement => (
+                          <div key={settlement.id} className="flex items-center justify-between bg-white/20 rounded-lg p-3">
+                            <div className="flex items-center gap-2">
+                              <Home className="h-4 w-4" />
+                              <span className="font-medium">{settlement.address}</span>
+                            </div>
+                            {(settlement.vendor_names || settlement.client_name) && (
+                              <span className="text-emerald-100 text-sm">
+                                for {settlement.vendor_names || settlement.client_name}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+
                 {/* Your Progress Section - 3 Columns */}
                 <Card className="p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border-blue-200 dark:border-blue-800">
                   <div className="flex items-center gap-2 mb-4">
@@ -260,21 +411,21 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
                   </div>
                 </Card>
 
-                {/* Stock at a Glance */}
+                {/* Stock at a Glance - Enhanced with settlement details */}
                 <Card className="p-5 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800">
                   <div className="flex items-center gap-2 mb-4">
                     <FileText className="h-5 w-5 text-green-600 dark:text-green-400" />
                     <h3 className="font-bold">Stock at a Glance</h3>
                   </div>
 
-                  <div className="flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-6 text-sm mb-4">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl font-bold text-green-600 dark:text-green-400">{activeTransactions}</span>
                       <span className="text-muted-foreground">Active</span>
                     </div>
                     <div className="h-6 w-px bg-border" />
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{upcomingSettlements}</span>
+                      <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{settlementDetails.length}</span>
                       <span className="text-muted-foreground">Settlements This Week</span>
                     </div>
                     {expiringListings > 0 && (
@@ -288,6 +439,29 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
                       </>
                     )}
                   </div>
+
+                  {/* This Week Settlements List */}
+                  {thisWeekSettlements.length > 0 && (
+                    <div className="border-t border-green-200 dark:border-green-800 pt-3 mt-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Coming up this week:
+                      </p>
+                      <div className="space-y-1">
+                        {thisWeekSettlements.slice(0, 3).map(settlement => (
+                          <div key={settlement.id} className="flex items-center justify-between text-sm">
+                            <span className="truncate flex-1">{settlement.address}</span>
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              {format(new Date(settlement.settlement_date), 'EEE, MMM d')}
+                            </Badge>
+                          </div>
+                        ))}
+                        {thisWeekSettlements.length > 3 && (
+                          <p className="text-xs text-muted-foreground">+{thisWeekSettlements.length - 3} more</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </Card>
 
                 {/* Team Leaderboard */}
@@ -297,7 +471,7 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
 
                 {/* Urgent Attention & Hot Leads Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Urgent Attention */}
+                  {/* Urgent Attention - Enhanced with details */}
                   <Card className={`p-5 ${hasUrgentItems ? 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-950/30 dark:to-orange-950/30 border-red-200 dark:border-red-800' : 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 border-green-200 dark:border-green-800'}`}>
                     <div className="flex items-center gap-2 mb-3">
                       {hasUrgentItems ? (
@@ -309,17 +483,47 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
                     </div>
 
                     {hasUrgentItems ? (
-                      <div className="space-y-2">
-                        {overdueTasks > 0 && (
-                          <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                            <AlertCircle className="h-4 w-4" />
-                            <span className="font-medium">{overdueTasks} overdue {overdueTasks === 1 ? 'task' : 'tasks'}</span>
+                      <div className="space-y-3">
+                        {/* Overdue Tasks - Grouped */}
+                        {overdueTaskDetails.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 mb-2">
+                              <AlertCircle className="h-4 w-4" />
+                              <span className="font-medium">{overdueTaskDetails.length} overdue {overdueTaskDetails.length === 1 ? 'task' : 'tasks'}</span>
+                            </div>
+                            <div className="space-y-1 ml-6">
+                              {Object.entries(groupedOverdueTasks).slice(0, 3).map(([address, tasks]) => (
+                                <div key={address} className="text-sm text-red-700 dark:text-red-300">
+                                  <span className="font-medium">{address}:</span>{' '}
+                                  <span className="text-red-600/80 dark:text-red-400/80">
+                                    {tasks.length} task{tasks.length > 1 ? 's' : ''} ({tasks[0].title}{tasks.length > 1 ? '...' : ''})
+                                  </span>
+                                </div>
+                              ))}
+                              {Object.keys(groupedOverdueTasks).length > 3 && (
+                                <p className="text-xs text-red-500">+{Object.keys(groupedOverdueTasks).length - 3} more properties</p>
+                              )}
+                            </div>
                           </div>
                         )}
-                        {dueTodayTasks > 0 && (
-                          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                            <Clock className="h-4 w-4" />
-                            <span className="font-medium">{dueTodayTasks} due today</span>
+
+                        {/* Due Today Tasks */}
+                        {dueTodayTaskDetails.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 mb-2">
+                              <Clock className="h-4 w-4" />
+                              <span className="font-medium">{dueTodayTaskDetails.length} due today</span>
+                            </div>
+                            <div className="space-y-1 ml-6">
+                              {dueTodayTaskDetails.slice(0, 3).map(task => (
+                                <div key={task.id} className="text-sm text-amber-700 dark:text-amber-300">
+                                  • {task.title} {task.address && <span className="text-amber-600/70">- {task.address}</span>}
+                                </div>
+                              ))}
+                              {dueTodayTaskDetails.length > 3 && (
+                                <p className="text-xs text-amber-500">+{dueTodayTaskDetails.length - 3} more</p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -362,6 +566,37 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
                     )}
                   </Card>
                 </div>
+
+                {/* Missed Follow-ups - NEW Section */}
+                {hasMissedFollowups && (
+                  <Card className="p-5 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 border-purple-200 dark:border-purple-800">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Phone className="h-5 w-5 text-purple-500" />
+                      <h3 className="font-bold">Missed Follow-ups</h3>
+                      <Badge variant="secondary" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 text-xs">
+                        Needs attention
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      You scheduled these follow-ups but haven't contacted yet:
+                    </p>
+                    <div className="space-y-2">
+                      {missedFollowups.map(followup => (
+                        <div key={followup.id} className="flex items-center justify-between text-sm bg-purple-100/50 dark:bg-purple-900/20 rounded-lg p-2">
+                          <div className="flex-1">
+                            <span className="font-medium">{followup.address}</span>
+                            {followup.vendor_name && (
+                              <span className="text-purple-600 dark:text-purple-400"> ({followup.vendor_name})</span>
+                            )}
+                          </div>
+                          <Badge variant="outline" className="ml-2 text-xs border-purple-300 text-purple-700 dark:text-purple-300">
+                            {followup.daysOverdue} {followup.daysOverdue === 1 ? 'day' : 'days'} overdue
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                )}
 
                 <Separator />
 
