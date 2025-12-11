@@ -260,3 +260,6 @@ verify_jwt = true
 
 [functions.purchase-extra-seat]
 verify_jwt = true
+
+[functions.test-beacon-integration]
+verify_jwt = true

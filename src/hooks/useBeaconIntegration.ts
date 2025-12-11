@@ -84,19 +84,20 @@ export const useBeaconIntegration = () => {
     },
   });
 
-  // Toggle Beacon integration for team
-  const toggleBeaconIntegration = useMutation({
-    mutationFn: async (enabled: boolean) => {
+  // OAuth-style Connect to Beacon (enables + auto-syncs)
+  const connectToBeacon = useMutation({
+    mutationFn: async () => {
       if (!team?.id || !user?.id) throw new Error('Team or user not found');
 
+      // Step 1: Enable the integration
       const { data, error } = await supabase
         .from('integration_settings')
         .upsert({
           team_id: team.id,
           integration_name: 'beacon',
-          enabled,
-          connected_at: enabled ? new Date().toISOString() : null,
-          connected_by: enabled ? user.id : null,
+          enabled: true,
+          connected_at: new Date().toISOString(),
+          connected_by: user.id,
           updated_at: new Date().toISOString(),
         }, {
           onConflict: 'team_id,integration_name',
@@ -106,19 +107,55 @@ export const useBeaconIntegration = () => {
 
       if (error) throw error;
 
-      // Sync team to Beacon when enabling
-      if (enabled && team?.id) {
-        await syncTeamToBeacon.mutateAsync(team.id);
-      }
+      // Step 2: Auto-sync team to Beacon
+      await syncTeamToBeacon.mutateAsync(team.id);
 
       return data;
     },
-    onSuccess: (_, enabled) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['integration-settings', team?.id] });
-      toast.success(enabled 
-        ? 'Beacon enabled! $25/month includes 3 reports.' 
-        : 'Beacon integration disabled'
-      );
+      toast.success('Connected to Beacon! Your team is ready to create reports.');
+    },
+    onError: (error) => {
+      console.error('Failed to connect to Beacon:', error);
+      toast.error('Failed to connect to Beacon');
+    },
+  });
+
+  // Disconnect from Beacon
+  const disconnectBeacon = useMutation({
+    mutationFn: async () => {
+      if (!team?.id) throw new Error('Team not found');
+
+      const { error } = await supabase
+        .from('integration_settings')
+        .update({
+          enabled: false,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('team_id', team.id)
+        .eq('integration_name', 'beacon');
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integration-settings', team?.id] });
+      toast.success('Disconnected from Beacon');
+    },
+    onError: (error) => {
+      console.error('Failed to disconnect from Beacon:', error);
+      toast.error('Failed to disconnect');
+    },
+  });
+
+  // Legacy toggle (kept for backward compatibility)
+  const toggleBeaconIntegration = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      if (enabled) {
+        return connectToBeacon.mutateAsync();
+      } else {
+        return disconnectBeacon.mutateAsync();
+      }
     },
     onError: (error) => {
       console.error('Failed to toggle Beacon:', error);
@@ -266,6 +303,10 @@ export const useBeaconIntegration = () => {
     isLoadingSettings,
     integrationSettings,
     toggleBeaconIntegration,
+    connectToBeacon,
+    isConnecting: connectToBeacon.isPending,
+    disconnectBeacon,
+    isDisconnecting: disconnectBeacon.isPending,
     createBeaconReport,
     isCreatingReport: createBeaconReport.isPending,
     linkBeaconReport,

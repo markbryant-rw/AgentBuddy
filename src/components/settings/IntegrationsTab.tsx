@@ -1,8 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Home, ExternalLink, CheckCircle2, XCircle, Gift, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, Home, ExternalLink, CheckCircle2, XCircle, Gift, CreditCard, AlertCircle, Unplug } from "lucide-react";
 import { useBeaconIntegration } from "@/hooks/useBeaconIntegration";
 import { useBeaconSubscription } from "@/hooks/useBeaconSubscription";
 import { useTeam } from "@/hooks/useTeam";
@@ -24,13 +23,20 @@ const IntegrationsTab = () => {
     isBeaconEnabled, 
     isLoadingSettings, 
     integrationSettings,
-    toggleBeaconIntegration 
+    connectToBeacon,
+    isConnecting,
+    disconnectBeacon,
+    isDisconnecting,
   } = useBeaconIntegration();
 
   const { subscription, isLoading: isLoadingSubscription, isUnlimited } = useBeaconSubscription();
 
-  const handleToggleBeacon = () => {
-    toggleBeaconIntegration.mutate(!isBeaconEnabled);
+  const handleConnect = () => {
+    connectToBeacon.mutate();
+  };
+
+  const handleDisconnect = () => {
+    disconnectBeacon.mutate();
   };
 
   // Render subscription status section
@@ -122,6 +128,34 @@ const IntegrationsTab = () => {
     );
   };
 
+  // Render health indicators when connected
+  const renderHealthIndicators = () => {
+    if (!isBeaconEnabled) return null;
+
+    return (
+      <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Connection Status
+        </p>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Team synced</span>
+            <span className="flex items-center gap-1 text-green-600">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Yes
+            </span>
+          </div>
+          {integrationSettings?.connected_at && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Connected</span>
+              <span>{format(new Date(integrationSettings.connected_at), 'MMM d, yyyy')}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -182,23 +216,53 @@ const IntegrationsTab = () => {
               <li>Automatic engagement notifications</li>
             </ul>
             {renderSubscriptionStatus()}
+            {renderHealthIndicators()}
           </div>
 
+          {/* OAuth-style Connect/Disconnect Buttons */}
           {isTeamAdmin ? (
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div className="space-y-0.5">
-                <p className="text-sm font-medium">Enable for your team</p>
-                {integrationSettings?.connected_at && (
-                  <p className="text-xs text-muted-foreground">
-                    Connected {format(new Date(integrationSettings.connected_at), 'MMM d, yyyy')}
-                  </p>
-                )}
-              </div>
-              <Switch
-                checked={isBeaconEnabled}
-                onCheckedChange={handleToggleBeacon}
-                disabled={toggleBeaconIntegration.isPending}
-              />
+            <div className="flex items-center gap-3 pt-4 border-t">
+              {!isBeaconEnabled ? (
+                <Button
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                  className="flex-1 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                >
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Connecting...
+                    </>
+                  ) : (
+                    <>
+                      <Home className="h-4 w-4 mr-2" />
+                      Connect to Beacon
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" className="flex-1" asChild>
+                    <a href="https://beacon.lovable.app" target="_blank" rel="noopener noreferrer">
+                      Open Beacon Dashboard
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDisconnect}
+                    disabled={isDisconnecting}
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    {isDisconnecting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Unplug className="h-4 w-4" />
+                    )}
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
             <div className="pt-4 border-t">
@@ -207,16 +271,15 @@ const IntegrationsTab = () => {
                   ? "Beacon is enabled for your team. Create reports from any appraisal."
                   : "Contact your team leader to enable Beacon for your team."}
               </p>
+              {isBeaconEnabled && (
+                <Button variant="outline" size="sm" className="w-full mt-3" asChild>
+                  <a href="https://beacon.lovable.app" target="_blank" rel="noopener noreferrer">
+                    Open Beacon Dashboard
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
+              )}
             </div>
-          )}
-
-          {isBeaconEnabled && (
-            <Button variant="outline" size="sm" className="w-full" asChild>
-              <a href="https://beacon.lovable.app" target="_blank" rel="noopener noreferrer">
-                Open Beacon Dashboard
-                <ExternalLink className="ml-2 h-4 w-4" />
-              </a>
-            </Button>
           )}
         </CardContent>
       </Card>
