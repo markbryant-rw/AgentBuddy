@@ -15,6 +15,160 @@ interface Owner {
   beacon_owner_id?: string;
 }
 
+// Helper function to sync team to Beacon
+async function syncTeamToBeacon(
+  teamId: string,
+  beaconApiUrl: string,
+  beaconApiKey: string,
+  supabase: any
+): Promise<boolean> {
+  console.log('syncTeamToBeacon: Starting sync for team:', teamId);
+  
+  try {
+    // Fetch team data
+    const { data: team, error: teamError } = await supabase
+      .from('teams')
+      .select('id, name')
+      .eq('id', teamId)
+      .single();
+
+    if (teamError || !team) {
+      console.error('syncTeamToBeacon: Team not found:', teamError);
+      return false;
+    }
+
+    // Fetch team members with profile info
+    const { data: members, error: membersError } = await supabase
+      .from('team_members')
+      .select(`
+        user_id,
+        access_level,
+        profiles:user_id (
+          email,
+          full_name,
+          phone
+        )
+      `)
+      .eq('team_id', teamId);
+
+    if (membersError) {
+      console.error('syncTeamToBeacon: Failed to fetch members:', membersError);
+      return false;
+    }
+
+    // Format members for Beacon API
+    const formattedMembers = (members || [])
+      .filter((m: any) => m.profiles)
+      .map((m: any) => ({
+        email: m.profiles.email,
+        name: m.profiles.full_name || m.profiles.email,
+        phone: m.profiles.phone || '',
+        role: m.access_level || 'member',
+      }));
+
+    console.log('syncTeamToBeacon: Syncing', formattedMembers.length, 'members to Beacon');
+
+    // Call Beacon sync endpoint
+    const syncEndpoint = `${beaconApiUrl}/sync-team-from-agentbuddy`;
+    const syncResponse = await fetch(syncEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Environment': 'production',
+      },
+      body: JSON.stringify({
+        apiKey: beaconApiKey,
+        team_id: teamId,
+        team_name: team.name,
+        members: formattedMembers,
+      }),
+    });
+
+    if (!syncResponse.ok) {
+      const errorText = await syncResponse.text();
+      console.error('syncTeamToBeacon: Beacon sync failed:', errorText);
+      return false;
+    }
+
+    const syncData = await syncResponse.json();
+    console.log('syncTeamToBeacon: Sync successful:', syncData);
+    return true;
+  } catch (error) {
+    console.error('syncTeamToBeacon: Error:', error);
+    return false;
+  }
+}
+
+// Helper function to call Beacon API with auto-retry on "Agent not found"
+async function callBeaconWithRetry(
+  endpoint: string,
+  payload: any,
+  teamId: string,
+  beaconApiUrl: string,
+  beaconApiKey: string,
+  supabase: any
+): Promise<{ response: Response; retried: boolean }> {
+  console.log('callBeaconWithRetry: Making initial request to', endpoint);
+  
+  // First attempt
+  let response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Environment': 'production',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  // If successful, return immediately
+  if (response.ok) {
+    return { response, retried: false };
+  }
+
+  // Check if it's an "Agent not found" error
+  const errorText = await response.text();
+  console.log('callBeaconWithRetry: First attempt failed:', errorText);
+
+  if (errorText.toLowerCase().includes('agent not found')) {
+    console.log('callBeaconWithRetry: Agent not found - triggering team sync...');
+    
+    // Sync team to Beacon
+    const syncSuccess = await syncTeamToBeacon(teamId, beaconApiUrl, beaconApiKey, supabase);
+    
+    if (syncSuccess) {
+      console.log('callBeaconWithRetry: Team sync successful, retrying original request...');
+      
+      // Retry the original call
+      response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Environment': 'production',
+        },
+        body: JSON.stringify(payload),
+      });
+      
+      return { response, retried: true };
+    } else {
+      console.error('callBeaconWithRetry: Team sync failed, cannot retry');
+      // Return a synthetic error response since we consumed the original
+      return {
+        response: new Response(JSON.stringify({ error: 'Agent not found and team sync failed' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        retried: true,
+      };
+    }
+  }
+
+  // For other errors, return synthetic response with the error text
+  return {
+    response: new Response(errorText, { status: response.status }),
+    retried: false,
+  };
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -128,32 +282,36 @@ Deno.serve(async (req) => {
       isPrimary: o.is_primary,
     }));
 
-    // Call Beacon API to create report as draft (no credit consumed until publish)
+    // Call Beacon API with auto-retry on "Agent not found"
     const endpoint = `${beaconApiUrl}/create-report-from-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
-    const beaconResponse = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Environment': 'production',
-      },
-      body: JSON.stringify({
-        apiKey: beaconApiKey,
-        agentEmail: user.email,
-        address: appraisal.address,
-        suburb: appraisal.suburb || '',
-        // Send all owners
-        owners: beaconOwners,
-        // Also send primary owner for backward compatibility
-        ownerName: primaryOwner?.name || appraisal.vendor_name || 'Property Owner',
-        ownerEmail: primaryOwner?.email || appraisal.vendor_email || '',
-        ownerMobile: primaryOwner?.phone || appraisal.vendor_mobile || '',
-        externalLeadId: appraisalId,
-        reportType: reportType,
-        team_id: appraisal.team_id, // Pass team_id for credit-based billing
-      }),
-    });
+    const beaconPayload = {
+      apiKey: beaconApiKey,
+      agentEmail: user.email,
+      address: appraisal.address,
+      suburb: appraisal.suburb || '',
+      owners: beaconOwners,
+      ownerName: primaryOwner?.name || appraisal.vendor_name || 'Property Owner',
+      ownerEmail: primaryOwner?.email || appraisal.vendor_email || '',
+      ownerMobile: primaryOwner?.phone || appraisal.vendor_mobile || '',
+      externalLeadId: appraisalId,
+      reportType: reportType,
+      team_id: appraisal.team_id,
+    };
+
+    const { response: beaconResponse, retried } = await callBeaconWithRetry(
+      endpoint,
+      beaconPayload,
+      appraisal.team_id,
+      beaconApiUrl,
+      beaconApiKey,
+      supabase
+    );
+
+    if (retried) {
+      console.log('Request was retried after team sync');
+    }
 
     if (!beaconResponse.ok) {
       const errorText = await beaconResponse.text();
@@ -219,6 +377,7 @@ Deno.serve(async (req) => {
         reportType: reportType,
         localReportId: newReport?.id,
         ownerCount: beaconOwners.length,
+        teamSynced: retried, // Indicate if team was auto-synced
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
