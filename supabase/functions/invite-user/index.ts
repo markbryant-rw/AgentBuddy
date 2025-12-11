@@ -26,6 +26,16 @@ const INVITATION_HIERARCHY: Record<string, string[]> = {
   assistant: [],
 };
 
+// Deterministic role hierarchy - returns highest privilege role from list
+const ROLE_HIERARCHY = ['platform_admin', 'office_manager', 'team_leader', 'salesperson', 'assistant'];
+
+const getHighestPrivilegeRole = (roles: Array<{ role: string }>): string => {
+  for (const level of ROLE_HIERARCHY) {
+    if (roles.some(r => r.role === level)) return level;
+  }
+  return 'assistant';
+};
+
 const handler = async (req: Request): Promise<Response> => {
   console.log('invite-user: Request received', { method: req.method });
   
@@ -110,8 +120,8 @@ const handler = async (req: Request): Promise<Response> => {
     // =================================================================
     // SERVER-SIDE CONTEXT VALIDATION (SECURITY CRITICAL)
     // =================================================================
-    // Determine the highest role (for permission checks)
-    const highestRole = inviterRoles[0].role;
+    // Determine the highest role (for permission checks) using deterministic hierarchy
+    const highestRole = getHighestPrivilegeRole(inviterRoles);
     const isPlatformAdmin = highestRole === 'platform_admin';
     const isOfficeManager = highestRole === 'office_manager';
     const isTeamLeader = highestRole === 'team_leader';
@@ -219,8 +229,8 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // RULE 1: ONE EMAIL = ONE ACCOUNT
-    // Check for existing profile
-    const { data: existingProfile } = await supabase
+    // Check for existing profile using service role to see ALL profiles (cross-office)
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('id, email, full_name, status, office_id')
       .eq('email', email)
@@ -326,11 +336,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check seat availability for the target team
     if (finalTeamId) {
-      // Use service role for admin operations
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
-
-      // Get team license info
+      // Get team license info (using supabaseAdmin already created above)
       const { data: teamData } = await supabaseAdmin
         .from('teams')
         .select('license_type, extra_seats_purchased')
@@ -373,9 +379,8 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Validate inviter can invite this role
-    const highestInviterRole = inviterRoles[0].role;
-    const canInvite = INVITATION_HIERARCHY[highestInviterRole]?.includes(role);
+    // Validate inviter can invite this role (highestRole already determined above)
+    const canInvite = INVITATION_HIERARCHY[highestRole]?.includes(role);
 
     if (!canInvite) {
       return new Response(
