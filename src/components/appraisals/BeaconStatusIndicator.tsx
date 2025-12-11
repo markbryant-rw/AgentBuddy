@@ -30,11 +30,11 @@ export const BeaconStatusIndicator = ({
   reportCreatedAt,
   reportSentAt,
 }: BeaconStatusIndicatorProps) => {
-  // Check if we have any engagement data (even without a linked report)
+  // Check if we have any meaningful engagement data worth displaying
   const hasEngagement = viewCount > 0 || propensityScore > 0 || isHotLead;
   
-  // Don't render if no Beacon report AND no engagement data
-  if (!hasReport && !hasEngagement) return null;
+  // Only show indicator when there's actual engagement - hide empty/zero states
+  if (!hasEngagement) return null;
 
   // Determine sent status from either prop or reportSentAt
   const isSent = isSentProp ?? !!reportSentAt;
