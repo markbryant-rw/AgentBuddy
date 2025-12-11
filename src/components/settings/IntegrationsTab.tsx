@@ -2,8 +2,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Home, ExternalLink, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Home, ExternalLink, CheckCircle2, XCircle, Gift, CreditCard, AlertCircle } from "lucide-react";
 import { useBeaconIntegration } from "@/hooks/useBeaconIntegration";
+import { useBeaconSubscription } from "@/hooks/useBeaconSubscription";
 import { useTeam } from "@/hooks/useTeam";
 import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,8 +27,99 @@ const IntegrationsTab = () => {
     toggleBeaconIntegration 
   } = useBeaconIntegration();
 
+  const { subscription, isLoading: isLoadingSubscription, isUnlimited } = useBeaconSubscription();
+
   const handleToggleBeacon = () => {
     toggleBeaconIntegration.mutate(!isBeaconEnabled);
+  };
+
+  // Render subscription status section
+  const renderSubscriptionStatus = () => {
+    if (isLoadingSubscription) {
+      return (
+        <div className="mt-3 p-3 bg-muted/50 rounded-lg flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-sm text-muted-foreground">Loading subscription...</span>
+        </div>
+      );
+    }
+
+    // Founder Unlimited
+    if (isUnlimited) {
+      return (
+        <div className="mt-3 p-3 bg-gradient-to-r from-amber-500/10 to-yellow-500/10 border border-amber-500/20 rounded-lg">
+          <div className="flex items-center gap-2">
+            <Gift className="h-5 w-5 text-amber-500" />
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+              Founder Unlimited Access
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Unlimited reports • No credit limit • Thank you for being a founder!
+          </p>
+        </div>
+      );
+    }
+
+    // Not connected
+    if (subscription.subscriptionStatus === 'inactive' || !isBeaconEnabled) {
+      return (
+        <div className="mt-3 p-3 bg-muted/50 rounded-lg">
+          <p className="text-sm font-medium">$25/month includes 3 reports</p>
+          <p className="text-xs text-muted-foreground">
+            Credit packs from $2.50/report for more. Teams share credits across all members.
+          </p>
+        </div>
+      );
+    }
+
+    // Has credits
+    if (typeof subscription.creditsRemaining === 'number' && subscription.creditsRemaining > 0) {
+      return (
+        <div className="mt-3 p-3 bg-gradient-to-r from-teal-500/10 to-cyan-500/10 border border-teal-500/20 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-teal-500" />
+              <p className="text-sm font-semibold text-teal-700 dark:text-teal-400">
+                {subscription.creditsRemaining} credits remaining
+              </p>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <a href="https://beacon.lovable.app/billing" target="_blank" rel="noopener noreferrer">
+                Top Up Credits
+              </a>
+            </Button>
+          </div>
+          {subscription.planName && (
+            <p className="text-xs text-muted-foreground mt-1">
+              {subscription.planName} plan • Teams share credits across all members
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    // No credits / expired
+    return (
+      <div className="mt-3 p-3 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-orange-500" />
+            <p className="text-sm font-semibold text-orange-700 dark:text-orange-400">
+              0 credits remaining
+            </p>
+          </div>
+          <Button variant="default" size="sm" className="bg-gradient-to-r from-teal-500 to-cyan-500" asChild>
+            <a href="https://beacon.lovable.app/billing" target="_blank" rel="noopener noreferrer">
+              Upgrade Plan
+            </a>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-1">
+          Purchase credits to continue creating reports
+        </p>
+      </div>
+    );
   };
 
   return (
@@ -89,12 +181,7 @@ const IntegrationsTab = () => {
               <li>Propensity scoring to identify hot leads</li>
               <li>Automatic engagement notifications</li>
             </ul>
-            <div className="mt-3 p-3 bg-muted/50 rounded-lg">
-              <p className="text-sm font-medium">$25/month includes 3 reports</p>
-              <p className="text-xs text-muted-foreground">
-                Credit packs from $2.50/report for more. Teams share credits across all members.
-              </p>
-            </div>
+            {renderSubscriptionStatus()}
           </div>
 
           {isTeamAdmin ? (
