@@ -332,11 +332,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Insert new report into beacon_reports table
+    // Insert new report into beacon_reports table with property_id
     const { data: newReport, error: insertError } = await supabase
       .from('beacon_reports')
       .insert({
         appraisal_id: appraisalId,
+        property_id: appraisal.property_id, // Link to property for lifecycle tracking
         beacon_report_id: beaconData.reportId,
         report_type: reportType,
         report_url: beaconData.urls?.edit || beaconData.urls?.publicLink,
