@@ -57,6 +57,15 @@ const handler = async (req: Request): Promise<Response> => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    // Create service role client for bypassing RLS on invitation insert
+    // This is safe because all authorization checks are done before the insert
+    const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseServiceRoleKey) {
+      console.error('invite-user: Missing SUPABASE_SERVICE_ROLE_KEY');
+      throw new Error("Missing service role key");
+    }
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+
     const authToken = authHeader.replace('Bearer ', '');
     const { data: { user }, error: authError } = await supabase.auth.getUser(authToken);
     
@@ -380,8 +389,9 @@ const handler = async (req: Request): Promise<Response> => {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create pending invitation - use validated context values
-    const { data: invitation, error: inviteError } = await supabase
+    // Create pending invitation - use service role client to bypass RLS
+    // All authorization checks have been completed by this point
+    const { data: invitation, error: inviteError } = await supabaseAdmin
       .from('pending_invitations')
       .insert({
         email: email.toLowerCase(),
