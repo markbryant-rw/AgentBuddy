@@ -100,9 +100,10 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Generate new token and update expiry
+    // Generate new token and update expiry (7 days, consistent with initial invite)
     const newToken = crypto.randomUUID() + '-' + Date.now().toString(36);
-    const newExpiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    const newExpiresAt = new Date();
+    newExpiresAt.setDate(newExpiresAt.getDate() + 7);
 
     const { error: updateError } = await supabaseAdmin
       .from('pending_invitations')
@@ -175,7 +176,7 @@ const handler = async (req: Request): Promise<Response> => {
               
               <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin: 20px 0; border-left: 4px solid #ffc107;">
                 <p style="margin: 0; font-size: 14px; color: #856404;">
-                  ⏰ <strong>This invitation expires in 48 hours</strong><br>
+                  ⏰ <strong>This invitation expires in 7 days</strong><br>
                   📅 Expires on: ${newExpiresAt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>

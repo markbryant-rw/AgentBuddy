@@ -33,18 +33,34 @@ interface InviteResponse {
   message?: string;
 }
 
-export const useInvitations = () => {
+interface UseInvitationsOptions {
+  teamId?: string;
+  officeId?: string;
+  showAll?: boolean; // For platform admins
+}
+
+export const useInvitations = (options?: UseInvitationsOptions) => {
   const queryClient = useQueryClient();
 
-  // Fetch pending invitations
+  // Fetch pending invitations with context-based filtering
   const { data: pendingInvitations = [], isLoading } = useQuery({
-    queryKey: ['pending-invitations'],
+    queryKey: ['pending-invitations', options?.teamId, options?.officeId, options?.showAll],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('pending_invitations')
         .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        .eq('status', 'pending');
+
+      // Apply context-based filtering
+      if (!options?.showAll) {
+        if (options?.teamId) {
+          query = query.eq('team_id', options.teamId);
+        } else if (options?.officeId) {
+          query = query.eq('office_id', options.officeId);
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       return data;
