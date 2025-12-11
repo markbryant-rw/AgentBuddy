@@ -128,6 +128,7 @@ export default function InviteUser() {
       <PageHeaderWithBack
         title="Invite Users"
         description="Send invitations to add new members to your organization"
+        backPath="/team-management"
       />
       
       <div className="container mx-auto py-8 px-4 max-w-6xl">
