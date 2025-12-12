@@ -64,8 +64,9 @@ async function createOrUpdateCalendarEvent(
   );
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Failed to create event:', error);
+    const errorText = await response.text();
+    console.error('Failed to create event. Status:', response.status, 'Error:', errorText);
+    console.error('Event body sent:', JSON.stringify(eventBody));
     return null;
   }
 
@@ -179,16 +180,32 @@ Deno.serve(async (req) => {
     let event;
     if (type === 'planner') {
       const plannerItem = data;
-      const startTime = plannerItem.time 
-        ? `${plannerItem.date}T${plannerItem.time}:00`
-        : `${plannerItem.date}T09:00:00`;
+      console.log('Planner item data:', JSON.stringify(plannerItem));
       
-      event = {
-        summary: `📋 ${plannerItem.title}`,
-        description: plannerItem.description || plannerItem.notes || '',
-        start: startTime,
-        allDay: !plannerItem.time,
-      };
+      // For all-day events, use just the date
+      // For timed events, use full datetime with timezone
+      const hasTime = !!plannerItem.time;
+      
+      if (hasTime) {
+        // Timed event - use dateTime format
+        const startTime = `${plannerItem.date}T${plannerItem.time}:00`;
+        event = {
+          summary: `📋 ${plannerItem.title}`,
+          description: plannerItem.description || plannerItem.notes || '',
+          start: startTime,
+          allDay: false,
+        };
+      } else {
+        // All-day event - use date format (just the date, no time)
+        event = {
+          summary: `📋 ${plannerItem.title}`,
+          description: plannerItem.description || plannerItem.notes || '',
+          start: plannerItem.date, // Just YYYY-MM-DD for all-day
+          allDay: true,
+        };
+      }
+      
+      console.log('Event to create:', JSON.stringify(event));
     } else if (type === 'birthday') {
       // Handle birthday sync - create recurring annual event
       const birthdayData = data;
