@@ -129,7 +129,7 @@ Deno.serve(async (req) => {
     });
 
     // Call Beacon API to sync team
-    const endpoint = `${beaconApiUrl}/api/agentbuddy/sync-team-from-agentbuddy`;
+    const endpoint = `${beaconApiUrl}/sync-team-from-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
     const beaconResponse = await fetch(endpoint, {
