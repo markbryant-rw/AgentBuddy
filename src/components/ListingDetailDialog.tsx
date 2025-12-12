@@ -486,6 +486,10 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
                     propertyId={(editedListing as any).property_id}
                     appraisalId={(editedListing as any)?.appraisal_id}
                     module="opportunity"
+                    address={editedListing.address}
+                    suburb={editedListing.suburb || undefined}
+                    owners={(editedListing as any).owners || []}
+                    teamId={editedListing.team_id}
                     fallbackStats={{
                       propensity_score: (editedListing as any).beacon_propensity_score || 0,
                       is_hot_lead: (editedListing as any).beacon_is_hot_lead || false,

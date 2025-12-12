@@ -163,13 +163,38 @@ export const useBeaconIntegration = () => {
     },
   });
 
-  // Create a Beacon report for an appraisal
+  // Create a Beacon report - supports both appraisal-based and property-based creation
   const createBeaconReport = useMutation({
-    mutationFn: async ({ appraisalId, reportType = 'appraisal' }: { appraisalId: string; reportType?: BeaconReportType }) => {
-      console.log('createBeaconReport: Starting mutation', { appraisalId, reportType });
+    mutationFn: async ({ 
+      appraisalId, 
+      propertyId,
+      reportType = 'appraisal',
+      // Direct params for creating without appraisal
+      address,
+      suburb,
+      owners,
+      teamId,
+    }: { 
+      appraisalId?: string; 
+      propertyId?: string;
+      reportType?: BeaconReportType;
+      address?: string;
+      suburb?: string;
+      owners?: Array<{ id: string; name: string; email?: string; phone?: string; is_primary: boolean }>;
+      teamId?: string;
+    }) => {
+      console.log('createBeaconReport: Starting mutation', { appraisalId, propertyId, reportType });
       
       const { data, error } = await supabase.functions.invoke('create-beacon-report', {
-        body: { appraisalId, reportType },
+        body: { 
+          appraisalId, 
+          propertyId,
+          reportType,
+          address,
+          suburb,
+          owners,
+          teamId,
+        },
       });
 
       console.log('createBeaconReport: Response', { data, error });

@@ -988,6 +988,10 @@ export const TransactionDetailDrawer = ({
                     propertyId={(transaction as any).property_id}
                     appraisalId={undefined}
                     module="transaction"
+                    address={transaction.address}
+                    suburb={transaction.suburb || undefined}
+                    owners={(transaction as any).owners || []}
+                    teamId={transaction.team_id}
                   />
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
