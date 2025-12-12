@@ -136,6 +136,22 @@ Deno.serve(async (req) => {
 
     console.log(`[${requestId}] AUTH SUCCESS - Processing webhook from: ${webhookSource}, idempotency: ${idempotencyKey}`);
 
+    // ========== TEST WEBHOOK DETECTION ==========
+    // If this is a test webhook (testWebhook: true in data), return success without database lookup
+    // This allows Beacon's connectivity tests to pass without requiring real appraisal data
+    if (payload?.data?.testWebhook === true) {
+      console.log(`[${requestId}] TEST WEBHOOK DETECTED - Returning success without database lookup`);
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          message: 'Test webhook received successfully',
+          requestId,
+          testMode: true
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // payload already parsed above
