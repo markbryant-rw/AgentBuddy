@@ -100,7 +100,7 @@ Deno.serve(async (req) => {
           id,
           email,
           full_name,
-          phone,
+          mobile,
           avatar_url
         )
       `)
@@ -122,7 +122,7 @@ Deno.serve(async (req) => {
         member_id: member.id,
         email: profile?.email || '',
         full_name: profile?.full_name || '',
-        phone: profile?.phone || '',
+        phone: profile?.mobile || '',
         avatar_url: profile?.avatar_url || '',
         is_team_leader: member.access_level === 'admin',
       };
