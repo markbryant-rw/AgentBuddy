@@ -134,10 +134,11 @@ Deno.serve(async (req) => {
     };
 
     // Add optional vendor fields from appraisal if available
+    // NOTE: Beacon API expects vendorName/vendorEmail/vendorPhone (not ownerName)
     if (appraisal) {
-      if (appraisal.vendor_name) beaconPayload.ownerName = appraisal.vendor_name;
-      if (appraisal.vendor_email) beaconPayload.ownerEmail = appraisal.vendor_email;
-      if (appraisal.vendor_mobile) beaconPayload.ownerPhone = appraisal.vendor_mobile;
+      if (appraisal.vendor_name) beaconPayload.vendorName = appraisal.vendor_name;
+      if (appraisal.vendor_email) beaconPayload.vendorEmail = appraisal.vendor_email;
+      if (appraisal.vendor_mobile) beaconPayload.vendorPhone = appraisal.vendor_mobile;
     }
     
     // Either reportId or propertySlug
