@@ -2,6 +2,7 @@ import { LoggedAppraisal } from "@/hooks/useLoggedAppraisals";
 import { useBeaconIntegration, REPORT_TYPE_LABELS, REPORT_TYPE_ICONS, BeaconReportType } from "@/hooks/useBeaconIntegration";
 import { useBeaconReports, BeaconReport } from "@/hooks/useBeaconReports";
 import { useTeam } from "@/hooks/useTeam";
+import { useProperties } from "@/hooks/useProperties";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -25,9 +26,11 @@ import {
   Loader2,
   RefreshCw,
   Link2,
+  CheckCircle2,
+  Home,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { LinkBeaconReportDialog } from "./beacon/LinkBeaconReportDialog";
@@ -217,12 +220,34 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
     isCreatingReport, 
   } = useBeaconIntegration();
   const { team } = useTeam();
+  const { getPropertyById } = useProperties();
   
   // Use property_id for fetching if available, otherwise fall back to appraisal_id
   const effectivePropertyId = propertyId || appraisal.property_id;
-  const { reports, aggregateStats, hasReports, isLoading: reportsLoading, refetch: refetchReports } = useBeaconReports(
+  const { 
+    reports, 
+    aggregateStats, 
+    hasReports, 
+    isLoading: reportsLoading, 
+    refetch: refetchReports,
+    beaconPropertySlug,
+    isLinkedToBeacon,
+  } = useBeaconReports(
     effectivePropertyId ? { propertyId: effectivePropertyId } : { appraisalId: appraisal.id }
   );
+
+  // Fetch property data to get beacon_property_slug
+  const [propertyData, setPropertyData] = useState<{ beacon_property_slug?: string } | null>(null);
+  
+  useEffect(() => {
+    if (effectivePropertyId) {
+      getPropertyById(effectivePropertyId).then(setPropertyData);
+    }
+  }, [effectivePropertyId, getPropertyById]);
+
+  // Determine linked status from multiple sources
+  const propertyIsLinkedToBeacon = isLinkedToBeacon || !!beaconPropertySlug || !!propertyData?.beacon_property_slug;
+  const effectiveBeaconSlug = beaconPropertySlug || propertyData?.beacon_property_slug;
 
   // Fallback to appraisal.beacon_* fields if no beacon_reports records exist
   const effectiveStats = hasReports ? aggregateStats : {
@@ -319,6 +344,58 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        {/* Property Linking Status Card */}
+        <Card className={cn(
+          "border",
+          propertyIsLinkedToBeacon 
+            ? "border-emerald-500/30 bg-gradient-to-br from-emerald-500/5 to-teal-500/5" 
+            : "border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5"
+        )}>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  "h-10 w-10 rounded-full flex items-center justify-center",
+                  propertyIsLinkedToBeacon 
+                    ? "bg-emerald-500/20" 
+                    : "bg-amber-500/20"
+                )}>
+                  {propertyIsLinkedToBeacon ? (
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  ) : (
+                    <Home className="h-5 w-5 text-amber-600" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium text-sm flex items-center gap-2">
+                    Property {propertyIsLinkedToBeacon ? 'Linked to Beacon' : 'Not Linked'}
+                    {propertyIsLinkedToBeacon && (
+                      <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-700 border-emerald-500/20">
+                        Property-Level
+                      </Badge>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {propertyIsLinkedToBeacon 
+                      ? `All reports for this property are accessible` 
+                      : 'Create or link a report to enable engagement tracking'}
+                  </p>
+                  {effectiveBeaconSlug && (
+                    <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                      Beacon: {effectiveBeaconSlug}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {hasReports && (
+                <Badge variant="outline" className="text-xs">
+                  {reports.length} report{reports.length !== 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Engagement Stats Card - Show when we have engagement data */}
         {hasEngagementData && (
           <Card className="border-teal-500/30 bg-gradient-to-br from-teal-500/5 to-cyan-500/5">
