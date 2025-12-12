@@ -30,6 +30,7 @@ const PLATFORM_ADMIN_NAV = [
   { label: 'Tasks', path: '/platform-admin/tasks', icon: CheckSquare },
   { label: 'Feedback', path: '/platform-admin/feedback', icon: MessageSquarePlus },
   { label: 'Appraisal Templates', path: '/platform-admin/appraisal-templates', icon: CheckSquare },
+  { label: 'Transaction Templates', path: '/platform-admin/transaction-templates', icon: CheckSquare },
   { label: 'Impersonation Audit', path: '/platform-admin/audit', icon: Shield },
   { label: 'Users', path: '/platform-admin/users', icon: Users },
   { label: 'Settings', path: '/platform-admin/settings', icon: Settings },

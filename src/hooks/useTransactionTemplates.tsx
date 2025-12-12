@@ -340,6 +340,50 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
     },
   });
 
+  const duplicateTemplate = useMutation({
+    mutationFn: async ({
+      templateId,
+      teamId,
+      newName,
+    }: {
+      templateId: string;
+      teamId: string;
+      newName?: string;
+    }) => {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) throw new Error('Template not found');
+
+      const duplicatedTemplate = {
+        stage: template.stage,
+        name: newName || `${template.name} (Copy)`,
+        description: template.description,
+        team_id: teamId,
+        is_default: false,
+        is_system_template: false,
+        tasks: template.tasks,
+        documents: template.documents,
+        created_by: user?.id,
+      };
+
+      const { data, error } = await supabase
+        .from('transaction_stage_templates' as any)
+        .insert([duplicatedTemplate] as any)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transaction-templates'] });
+      toast.success('Template duplicated to your team');
+    },
+    onError: (error) => {
+      console.error('Error duplicating template:', error);
+      toast.error('Failed to duplicate template');
+    },
+  });
+
   return {
     templates,
     isLoading,
@@ -349,5 +393,6 @@ export const useTransactionTemplates = (stage?: TransactionStage) => {
     updateTemplate,
     deleteTemplate,
     setTemplateAsDefault,
+    duplicateTemplate,
   };
 };
