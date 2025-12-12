@@ -28,7 +28,7 @@ import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { BeaconDevTools } from "./BeaconDevTools";
+// BeaconDevTools moved to Settings → Integrations (admin-only)
 
 interface BeaconTabProps {
   appraisal: LoggedAppraisal;
@@ -509,9 +509,6 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
             </p>
           </div>
         )}
-
-        {/* Developer Tools - Collapsible at bottom */}
-        <BeaconDevTools appraisal={appraisal} />
       </div>
     </TooltipProvider>
   );

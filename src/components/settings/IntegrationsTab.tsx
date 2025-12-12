@@ -9,6 +9,7 @@ import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { GoogleCalendarCard } from "./GoogleCalendarCard";
+import { BeaconDeveloperToolsCard } from "./integrations/BeaconDeveloperToolsCard";
 import { useState } from "react";
 
 const IntegrationsTab = () => {
@@ -367,6 +368,9 @@ const IntegrationsTab = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Beacon Developer Tools - Admin only */}
+      {isTeamAdmin && <BeaconDeveloperToolsCard />}
     </div>
   );
 };
