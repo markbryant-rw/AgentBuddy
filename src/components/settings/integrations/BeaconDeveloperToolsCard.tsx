@@ -12,25 +12,37 @@ import {
   CheckCircle2, 
   XCircle, 
   AlertCircle,
-  Wrench,
   Loader2,
   ExternalLink,
-  Code2
+  Code2,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface TestResult {
   name: string;
   status: 'pending' | 'running' | 'passed' | 'failed';
   message?: string;
   duration?: number;
+  details?: string;
+}
+
+interface TestSummary {
+  passed: number;
+  total: number;
+  allPassed: boolean;
+  totalDuration: number;
 }
 
 export const BeaconDeveloperToolsCard = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
+  const [testSummary, setTestSummary] = useState<TestSummary | null>(null);
+  const [expandedTests, setExpandedTests] = useState<Set<number>>(new Set());
   
   const { team } = useTeam();
   const { 
@@ -53,6 +65,18 @@ export const BeaconDeveloperToolsCard = () => {
     }
   };
 
+  const toggleTestExpanded = (index: number) => {
+    setExpandedTests(prev => {
+      const next = new Set(prev);
+      if (next.has(index)) {
+        next.delete(index);
+      } else {
+        next.add(index);
+      }
+      return next;
+    });
+  };
+
   const handleRunTests = async () => {
     if (!team?.id) {
       toast.error('No team ID available');
@@ -61,10 +85,15 @@ export const BeaconDeveloperToolsCard = () => {
 
     setIsRunningTests(true);
     setTestResults([
-      { name: 'Team Sync', status: 'pending' },
-      { name: 'Search API', status: 'pending' },
-      { name: 'Subscription Check', status: 'pending' },
+      { name: 'Team Data', status: 'running' },
+      { name: 'API Key Config', status: 'pending' },
+      { name: 'Beacon API Health', status: 'pending' },
+      { name: 'Search Reports API', status: 'pending' },
+      { name: 'Fetch Reports API', status: 'pending' },
+      { name: 'Integration Settings', status: 'pending' },
+      { name: 'Webhook Config', status: 'pending' },
     ]);
+    setTestSummary(null);
 
     try {
       const { data, error } = await supabase.functions.invoke('test-beacon-integration', {
@@ -74,12 +103,13 @@ export const BeaconDeveloperToolsCard = () => {
       if (error) throw error;
 
       setTestResults(data.results || []);
+      setTestSummary(data.summary || null);
       
-      const passed = data.results?.filter((r: TestResult) => r.status === 'passed').length || 0;
-      const total = data.results?.length || 0;
+      const passed = data.summary?.passed || 0;
+      const total = data.summary?.total || 0;
       
-      if (passed === total) {
-        toast.success(`All ${total} tests passed!`);
+      if (data.summary?.allPassed) {
+        toast.success(`All ${total} tests passed in ${data.summary.totalDuration}ms`);
       } else {
         toast.warning(`${passed}/${total} tests passed`);
       }
@@ -123,6 +153,8 @@ export const BeaconDeveloperToolsCard = () => {
   if (!isBeaconEnabled) {
     return null;
   }
+
+  const hasTeamNotSynced = testResults.some(t => t.details === 'TEAM_NOT_SYNCED');
 
   return (
     <Card className="border-dashed border-muted-foreground/30">
@@ -220,41 +252,83 @@ export const BeaconDeveloperToolsCard = () => {
         {/* Test Results */}
         {testResults.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Test Results
-            </p>
-            <div className="space-y-1">
-              {testResults.map((test, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-center justify-between p-2 bg-muted/50 rounded border text-xs"
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Test Results
+              </p>
+              {testSummary && (
+                <Badge 
+                  variant={testSummary.allPassed ? 'default' : 'destructive'}
+                  className="text-[10px]"
                 >
-                  <div className="flex items-center gap-2">
-                    <TestStatusIcon status={test.status} />
-                    <span>{test.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {test.duration && (
-                      <span className="text-muted-foreground">{test.duration}ms</span>
-                    )}
-                    <Badge 
-                      variant={test.status === 'passed' ? 'default' : test.status === 'failed' ? 'destructive' : 'secondary'}
-                      className="text-[10px] h-5"
-                    >
-                      {test.status}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
+                  {testSummary.passed}/{testSummary.total} passed • {testSummary.totalDuration}ms
+                </Badge>
+              )}
             </div>
-            {testResults.some(t => t.message) && (
-              <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs">
-                <p className="font-medium text-destructive mb-1">Errors:</p>
-                {testResults.filter(t => t.message).map((t, i) => (
-                  <p key={i} className="text-destructive/80">{t.name}: {t.message}</p>
-                ))}
+            
+            {/* TEAM_NOT_SYNCED Warning */}
+            {hasTeamNotSynced && (
+              <div className="p-2 bg-amber-500/10 border border-amber-500/20 rounded text-xs flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                <span className="text-amber-700">
+                  Team not synced to Beacon. Click "Force Team Sync" above to fix.
+                </span>
               </div>
             )}
+            
+            <div className="space-y-1">
+              {testResults.map((test, index) => (
+                <Collapsible key={index} open={expandedTests.has(index)}>
+                  <div 
+                    className={`flex items-center justify-between p-2 rounded border text-xs transition-colors ${
+                      test.status === 'passed' 
+                        ? 'bg-green-500/5 border-green-500/20' 
+                        : test.status === 'failed'
+                        ? 'bg-red-500/5 border-red-500/20'
+                        : 'bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <TestStatusIcon status={test.status} />
+                      <span className="font-medium">{test.name}</span>
+                      {test.message && (
+                        <span className="text-muted-foreground truncate">
+                          — {test.message}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {test.duration !== undefined && (
+                        <span className="text-muted-foreground font-mono">{test.duration}ms</span>
+                      )}
+                      {test.details && (
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0"
+                            onClick={() => toggleTestExpanded(index)}
+                          >
+                            {expandedTests.has(index) ? (
+                              <ChevronUp className="h-3 w-3" />
+                            ) : (
+                              <ChevronDown className="h-3 w-3" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                      )}
+                    </div>
+                  </div>
+                  {test.details && (
+                    <CollapsibleContent>
+                      <div className="ml-6 mt-1 p-2 bg-muted/30 rounded text-xs font-mono break-all">
+                        {test.details}
+                      </div>
+                    </CollapsibleContent>
+                  )}
+                </Collapsible>
+              ))}
+            </div>
           </div>
         )}
       </CardContent>

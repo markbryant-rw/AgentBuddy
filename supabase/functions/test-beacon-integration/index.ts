@@ -10,6 +10,7 @@ interface TestResult {
   status: 'passed' | 'failed';
   message?: string;
   duration?: number;
+  details?: string;
 }
 
 Deno.serve(async (req) => {
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { teamId, appraisalId } = await req.json();
+    const { teamId } = await req.json();
 
     if (!teamId) {
       return new Response(JSON.stringify({ error: 'Team ID required' }), {
@@ -54,158 +55,253 @@ Deno.serve(async (req) => {
 
     const results: TestResult[] = [];
 
-    // Test 1: Team Sync Check
-    const teamSyncStart = Date.now();
+    // Test 1: Team Data Check
+    const teamStart = Date.now();
     try {
-      const { data: teamData } = await supabase
+      const { data: teamData, error: teamError } = await supabase
         .from('teams')
-        .select('name')
+        .select('name, agency_id')
         .eq('id', teamId)
         .single();
 
-      if (teamData) {
+      if (teamError) throw teamError;
+
+      results.push({
+        name: 'Team Data',
+        status: 'passed',
+        message: `Team "${teamData.name}" found`,
+        duration: Date.now() - teamStart,
+      });
+    } catch (error: any) {
+      results.push({
+        name: 'Team Data',
+        status: 'failed',
+        message: error.message,
+        duration: Date.now() - teamStart,
+      });
+    }
+
+    // Test 2: Beacon API Key Configured
+    const keyStart = Date.now();
+    if (!BEACON_API_KEY) {
+      results.push({
+        name: 'API Key Config',
+        status: 'failed',
+        message: 'BEACON_API_KEY not configured in secrets',
+        duration: Date.now() - keyStart,
+      });
+    } else {
+      results.push({
+        name: 'API Key Config',
+        status: 'passed',
+        message: `Key configured (${BEACON_API_KEY.slice(0, 8)}...)`,
+        duration: Date.now() - keyStart,
+      });
+    }
+
+    // Test 3: Beacon API Health Check
+    const healthStart = Date.now();
+    try {
+      const healthResponse = await fetch(`${BEACON_API_URL}/api/health`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' },
+      });
+
+      if (healthResponse.ok) {
         results.push({
-          name: 'Team Sync',
+          name: 'Beacon API Health',
           status: 'passed',
-          message: `Team "${teamData.name}" found`,
-          duration: Date.now() - teamSyncStart,
+          message: `API reachable (${healthResponse.status})`,
+          duration: Date.now() - healthStart,
         });
       } else {
         results.push({
-          name: 'Team Sync',
+          name: 'Beacon API Health',
           status: 'failed',
-          message: 'Team not found in database',
-          duration: Date.now() - teamSyncStart,
+          message: `HTTP ${healthResponse.status}`,
+          duration: Date.now() - healthStart,
         });
       }
     } catch (error: any) {
       results.push({
-        name: 'Team Sync',
+        name: 'Beacon API Health',
         status: 'failed',
         message: error.message,
-        duration: Date.now() - teamSyncStart,
+        duration: Date.now() - healthStart,
       });
     }
 
-    // Test 2: Search API
+    // Test 4: Search Reports Endpoint
     const searchStart = Date.now();
     try {
       if (!BEACON_API_KEY) {
+        throw new Error('API key not configured');
+      }
+
+      const searchResponse = await fetch(`${BEACON_API_URL}/api/agentbuddy/search-reports`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': BEACON_API_KEY,
+        },
+        body: JSON.stringify({
+          agentbuddyTeamId: teamId,
+          address: 'integration-test-address-12345',
+        }),
+      });
+
+      // 200 = found, 404 = not found (both valid), 400 = TEAM_NOT_SYNCED
+      if (searchResponse.ok || searchResponse.status === 404) {
         results.push({
-          name: 'Search API',
-          status: 'failed',
-          message: 'BEACON_API_KEY not configured',
+          name: 'Search Reports API',
+          status: 'passed',
+          message: `Endpoint responded (${searchResponse.status})`,
           duration: Date.now() - searchStart,
         });
-      } else {
-        const searchResponse = await fetch(`${BEACON_API_URL}/api/agentbuddy/search-reports`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': BEACON_API_KEY,
-          },
-          body: JSON.stringify({
-            agentbuddyTeamId: teamId,
-            address: 'test-integration-check',
-          }),
-        });
-
-        if (searchResponse.ok || searchResponse.status === 404) {
-          // 404 is OK - means no results but API is working
+      } else if (searchResponse.status === 400) {
+        const errorData = await searchResponse.json().catch(() => ({}));
+        if (errorData.code === 'TEAM_NOT_SYNCED') {
           results.push({
-            name: 'Search API',
-            status: 'passed',
-            message: `API responded with ${searchResponse.status}`,
+            name: 'Search Reports API',
+            status: 'failed',
+            message: 'Team not synced to Beacon - run Force Team Sync',
             duration: Date.now() - searchStart,
+            details: 'TEAM_NOT_SYNCED',
           });
         } else {
-          const errorData = await searchResponse.json().catch(() => ({}));
           results.push({
-            name: 'Search API',
+            name: 'Search Reports API',
             status: 'failed',
             message: errorData.error || `HTTP ${searchResponse.status}`,
             duration: Date.now() - searchStart,
           });
         }
+      } else {
+        const errorData = await searchResponse.json().catch(() => ({}));
+        results.push({
+          name: 'Search Reports API',
+          status: 'failed',
+          message: errorData.error || `HTTP ${searchResponse.status}`,
+          duration: Date.now() - searchStart,
+        });
       }
     } catch (error: any) {
       results.push({
-        name: 'Search API',
+        name: 'Search Reports API',
         status: 'failed',
         message: error.message,
         duration: Date.now() - searchStart,
       });
     }
 
-    // Test 3: Report Creation Endpoint (dry run - just check connectivity)
-    const createStart = Date.now();
+    // Test 5: Fetch All Reports Endpoint
+    const fetchStart = Date.now();
     try {
       if (!BEACON_API_KEY) {
-        results.push({
-          name: 'Report Creation',
-          status: 'failed',
-          message: 'BEACON_API_KEY not configured',
-          duration: Date.now() - createStart,
-        });
-      } else {
-        // We don't actually create a report, just verify the endpoint exists
-        const healthResponse = await fetch(`${BEACON_API_URL}/api/health`, {
-          method: 'GET',
-        });
+        throw new Error('API key not configured');
+      }
 
-        if (healthResponse.ok) {
+      const fetchResponse = await fetch(
+        `${BEACON_API_URL}/api/agentbuddy/get-all-team-reports?teamId=${teamId}&apiKey=${BEACON_API_KEY}`,
+        { method: 'GET', headers: { 'Accept': 'application/json' } }
+      );
+
+      if (fetchResponse.ok) {
+        const data = await fetchResponse.json().catch(() => ({}));
+        const count = data.reports?.length || 0;
+        results.push({
+          name: 'Fetch Reports API',
+          status: 'passed',
+          message: `Found ${count} report(s)`,
+          duration: Date.now() - fetchStart,
+        });
+      } else if (fetchResponse.status === 400) {
+        const errorData = await fetchResponse.json().catch(() => ({}));
+        if (errorData.code === 'TEAM_NOT_SYNCED') {
           results.push({
-            name: 'Report Creation',
-            status: 'passed',
-            message: 'Beacon API reachable',
-            duration: Date.now() - createStart,
+            name: 'Fetch Reports API',
+            status: 'failed',
+            message: 'Team not synced to Beacon',
+            duration: Date.now() - fetchStart,
+            details: 'TEAM_NOT_SYNCED',
           });
         } else {
           results.push({
-            name: 'Report Creation',
+            name: 'Fetch Reports API',
             status: 'failed',
-            message: `Beacon API returned ${healthResponse.status}`,
-            duration: Date.now() - createStart,
+            message: errorData.error || `HTTP ${fetchResponse.status}`,
+            duration: Date.now() - fetchStart,
           });
         }
+      } else {
+        results.push({
+          name: 'Fetch Reports API',
+          status: 'failed',
+          message: `HTTP ${fetchResponse.status}`,
+          duration: Date.now() - fetchStart,
+        });
       }
     } catch (error: any) {
       results.push({
-        name: 'Report Creation',
+        name: 'Fetch Reports API',
         status: 'failed',
         message: error.message,
-        duration: Date.now() - createStart,
+        duration: Date.now() - fetchStart,
       });
     }
 
-    // Test 4: Webhook Configuration
-    const webhookStart = Date.now();
+    // Test 6: Integration Settings Check
+    const integrationStart = Date.now();
     try {
-      const { data: integration } = await supabase
+      const { data: integration, error: integrationError } = await supabase
         .from('integration_settings')
-        .select('enabled, connected_at')
+        .select('enabled, connected_at, config')
         .eq('team_id', teamId)
         .eq('integration_name', 'beacon')
         .single();
 
+      if (integrationError) throw integrationError;
+
       if (integration?.enabled) {
         results.push({
-          name: 'Webhook Endpoint',
+          name: 'Integration Settings',
           status: 'passed',
-          message: `Integration enabled since ${integration.connected_at ? new Date(integration.connected_at).toLocaleDateString() : 'unknown'}`,
-          duration: Date.now() - webhookStart,
+          message: `Enabled since ${integration.connected_at ? new Date(integration.connected_at).toLocaleDateString() : 'unknown'}`,
+          duration: Date.now() - integrationStart,
         });
       } else {
         results.push({
-          name: 'Webhook Endpoint',
+          name: 'Integration Settings',
           status: 'failed',
           message: 'Integration not enabled',
-          duration: Date.now() - webhookStart,
+          duration: Date.now() - integrationStart,
         });
       }
     } catch (error: any) {
       results.push({
-        name: 'Webhook Endpoint',
+        name: 'Integration Settings',
+        status: 'failed',
+        message: error.message,
+        duration: Date.now() - integrationStart,
+      });
+    }
+
+    // Test 7: Webhook Configuration
+    const webhookStart = Date.now();
+    try {
+      const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+      const webhookUrl = `${SUPABASE_URL}/functions/v1/beacon-propensity-webhook`;
+      
+      results.push({
+        name: 'Webhook Config',
+        status: 'passed',
+        message: `Endpoint: ${webhookUrl.replace(SUPABASE_URL || '', '...')}`,
+        duration: Date.now() - webhookStart,
+        details: webhookUrl,
+      });
+    } catch (error: any) {
+      results.push({
+        name: 'Webhook Config',
         status: 'failed',
         message: error.message,
         duration: Date.now() - webhookStart,
@@ -214,8 +310,9 @@ Deno.serve(async (req) => {
 
     const passed = results.filter(r => r.status === 'passed').length;
     const total = results.length;
+    const totalDuration = results.reduce((sum, r) => sum + (r.duration || 0), 0);
 
-    console.log(`Integration tests: ${passed}/${total} passed for team ${teamId}`);
+    console.log(`Integration tests: ${passed}/${total} passed for team ${teamId} in ${totalDuration}ms`);
 
     return new Response(JSON.stringify({
       success: true,
@@ -224,6 +321,7 @@ Deno.serve(async (req) => {
         passed,
         total,
         allPassed: passed === total,
+        totalDuration,
       },
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
