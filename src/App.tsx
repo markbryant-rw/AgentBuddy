@@ -49,6 +49,7 @@ const PlatformAdminUsers = lazy(() => import('./pages/platform-admin/OfficesOver
 const PlatformAdminOfficeDetail = lazy(() => import('./pages/platform-admin/OfficeDetailView'));
 const PlatformAdminFeedback = lazy(() => import('./pages/platform-admin/FeedbackManagement'));
 const SystemAppraisalTemplates = lazy(() => import('./pages/platform-admin/SystemAppraisalTemplates'));
+const SystemTransactionTemplates = lazy(() => import('./pages/platform-admin/SystemTransactionTemplates'));
 const ImpersonationAudit = lazy(() => import('./pages/platform-admin/ImpersonationAudit'));
 const AdminMessages = lazy(() => import('./pages/platform-admin/AdminMessages'));
 const AdminTasks = lazy(() => import('./pages/platform-admin/AdminTasks'));
@@ -266,6 +267,7 @@ const AppContent = () => {
                   <Route path="/platform-admin/tasks" element={<AdminTasks />} />
                   <Route path="/platform-admin/feedback" element={<PlatformAdminFeedback />} />
                   <Route path="/platform-admin/appraisal-templates" element={<SystemAppraisalTemplates />} />
+                  <Route path="/platform-admin/transaction-templates" element={<SystemTransactionTemplates />} />
                   <Route path="/platform-admin/audit" element={<ImpersonationAudit />} />
                   <Route path="/platform-admin/users" element={<PlatformAdminUsers />} />
                   <Route path="/platform-admin/users/office/:officeId" element={<PlatformAdminOfficeDetail />} />
