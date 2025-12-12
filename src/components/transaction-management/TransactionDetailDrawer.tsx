@@ -414,7 +414,7 @@ export const TransactionDetailDrawer = ({
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 overflow-hidden flex flex-col">
+        <SheetContent side="right" className="w-full sm:max-w-4xl p-0 overflow-hidden flex flex-col">
           {/* Header */}
           <SheetHeader className="p-6 pb-4 border-b">
             <div className="flex items-start justify-between">
