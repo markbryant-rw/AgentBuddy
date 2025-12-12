@@ -86,7 +86,8 @@ export const LinkBeaconReportDialog = ({
     setHasSearched(true);
     
     try {
-      const results = await searchBeaconReports({ address });
+      // Use linkedStatus=unlinked to only fetch orphan reports for cleaner linking UX
+      const results = await searchBeaconReports({ address, linkedStatus: 'unlinked' });
       setSearchResults(results || []);
     } catch (error: any) {
       console.error("Search error:", error);
@@ -166,6 +167,8 @@ export const LinkBeaconReportDialog = ({
     await handleLinkReport(extractedReportId);
   };
 
+  // With linkedStatus=unlinked filter, all results should be unlinked
+  // Keep filter as fallback for backward compatibility if Beacon hasn't deployed yet
   const unlinkedReports = searchResults.filter(r => !r.isLinked);
   const linkedReports = searchResults.filter(r => r.isLinked);
 

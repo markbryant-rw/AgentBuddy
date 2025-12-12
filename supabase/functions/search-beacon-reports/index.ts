@@ -143,9 +143,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { address, ownerName, ownerEmail, teamId } = await req.json();
+    const { address, ownerName, ownerEmail, teamId, linkedStatus } = await req.json();
     
-    console.log(`Searching Beacon reports for: ${address || ownerName || ownerEmail}, teamId: ${teamId}`);
+    console.log(`Searching Beacon reports for: ${address || ownerName || ownerEmail}, teamId: ${teamId}, linkedStatus: ${linkedStatus || 'all'}`);
 
     if (!teamId) {
       return new Response(
@@ -168,6 +168,7 @@ Deno.serve(async (req) => {
     if (address) searchParams.append('address', address);
     if (ownerName) searchParams.append('ownerName', ownerName);
     if (ownerEmail) searchParams.append('ownerEmail', ownerEmail);
+    if (linkedStatus) searchParams.append('linkedStatus', linkedStatus);
 
     const endpoint = `${beaconApiUrl}/search-reports?${searchParams.toString()}`;
     console.log('Calling Beacon search API');
