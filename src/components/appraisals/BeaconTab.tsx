@@ -1,6 +1,7 @@
 import { LoggedAppraisal } from "@/hooks/useLoggedAppraisals";
 import { useBeaconIntegration, REPORT_TYPE_LABELS, REPORT_TYPE_ICONS, BeaconReportType } from "@/hooks/useBeaconIntegration";
 import { useBeaconReports, BeaconReport } from "@/hooks/useBeaconReports";
+import { useTeam } from "@/hooks/useTeam";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -23,12 +24,13 @@ import {
   Pencil,
   Loader2,
   RefreshCw,
+  Link2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-// BeaconDevTools moved to Settings → Integrations (admin-only)
+import { LinkBeaconReportDialog } from "./beacon/LinkBeaconReportDialog";
 
 interface BeaconTabProps {
   appraisal: LoggedAppraisal;
@@ -214,6 +216,7 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
     createBeaconReport, 
     isCreatingReport, 
   } = useBeaconIntegration();
+  const { team } = useTeam();
   
   // Use property_id for fetching if available, otherwise fall back to appraisal_id
   const effectivePropertyId = propertyId || appraisal.property_id;
@@ -233,6 +236,7 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
   const hasEngagementData = effectiveStats.bestPropensity > 0 || effectiveStats.totalViews > 0;
   const [copied, setCopied] = useState(false);
   const [isSyncingEngagement, setIsSyncingEngagement] = useState(false);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
 
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -447,29 +451,50 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
                 <p className="text-sm text-muted-foreground">
                   {hasReports 
                     ? `${reports.length} report${reports.length !== 1 ? 's' : ''} created` 
-                    : 'Create a property report to share with your vendor'}
+                    : 'Create or link a property report to share with your vendor'}
                 </p>
               </div>
-              <Button 
-                onClick={handleCreateReport}
-                disabled={isCreatingReport}
-                className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
-              >
-                {isCreatingReport ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4" />
-                    Create Report
-                  </>
-                )}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowLinkDialog(true)}
+                  className="gap-2"
+                >
+                  <Link2 className="h-4 w-4" />
+                  Link Existing
+                </Button>
+                <Button 
+                  onClick={handleCreateReport}
+                  disabled={isCreatingReport}
+                  className="gap-2 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-700 hover:to-cyan-700"
+                >
+                  {isCreatingReport ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      Create Report
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Link Beacon Report Dialog */}
+        <LinkBeaconReportDialog
+          open={showLinkDialog}
+          onOpenChange={setShowLinkDialog}
+          appraisalId={appraisal.id}
+          propertyId={effectivePropertyId}
+          address={appraisal.address}
+          teamId={team?.id || appraisal.team_id || ''}
+          onSuccess={() => refetchReports()}
+        />
 
         {/* Report History */}
         {hasReports && (
