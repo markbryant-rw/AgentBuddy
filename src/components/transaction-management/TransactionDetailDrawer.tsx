@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, MapPin, DollarSign, Users, CheckSquare, FileText, MessageSquare, ArrowRight, X, Pencil, Plus, Trash2, RefreshCw, ClipboardList, XCircle, AlertTriangle, Activity } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Users, CheckSquare, FileText, MessageSquare, ArrowRight, X, Pencil, Plus, Trash2, RefreshCw, XCircle, AlertTriangle, Activity } from 'lucide-react';
 import { ProgressRing } from '@/components/ProgressRing';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -31,7 +31,7 @@ import { TransactionNotesTab } from './TransactionNotesTab';
 import { TransactionSettingsTab } from './TransactionSettingsTab';
 import { TransactionTasksTab } from './TransactionTasksTab';
 import { TransactionLinksSection } from './TransactionLinksSection';
-import { TransactionVendorReportsTab } from './TransactionVendorReportsTab';
+import { VendorEngagementTab } from './VendorEngagementTab';
 import { TransactionDocumentsTab } from './TransactionDocumentsTab';
 import { useTransactionDocuments } from '@/hooks/useTransactionDocuments';
 import { PriceAlignmentIndicator } from './PriceAlignmentIndicator';
@@ -47,7 +47,7 @@ import { isForwardTransition, isBackwardTransition } from '@/lib/stageTransition
 import { WithdrawPropertyDialog } from './WithdrawPropertyDialog';
 import { TaskRolloverDialog } from './TaskRolloverDialog';
 import { useTaskRollover } from '@/hooks/useTaskRollover';
-import { BeaconPropertyTab } from '@/components/shared/BeaconPropertyTab';
+
 
 interface TransactionDetailDrawerProps {
   transaction: Transaction | null;
@@ -588,13 +588,9 @@ export const TransactionDetailDrawer = ({
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="reports" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-                <ClipboardList className="h-4 w-4 mr-2" />
-                Vendor Reports
-              </TabsTrigger>
-              <TabsTrigger value="beacon" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+              <TabsTrigger value="engagement" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
                 <Activity className="h-4 w-4 mr-2" />
-                Beacon
+                Vendor Engagement
               </TabsTrigger>
               <TabsTrigger value="notes" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -978,28 +974,15 @@ export const TransactionDetailDrawer = ({
                 <TransactionDocumentsTab transactionId={transaction.id} />
               </TabsContent>
 
-              <TabsContent value="reports" className="mt-0">
-                <TransactionVendorReportsTab transactionId={transaction.id} />
-              </TabsContent>
-
-              <TabsContent value="beacon" className="p-6 mt-0">
-                {(transaction as any).property_id ? (
-                  <BeaconPropertyTab 
-                    propertyId={(transaction as any).property_id}
-                    appraisalId={undefined}
-                    module="transaction"
-                    address={transaction.address}
-                    suburb={transaction.suburb || undefined}
-                    owners={(transaction as any).owners || []}
-                    teamId={transaction.team_id}
-                  />
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No property linked</p>
-                    <p className="text-sm mt-1">This transaction needs a linked property to show Beacon reports.</p>
-                  </div>
-                )}
+              <TabsContent value="engagement" className="mt-0">
+                <VendorEngagementTab 
+                  transactionId={transaction.id}
+                  propertyId={(transaction as any).property_id}
+                  address={transaction.address}
+                  suburb={transaction.suburb || undefined}
+                  owners={(transaction as any).owners || []}
+                  teamId={transaction.team_id}
+                />
               </TabsContent>
 
               <TabsContent value="settings" className="mt-0">

@@ -241,7 +241,7 @@ export const ListingDetailDialog = ({ listing, open, onOpenChange, onUpdate, onD
               </TabsTrigger>
               <TabsTrigger value="beacon" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none gap-2">
                 <Activity className="h-4 w-4" />
-                Beacon
+                Vendor Engagement
               </TabsTrigger>
             </TabsList>
 
