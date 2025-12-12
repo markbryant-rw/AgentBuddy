@@ -3058,6 +3058,7 @@ export type Database = {
       properties: {
         Row: {
           address: string
+          beacon_property_slug: string | null
           created_at: string
           created_by: string | null
           id: string
@@ -3070,6 +3071,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          beacon_property_slug?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
@@ -3082,6 +3084,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          beacon_property_slug?: string | null
           created_at?: string
           created_by?: string | null
           id?: string

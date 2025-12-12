@@ -20,6 +20,10 @@ export interface BeaconReport {
   last_activity: string | null;
 }
 
+interface PropertyWithBeaconSlug {
+  beacon_property_slug: string | null;
+}
+
 interface UseBeaconReportsOptions {
   appraisalId?: string;
   propertyId?: string;
@@ -79,6 +83,26 @@ export const useBeaconReports = (idOrOptions: string | undefined | UseBeaconRepo
     enabled: !!(appraisalId || propertyId),
   });
 
+  // Fetch the property's beacon_property_slug if linked
+  const { data: property } = useQuery({
+    queryKey: ['property_beacon_slug', propertyId],
+    queryFn: async () => {
+      if (!propertyId) return null;
+      const { data, error } = await supabase
+        .from('properties')
+        .select('beacon_property_slug')
+        .eq('id', propertyId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching property beacon slug:', error);
+        return null;
+      }
+      return data as PropertyWithBeaconSlug;
+    },
+    enabled: !!propertyId,
+  });
+
   // Get the latest report
   const latestReport = reports.length > 0 ? reports[0] : null;
 
@@ -108,5 +132,7 @@ export const useBeaconReports = (idOrOptions: string | undefined | UseBeaconRepo
     refetch,
     hasReports: reports.length > 0,
     reportCount: reports.length,
+    beaconPropertySlug: property?.beacon_property_slug || null,
+    isLinkedToBeacon: !!property?.beacon_property_slug,
   };
 };

@@ -126,10 +126,12 @@ Deno.serve(async (req) => {
     console.log('Calling Beacon API:', endpoint);
     
     // Build payload with team-centric auth (not agent email based)
+    // Include stable agentbuddyPropertyId for property-level linking
     const beaconPayload: Record<string, string> = {
       apiKey: beaconApiKey,
       teamId: effectiveTeamId,
       externalLeadId: appraisalId || effectivePropertyId,
+      agentbuddyPropertyId: effectivePropertyId, // Stable property UUID for cross-reference
       address: effectiveAddress,
     };
 
@@ -190,6 +192,7 @@ Deno.serve(async (req) => {
     const linkedReportType = beaconData.reportType || 'market_appraisal';
     const editUrl = beaconData.urls?.edit || beaconData.reportUrl;
     const personalizedUrl = beaconData.urls?.personalizedLink || beaconData.personalizedUrl;
+    const beaconPropertySlug = beaconData.propertySlug; // Property-level cross-reference
 
     // Validate we got the required reportId
     if (!linkedReportId) {
@@ -200,7 +203,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('Extracted report data:', { linkedReportId, linkedReportType, editUrl, personalizedUrl });
+    console.log('Extracted report data:', { linkedReportId, linkedReportType, editUrl, personalizedUrl, beaconPropertySlug });
 
     // Insert or update report in beacon_reports table with property_id
     const { data: existingReport } = await supabase
@@ -240,6 +243,20 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Store beacon_property_slug on the properties table for property-level linking
+    if (beaconPropertySlug && effectivePropertyId) {
+      const { error: propertyUpdateError } = await supabase
+        .from('properties')
+        .update({ beacon_property_slug: beaconPropertySlug })
+        .eq('id', effectivePropertyId);
+
+      if (propertyUpdateError) {
+        console.error('Failed to update property with beacon_property_slug:', propertyUpdateError);
+      } else {
+        console.log('Stored beacon_property_slug on property:', beaconPropertySlug);
+      }
+    }
+
     // Update the appraisal with report info if appraisalId provided
     if (appraisalId) {
       const { error: updateError } = await supabase
@@ -263,6 +280,7 @@ Deno.serve(async (req) => {
         message: beaconData.message || 'Report linked successfully',
         reportId: linkedReportId,
         propertyId: effectivePropertyId,
+        propertySlug: beaconPropertySlug, // Return for UI reference
         reportUrl: editUrl,
         personalizedUrl: personalizedUrl,
         address: beaconData.address,

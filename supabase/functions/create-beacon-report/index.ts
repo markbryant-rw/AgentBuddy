@@ -339,6 +339,7 @@ Deno.serve(async (req) => {
       ownerEmail: primaryOwner?.email || '',
       ownerMobile: primaryOwner?.phone || '',
       externalLeadId: appraisalId || effectivePropertyId,
+      agentbuddyPropertyId: effectivePropertyId, // Stable property UUID for cross-reference
       reportType: reportType,
       team_id: effectiveTeamId,
     };
@@ -375,6 +376,9 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Extract property slug from Beacon response for property-level linking
+    const beaconPropertySlug = beaconData.propertySlug;
+
     // Insert new report into beacon_reports table with property_id
     const { data: newReport, error: insertError } = await supabase
       .from('beacon_reports')
@@ -393,6 +397,20 @@ Deno.serve(async (req) => {
     if (insertError) {
       console.error('Failed to insert beacon report:', insertError);
       // Report was created in Beacon but failed to save locally
+    }
+
+    // Store beacon_property_slug on the properties table for property-level linking
+    if (beaconPropertySlug && effectivePropertyId) {
+      const { error: propertyUpdateError } = await supabase
+        .from('properties')
+        .update({ beacon_property_slug: beaconPropertySlug })
+        .eq('id', effectivePropertyId);
+
+      if (propertyUpdateError) {
+        console.error('Failed to update property with beacon_property_slug:', propertyUpdateError);
+      } else {
+        console.log('Stored beacon_property_slug on property:', beaconPropertySlug);
+      }
     }
 
     // Also update the appraisal with latest report info for backwards compatibility (if appraisalId provided)
@@ -421,6 +439,7 @@ Deno.serve(async (req) => {
         ownerId: beaconData.ownerId,
         urls: beaconData.urls,
         reportType: reportType,
+        propertySlug: beaconPropertySlug, // Return for UI reference
         localReportId: newReport?.id,
         ownerCount: beaconOwners.length,
         teamSynced: retried, // Indicate if team was auto-synced
