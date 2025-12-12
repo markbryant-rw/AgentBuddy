@@ -246,7 +246,8 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
   }, [effectivePropertyId, getPropertyById]);
 
   // Determine linked status from multiple sources
-  const propertyIsLinkedToBeacon = isLinkedToBeacon || !!beaconPropertySlug || !!propertyData?.beacon_property_slug;
+  // Consider property linked if: explicit beacon_property_slug exists OR we have beacon_reports records
+  const propertyIsLinkedToBeacon = isLinkedToBeacon || !!beaconPropertySlug || !!propertyData?.beacon_property_slug || hasReports;
   const effectiveBeaconSlug = beaconPropertySlug || propertyData?.beacon_property_slug;
 
   // Fallback to appraisal.beacon_* fields if no beacon_reports records exist

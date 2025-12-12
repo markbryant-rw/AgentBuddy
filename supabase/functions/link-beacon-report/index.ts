@@ -196,11 +196,17 @@ Deno.serve(async (req) => {
 
     // Validate we got the required reportId
     if (!linkedReportId) {
-      console.error('Beacon response missing reportId. Full response:', beaconData);
+      console.error('Beacon response missing reportId. Full response:', JSON.stringify(beaconData, null, 2));
       return new Response(
         JSON.stringify({ success: false, error: 'Beacon response missing report ID' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Log warning if propertySlug is missing - this prevents property-level linking
+    if (!beaconPropertySlug) {
+      console.warn('WARNING: Beacon response missing propertySlug - property-level linking will not work');
+      console.warn('Full Beacon response:', JSON.stringify(beaconData, null, 2));
     }
 
     console.log('Extracted report data:', { linkedReportId, linkedReportType, editUrl, personalizedUrl, beaconPropertySlug });

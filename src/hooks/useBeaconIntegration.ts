@@ -18,17 +18,36 @@ export interface BeaconReportResponse {
   localReportId?: string;
 }
 
-// Beacon expects: appraisal, proposal, campaign
-export type BeaconReportType = 'appraisal' | 'proposal' | 'campaign';
+// Beacon report types - includes both legacy and new naming
+export type BeaconReportType = 
+  | 'appraisal' 
+  | 'proposal' 
+  | 'campaign' 
+  | 'property_report' 
+  | 'campaign_proposal' 
+  | 'campaign_update'
+  | 'market_appraisal';
 
-export const REPORT_TYPE_LABELS: Record<BeaconReportType, string> = {
+export const REPORT_TYPE_LABELS: Record<string, string> = {
+  // New Beacon naming (v2.0)
+  property_report: 'Property Valuation',
+  campaign_proposal: 'Campaign Proposal',
+  campaign_update: 'Campaign Update',
+  // Legacy naming (for backwards compatibility)
   appraisal: 'Market Appraisal',
+  market_appraisal: 'Market Appraisal',
   proposal: 'Proposal',
   campaign: 'Campaign Update',
 };
 
-export const REPORT_TYPE_ICONS: Record<BeaconReportType, string> = {
+export const REPORT_TYPE_ICONS: Record<string, string> = {
+  // New Beacon naming (v2.0)
+  property_report: '🏠',
+  campaign_proposal: '📝',
+  campaign_update: '🔄',
+  // Legacy naming
   appraisal: '📊',
+  market_appraisal: '📊',
   proposal: '📝',
   campaign: '🔄',
 };
@@ -215,9 +234,17 @@ export const useBeaconIntegration = () => {
         window.open(data.urls.edit, '_blank');
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('Failed to create Beacon report:', error);
-      toast.error('Failed to create Beacon report');
+      // Show specific error message from Beacon if available
+      const errorMessage = error?.message || 'Failed to create Beacon report';
+      if (errorMessage.includes('duplicate')) {
+        toast.error('A report already exists for this property. Try linking instead.');
+      } else if (errorMessage.includes('not found')) {
+        toast.error('Property not found in Beacon. Please check your connection.');
+      } else {
+        toast.error(errorMessage);
+      }
     },
   });
 
