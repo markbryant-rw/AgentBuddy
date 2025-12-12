@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Home, ExternalLink, CheckCircle2, XCircle, Gift, CreditCard, AlertCircle, Unplug } from "lucide-react";
+import { Loader2, Home, ExternalLink, CheckCircle2, XCircle, Gift, CreditCard, AlertCircle, Unplug, RefreshCw } from "lucide-react";
 import { useBeaconIntegration } from "@/hooks/useBeaconIntegration";
 import { useBeaconSubscription } from "@/hooks/useBeaconSubscription";
 import { useTeam } from "@/hooks/useTeam";
@@ -9,6 +9,7 @@ import { useTeamMembers } from "@/hooks/useTeamMembers";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
 import { GoogleCalendarCard } from "./GoogleCalendarCard";
+import { useState } from "react";
 
 const IntegrationsTab = () => {
   const { team } = useTeam();
@@ -27,7 +28,13 @@ const IntegrationsTab = () => {
     isConnecting,
     disconnectBeacon,
     isDisconnecting,
+    testConnection,
+    syncTeamToBeacon,
+    isSyncingTeam,
   } = useBeaconIntegration();
+
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   const { subscription, isLoading: isLoadingSubscription, isUnlimited } = useBeaconSubscription();
 
@@ -128,12 +135,29 @@ const IntegrationsTab = () => {
     );
   };
 
+  // Handle test connection
+  const handleTestConnection = async () => {
+    setIsTestingConnection(true);
+    setConnectionTestResult(null);
+    try {
+      const result = await testConnection();
+      setConnectionTestResult(result);
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
+  // Handle re-sync team
+  const handleResyncTeam = () => {
+    syncTeamToBeacon.mutate(team?.id || '');
+  };
+
   // Render health indicators when connected
   const renderHealthIndicators = () => {
     if (!isBeaconEnabled) return null;
 
     return (
-      <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
+      <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-3">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Connection Status
         </p>
@@ -151,6 +175,66 @@ const IntegrationsTab = () => {
               <span>{format(new Date(integrationSettings.connected_at), 'MMM d, yyyy')}</span>
             </div>
           )}
+        </div>
+        
+        {/* Connection test result */}
+        {connectionTestResult && (
+          <div className={`p-2 rounded-lg text-sm ${
+            connectionTestResult.success 
+              ? 'bg-green-500/10 text-green-700 dark:text-green-400' 
+              : 'bg-red-500/10 text-red-700 dark:text-red-400'
+          }`}>
+            <div className="flex items-center gap-2">
+              {connectionTestResult.success ? (
+                <CheckCircle2 className="h-4 w-4" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              {connectionTestResult.message}
+            </div>
+          </div>
+        )}
+        
+        {/* Action buttons */}
+        <div className="flex gap-2 pt-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleTestConnection}
+            disabled={isTestingConnection}
+            className="text-xs"
+          >
+            {isTestingConnection ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                Testing...
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                Test Connection
+              </>
+            )}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleResyncTeam}
+            disabled={isSyncingTeam}
+            className="text-xs"
+          >
+            {isSyncingTeam ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                Re-sync Team
+              </>
+            )}
+          </Button>
         </div>
       </div>
     );

@@ -22,9 +22,11 @@ import {
   Pencil,
   Loader2,
   RefreshCw,
+  Link2,
+  Search,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -252,7 +254,10 @@ export const BeaconPropertyTab = ({
   const { 
     isBeaconEnabled, 
     createBeaconReport, 
-    isCreatingReport, 
+    isCreatingReport,
+    searchBeaconReports,
+    linkBeaconReport,
+    isLinkingReport,
   } = useBeaconIntegration();
   
   // Fetch all reports for this property
@@ -272,6 +277,49 @@ export const BeaconPropertyTab = ({
   const hasEngagementData = effectiveStats.bestPropensity > 0 || effectiveStats.totalViews > 0;
   const [copied, setCopied] = useState(false);
   const [isSyncingEngagement, setIsSyncingEngagement] = useState(false);
+  
+  // Auto-search state for finding existing reports
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
+
+  // Auto-search for existing reports when tab opens and no reports linked
+  useEffect(() => {
+    const searchForExistingReports = async () => {
+      if (!isBeaconEnabled || hasReports || !address || hasSearched || isSearching) return;
+      
+      setIsSearching(true);
+      try {
+        const results = await searchBeaconReports({ address });
+        setSearchResults(results || []);
+      } catch (error) {
+        console.error('Auto-search failed:', error);
+        // Silently fail - not critical
+      } finally {
+        setIsSearching(false);
+        setHasSearched(true);
+      }
+    };
+
+    searchForExistingReports();
+  }, [isBeaconEnabled, hasReports, address, hasSearched, isSearching, searchBeaconReports]);
+
+  // Handle linking an existing report
+  const handleLinkReport = async (beaconReportId: string) => {
+    try {
+      await linkBeaconReport.mutateAsync({
+        appraisalId,
+        propertyId,
+        reportId: beaconReportId,
+        address,
+        teamId,
+      });
+      setSearchResults([]);
+      refetchReports();
+    } catch (error) {
+      console.error('Failed to link report:', error);
+    }
+  };
 
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -483,6 +531,70 @@ export const BeaconPropertyTab = ({
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Found Existing Reports - Auto-search results */}
+        {!hasReports && searchResults.length > 0 && (
+          <Card className="border-amber-500/30 bg-gradient-to-br from-amber-500/5 to-orange-500/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
+                <Search className="h-5 w-5 text-amber-600" />
+                Existing Reports Found
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                We found {searchResults.length} existing report{searchResults.length !== 1 ? 's' : ''} for this address. Link them to track engagement here.
+              </p>
+              <div className="space-y-2">
+                {searchResults.slice(0, 3).map((result: any) => (
+                  <div 
+                    key={result.reportId || result.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-background/50 border border-border/50"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{REPORT_TYPE_ICONS[result.reportType as BeaconReportType] || '📊'}</span>
+                      <div>
+                        <p className="text-sm font-medium">
+                          {REPORT_TYPE_LABELS[result.reportType as BeaconReportType] || result.reportType || 'Report'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {result.createdAt ? format(new Date(result.createdAt), 'MMM d, yyyy') : 'Unknown date'}
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleLinkReport(result.reportId || result.id)}
+                      disabled={isLinkingReport}
+                      className="gap-1"
+                    >
+                      {isLinkingReport ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Link2 className="h-3.5 w-3.5" />
+                      )}
+                      Link
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              {searchResults.length > 3 && (
+                <p className="text-xs text-muted-foreground text-center">
+                  +{searchResults.length - 3} more reports available
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Searching indicator */}
+        {isSearching && !hasReports && (
+          <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Checking for existing reports...
+          </div>
         )}
 
         {/* Create Report Section */}
