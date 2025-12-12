@@ -360,9 +360,22 @@ Deno.serve(async (req) => {
     if (!beaconResponse.ok) {
       const errorText = await beaconResponse.text();
       console.error('Beacon API error:', errorText);
+      console.error('Beacon API status:', beaconResponse.status);
+      console.error('Beacon payload was:', JSON.stringify(beaconPayload, null, 2));
+      
+      // Parse error for more specific message
+      let errorDetail = 'Failed to create Beacon report';
+      try {
+        const parsedError = JSON.parse(errorText);
+        if (parsedError.error) errorDetail = parsedError.error;
+        if (parsedError.details) errorDetail += `: ${parsedError.details}`;
+      } catch {
+        if (errorText) errorDetail = errorText;
+      }
+      
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to create Beacon report' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: errorDetail }),
+        { status: beaconResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
