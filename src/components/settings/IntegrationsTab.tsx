@@ -328,7 +328,7 @@ const IntegrationsTab = () => {
               ) : (
                 <>
                   <Button variant="outline" size="sm" className="flex-1" asChild>
-                    <a href="https://beacon.lovable.app" target="_blank" rel="noopener noreferrer">
+                    <a href="https://beacon.agentbuddy.co" target="_blank" rel="noopener noreferrer">
                       Open Beacon Dashboard
                       <ExternalLink className="ml-2 h-4 w-4" />
                     </a>
@@ -358,7 +358,7 @@ const IntegrationsTab = () => {
               </p>
               {isBeaconEnabled && (
                 <Button variant="outline" size="sm" className="w-full mt-3" asChild>
-                  <a href="https://beacon.lovable.app" target="_blank" rel="noopener noreferrer">
+                  <a href="https://beacon.agentbuddy.co" target="_blank" rel="noopener noreferrer">
                     Open Beacon Dashboard
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
