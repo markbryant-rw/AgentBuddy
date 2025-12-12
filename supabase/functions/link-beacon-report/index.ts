@@ -66,13 +66,23 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { appraisalId, reportId, propertySlug, reportType } = await req.json();
+    const { 
+      appraisalId, 
+      propertyId,
+      reportId, 
+      propertySlug, 
+      reportType,
+      // Additional property info for direct linking (without appraisal)
+      address,
+      teamId,
+    } = await req.json();
     
-    console.log(`Linking Beacon report for appraisal: ${appraisalId}`);
+    console.log(`Linking Beacon report - appraisalId: ${appraisalId}, propertyId: ${propertyId}, reportId: ${reportId}`);
 
-    if (!appraisalId) {
+    // Require either appraisalId OR (propertyId + address + teamId)
+    if (!appraisalId && (!propertyId || !address || !teamId)) {
       return new Response(
-        JSON.stringify({ success: false, error: 'appraisalId is required' }),
+        JSON.stringify({ success: false, error: 'Either appraisalId or (propertyId, address, teamId) is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -84,50 +94,51 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch appraisal data
-    const { data: appraisal, error: appraisalError } = await supabase
-      .from('logged_appraisals')
-      .select('*')
-      .eq('id', appraisalId)
-      .single();
+    let effectivePropertyId = propertyId;
+    let effectiveAddress = address;
+    let effectiveTeamId = teamId;
+    let appraisal: any = null;
 
-    if (appraisalError || !appraisal) {
-      console.error('Appraisal not found:', appraisalError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Appraisal not found' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Get agent email for the appraisal
-    let agentEmail = user.email;
-    if (appraisal.agent_id && appraisal.agent_id !== user.id) {
-      const { data: agentProfile } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', appraisal.agent_id)
+    // If appraisalId provided, fetch appraisal data
+    if (appraisalId) {
+      const { data: appraisalData, error: appraisalError } = await supabase
+        .from('logged_appraisals')
+        .select('*')
+        .eq('id', appraisalId)
         .single();
-      if (agentProfile?.email) {
-        agentEmail = agentProfile.email;
+
+      if (appraisalError || !appraisalData) {
+        console.error('Appraisal not found:', appraisalError);
+        return new Response(
+          JSON.stringify({ success: false, error: 'Appraisal not found' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+      
+      appraisal = appraisalData;
+      effectivePropertyId = appraisal.property_id || propertyId;
+      effectiveAddress = appraisal.address;
+      effectiveTeamId = appraisal.team_id;
     }
 
-    // Call Beacon API to link the report - standalone endpoint per v2.0 spec
+    // Call Beacon API to link the report - team-centric authentication
     const endpoint = `${beaconApiUrl}/link-report-to-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
-    // Build payload with required fields per v2.0 spec (camelCase)
+    // Build payload with team-centric auth (not agent email based)
     const beaconPayload: Record<string, string> = {
       apiKey: beaconApiKey,
-      externalLeadId: appraisalId,
-      agentEmail: agentEmail || '',
-      address: appraisal.address,
-      ownerName: appraisal.vendor_name || 'Property Owner',
+      teamId: effectiveTeamId,
+      externalLeadId: appraisalId || effectivePropertyId,
+      address: effectiveAddress,
     };
 
-    // Add optional fields
-    if (appraisal.vendor_email) beaconPayload.ownerEmail = appraisal.vendor_email;
-    if (appraisal.vendor_mobile) beaconPayload.ownerPhone = appraisal.vendor_mobile;
+    // Add optional vendor fields from appraisal if available
+    if (appraisal) {
+      if (appraisal.vendor_name) beaconPayload.ownerName = appraisal.vendor_name;
+      if (appraisal.vendor_email) beaconPayload.ownerEmail = appraisal.vendor_email;
+      if (appraisal.vendor_mobile) beaconPayload.ownerPhone = appraisal.vendor_mobile;
+    }
     
     // Either reportId or propertySlug
     if (reportId) {
@@ -141,6 +152,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Environment': 'production',
       },
       body: JSON.stringify(beaconPayload),
     });
@@ -189,11 +201,10 @@ Deno.serve(async (req) => {
 
     console.log('Extracted report data:', { linkedReportId, linkedReportType, editUrl, personalizedUrl });
 
-    // Insert or update report in beacon_reports table
+    // Insert or update report in beacon_reports table with property_id
     const { data: existingReport } = await supabase
       .from('beacon_reports')
       .select('id')
-      .eq('appraisal_id', appraisalId)
       .eq('beacon_report_id', linkedReportId)
       .maybeSingle();
 
@@ -201,7 +212,8 @@ Deno.serve(async (req) => {
       const { error: insertError } = await supabase
         .from('beacon_reports')
         .insert({
-          appraisal_id: appraisalId,
+          appraisal_id: appraisalId || null,
+          property_id: effectivePropertyId,
           beacon_report_id: linkedReportId,
           report_type: linkedReportType,
           report_url: editUrl,
@@ -212,28 +224,44 @@ Deno.serve(async (req) => {
       if (insertError) {
         console.error('Failed to insert beacon report:', insertError);
       }
+    } else {
+      // Update existing report with property_id if missing
+      const { error: updateError } = await supabase
+        .from('beacon_reports')
+        .update({
+          property_id: effectivePropertyId,
+          appraisal_id: appraisalId || null,
+        })
+        .eq('id', existingReport.id);
+
+      if (updateError) {
+        console.error('Failed to update beacon report:', updateError);
+      }
     }
 
-    // Update the appraisal with report info
-    const { error: updateError } = await supabase
-      .from('logged_appraisals')
-      .update({
-        beacon_report_id: linkedReportId,
-        beacon_report_url: editUrl,
-        beacon_personalized_url: personalizedUrl,
-        beacon_synced_at: new Date().toISOString(),
-      })
-      .eq('id', appraisalId);
+    // Update the appraisal with report info if appraisalId provided
+    if (appraisalId) {
+      const { error: updateError } = await supabase
+        .from('logged_appraisals')
+        .update({
+          beacon_report_id: linkedReportId,
+          beacon_report_url: editUrl,
+          beacon_personalized_url: personalizedUrl,
+          beacon_synced_at: new Date().toISOString(),
+        })
+        .eq('id', appraisalId);
 
-    if (updateError) {
-      console.error('Failed to update appraisal:', updateError);
+      if (updateError) {
+        console.error('Failed to update appraisal:', updateError);
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: beaconData.message || 'Report linked to AgentBuddy lead',
+        message: beaconData.message || 'Report linked successfully',
         reportId: linkedReportId,
+        propertyId: effectivePropertyId,
         reportUrl: editUrl,
         personalizedUrl: personalizedUrl,
         address: beaconData.address,

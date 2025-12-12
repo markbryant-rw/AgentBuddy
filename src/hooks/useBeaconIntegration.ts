@@ -221,18 +221,37 @@ export const useBeaconIntegration = () => {
     },
   });
 
-  // Link an existing Beacon report to an appraisal
+  // Link an existing Beacon report - supports both appraisal-based and property-based linking
   const linkBeaconReport = useMutation({
-    mutationFn: async ({ appraisalId, reportId, propertySlug, reportType }: { 
-      appraisalId: string; 
+    mutationFn: async ({ 
+      appraisalId, 
+      propertyId,
+      reportId, 
+      propertySlug, 
+      reportType,
+      address,
+      teamId,
+    }: { 
+      appraisalId?: string; 
+      propertyId?: string;
       reportId?: string; 
       propertySlug?: string;
       reportType?: string;
+      address?: string;
+      teamId?: string;
     }) => {
-      console.log('linkBeaconReport: Starting mutation', { appraisalId, reportId, propertySlug });
+      console.log('linkBeaconReport: Starting mutation', { appraisalId, propertyId, reportId, propertySlug });
       
       const { data, error } = await supabase.functions.invoke('link-beacon-report', {
-        body: { appraisalId, reportId, propertySlug, reportType },
+        body: { 
+          appraisalId, 
+          propertyId,
+          reportId, 
+          propertySlug, 
+          reportType,
+          address,
+          teamId: teamId || team?.id,
+        },
       });
 
       console.log('linkBeaconReport: Response', { data, error });
@@ -250,6 +269,8 @@ export const useBeaconIntegration = () => {
       console.error('Failed to link Beacon report:', error);
       if (error.message.includes('not found')) {
         toast.error('Report not found in Beacon');
+      } else if (error.message.includes('not synced')) {
+        toast.error('Team not synced to Beacon. Please reconnect in Settings.');
       } else {
         toast.error('Failed to link Beacon report');
       }
@@ -323,6 +344,29 @@ export const useBeaconIntegration = () => {
     },
   });
 
+  // Test Beacon connection - useful for settings page
+  const testConnection = async (): Promise<{ success: boolean; message: string; details?: any }> => {
+    if (!team?.id) {
+      return { success: false, message: 'No team found' };
+    }
+    
+    try {
+      // Try to sync team - this validates API key and team setup
+      await syncTeamToBeacon.mutateAsync(team.id);
+      return { 
+        success: true, 
+        message: 'Connection verified! Team is synced with Beacon.',
+        details: { teamId: team.id }
+      };
+    } catch (error: any) {
+      console.error('Connection test failed:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Failed to connect to Beacon',
+      };
+    }
+  };
+
   return {
     isBeaconEnabled,
     isLoadingSettings,
@@ -342,6 +386,7 @@ export const useBeaconIntegration = () => {
     isSyncingOwner: syncOwnerToBeacon.isPending,
     syncTeamToBeacon,
     isSyncingTeam: syncTeamToBeacon.isPending,
+    testConnection,
     teamId: team?.id,
   };
 };
