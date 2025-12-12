@@ -3,6 +3,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { AppRole } from '@/lib/rbac';
 
+// Trigger Beacon team sync when team members change
+const triggerBeaconTeamSync = async (teamId: string) => {
+  try {
+    const { data: integrationSettings } = await supabase
+      .from('integration_settings')
+      .select('enabled')
+      .eq('team_id', teamId)
+      .eq('integration_name', 'beacon')
+      .single();
+
+    if (!integrationSettings?.enabled) return;
+
+    console.log('Triggering Beacon team sync for team:', teamId);
+    await supabase.functions.invoke('sync-beacon-team', { body: { teamId } });
+  } catch (error) {
+    console.error('Error triggering Beacon team sync:', error);
+  }
+};
+
 export const usePlatformUserManagement = () => {
   const queryClient = useQueryClient();
 
@@ -274,6 +293,11 @@ export const usePlatformUserManagement = () => {
         .insert({ user_id: userId, team_id: teamId });
       
       if (error) throw error;
+      
+      // Trigger Beacon team sync (async, non-blocking)
+      triggerBeaconTeamSync(teamId);
+      
+      return { teamId };
     },
     onSuccess: async (_, variables) => {
       toast.success('Added to team successfully');
@@ -311,6 +335,11 @@ export const usePlatformUserManagement = () => {
         .eq('team_id', teamId);
       
       if (error) throw error;
+      
+      // Trigger Beacon team sync (async, non-blocking)
+      triggerBeaconTeamSync(teamId);
+      
+      return { teamId };
     },
     onSuccess: async (_, variables) => {
       toast.success('Removed from team successfully');
