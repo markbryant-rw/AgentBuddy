@@ -290,6 +290,7 @@ export type Database = {
           description: string | null
           id: string
           is_default: boolean | null
+          is_system_template: boolean | null
           name: string
           stage: string
           tasks: Json | null
@@ -302,6 +303,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_default?: boolean | null
+          is_system_template?: boolean | null
           name: string
           stage: string
           tasks?: Json | null
@@ -314,6 +316,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_default?: boolean | null
+          is_system_template?: boolean | null
           name?: string
           stage?: string
           tasks?: Json | null
