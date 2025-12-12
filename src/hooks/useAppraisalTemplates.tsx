@@ -22,6 +22,7 @@ export interface AppraisalTemplate {
   stage: AppraisalStage;
   tasks: AppraisalTemplateTask[];
   is_default: boolean;
+  is_system_template: boolean;
   team_id: string | null;
   created_by: string | null;
   created_at: string;
@@ -33,16 +34,16 @@ export const useAppraisalTemplates = () => {
   const { team } = useTeam();
   const teamId = team?.id;
 
-  // Fetch all templates for the team
+  // Fetch all templates (system + team)
   const { data: templates = [], isLoading, refetch } = useQuery({
     queryKey: ['appraisal-templates', teamId],
     queryFn: async () => {
-      if (!teamId) return [];
-      
+      // Fetch both system templates and team templates
       const { data, error } = await supabase
         .from('appraisal_stage_templates')
         .select('*')
-        .eq('team_id', teamId)
+        .or(teamId ? `is_system_template.eq.true,team_id.eq.${teamId}` : 'is_system_template.eq.true')
+        .order('is_system_template', { ascending: false }) // System first for fallback
         .order('stage', { ascending: true })
         .order('name', { ascending: true });
 
@@ -50,10 +51,11 @@ export const useAppraisalTemplates = () => {
       
       return (data || []).map(t => ({
         ...t,
+        is_system_template: t.is_system_template ?? false,
         tasks: (Array.isArray(t.tasks) ? t.tasks : []) as unknown as AppraisalTemplateTask[],
       })) as AppraisalTemplate[];
     },
-    enabled: !!teamId,
+    enabled: true, // Always enabled to load system templates
   });
 
   // Get templates for a specific stage
@@ -61,9 +63,23 @@ export const useAppraisalTemplates = () => {
     return templates.filter(t => t.stage === stage);
   };
 
-  // Get default template for a stage
+  // Get default template for a stage (user's team default first, then system)
   const getDefaultTemplate = (stage: AppraisalStage) => {
-    return templates.find(t => t.stage === stage && t.is_default);
+    return templates.find(t => t.stage === stage && t.is_default && !t.is_system_template);
+  };
+
+  // Get effective template for a stage (priority: team default → system template)
+  const getEffectiveTemplate = (stage: AppraisalStage): AppraisalTemplate | undefined => {
+    // Priority 1: User's team default
+    const teamDefault = templates.find(t => 
+      t.stage === stage && t.team_id === teamId && t.is_default
+    );
+    if (teamDefault) return teamDefault;
+    
+    // Priority 2: System template (fallback)
+    return templates.find(t => 
+      t.stage === stage && t.is_system_template
+    );
   };
 
   // Create template mutation
@@ -71,7 +87,11 @@ export const useAppraisalTemplates = () => {
     mutationFn: async (template: Omit<AppraisalTemplate, 'id' | 'created_at' | 'updated_at'>) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-      if (!teamId) throw new Error('No team selected');
+      
+      // System templates don't need team_id
+      if (!template.is_system_template && !teamId) {
+        throw new Error('No team selected');
+      }
 
       const { data, error } = await supabase
         .from('appraisal_stage_templates')
@@ -81,7 +101,8 @@ export const useAppraisalTemplates = () => {
           stage: template.stage,
           tasks: template.tasks as any,
           is_default: template.is_default,
-          team_id: teamId,
+          is_system_template: template.is_system_template || false,
+          team_id: template.is_system_template ? null : teamId,
           created_by: user.id,
         })
         .select()
@@ -91,7 +112,7 @@ export const useAppraisalTemplates = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appraisal-templates', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['appraisal-templates'] });
       toast.success('Template created');
     },
     onError: (error) => {
@@ -121,7 +142,7 @@ export const useAppraisalTemplates = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appraisal-templates', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['appraisal-templates'] });
       toast.success('Template updated');
     },
     onError: (error) => {
@@ -130,9 +151,15 @@ export const useAppraisalTemplates = () => {
     },
   });
 
-  // Delete template mutation
+  // Delete template mutation (blocks system templates)
   const deleteTemplate = useMutation({
     mutationFn: async (id: string) => {
+      // Check if it's a system template
+      const template = templates.find(t => t.id === id);
+      if (template?.is_system_template) {
+        throw new Error('System templates cannot be deleted');
+      }
+
       const { error } = await supabase
         .from('appraisal_stage_templates')
         .delete()
@@ -141,11 +168,49 @@ export const useAppraisalTemplates = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appraisal-templates', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['appraisal-templates'] });
       toast.success('Template deleted');
     },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete template');
+      console.error(error);
+    },
+  });
+
+  // Duplicate template mutation (for copying system → user template)
+  const duplicateTemplate = useMutation({
+    mutationFn: async (templateId: string) => {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) throw new Error('Template not found');
+      if (!teamId) throw new Error('No team selected');
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data, error } = await supabase
+        .from('appraisal_stage_templates')
+        .insert({
+          name: `${template.name} (Copy)`,
+          description: template.description,
+          stage: template.stage,
+          tasks: template.tasks as any,
+          is_default: false,
+          is_system_template: false,
+          team_id: teamId,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appraisal-templates'] });
+      toast.success('Template duplicated');
+    },
     onError: (error) => {
-      toast.error('Failed to delete template');
+      toast.error('Failed to duplicate template');
       console.error(error);
     },
   });
@@ -155,7 +220,7 @@ export const useAppraisalTemplates = () => {
     mutationFn: async ({ templateId, stage }: { templateId: string; stage: AppraisalStage }) => {
       if (!teamId) throw new Error('No team selected');
 
-      // First, unset any existing default for this stage
+      // First, unset any existing default for this stage (only team templates)
       await supabase
         .from('appraisal_stage_templates')
         .update({ is_default: false })
@@ -171,7 +236,7 @@ export const useAppraisalTemplates = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['appraisal-templates', teamId] });
+      queryClient.invalidateQueries({ queryKey: ['appraisal-templates'] });
       toast.success('Default template updated');
     },
     onError: (error) => {
@@ -248,9 +313,11 @@ export const useAppraisalTemplates = () => {
     refetch,
     getTemplatesForStage,
     getDefaultTemplate,
+    getEffectiveTemplate,
     createTemplate,
     updateTemplate,
     deleteTemplate,
+    duplicateTemplate,
     setAsDefault,
     applyTemplate,
   };

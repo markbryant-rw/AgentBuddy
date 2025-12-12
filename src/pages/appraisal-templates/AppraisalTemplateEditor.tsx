@@ -120,6 +120,7 @@ const AppraisalTemplateEditor = () => {
           stage,
           tasks,
           is_default: isDefault,
+          is_system_template: false,
           team_id: null,
           created_by: null,
         });
