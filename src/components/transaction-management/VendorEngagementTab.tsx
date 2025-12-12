@@ -27,12 +27,15 @@ import {
   Lock,
   Loader2,
   RefreshCw,
+  History,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { VendorReportingDialog } from '@/components/vendor-reporting/VendorReportingDialog';
 import { useBeaconIntegration, REPORT_TYPE_LABELS, REPORT_TYPE_ICONS, BeaconReportType } from '@/hooks/useBeaconIntegration';
 import { useBeaconReports, BeaconReport } from '@/hooks/useBeaconReports';
+import { useTransactionNotes } from '@/hooks/useTransactionNotes';
+import { VendorCommunicationTimeline } from './VendorCommunicationTimeline';
 import { cn } from '@/lib/utils';
 
 interface Owner {
@@ -184,6 +187,7 @@ export const VendorEngagementTab = ({
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [beaconSectionOpen, setBeaconSectionOpen] = useState(true);
   const [weeklyReportsSectionOpen, setWeeklyReportsSectionOpen] = useState(true);
+  const [timelineSectionOpen, setTimelineSectionOpen] = useState(true);
   const [isSyncingEngagement, setIsSyncingEngagement] = useState(false);
 
   // Beacon integration
@@ -218,6 +222,9 @@ export const VendorEngagementTab = ({
       return [];
     },
   });
+
+  // Transaction notes for timeline
+  const { notes } = useTransactionNotes(transactionId);
 
   const handleCopyLink = async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -492,7 +499,50 @@ export const VendorEngagementTab = ({
           </Card>
         </Collapsible>
 
-        {/* Vendor Reporting Dialog */}
+        {/* Communication Timeline Section */}
+        <Collapsible open={timelineSectionOpen} onOpenChange={setTimelineSectionOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors py-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <History className="h-4 w-4 text-purple-600" />
+                    Communication Timeline
+                    {(beaconReports.length + (vendorReports?.length || 0) + notes.length) > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {beaconReports.length + (vendorReports?.length || 0) + notes.length}
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  {timelineSectionOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="pt-0">
+                <VendorCommunicationTimeline
+                  beaconReports={beaconReports}
+                  weeklyReports={vendorReports || []}
+                  notes={notes}
+                  onEditBeaconReport={(report) => {
+                    if (report.report_url) {
+                      window.open(report.report_url, '_blank');
+                    }
+                  }}
+                  onViewBeaconReport={(report) => {
+                    if (report.personalized_url) {
+                      window.open(report.personalized_url, '_blank');
+                    }
+                  }}
+                  onViewWeeklyReport={(report) => {
+                    setSelectedReport(report as VendorReportWithCreator);
+                  }}
+                />
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
         <VendorReportingDialog
           isOpen={isReportDialogOpen}
           onClose={() => setIsReportDialogOpen(false)}
