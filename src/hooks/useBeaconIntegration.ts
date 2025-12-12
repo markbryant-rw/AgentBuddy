@@ -278,7 +278,12 @@ export const useBeaconIntegration = () => {
   });
 
   // Search for existing Beacon reports
-  const searchBeaconReports = async (params: { address?: string; ownerName?: string; ownerEmail?: string }) => {
+  const searchBeaconReports = async (params: { 
+    address?: string; 
+    ownerName?: string; 
+    ownerEmail?: string;
+    linkedStatus?: 'linked' | 'unlinked' | 'all';
+  }) => {
     if (!team?.id) {
       console.error('searchBeaconReports: No team ID available');
       throw new Error('Team not found');
