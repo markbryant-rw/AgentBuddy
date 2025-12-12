@@ -31,10 +31,23 @@ import { cn } from "@/lib/utils";
 // Module context determines default report type
 export type BeaconModule = 'appraisal' | 'opportunity' | 'transaction';
 
+interface Owner {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  is_primary: boolean;
+}
+
 interface BeaconPropertyTabProps {
   propertyId: string;
   appraisalId?: string; // Optional - for creating reports linked to appraisals
   module: BeaconModule;
+  // Property info for direct report creation (when no appraisalId)
+  address?: string;
+  suburb?: string;
+  owners?: Owner[];
+  teamId?: string;
   // Fallback engagement stats (from appraisal beacon_* fields)
   fallbackStats?: {
     propensity_score?: number;
@@ -230,6 +243,10 @@ export const BeaconPropertyTab = ({
   propertyId, 
   appraisalId, 
   module,
+  address,
+  suburb,
+  owners,
+  teamId,
   fallbackStats 
 }: BeaconPropertyTabProps) => {
   const { 
@@ -264,13 +281,24 @@ export const BeaconPropertyTab = ({
   };
 
   // Create report with module-appropriate type
+  // Can work with appraisalId OR direct property data
+  const canCreateReport = appraisalId || (address && teamId);
+  
   const handleCreateReport = () => {
-    if (!appraisalId) {
-      toast.error('No appraisal linked - please create report from the Appraisals module');
+    if (!canCreateReport) {
+      toast.error('Missing property information to create report');
       return;
     }
     const reportType = MODULE_REPORT_TYPES[module];
-    createBeaconReport.mutate({ appraisalId, reportType });
+    createBeaconReport.mutate({ 
+      appraisalId, 
+      propertyId,
+      reportType,
+      address,
+      suburb,
+      owners,
+      teamId,
+    });
   };
 
   const formatTime = (seconds: number) => {
@@ -469,7 +497,7 @@ export const BeaconPropertyTab = ({
                     : 'Create a property report to share with your vendor'}
                 </p>
               </div>
-              {appraisalId && (
+              {canCreateReport && (
                 <Button 
                   onClick={handleCreateReport}
                   disabled={isCreatingReport}
@@ -526,9 +554,9 @@ export const BeaconPropertyTab = ({
             </div>
             <h4 className="font-medium mb-1">Ready to impress your vendor?</h4>
             <p className="text-sm text-muted-foreground mb-4">
-              {appraisalId 
+              {canCreateReport 
                 ? 'Create a professional report and track when they view it.'
-                : 'Reports are created from the Appraisals module and visible across the property lifecycle.'}
+                : 'Missing property information. Ensure address and team are set.'}
             </p>
           </div>
         )}
