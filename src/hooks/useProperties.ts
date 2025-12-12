@@ -9,6 +9,7 @@ export interface Property {
   region?: string;
   latitude?: number;
   longitude?: number;
+  beacon_property_slug?: string; // Cross-reference to Beacon property_slug
   team_id: string;
   created_by?: string;
   created_at: string;
@@ -155,12 +156,48 @@ export const useProperties = () => {
     return data as Property;
   };
 
+  /**
+   * Link a property to Beacon by storing the beacon_property_slug
+   */
+  const linkToBeacon = async (propertyId: string, beaconPropertySlug: string): Promise<void> => {
+    const { error } = await supabase
+      .from('properties')
+      .update({ beacon_property_slug: beaconPropertySlug })
+      .eq('id', propertyId);
+
+    if (error) {
+      console.error('Error linking property to Beacon:', error);
+    }
+  };
+
+  /**
+   * Find a property by its Beacon property slug
+   */
+  const findPropertyByBeaconSlug = async (beaconSlug: string): Promise<Property | null> => {
+    if (!team?.id) return null;
+
+    const { data, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('team_id', team.id)
+      .eq('beacon_property_slug', beaconSlug)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error finding property by beacon slug:', error);
+    }
+
+    return data as Property | null;
+  };
+
   return {
     normalizeAddress,
     findPropertyByAddress,
+    findPropertyByBeaconSlug,
     createProperty,
     getOrCreateProperty,
     updateProperty,
     getPropertyById,
+    linkToBeacon,
   };
 };
