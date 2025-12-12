@@ -37,7 +37,9 @@ import { BeaconEngagementPanel } from './BeaconEngagementPanel';
 import { BeaconTab } from './BeaconTab';
 import { NewVisitDialog } from './NewVisitDialog';
 import { AppraisalTemplatePromptDialog } from './AppraisalTemplatePromptDialog';
-import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle, MessageSquare } from "lucide-react";
+import { useAppraisalTemplates, AppraisalStage as TemplateStage } from '@/hooks/useAppraisalTemplates';
+import { Badge } from '@/components/ui/badge';
+import { Trash2, Plus, ListTodo, FileText, TrendingUp, Activity, ArrowRightCircle, MessageSquare, Sparkles, Info } from "lucide-react";
 import { GoogleAddressAutocomplete, AddressResult } from '@/components/shared/GoogleAddressAutocomplete';
 import { StageInfoTooltip } from './StageInfoTooltip';
 import { OwnersEditor, Owner, legacyToOwners, ownersToLegacy, getPrimaryOwner } from '@/components/shared/OwnersEditor';
@@ -84,6 +86,7 @@ const AppraisalDetailDialog = ({
   const [activeTab, setActiveTab] = useState('details');
   const [showNewVisitDialog, setShowNewVisitDialog] = useState(false);
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
+  const [applyTaskTemplate, setApplyTaskTemplate] = useState(true); // Always default to checked
   const [createdAppraisalData, setCreatedAppraisalData] = useState<{
     id: string;
     appraisal_date: string;
@@ -91,6 +94,9 @@ const AppraisalDetailDialog = ({
     agent_id?: string;
   } | null>(null);
   const originalFollowUpRef = useRef<string | null | undefined>(undefined);
+  
+  // Get templates hook for effective template lookup
+  const { getEffectiveTemplate, applyTemplate: applyTemplateMutation } = useAppraisalTemplates();
   
   const [formData, setFormData] = useState<Partial<LoggedAppraisal>>({
     address: '',
@@ -189,20 +195,33 @@ const AppraisalDetailDialog = ({
           return;
         }
         savedAppraisalId = result.id;
+        
+        // Get effective template for the stage
+        const effectiveTemplate = getEffectiveTemplate((sanitizedData.stage as TemplateStage) || 'VAP');
+        
+        // If checkbox is checked and template exists, auto-apply template
+        if (applyTaskTemplate && effectiveTemplate) {
+          await applyTemplateMutation.mutateAsync({
+            templateId: effectiveTemplate.id,
+            appraisalId: result.id,
+            appraisalDate: sanitizedData.appraisal_date || new Date().toISOString().split('T')[0],
+            agentId: sanitizedData.agent_id,
+          });
+          toast({
+            title: "Success",
+            description: `Appraisal logged with ${effectiveTemplate.tasks.length} tasks`,
+          });
+          onOpenChange(false);
+          return;
+        }
+        
+        // If no template or unchecked, just show success and close
         toast({
           title: "Success",
           description: "Appraisal logged successfully",
         });
-        
-        // Show template prompt for new appraisals
-        setCreatedAppraisalData({
-          id: result.id,
-          appraisal_date: sanitizedData.appraisal_date || new Date().toISOString().split('T')[0],
-          stage: (sanitizedData.stage as AppraisalStage) || 'VAP',
-          agent_id: sanitizedData.agent_id,
-        });
-        setShowTemplatePrompt(true);
-        return; // Don't close dialog yet - template prompt will handle it
+        onOpenChange(false);
+        return;
       } else if (appraisal) {
         // Use sync version if checkbox is checked and there are multiple visits
         if (syncContactsToAllVisits && hasMultipleVisits) {
@@ -770,6 +789,35 @@ const AppraisalDetailDialog = ({
                 <h3 className="text-base font-semibold text-foreground border-b border-border pb-2">Notes</h3>
                 <Textarea id="notes" value={formData.notes || ''} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add any additional notes about this appraisal..." rows={4} className="resize-none" />
               </div>
+
+              {/* Template Application Checkbox */}
+              {(() => {
+                const effectiveTemplate = getEffectiveTemplate(formData.stage as TemplateStage);
+                return effectiveTemplate && (
+                  <div className="flex items-start gap-3 p-4 rounded-lg border border-border bg-gradient-to-r from-primary/5 to-transparent">
+                    <Checkbox 
+                      id="applyTaskTemplate" 
+                      checked={applyTaskTemplate}
+                      onCheckedChange={(checked) => setApplyTaskTemplate(!!checked)}
+                      className="mt-0.5"
+                    />
+                    <Label htmlFor="applyTaskTemplate" className="flex-1 cursor-pointer">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <span className="font-medium">Apply {effectiveTemplate.name}</span>
+                        {effectiveTemplate.is_system_template && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                            System
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {effectiveTemplate.tasks.length} tasks will be scheduled from appraisal date
+                      </p>
+                    </Label>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
