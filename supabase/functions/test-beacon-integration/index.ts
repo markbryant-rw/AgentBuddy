@@ -117,24 +117,30 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Test 4: Search Reports Endpoint
+    // Test 4: Search Reports Endpoint (GET with query params)
     const searchStart = Date.now();
     try {
       if (!BEACON_API_KEY) {
         throw new Error('API key not configured');
       }
 
-      const searchResponse = await fetch(`${BEACON_API_URL}/search-reports`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': BEACON_API_KEY,
-        },
-        body: JSON.stringify({
-          agentbuddyTeamId: teamId,
-          address: 'integration-test-address-12345',
-        }),
+      // Build query parameters - Beacon expects apiKey as query param for GET endpoints
+      const searchParams = new URLSearchParams({
+        apiKey: BEACON_API_KEY,
+        teamId: teamId,
+        address: 'integration-test-address-12345',
       });
+      
+      const searchResponse = await fetch(
+        `${BEACON_API_URL}/search-reports?${searchParams.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'X-API-Key': BEACON_API_KEY, // Belt-and-suspenders for future header support
+          },
+        }
+      );
 
       // 200 = found, 404 = not found (both valid), 400 = TEAM_NOT_SYNCED
       if (searchResponse.ok || searchResponse.status === 404) {
