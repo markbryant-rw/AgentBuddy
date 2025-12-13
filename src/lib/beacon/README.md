@@ -2,14 +2,119 @@
 
 Complete Beacon API integration for AgentBuddy with type-safe client, validation layer, React hooks, and database tracking.
 
+> **⚡ NEW FOUNDATION MODULE**
+> This is the **next-generation** Beacon integration built for production use. It can **coexist** with the existing integration and should be used for **new features** first, with gradual migration for existing code.
+
 ## 📋 Table of Contents
 
+- [Coexistence with Legacy Integration](#-coexistence-with-legacy-integration)
 - [Quick Start Guide](#-quick-start-guide)
 - [Usage Examples](#-usage-examples)
 - [Architecture Overview](#-architecture-overview)
 - [Testing Instructions](#-testing-instructions)
 - [API Reference](#-api-reference)
 - [Troubleshooting](#-troubleshooting)
+
+---
+
+## 🔄 Coexistence with Legacy Integration
+
+### What's the Difference?
+
+AgentBuddy currently has **TWO** Beacon integrations:
+
+#### **Legacy Integration (Existing)**
+- **Location:** `src/hooks/useBeaconIntegration.ts`
+- **Components:** `BeaconTab.tsx`, `BeaconReportButton.tsx`, etc.
+- **Database:** `integration_settings` table, uses `appraisal_id`
+- **API Calls:** Via Supabase Edge Functions
+- **Status:** ✅ Production, actively used
+
+#### **New Integration Module (This Module)**
+- **Location:** `src/lib/beacon/` + `src/hooks/useBeacon.ts`
+- **Components:** `BeaconIntegrationTest.tsx` (test only)
+- **Database:** `team_integrations` table, uses `agentbuddy_property_id`
+- **API Calls:** Direct to Beacon API with retry logic
+- **Status:** ✨ Ready for new features and gradual adoption
+
+### Can They Coexist?
+
+**Yes!** Both integrations can run simultaneously without conflicts:
+
+✅ **Different tables** - No database conflicts
+✅ **Different hook names** - No import conflicts
+✅ **Different API patterns** - No runtime conflicts
+✅ **Same Beacon account** - Uses same API credentials
+
+### Recommended Usage Strategy
+
+**For New Features:**
+```typescript
+// ✓ Use NEW module for new code
+import { useBeaconClient, useCreateBeaconReport } from '@/lib/beacon';
+
+function NewFeature({ property }) {
+  const createReport = useCreateBeaconReport();
+
+  await createReport.mutateAsync({
+    agentbuddy_property_id: property.id,
+    report_type: 'cma'
+  });
+}
+```
+
+**For Existing Features:**
+```typescript
+// ✓ Keep using LEGACY hooks (no changes needed)
+import { useBeaconIntegration } from '@/hooks/useBeaconIntegration';
+
+function ExistingFeature({ appraisal }) {
+  const { createBeaconReport } = useBeaconIntegration();
+
+  createBeaconReport.mutate({
+    appraisalId: appraisal.id,
+    reportType: 'appraisal'
+  });
+}
+```
+
+### Migration Path
+
+When you're ready to migrate existing features:
+
+1. **Read the migration guide:** `BEACON_MIGRATION_STRATEGY.md`
+2. **Choose approach:** Gradual migration recommended
+3. **Migrate component by component:** Low-risk, tested approach
+4. **Update one feature at a time:** Easy rollback if issues arise
+
+**Timeline Recommendation:** Migrate gradually over 4-6 weeks
+
+### Which Integration Should I Use?
+
+| Scenario | Use This |
+|----------|----------|
+| Creating new Beacon features | ✨ **New Module** |
+| Fixing bugs in existing features | 🔧 Legacy (for now) |
+| Adding new property-level features | ✨ **New Module** |
+| Updating appraisal-based features | 🔧 Legacy (migrate later) |
+| Building webhook handlers | ✨ **New Module** |
+
+### Key Benefits of New Module
+
+✅ **Property-centric** - Uses stable `property.id` instead of unstable `appraisal.id`
+✅ **Type-safe** - Complete TypeScript coverage
+✅ **Validation** - Prevents common mistakes before API calls
+✅ **Error handling** - User-friendly messages with suggestions
+✅ **Retry logic** - Automatic exponential backoff
+✅ **Webhooks** - Built-in webhook event handling
+✅ **Direct API** - No Edge Function dependency
+✅ **Better testing** - Includes test component
+
+### Need Help?
+
+- **Migration questions:** See `BEACON_MIGRATION_STRATEGY.md`
+- **New module docs:** Continue reading this README
+- **Legacy integration:** See existing component code
 
 ---
 

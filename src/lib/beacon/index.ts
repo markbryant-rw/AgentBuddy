@@ -1,5 +1,22 @@
 /**
- * Beacon Integration Module
+ * Beacon Integration Module (NEW - Next Generation)
+ *
+ * ⚡ NEXT-GENERATION BEACON INTEGRATION
+ * =====================================
+ * This is the NEW Beacon integration module that can coexist with the legacy integration.
+ *
+ * Legacy Integration (still in use):
+ * - Location: src/hooks/useBeaconIntegration.ts
+ * - Uses: Edge Functions, appraisal_id, integration_settings table
+ * - Status: Production, actively used
+ *
+ * New Integration (this module):
+ * - Location: src/lib/beacon/ (this directory)
+ * - Uses: Direct API calls, agentbuddy_property_id, team_integrations table
+ * - Status: Ready for new features and gradual adoption
+ *
+ * For complete documentation, see: src/lib/beacon/README.md
+ * For migration strategy, see: BEACON_MIGRATION_STRATEGY.md
  *
  * Complete Beacon API integration for AgentBuddy.
  *

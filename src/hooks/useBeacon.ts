@@ -1,5 +1,22 @@
 /**
- * Beacon Integration React Hooks
+ * Beacon Integration React Hooks (NEW MODULE)
+ *
+ * ⚡ NEXT-GENERATION BEACON INTEGRATION
+ * =====================================
+ * This is the NEW Beacon integration module with improved architecture.
+ *
+ * IMPORTANT: This is DIFFERENT from the legacy integration:
+ * - Legacy: src/hooks/useBeaconIntegration.ts (still in use)
+ * - New: src/hooks/useBeacon.ts (this file)
+ *
+ * These can coexist - use NEW hooks for new features, legacy for existing code.
+ * See src/lib/beacon/README.md for full details.
+ *
+ * KEY DIFFERENCES:
+ * - Uses agentbuddy_property_id (stable) instead of appraisal_id (unstable)
+ * - Direct API calls with retry logic (no Edge Functions needed)
+ * - Comprehensive validation and error handling
+ * - Complete TypeScript type safety
  *
  * Comprehensive hooks for using Beacon integration in React components.
  *
