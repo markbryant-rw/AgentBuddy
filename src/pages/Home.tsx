@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useDailyDigest } from '@/hooks/useDailyDigest';
 import { DailyDigestModal } from '@/components/hub/DailyDigestModal';
+import MobileDashboard from './MobileDashboard';
 
 const workspaces = [
   {
@@ -101,7 +102,6 @@ export default function Home() {
 
   // Redirect mobile users to the mobile-optimized dashboard
   if (isMobile) {
-    const MobileDashboard = require('./MobileDashboard').default;
     return <MobileDashboard />;
   }
   
