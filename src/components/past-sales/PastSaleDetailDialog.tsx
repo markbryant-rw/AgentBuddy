@@ -751,6 +751,14 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
               )}
             </div>
           </TabsContent>
+
+          {/* Aftercare plan & tasks */}
+          {/* Only available for existing past sales */}
+          {pastSale && (
+            <TabsContent value="aftercare" className="mt-4">
+              <AftercarePlanTab pastSale={pastSale} />
+            </TabsContent>
+          )}
         </Tabs>
 
         <div className="flex justify-between gap-2 mt-6">
