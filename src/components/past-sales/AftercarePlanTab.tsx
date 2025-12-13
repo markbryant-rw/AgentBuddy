@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, isPast, isToday } from "date-fns";
-import { Calendar, Check, Clock, Heart, Play, AlertCircle } from "lucide-react";
+import { Calendar, Check, Clock, Heart, Play, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +16,12 @@ import { cn } from "@/lib/utils";
 import { useAftercareTasks } from "@/hooks/useAftercareTasks";
 import { useAftercareTemplates } from "@/hooks/useAftercareTemplates";
 import { RelationshipHealthBadge } from "./RelationshipHealthBadge";
+import { AftercareTemplateSelector } from "./AftercareTemplateSelector";
+import { AftercareTaskAssignee } from "@/components/tasks/AftercareTaskAssignee";
 import { useAuth } from "@/hooks/useAuth";
 import { useTeam } from "@/hooks/useTeam";
 import { PastSale } from "@/hooks/usePastSales";
+import { AftercareTemplate } from "@/types/aftercare";
 
 interface AftercarePlanTabProps {
   pastSale: PastSale;
@@ -27,18 +30,29 @@ interface AftercarePlanTabProps {
 export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
   const { user } = useAuth();
   const { team } = useTeam();
-  const { tasks, isLoading, healthData, generateAftercareTasks, completeTask } = useAftercareTasks(pastSale.id);
-  const { getEffectiveTemplate } = useAftercareTemplates(team?.id);
+  const { tasks, isLoading, healthData, generateAftercareTasks, completeTask, toggleTask } = useAftercareTasks(pastSale.id);
+  const { templates, getEffectiveTemplate } = useAftercareTemplates(team?.id);
   const [expandedYear, setExpandedYear] = useState<number | null>(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<AftercareTemplate | null>(null);
 
   const isAftercareActive = pastSale.aftercare_status === 'active';
   const settlementDate = pastSale.settlement_date;
   const vendorFirstName = pastSale.vendor_details?.primary?.first_name;
 
+  // Set default template when templates load
+  useState(() => {
+    if (templates.length > 0 && !selectedTemplate) {
+      const defaultTemplate = getEffectiveTemplate(user?.id);
+      if (defaultTemplate) {
+        setSelectedTemplate(defaultTemplate);
+      }
+    }
+  });
+
   const handleStartAftercare = async () => {
     if (!settlementDate || !team?.id || !user?.id) return;
     
-    const template = getEffectiveTemplate(user.id);
+    const template = selectedTemplate || getEffectiveTemplate(user.id);
     if (!template) return;
 
     await generateAftercareTasks.mutateAsync({
@@ -71,6 +85,14 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
     return Math.round((completed / yearTasks.length) * 100);
   };
 
+  const handleTaskToggle = (taskId: string, currentCompleted: boolean) => {
+    if (toggleTask) {
+      toggleTask.mutate({ taskId, completed: !currentCompleted });
+    } else if (!currentCompleted) {
+      completeTask.mutate(taskId);
+    }
+  };
+
   // Show activation screen if no tasks generated yet
   if (tasks.length === 0) {
     return (
@@ -85,13 +107,24 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
         <div className="space-y-2">
           <h3 className="text-xl font-semibold">Start Aftercare Plan</h3>
           <p className="text-muted-foreground max-w-md">
-            Activate the 10-year relationship nurturing plan to stay connected with {vendorFirstName || 'your client'} through settlement follow-ups and annual anniversaries.
+            Activate a relationship nurturing plan to stay connected with {vendorFirstName || 'your client'} through settlement follow-ups and annual anniversaries.
           </p>
+        </div>
+
+        {/* Template Selection */}
+        <div className="w-full max-w-sm space-y-2">
+          <label className="text-sm font-medium">Choose a template</label>
+          <AftercareTemplateSelector
+            templates={templates}
+            selectedTemplateId={selectedTemplate?.id || null}
+            onSelect={setSelectedTemplate}
+            saleStatus={pastSale.status}
+          />
         </div>
 
         <Button 
           onClick={handleStartAftercare} 
-          disabled={generateAftercareTasks.isPending || !settlementDate}
+          disabled={generateAftercareTasks.isPending || !settlementDate || !selectedTemplate}
           size="lg"
           className="gap-2 bg-rose-500 hover:bg-rose-600"
         >
@@ -152,6 +185,14 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                 <CardHeader className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
+                      {/* Expand indicator */}
+                      <div className="text-muted-foreground">
+                        {isExpanded ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
+                      </div>
                       <div className={cn(
                         "h-10 w-10 rounded-full flex items-center justify-center",
                         allComplete ? "bg-emerald-500" : "bg-primary/10"
@@ -200,8 +241,9 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                           >
                             <Checkbox
                               checked={task.completed}
-                              onCheckedChange={() => completeTask.mutate(task.id)}
+                              onCheckedChange={() => handleTaskToggle(task.id, task.completed)}
                               disabled={isHistorical}
+                              onClick={(e) => e.stopPropagation()}
                             />
                             <div className="flex-1">
                               <p className={cn(
@@ -217,6 +259,16 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                                 </p>
                               )}
                             </div>
+                            
+                            {/* Task assignee */}
+                            {team?.id && (
+                              <AftercareTaskAssignee
+                                taskId={task.id}
+                                assignedTo={(task as any).assigned_to}
+                                pastSaleId={pastSale.id}
+                              />
+                            )}
+
                             {isHistorical ? (
                               <TooltipProvider>
                                 <Tooltip>
