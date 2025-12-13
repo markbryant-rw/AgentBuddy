@@ -266,3 +266,6 @@ verify_jwt = true
 
 [functions.search-agentbuddy-properties]
 verify_jwt = false
+
+[functions.beacon-member-webhook]
+verify_jwt = true
