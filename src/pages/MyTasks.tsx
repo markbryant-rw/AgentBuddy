@@ -1,123 +1,89 @@
 import { WorkspaceHeader } from "@/components/layout/WorkspaceHeader";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AssignedTaskCard } from "@/components/tasks/AssignedTaskCard";
 import { useMyAssignedTasks } from "@/hooks/useMyAssignedTasks";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useState } from "react";
-import { ArrowLeft, Search, AlertCircle, Calendar, Clock, CheckCircle2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState, useMemo } from "react";
+import { Search, CheckCircle2 } from "lucide-react";
+import { UnifiedTaskList, UnifiedTask } from "@/components/tasks/UnifiedTaskList";
+import { Badge } from "@/components/ui/badge";
 
 export default function MyTasks() {
   const { tasks, stats, isLoading } = useMyAssignedTasks();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [openSections, setOpenSections] = useState<string[]>(["overdue", "dueToday"]);
+  const [hideCompleted, setHideCompleted] = useState(false);
 
   const completeTask = useMutation({
-    mutationFn: async ({ taskId, source }: { taskId: string; source: 'transaction' | 'project' | 'planner' | 'appraisal' }) => {
+    mutationFn: async ({ taskId, source, completed }: { taskId: string; source: 'transaction' | 'project' | 'planner' | 'appraisal'; completed: boolean }) => {
       if (source === 'planner') {
-        // Daily planner items are in daily_planner_items table
         const { error } = await supabase
           .from("daily_planner_items")
-          .update({ completed: true, completed_at: new Date().toISOString() })
+          .update({ 
+            completed, 
+            completed_at: completed ? new Date().toISOString() : null 
+          })
           .eq("id", taskId);
         if (error) throw error;
       } else {
-        // Transaction, project, and appraisal tasks are all in tasks table
         const { error } = await supabase
           .from("tasks")
-          .update({ completed: true, completed_at: new Date().toISOString() })
+          .update({ 
+            completed, 
+            completed_at: completed ? new Date().toISOString() : null 
+          })
           .eq("id", taskId);
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, { completed }) => {
       queryClient.invalidateQueries({ queryKey: ["my-assigned-tasks"] });
       queryClient.invalidateQueries({ queryKey: ["daily-planner"] });
       queryClient.invalidateQueries({ queryKey: ["appraisal-tasks"] });
-      toast.success("Task completed! 🎉");
+      if (completed) {
+        toast.success("Task completed! 🎉");
+      }
     },
     onError: () => {
-      toast.error("Failed to complete task");
+      toast.error("Failed to update task");
     },
   });
 
-  const toggleSection = (section: string) => {
-    setOpenSections((prev) =>
-      prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]
-    );
-  };
+  // Flatten and transform all tasks for UnifiedTaskList
+  const unifiedTasks: (UnifiedTask & { source: 'transaction' | 'project' | 'planner' | 'appraisal' })[] = useMemo(() => {
+    const allTasks = [
+      ...tasks.overdue,
+      ...tasks.dueToday,
+      ...tasks.thisWeek,
+      ...tasks.upcoming,
+      ...tasks.noDueDate,
+    ];
 
-  // Filter tasks based on search
-  const filterTasks = (taskList: typeof tasks.overdue) => {
-    if (!searchQuery) return taskList;
-    return taskList.filter((task) =>
-      task.title.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
+    // Filter by search
+    const filtered = searchQuery
+      ? allTasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()))
+      : allTasks;
 
-  const sections = [
-    {
-      id: "overdue",
-      title: "OVERDUE",
-      icon: AlertCircle,
-      count: stats.overdue,
-      tasks: filterTasks(tasks.overdue),
-      color: "text-destructive",
-      bgColor: "bg-destructive/10",
-      borderColor: "border-destructive/30",
-    },
-    {
-      id: "dueToday",
-      title: "DUE TODAY",
-      icon: Calendar,
-      count: stats.dueToday,
-      tasks: filterTasks(tasks.dueToday),
-      color: "text-orange-600 dark:text-orange-400",
-      bgColor: "bg-orange-500/10",
-      borderColor: "border-orange-500/30",
-    },
-    {
-      id: "thisWeek",
-      title: "THIS WEEK",
-      icon: Clock,
-      count: stats.thisWeek,
-      tasks: filterTasks(tasks.thisWeek),
-      color: "text-amber-600 dark:text-amber-400",
-      bgColor: "bg-amber-500/10",
-      borderColor: "border-amber-500/30",
-    },
-    {
-      id: "upcoming",
-      title: "UPCOMING",
-      icon: CheckCircle2,
-      count: stats.upcoming,
-      tasks: filterTasks(tasks.upcoming),
-      color: "text-muted-foreground",
-      bgColor: "bg-muted/50",
-      borderColor: "border-muted",
-    },
-    {
-      id: "noDueDate",
-      title: "NO DUE DATE",
-      icon: Clock,
-      count: stats.noDueDate,
-      tasks: filterTasks(tasks.noDueDate),
-      color: "text-muted-foreground",
-      bgColor: "bg-muted/30",
-      borderColor: "border-muted/50",
-    },
-  ];
+    // Transform to UnifiedTask format with source badge as section
+    return filtered.map(task => {
+      let sectionLabel = '';
+      if (task.source === 'transaction') sectionLabel = '🏠 Transaction';
+      else if (task.source === 'project') sectionLabel = '📁 Project';
+      else if (task.source === 'planner') sectionLabel = '🗓️ Planner';
+      else if (task.source === 'appraisal') sectionLabel = '📋 Appraisal';
+
+      return {
+        id: task.id,
+        title: task.title,
+        completed: task.completed || false,
+        due_date: task.due_date,
+        section: sectionLabel,
+        source: task.source,
+        assignee: null,
+      };
+    });
+  }, [tasks, searchQuery]);
 
   return (
     <div className="h-full flex flex-col">
@@ -148,13 +114,12 @@ export default function MyTasks() {
             </div>
           </div>
 
-          {/* Task Sections */}
+          {/* Task List */}
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="animate-pulse space-y-3">
                   <div className="h-12 bg-muted rounded-lg" />
-                  <div className="h-24 bg-muted rounded-lg" />
                   <div className="h-24 bg-muted rounded-lg" />
                 </div>
               ))}
@@ -168,72 +133,23 @@ export default function MyTasks() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {sections
-                .filter((section) => section.count > 0)
-                .map((section) => {
-                  const Icon = section.icon;
-                  const isOpen = openSections.includes(section.id);
-
-                  return (
-                    <Collapsible
-                      key={section.id}
-                      open={isOpen}
-                      onOpenChange={() => toggleSection(section.id)}
-                    >
-                      <div
-                        className={cn(
-                          "rounded-lg border-2",
-                          section.borderColor,
-                          section.bgColor
-                        )}
-                      >
-                        <CollapsibleTrigger asChild>
-                          <button className="w-full px-4 py-3 flex items-center justify-between hover:opacity-80 transition-opacity">
-                            <div className="flex items-center gap-3">
-                              <Icon className={cn("h-5 w-5", section.color)} />
-                              <h2 className={cn("text-lg font-bold", section.color)}>
-                                {section.title}
-                              </h2>
-                              <span
-                                className={cn(
-                                  "px-2.5 py-0.5 rounded-full text-sm font-semibold",
-                                  section.color,
-                                  section.bgColor
-                                )}
-                              >
-                                {section.count}
-                              </span>
-                            </div>
-                            <ChevronDown
-                              className={cn(
-                                "h-5 w-5 transition-transform",
-                                section.color,
-                                isOpen && "rotate-180"
-                              )}
-                            />
-                          </button>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="px-4 pb-4 space-y-3">
-                            {section.tasks.map((task) => (
-                              <AssignedTaskCard
-                                key={task.id}
-                                task={task}
-                                onComplete={(taskId, source) => completeTask.mutate({ taskId, source })}
-                                isCompleting={completeTask.isPending}
-                              />
-                            ))}
-                          </div>
-                        </CollapsibleContent>
-                      </div>
-                    </Collapsible>
-                  );
-                })}
-            </div>
+            <UnifiedTaskList
+              tasks={unifiedTasks}
+              onToggle={(taskId, completed) => {
+                const task = unifiedTasks.find(t => t.id === taskId);
+                if (task) {
+                  completeTask.mutate({ taskId, source: task.source, completed });
+                }
+              }}
+              hideCompleted={hideCompleted}
+              onHideCompletedChange={setHideCompleted}
+              showViewToggle={true}
+              storageKey="my-assignments-view"
+              emptyMessage="No tasks match your search"
+            />
           )}
         </div>
       </div>
     </div>
   );
-};
+}

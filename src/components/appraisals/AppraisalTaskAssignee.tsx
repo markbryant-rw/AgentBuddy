@@ -9,7 +9,7 @@ interface AppraisalTaskAssigneeProps {
   assignee?: {
     id: string;
     full_name: string | null;
-    avatar_url: string | null;
+    avatar_url?: string | null;
   } | null;
   onAssign: (userId: string | null) => void;
   disabled?: boolean;
