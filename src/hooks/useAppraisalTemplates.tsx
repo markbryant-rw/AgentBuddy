@@ -332,7 +332,7 @@ export const APPRAISAL_STAGE_DISPLAY_NAMES: Record<AppraisalStage, string> = {
 
 // Detailed descriptions for tooltips
 export const APPRAISAL_STAGE_DESCRIPTIONS: Record<AppraisalStage, string> = {
-  VAP: 'A desktop-based property valuation conducted remotely using market data, comparable sales, and online research without a physical site visit.',
+  VAP: 'A desktop-based property report conducted remotely using market data, comparable sales, and online research without a physical site visit.',
   MAP: 'An in-person property inspection and comprehensive report, providing an accurate market valuation based on the property\'s condition, features, and local market trends.',
   LAP: 'A follow-up appointment to discuss listing the property for sale, covering pricing strategy, marketing approach, and agency agreement terms.',
 };

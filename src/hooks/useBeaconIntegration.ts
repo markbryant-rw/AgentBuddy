@@ -30,7 +30,7 @@ export type BeaconReportType =
 
 export const REPORT_TYPE_LABELS: Record<string, string> = {
   // New Beacon naming (v2.0)
-  property_report: 'Property Valuation',
+  property_report: 'Property Report',
   campaign_proposal: 'Campaign Proposal',
   campaign_update: 'Campaign Update',
   // Legacy naming (for backwards compatibility)
