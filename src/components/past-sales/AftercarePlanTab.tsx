@@ -65,13 +65,14 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
     return Math.round((completed / yearTasks.length) * 100);
   };
 
-  if (!isAftercareActive && pastSale.aftercare_status !== 'active') {
+  // Show activation screen if no tasks generated yet
+  if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
         <div className="relative">
-          <Heart className="h-16 w-16 text-muted-foreground/30" />
-          <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-primary rounded-full flex items-center justify-center">
-            <Play className="h-4 w-4 text-primary-foreground" />
+          <Heart className="h-16 w-16 text-rose-300" />
+          <div className="absolute -bottom-2 -right-2 h-8 w-8 bg-rose-500 rounded-full flex items-center justify-center shadow-lg">
+            <Play className="h-4 w-4 text-white" />
           </div>
         </div>
         
@@ -86,7 +87,7 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
           onClick={handleStartAftercare} 
           disabled={generateAftercareTasks.isPending || !settlementDate}
           size="lg"
-          className="gap-2"
+          className="gap-2 bg-rose-500 hover:bg-rose-600"
         >
           <Heart className="h-4 w-4" />
           {generateAftercareTasks.isPending ? "Creating Plan..." : "Activate Aftercare Plan"}
@@ -95,7 +96,7 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
         {!settlementDate && (
           <p className="text-sm text-amber-600 flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
-            Add a settlement date to enable aftercare
+            Add a settlement date in the Property tab first
           </p>
         )}
       </div>
