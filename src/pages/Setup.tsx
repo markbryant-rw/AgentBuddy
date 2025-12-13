@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, User, Users, Settings as SettingsIcon, HelpCircle, Sparkles, CreditCard, Plug } from "lucide-react";
+import { Search, User, Users, Settings as SettingsIcon, HelpCircle, Sparkles, CreditCard, Plug, BookOpen } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -15,16 +15,18 @@ import IntegrationsTab from "@/components/settings/IntegrationsTab";
 // Import settings components
 import { UserProfileSection } from "@/components/settings/UserProfileSection";
 import { TeamManagementSection } from "@/components/settings/TeamManagementSection";
+import { PlaybookStudioTab } from "@/components/templates/PlaybookStudioTab";
 
 const Setup = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get("tab") || "profile";
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Tab configuration - 6 core tabs
+  // Tab configuration - 7 core tabs
   const tabs = [
     { value: "profile", label: "Profile", icon: User, description: "Personal information and avatar" },
     { value: "team", label: "Team", icon: Users, description: "Your team information" },
+    { value: "templates", label: "Templates", icon: BookOpen, description: "Playbook Studio - all templates" },
     { value: "billing", label: "Billing", icon: CreditCard, description: "Subscription and payment" },
     { value: "integrations", label: "Integrations", icon: Plug, description: "Connect external services" },
     { value: "preferences", label: "Preferences", icon: SettingsIcon, description: "Theme, notifications, and privacy" },
@@ -68,7 +70,7 @@ const Setup = () => {
 
       {/* Main Settings Tabs */}
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid grid-cols-3 md:grid-cols-6 gap-2 h-auto p-2 bg-muted/50">
+        <TabsList className="grid grid-cols-4 md:grid-cols-7 gap-2 h-auto p-2 bg-muted/50">
           {filteredTabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -95,6 +97,11 @@ const Setup = () => {
         {/* Team Tab - Read Only */}
         <TabsContent value="team" className="mt-6 space-y-6">
           <TeamManagementSection />
+        </TabsContent>
+
+        {/* Templates Tab - Playbook Studio */}
+        <TabsContent value="templates" className="mt-6">
+          <PlaybookStudioTab />
         </TabsContent>
 
         {/* Billing Tab */}

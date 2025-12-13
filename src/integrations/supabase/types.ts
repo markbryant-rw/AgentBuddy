@@ -967,6 +967,92 @@ export type Database = {
           },
         ]
       }
+      communication_templates: {
+        Row: {
+          agency_id: string | null
+          body_template: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_default: boolean | null
+          is_system_template: boolean | null
+          name: string
+          scope: string | null
+          subject_template: string | null
+          team_id: string | null
+          trigger_event: string | null
+          type: string
+          updated_at: string | null
+          user_id: string | null
+          variables: Json | null
+        }
+        Insert: {
+          agency_id?: string | null
+          body_template: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          name: string
+          scope?: string | null
+          subject_template?: string | null
+          team_id?: string | null
+          trigger_event?: string | null
+          type: string
+          updated_at?: string | null
+          user_id?: string | null
+          variables?: Json | null
+        }
+        Update: {
+          agency_id?: string | null
+          body_template?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          name?: string
+          scope?: string | null
+          subject_template?: string | null
+          team_id?: string | null
+          trigger_event?: string | null
+          type?: string
+          updated_at?: string | null
+          user_id?: string | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "communication_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "communication_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_participants: {
         Row: {
           can_post: boolean | null
@@ -2540,6 +2626,82 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      note_templates: {
+        Row: {
+          agency_id: string | null
+          archived_at: string | null
+          category: string | null
+          content_rich: Json | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          is_system_template: boolean | null
+          scope: string | null
+          team_id: string | null
+          title: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          agency_id?: string | null
+          archived_at?: string | null
+          category?: string | null
+          content_rich?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          scope?: string | null
+          team_id?: string | null
+          title: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          agency_id?: string | null
+          archived_at?: string | null
+          category?: string | null
+          content_rich?: Json | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          scope?: string | null
+          team_id?: string | null
+          title?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "note_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
