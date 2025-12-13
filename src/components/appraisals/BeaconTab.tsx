@@ -28,6 +28,7 @@ import {
   Link2,
   CheckCircle2,
   Home,
+  Unlink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useState, useEffect } from "react";
@@ -43,11 +44,15 @@ interface BeaconTabProps {
 const ReportCard = ({ 
   report, 
   isLatest,
-  onCopyLink 
+  onCopyLink,
+  onUnlink,
+  isUnlinking,
 }: { 
   report: BeaconReport; 
   isLatest: boolean;
   onCopyLink: (url: string) => void;
+  onUnlink: (beaconReportId: string) => void;
+  isUnlinking: boolean;
 }) => {
   const isDraft = !report.sent_at;
   const isSent = !!report.sent_at;
@@ -176,7 +181,7 @@ const ReportCard = ({
         </div>
       )}
 
-      {/* Actions - Simple: Edit | View | Copy */}
+      {/* Actions - Simple: Edit | View | Copy | Unlink */}
       <div className="flex gap-2 pt-2">
         {report.report_url && (
           <Button 
@@ -208,6 +213,26 @@ const ReportCard = ({
             <Copy className="h-3 w-3" />
           </Button>
         )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 text-xs px-2 text-muted-foreground hover:text-destructive"
+              onClick={() => onUnlink(report.beacon_report_id)}
+              disabled={isUnlinking}
+            >
+              {isUnlinking ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Unlink className="h-3 w-3" />
+              )}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Unlink from AgentBuddy (keeps report in Beacon)</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );
@@ -217,7 +242,9 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
   const { 
     isBeaconEnabled, 
     createBeaconReport, 
-    isCreatingReport, 
+    isCreatingReport,
+    unlinkBeaconReport,
+    isUnlinkingReport,
   } = useBeaconIntegration();
   const { team } = useTeam();
   const { getPropertyById } = useProperties();
@@ -593,6 +620,8 @@ export const BeaconTab = ({ appraisal, propertyId }: BeaconTabProps) => {
                     report={report} 
                     isLatest={index === 0}
                     onCopyLink={handleCopyLink}
+                    onUnlink={(beaconReportId) => unlinkBeaconReport.mutate(beaconReportId)}
+                    isUnlinking={isUnlinkingReport}
                   />
                 ))
               )}
