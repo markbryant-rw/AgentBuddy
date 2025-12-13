@@ -329,9 +329,13 @@ Deno.serve(async (req) => {
     const endpoint = `${beaconApiUrl}/create-report-from-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
+    // Note: agentEmail is optional metadata for report attribution, not authentication
+    // Team-centric auth uses team_id + apiKey; agent assignment happens within Beacon
     const beaconPayload = {
       apiKey: beaconApiKey,
-      agentEmail: user.email,
+      // agentEmail omitted - Beacon should not require agent to exist for report creation
+      // Agent can be assigned within Beacon after report is created
+      agentEmailHint: user.email, // Optional hint for attribution, not FK lookup
       address: effectiveAddress,
       suburb: effectiveSuburb || '',
       owners: beaconOwners,
