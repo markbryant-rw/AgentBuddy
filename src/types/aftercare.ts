@@ -19,6 +19,7 @@ export interface AftercareTemplate {
   user_id: string | null;
   is_system_template: boolean;
   is_default: boolean;
+  is_evergreen: boolean;
   tasks: AftercareTask[];
   created_at: string;
   updated_at: string;
@@ -35,3 +36,25 @@ export interface RelationshipHealthData {
 }
 
 export type AftercareStatus = 'pending' | 'active' | 'paused' | 'completed';
+
+export type HistoricalTaskMode = 'skip' | 'complete' | 'include';
+
+export interface AftercareImportOptions {
+  activateAftercare: boolean;
+  historicalMode: HistoricalTaskMode;
+}
+
+export interface SaleAgeCategory {
+  label: string;
+  count: number;
+  color: string;
+  description: string;
+}
+
+export interface AftercareImportSummary {
+  totalPlansActivated: number;
+  tasksCreated: number;
+  tasksSkipped: number;
+  tasksMarkedHistorical: number;
+  evergreenPlansCreated: number;
+}

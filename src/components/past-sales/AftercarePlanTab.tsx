@@ -6,6 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useAftercareTasks } from "@/hooks/useAftercareTasks";
 import { useAftercareTemplates } from "@/hooks/useAftercareTemplates";
@@ -176,7 +182,8 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                     <div className="space-y-2 ml-12">
                       {yearTasks.map((task) => {
                         const dueDate = task.aftercare_due_date ? new Date(task.aftercare_due_date) : null;
-                        const isOverdue = dueDate && isPast(dueDate) && !task.completed;
+                        const isHistorical = (task as any).historical_skip === true;
+                        const isOverdue = dueDate && isPast(dueDate) && !task.completed && !isHistorical;
                         const isDueToday = dueDate && isToday(dueDate);
 
                         return (
@@ -185,6 +192,7 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                             className={cn(
                               "flex items-center gap-3 p-3 rounded-lg",
                               task.completed && "bg-muted/50",
+                              isHistorical && "bg-slate-100 dark:bg-slate-900/50 opacity-60",
                               isOverdue && "bg-red-50 dark:bg-red-950/20",
                               isDueToday && !task.completed && "bg-amber-50 dark:bg-amber-950/20"
                             )}
@@ -193,11 +201,13 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                             <Checkbox
                               checked={task.completed}
                               onCheckedChange={() => completeTask.mutate(task.id)}
+                              disabled={isHistorical}
                             />
                             <div className="flex-1">
                               <p className={cn(
                                 "text-sm font-medium",
-                                task.completed && "line-through text-muted-foreground"
+                                task.completed && "line-through text-muted-foreground",
+                                isHistorical && "text-muted-foreground"
                               )}>
                                 {task.title}
                               </p>
@@ -207,7 +217,21 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                                 </p>
                               )}
                             </div>
-                            {dueDate && (
+                            {isHistorical ? (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Badge variant="secondary" className="text-xs gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      Historical
+                                    </Badge>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>This task was due before import and has been skipped</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ) : dueDate && (
                               <div className={cn(
                                 "flex items-center gap-1 text-xs",
                                 isOverdue && "text-red-600",
