@@ -11,9 +11,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Search, MapPin, ArrowUpDown, ArrowUp, ArrowDown, Heart } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { RelationshipHealthBadge } from "./RelationshipHealthBadge";
+import { useAftercareTasks } from "@/hooks/useAftercareTasks";
+
+// Mini component to show health badge for each row
+const RowHealthBadge = ({ pastSaleId }: { pastSaleId: string }) => {
+  const { healthData } = useAftercareTasks(pastSaleId);
+  if (!healthData || healthData.totalTasks === 0) return null;
+  return <RelationshipHealthBadge healthData={healthData} size="sm" />;
+};
 
 interface PastSalesTableProps {
   pastSales: PastSale[];
@@ -248,13 +257,19 @@ const PastSalesTable = ({ pastSales, isLoading, onOpenDetail }: PastSalesTablePr
                   )}
                 </div>
               </TableHead>
+              <TableHead>
+                <div className="flex items-center gap-1">
+                  <Heart className="h-3 w-3" />
+                  <span>Health</span>
+                </div>
+              </TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedAndFilteredSales.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   No past sales found
                 </TableCell>
               </TableRow>
@@ -298,6 +313,9 @@ const PastSalesTable = ({ pastSales, isLoading, onOpenDetail }: PastSalesTablePr
                   <TableCell>{formatDate(sale.settlement_date)}</TableCell>
                   <TableCell>
                     <span className="text-sm">{sale.lead_source || "-"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <RowHealthBadge pastSaleId={sale.id} />
                   </TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" onClick={() => onOpenDetail(sale.id)}>
