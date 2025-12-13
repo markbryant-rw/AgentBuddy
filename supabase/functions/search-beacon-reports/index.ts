@@ -178,7 +178,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
     });
 
-    // Self-healing: If team not synced, auto-sync and retry
+    // Self-healing: If team not synced, attempt auto-sync once, otherwise return friendly error
     if (!beaconResponse.ok && beaconResponse.status === 400) {
       const errorText = await beaconResponse.text();
       console.log('Beacon search error:', errorText);
@@ -198,20 +198,24 @@ Deno.serve(async (req) => {
           
           if (syncSuccess) {
             console.log('Auto-sync successful, retrying search...');
-            // Retry the search
             beaconResponse = await fetch(endpoint, {
               method: 'GET',
               headers: { 'Content-Type': 'application/json' },
             });
           } else {
+            console.log('Auto-sync failed; returning friendly error');
             return new Response(
-              JSON.stringify({ success: false, error: 'Could not sync team with Beacon. Please try again.' }),
-              { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              JSON.stringify({ 
+                success: false, 
+                error: 'TEAM_SYNC_FAILED',
+                message: 'Beacon could not sync this team (likely missing a team leader).'
+              }),
+              { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
           }
         }
       } catch {
-        // Not JSON or other error
+        // Not JSON or other error; fall through to generic handler
       }
     }
 

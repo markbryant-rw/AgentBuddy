@@ -230,7 +230,7 @@ export const useBeaconIntegration = () => {
       
       // Show different toast based on whether we created new or opened existing
       if (data.existing) {
-        toast.success(`Opening existing ${typeLabel}`);
+        toast.success(`Report already exists – opening ${typeLabel}.`);
       } else {
         toast.success(`${typeLabel} draft created! Publishing uses 1 team credit.`);
       }
@@ -330,9 +330,19 @@ export const useBeaconIntegration = () => {
 
     if (error) throw error;
     
-    // Handle team not synced error
-    if (!data.success && data.error?.includes('not synced')) {
-      throw new Error('Team not synced to Beacon. Please enable Beacon integration first.');
+    // Handle various Beacon sync errors gracefully
+    if (!data.success) {
+      const err = (data.error || '').toString();
+
+      if (err.includes('TEAM_NOT_SYNCED') || err.toLowerCase().includes('not synced')) {
+        throw new Error('Beacon needs this team to be synced before searching reports. For now, use "Create Report".');
+      }
+
+      if (err.includes('TEAM_SYNC_FAILED')) {
+        throw new Error('Beacon could not sync this team (needs a team leader). For now, use "Create Report".');
+      }
+
+      throw new Error(err || 'Could not search Beacon reports');
     }
     
     return data?.reports || [];

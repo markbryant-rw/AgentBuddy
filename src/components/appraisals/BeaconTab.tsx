@@ -67,6 +67,8 @@ const ReportCard = ({
     return `${hours}h ${minutes % 60}m`;
   };
 
+  const lastUpdated = report.last_activity || report.created_at;
+
   return (
     <div className={cn(
       "border rounded-lg p-4 space-y-3",
@@ -81,7 +83,9 @@ const ReportCard = ({
               {REPORT_TYPE_LABELS[report.report_type as BeaconReportType] || report.report_type}
             </p>
             <p className="text-xs text-muted-foreground">
-              {format(new Date(report.created_at), 'MMM d, yyyy h:mm a')}
+              {report.last_activity
+                ? `Last activity: ${format(new Date(lastUpdated), 'MMM d, yyyy h:mm a')}`
+                : `Created: ${format(new Date(lastUpdated), 'MMM d, yyyy h:mm a')}`}
             </p>
           </div>
         </div>
@@ -189,10 +193,19 @@ const ReportCard = ({
             className="flex-1 h-8 text-xs bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white" 
             asChild
           >
-            <a href={report.report_url} target="_blank" rel="noopener noreferrer">
-              <Pencil className="h-3 w-3 mr-1" />
-              Edit
-            </a>
+            {(() => {
+              // Normalize any legacy /reports/ URLs to /admin/reports/ to avoid 404s
+              let editUrl = report.report_url || undefined;
+              if (editUrl && editUrl.includes('/reports/') && !editUrl.includes('/admin/reports/')) {
+                editUrl = editUrl.replace('/reports/', '/admin/reports/');
+              }
+              return (
+                <a href={editUrl} target="_blank" rel="noopener noreferrer">
+                  <Pencil className="h-3 w-3 mr-1" />
+                  Edit
+                </a>
+              );
+            })()}
           </Button>
         )}
         {report.personalized_url && (
