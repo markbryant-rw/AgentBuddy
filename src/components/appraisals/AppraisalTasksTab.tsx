@@ -1,29 +1,21 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { 
   Plus, 
-  ChevronDown, 
-  ChevronRight, 
   ListTodo,
   FileText,
-  CalendarIcon,
   Eye,
   EyeOff
 } from 'lucide-react';
 import { useAppraisalTasks } from '@/hooks/useAppraisalTasks';
-import { useAppraisalTemplates, AppraisalStage, APPRAISAL_STAGE_DISPLAY_NAMES } from '@/hooks/useAppraisalTemplates';
+import { useAppraisalTemplates, AppraisalStage } from '@/hooks/useAppraisalTemplates';
 import { AppraisalTemplatePromptDialog } from './AppraisalTemplatePromptDialog';
-import { isAppraisalRolloverSection } from '@/hooks/useAppraisalTaskRollover';
 import { AppraisalTaskAssignee } from './AppraisalTaskAssignee';
-import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { UnifiedTaskList, UnifiedTask } from '@/components/tasks/UnifiedTaskList';
 import { useNavigate } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface AppraisalTasksTabProps {
   appraisalId: string;
@@ -39,51 +31,38 @@ export const AppraisalTasksTab = ({
   agentId 
 }: AppraisalTasksTabProps) => {
   const navigate = useNavigate();
-  const { tasks, tasksBySection, stats, isLoading, toggleComplete, addTask, updateAssignee, updateDueDate } = useAppraisalTasks(appraisalId);
-  const { templates, getDefaultTemplate } = useAppraisalTemplates();
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(Object.keys(tasksBySection)));
+  const { tasks, stats, isLoading, toggleComplete, addTask, updateAssignee, updateDueDate } = useAppraisalTasks(appraisalId);
+  const { templates } = useAppraisalTemplates();
   const [showTemplatePrompt, setShowTemplatePrompt] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [addingToSection, setAddingToSection] = useState<string | null>(null);
-  const [hideCompleted, setHideCompleted] = useState(true); // Hide completed by default
+  const [newTaskSection, setNewTaskSection] = useState(stage);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [hideCompleted, setHideCompleted] = useState(true);
 
-  // Filter tasks based on hideCompleted toggle
-  const filteredTasksBySection = useMemo(() => {
-    if (!hideCompleted) return tasksBySection;
-    
-    const filtered: Record<string, typeof tasks> = {};
-    for (const [section, sectionTasks] of Object.entries(tasksBySection)) {
-      const incompleteTasks = sectionTasks.filter(t => !t.completed);
-      if (incompleteTasks.length > 0) {
-        filtered[section] = incompleteTasks;
-      }
-    }
-    return filtered;
-  }, [tasksBySection, hideCompleted]);
-
-  const toggleSection = (section: string) => {
-    const newExpanded = new Set(expandedSections);
-    if (newExpanded.has(section)) {
-      newExpanded.delete(section);
-    } else {
-      newExpanded.add(section);
-    }
-    setExpandedSections(newExpanded);
-  };
-
-  const handleAddTask = (section: string) => {
+  const handleAddTask = () => {
     if (!newTaskTitle.trim()) return;
     addTask.mutate({ 
       title: newTaskTitle, 
-      section, 
+      section: newTaskSection, 
       appraisal_stage: stage,
       assigned_to: agentId || undefined
     });
     setNewTaskTitle('');
-    setAddingToSection(null);
+    setShowAddTask(false);
   };
 
   const hasTemplatesForStage = templates.some(t => t.stage === stage);
+
+  // Transform tasks for UnifiedTaskList
+  const unifiedTasks: UnifiedTask[] = tasks.map(t => ({
+    id: t.id,
+    title: t.title,
+    completed: t.completed,
+    due_date: t.due_date,
+    section: t.section,
+    priority: t.priority,
+    assignee: t.assignee,
+  }));
 
   if (isLoading) {
     return (
@@ -135,136 +114,15 @@ export const AppraisalTasksTab = ({
     );
   }
 
-  const sections = Object.keys(filteredTasksBySection);
-  const isSingleSection = sections.length === 1;
-
-  // Task rendering component
-  const TaskItem = ({ task, section }: { task: any; section: string }) => (
-    <div
-      key={task.id}
-      className={cn(
-        "flex items-center gap-3 p-2 rounded-md transition-colors",
-        task.completed ? "bg-muted/30" : "hover:bg-muted/50"
-      )}
-    >
-      <Checkbox
-        checked={task.completed}
-        onCheckedChange={(checked) => {
-          toggleComplete.mutate({ 
-            taskId: task.id, 
-            completed: checked as boolean 
-          });
-        }}
-      />
-      <div className="flex-1 min-w-0">
-        <span className={cn(
-          "text-sm",
-          task.completed && "line-through text-muted-foreground"
-        )}>
-          {task.title}
-        </span>
-        {/* Clickable due date picker */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button 
-              className={cn(
-                "text-xs ml-2 hover:underline",
-                task.due_date ? "text-muted-foreground hover:text-foreground" : "text-primary"
-              )}
-            >
-              {task.due_date ? (
-                <>Due {format(new Date(task.due_date), 'MMM d')}</>
-              ) : (
-                <span className="flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3" />
-                  Set date
-                </span>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={task.due_date ? new Date(task.due_date) : undefined}
-              onSelect={(date) => updateDueDate.mutate({ taskId: task.id, dueDate: date || null })}
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      <AppraisalTaskAssignee
-        assignee={task.assignee}
-        onAssign={(userId) => updateAssignee.mutate({ taskId: task.id, assignedTo: userId })}
-        disabled={task.completed}
-      />
-    </div>
-  );
-
-  // Add task inline component
-  const AddTaskInline = ({ section }: { section: string }) => (
-    addingToSection === section ? (
-      <div className="flex gap-2 mt-2">
-        <Input
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          placeholder="Task title..."
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleAddTask(section);
-            if (e.key === 'Escape') setAddingToSection(null);
-          }}
-        />
-        <Button size="sm" onClick={() => handleAddTask(section)}>
-          Add
-        </Button>
-      </div>
-    ) : (
-      <Button
-        variant="ghost"
-        size="sm"
-        className="w-full justify-start text-muted-foreground"
-        onClick={() => setAddingToSection(section)}
-      >
-        <Plus className="h-4 w-4 mr-1" />
-        Add task
-      </Button>
-    )
-  );
-
   return (
     <div className="space-y-4">
-      {/* Stats Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 text-sm">
-          <Badge variant="secondary">
-            {stats.completed} / {stats.total} complete
-          </Badge>
-          {stats.incomplete > 0 && (
-            <span className="text-muted-foreground">
-              {stats.incomplete} remaining
-            </span>
-          )}
-        </div>
+      {/* Header Actions */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <Badge variant="secondary">
+          {stats.completed} / {stats.total} complete
+        </Badge>
+        
         <div className="flex gap-2">
-          {stats.completed > 0 && (
-            <Button 
-              variant={hideCompleted ? "outline" : "default"}
-              size="sm"
-              onClick={() => setHideCompleted(!hideCompleted)}
-            >
-              {hideCompleted ? (
-                <>
-                  <Eye className="h-4 w-4 mr-1" />
-                  Show Completed
-                </>
-              ) : (
-                <>
-                  <EyeOff className="h-4 w-4 mr-1" />
-                  Hide Completed
-                </>
-              )}
-            </Button>
-          )}
           <Button 
             variant="outline" 
             size="sm"
@@ -285,64 +143,62 @@ export const AppraisalTasksTab = ({
         </div>
       </div>
 
-      {/* Single section: render tasks directly without collapsible */}
-      {isSingleSection ? (
-        <div className="border rounded-lg p-3 space-y-2">
-          {filteredTasksBySection[sections[0]].map((task) => (
-            <TaskItem key={task.id} task={task} section={sections[0]} />
-          ))}
-          <AddTaskInline section={sections[0]} />
+      {/* Unified Task List */}
+      <UnifiedTaskList
+        tasks={unifiedTasks}
+        onToggle={(taskId, completed) => toggleComplete.mutate({ taskId, completed })}
+        onDateChange={(taskId, date) => updateDueDate.mutate({ taskId, dueDate: date })}
+        renderAssignee={(task) => (
+          <AppraisalTaskAssignee
+            assignee={task.assignee}
+            onAssign={(userId) => updateAssignee.mutate({ taskId: task.id, assignedTo: userId })}
+            disabled={task.completed}
+          />
+        )}
+        hideCompleted={hideCompleted}
+        onHideCompletedChange={setHideCompleted}
+        showViewToggle={true}
+        storageKey="appraisal-task-view"
+        emptyMessage="No tasks yet"
+      />
+
+      {/* Add Task */}
+      {showAddTask ? (
+        <div className="flex gap-2 items-center border rounded-lg p-2">
+          <Input
+            value={newTaskTitle}
+            onChange={(e) => setNewTaskTitle(e.target.value)}
+            placeholder="Task title..."
+            autoFocus
+            className="flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAddTask();
+              if (e.key === 'Escape') setShowAddTask(false);
+            }}
+          />
+          <Select value={newTaskSection} onValueChange={(v) => setNewTaskSection(v as AppraisalStage)}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="z-[12000]">
+              <SelectItem value="VAP">VAP</SelectItem>
+              <SelectItem value="MAP">MAP</SelectItem>
+              <SelectItem value="LAP">LAP</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" onClick={handleAddTask}>Add</Button>
+          <Button size="sm" variant="ghost" onClick={() => setShowAddTask(false)}>Cancel</Button>
         </div>
       ) : (
-        /* Multiple sections: render with collapsibles */
-        sections.map((section) => {
-          const sectionTasks = filteredTasksBySection[section];
-          const allSectionTasks = tasksBySection[section] || [];
-          const isRollover = isAppraisalRolloverSection(section);
-          const completedInSection = allSectionTasks.filter(t => t.completed).length;
-
-          return (
-            <Collapsible
-              key={section}
-              open={expandedSections.has(section)}
-              onOpenChange={() => toggleSection(section)}
-            >
-              <div className={cn(
-                "border rounded-lg",
-                isRollover && "border-amber-500/30 bg-amber-500/5"
-              )}>
-                <CollapsibleTrigger asChild>
-                  <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-2">
-                      {expandedSections.has(section) ? (
-                        <ChevronDown className="h-4 w-4" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4" />
-                      )}
-                      <span className="font-medium text-sm">{section}</span>
-                      {isRollover && (
-                        <Badge variant="outline" className="text-xs text-amber-600">
-                          From previous stage
-                        </Badge>
-                      )}
-                    </div>
-                    <Badge variant="secondary" className="text-xs">
-                      {completedInSection}/{allSectionTasks.length}
-                    </Badge>
-                  </div>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="px-3 pb-3 space-y-2">
-                    {sectionTasks.map((task) => (
-                      <TaskItem key={task.id} task={task} section={section} />
-                    ))}
-                    <AddTaskInline section={section} />
-                  </div>
-                </CollapsibleContent>
-              </div>
-            </Collapsible>
-          );
-        })
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => setShowAddTask(true)}
+        >
+          <Plus className="h-4 w-4 mr-1" />
+          Add Task
+        </Button>
       )}
 
       <AppraisalTemplatePromptDialog
