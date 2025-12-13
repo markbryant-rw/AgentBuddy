@@ -391,25 +391,60 @@ Deno.serve(async (req) => {
 
     // Extract property slug from Beacon response for property-level linking
     const beaconPropertySlug = beaconData.propertySlug;
+    
+    // Check if Beacon returned existing: true (report already exists)
+    const isExistingReport = beaconData.existing === true;
+    let newReport: any = null;
 
-    // Insert new report into beacon_reports table with property_id
-    const { data: newReport, error: insertError } = await supabase
+    // Check if we already have this report in our beacon_reports table
+    const { data: existingReport } = await supabase
       .from('beacon_reports')
-      .insert({
-        appraisal_id: appraisalId || null, // May be null if created from Pipeline/Transaction
-        property_id: effectivePropertyId, // Link to property for lifecycle tracking
-        beacon_report_id: beaconData.reportId,
-        report_type: reportType,
-        report_url: beaconData.urls?.edit || beaconData.urls?.publicLink,
-        personalized_url: beaconData.urls?.personalizedLink,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('beacon_report_id', beaconData.reportId)
+      .maybeSingle();
 
-    if (insertError) {
-      console.error('Failed to insert beacon report:', insertError);
-      // Report was created in Beacon but failed to save locally
+    if (existingReport) {
+      // Update existing record with latest URLs (in case they changed)
+      const { data: updatedReport, error: updateError } = await supabase
+        .from('beacon_reports')
+        .update({
+          report_url: beaconData.urls?.edit || beaconData.urls?.publicLink,
+          personalized_url: beaconData.urls?.personalizedLink,
+          property_id: effectivePropertyId,
+          appraisal_id: appraisalId || null,
+        })
+        .eq('id', existingReport.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('Failed to update existing beacon report:', updateError);
+      } else {
+        newReport = updatedReport;
+        console.log('Updated existing beacon_reports record:', existingReport.id);
+      }
+    } else {
+      // Insert new report into beacon_reports table
+      const { data: insertedReport, error: insertError } = await supabase
+        .from('beacon_reports')
+        .insert({
+          appraisal_id: appraisalId || null,
+          property_id: effectivePropertyId,
+          beacon_report_id: beaconData.reportId,
+          report_type: reportType,
+          report_url: beaconData.urls?.edit || beaconData.urls?.publicLink,
+          personalized_url: beaconData.urls?.personalizedLink,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Failed to insert beacon report:', insertError);
+      } else {
+        newReport = insertedReport;
+        console.log('Inserted new beacon_reports record');
+      }
     }
 
     // Store beacon_property_slug on the properties table for property-level linking
@@ -447,15 +482,15 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        existing: false,
+        existing: isExistingReport, // Pass through Beacon's existing flag
         reportId: beaconData.reportId,
         ownerId: beaconData.ownerId,
         urls: beaconData.urls,
         reportType: reportType,
-        propertySlug: beaconPropertySlug, // Return for UI reference
+        propertySlug: beaconPropertySlug,
         localReportId: newReport?.id,
         ownerCount: beaconOwners.length,
-        teamSynced: retried, // Indicate if team was auto-synced
+        teamSynced: retried,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
