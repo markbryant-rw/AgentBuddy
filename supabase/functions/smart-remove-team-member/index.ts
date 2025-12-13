@@ -1,8 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getCorsHeaders, corsHeaders } from '../_shared/cors.ts';
-
-
+import { getCorsHeaders } from '../_shared/cors.ts';
+import { triggerBeaconTeamSync } from '../_shared/beaconSync.ts';
 
 interface RemovalOptions {
   userId: string;
@@ -267,6 +266,9 @@ serve(async (req) => {
       target_user_id: options.userId,
       details: auditDetails,
     });
+
+    // 9. Trigger Beacon team sync (async, non-blocking)
+    triggerBeaconTeamSync(supabaseClient, options.teamId);
 
     const statusMessage = becameSoloAgent
       ? `${userProfile?.full_name} has been removed from ${team.name} and is now a solo agent`
