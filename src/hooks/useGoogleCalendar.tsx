@@ -16,6 +16,7 @@ interface CalendarSyncSettings {
   sync_daily_planner: boolean;
   sync_appraisals: boolean;
   sync_transactions: boolean;
+  sync_aftercare: boolean;
 }
 
 export function useGoogleCalendar() {
@@ -106,7 +107,7 @@ export function useGoogleCalendar() {
   });
 
   const syncEventMutation = useMutation({
-    mutationFn: async ({ type, data }: { type: 'planner' | 'appraisal' | 'transaction' | 'birthday'; data: any }) => {
+    mutationFn: async ({ type, data }: { type: 'planner' | 'appraisal' | 'transaction' | 'birthday' | 'aftercare'; data: any }) => {
       const { data: result, error } = await supabase.functions.invoke('sync-to-google-calendar', {
         body: { type, data },
       });

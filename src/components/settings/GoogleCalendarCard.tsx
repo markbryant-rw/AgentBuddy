@@ -119,6 +119,31 @@ export function GoogleCalendarCard() {
           }
         }
       }
+
+      // Sync aftercare tasks
+      if (settings?.sync_aftercare) {
+        const { data: aftercareTasks } = await supabase
+          .from('tasks')
+          .select('*, past_sales!inner(address, vendor_details)')
+          .eq('past_sales.team_id', team.id)
+          .not('past_sale_id', 'is', null)
+          .eq('completed', false)
+          .gte('due_date', today);
+        
+        for (const task of aftercareTasks || []) {
+          const vendorDetails = task.past_sales?.vendor_details as { primary?: { first_name?: string } } | null;
+          const vendorName = vendorDetails?.primary?.first_name || 'Client';
+          syncEvent({ 
+            type: 'aftercare', 
+            data: { 
+              ...task,
+              vendor_name: vendorName,
+              address: task.past_sales?.address,
+            } 
+          });
+          syncedCount++;
+        }
+      }
       
       toast.success(`Synced ${syncedCount} items to Google Calendar`);
     } catch (error) {
@@ -259,6 +284,18 @@ export function GoogleCalendarCard() {
                     id="sync-transactions"
                     checked={settings?.sync_transactions ?? true}
                     onCheckedChange={(checked) => updateSettings({ sync_transactions: checked })}
+                    disabled={isUpdatingSettings}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="sync-aftercare" className="text-sm">
+                    Aftercare tasks
+                  </Label>
+                  <Switch
+                    id="sync-aftercare"
+                    checked={settings?.sync_aftercare ?? true}
+                    onCheckedChange={(checked) => updateSettings({ sync_aftercare: checked })}
                     disabled={isUpdatingSettings}
                   />
                 </div>

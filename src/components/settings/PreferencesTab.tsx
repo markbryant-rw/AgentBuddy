@@ -8,6 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { COMMON_TIMEZONES, DEFAULT_TIMEZONE, getBrowserTimezone } from '@/lib/timezoneUtils';
 import { useState, useEffect } from 'react';
 import { NotificationPreferencesCard } from './NotificationPreferencesCard';
+import { AftercareSettingsCard } from './AftercareSettingsCard';
 
 export default function PreferencesTab() {
   const { currentTheme, setTheme, availableThemes } = useTheme();
@@ -171,6 +172,9 @@ export default function PreferencesTab() {
 
       {/* Notification Preferences */}
       <NotificationPreferencesCard />
+
+      {/* Aftercare Settings */}
+      <AftercareSettingsCard />
     </div>
   );
 }
