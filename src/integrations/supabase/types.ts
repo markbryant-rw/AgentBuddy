@@ -2243,6 +2243,9 @@ export type Database = {
         Row: {
           address: string
           agent_id: string | null
+          appointment_status: string | null
+          appointment_time: string | null
+          appointment_type: string | null
           appraisal_date: string
           appraisal_method: string | null
           appraisal_range_high: number | null
@@ -2260,6 +2263,9 @@ export type Database = {
           beacon_synced_at: string | null
           beacon_total_time_seconds: number | null
           beacon_total_views: number | null
+          booked_at: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
           converted_date: string | null
           created_at: string | null
           created_by: string | null
@@ -2271,6 +2277,7 @@ export type Database = {
           last_contact: string | null
           latitude: number | null
           lead_source: string | null
+          logged_at: string | null
           longitude: number | null
           next_follow_up: string | null
           notes: string | null
@@ -2290,6 +2297,9 @@ export type Database = {
         Insert: {
           address: string
           agent_id?: string | null
+          appointment_status?: string | null
+          appointment_time?: string | null
+          appointment_type?: string | null
           appraisal_date: string
           appraisal_method?: string | null
           appraisal_range_high?: number | null
@@ -2307,6 +2317,9 @@ export type Database = {
           beacon_synced_at?: string | null
           beacon_total_time_seconds?: number | null
           beacon_total_views?: number | null
+          booked_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           converted_date?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2318,6 +2331,7 @@ export type Database = {
           last_contact?: string | null
           latitude?: number | null
           lead_source?: string | null
+          logged_at?: string | null
           longitude?: number | null
           next_follow_up?: string | null
           notes?: string | null
@@ -2337,6 +2351,9 @@ export type Database = {
         Update: {
           address?: string
           agent_id?: string | null
+          appointment_status?: string | null
+          appointment_time?: string | null
+          appointment_type?: string | null
           appraisal_date?: string
           appraisal_method?: string | null
           appraisal_range_high?: number | null
@@ -2354,6 +2371,9 @@ export type Database = {
           beacon_synced_at?: string | null
           beacon_total_time_seconds?: number | null
           beacon_total_views?: number | null
+          booked_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           converted_date?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2365,6 +2385,7 @@ export type Database = {
           last_contact?: string | null
           latitude?: number | null
           lead_source?: string | null
+          logged_at?: string | null
           longitude?: number | null
           next_follow_up?: string | null
           notes?: string | null

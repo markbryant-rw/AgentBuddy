@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Upload, Trash2, FileText, Flame } from 'lucide-react';
+import { Plus, Upload, Trash2, FileText, Flame, CalendarPlus, ChevronDown } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { useLoggedAppraisals } from '@/hooks/useLoggedAppraisals';
 import { Link } from 'react-router-dom';
@@ -8,9 +8,18 @@ import { useTeam } from '@/hooks/useTeam';
 import AppraisalsList from '@/components/appraisals/AppraisalsList';
 import AppraisalDetailDialog from '@/components/appraisals/AppraisalDetailDialog';
 import { AppraisalsImportDialog } from '@/components/appraisals/AppraisalsImportDialog';
+import { BookAppraisalDialog } from '@/components/appraisals/BookAppraisalDialog';
+import { LogBookedAppraisalDialog } from '@/components/appraisals/LogBookedAppraisalDialog';
+import { TodaysAppointmentsSection } from '@/components/appraisals/TodaysAppointmentsSection';
 import { LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
 import { useAppraisalTaskCounts } from '@/hooks/useAppraisalTaskCounts';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const ProspectAppraisals = () => {
   const { appraisals, loading, refreshAppraisals, removeDuplicates } = useLoggedAppraisals();
@@ -18,6 +27,8 @@ const ProspectAppraisals = () => {
   const [selectedAppraisal, setSelectedAppraisal] = useState<LoggedAppraisal | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isBookDialogOpen, setIsBookDialogOpen] = useState(false);
+  const [isLogBookedDialogOpen, setIsLogBookedDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isRemovingDuplicates, setIsRemovingDuplicates] = useState(false);
   const [showHotLeadsOnly, setShowHotLeadsOnly] = useState(false);
@@ -65,6 +76,11 @@ const ProspectAppraisals = () => {
     setIsRemovingDuplicates(true);
     await removeDuplicates();
     setIsRemovingDuplicates(false);
+  };
+
+  const handleLogBookedAppraisal = (appraisal: LoggedAppraisal) => {
+    setSelectedAppraisal(appraisal);
+    setIsLogBookedDialogOpen(true);
   };
 
   return (
@@ -132,15 +148,34 @@ const ProspectAppraisals = () => {
                 Hot Leads
               </Toggle>
 
-              <Button 
-                onClick={handleAddAppraisal} 
-                className="gap-2 px-5 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium shadow-lg shadow-teal-500/25"
-              >
-                <Plus className="h-4 w-4" />
-                Log Appraisal
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button className="gap-2 px-5 h-10 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-medium shadow-lg shadow-teal-500/25">
+                    <Plus className="h-4 w-4" />
+                    Add
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleAddAppraisal}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Log Appraisal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsBookDialogOpen(true)}>
+                    <CalendarPlus className="h-4 w-4 mr-2 text-amber-500" />
+                    Book Appointment
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
+
+          {/* Today's Appointments Section */}
+          <TodaysAppointmentsSection
+            appraisals={appraisals}
+            onAppraisalClick={handleAppraisalClick}
+            onLogClick={handleLogBookedAppraisal}
+          />
 
           {/* Appraisals List */}
           <AppraisalsList 
@@ -156,6 +191,24 @@ const ProspectAppraisals = () => {
             open={isDetailDialogOpen}
             onOpenChange={handleDialogClose}
             isNew={isAddDialogOpen}
+          />
+
+          {/* Book Appointment Dialog */}
+          <BookAppraisalDialog
+            open={isBookDialogOpen}
+            onOpenChange={setIsBookDialogOpen}
+            onSuccess={() => refreshAppraisals()}
+          />
+
+          {/* Log Booked Appraisal Dialog */}
+          <LogBookedAppraisalDialog
+            appraisal={selectedAppraisal}
+            open={isLogBookedDialogOpen}
+            onOpenChange={(open) => {
+              setIsLogBookedDialogOpen(open);
+              if (!open) setSelectedAppraisal(null);
+            }}
+            onSuccess={() => refreshAppraisals()}
           />
 
           {/* Import Dialog */}
