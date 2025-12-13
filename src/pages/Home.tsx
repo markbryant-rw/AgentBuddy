@@ -98,6 +98,12 @@ export default function Home() {
   const isMobile = useIsMobile();
   const { isReady } = useAppReadiness();
   const { shouldShow, handleDismiss, handleSnooze, handleOptOut } = useDailyDigest();
+
+  // Redirect mobile users to the mobile-optimized dashboard
+  if (isMobile) {
+    const MobileDashboard = require('./MobileDashboard').default;
+    return <MobileDashboard />;
+  }
   
   // Fetch quarterly appraisals
   const { data: quarterlyAppraisals } = useTeamQuarterlyAppraisals(team?.id);
