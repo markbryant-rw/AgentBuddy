@@ -14,8 +14,9 @@ import { useTeam } from "@/hooks/useTeam";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadSources } from "@/hooks/useLeadSources";
 import { formatCurrencyFull, parseCurrency } from "@/lib/currencyUtils";
-import { Trash2 } from "lucide-react";
+import { Trash2, Heart } from "lucide-react";
 import LocationFixSection from "@/components/shared/LocationFixSection";
+import { AftercarePlanTab } from "./AftercarePlanTab";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -151,10 +152,16 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
         </DialogHeader>
 
         <Tabs defaultValue="property" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="property">Property</TabsTrigger>
             <TabsTrigger value="vendor">Vendor</TabsTrigger>
             <TabsTrigger value="buyer">Buyer</TabsTrigger>
+            {pastSale && (
+              <TabsTrigger value="aftercare" className="flex items-center gap-1">
+                <Heart className="h-3 w-3" />
+                Aftercare
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="property" className="space-y-4 mt-4">

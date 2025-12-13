@@ -11,6 +11,8 @@ import { useTeamQuarterlyAppraisals } from '@/hooks/useTeamQuarterlyAppraisals';
 import { useTeamQuarterlyListingsSales } from '@/hooks/useTeamQuarterlyListingsSales';
 import { useOvernightHotLeads } from '@/hooks/useOvernightHotLeads';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { useSettlementCelebrations } from '@/hooks/useSettlementCelebrations';
+import { useAnniversaryTouchpoints } from '@/hooks/useAnniversaryTouchpoints';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Sunrise,
@@ -27,10 +29,14 @@ import {
   Phone,
   Calendar,
   Home,
+  Heart,
+  Gift,
 } from 'lucide-react';
 import { TeamAppraisalLeaderboard } from './TeamAppraisalLeaderboard';
 import { format, startOfWeek, endOfWeek, addDays, differenceInDays, isToday } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
+import { formatCurrencyFull } from '@/lib/currencyUtils';
 
 interface DailyDigestModalProps {
   open: boolean;
@@ -72,6 +78,8 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
   const { data: hotLeads } = useOvernightHotLeads();
 
   const [teamId, setTeamId] = useState<string | null>(null);
+  const { data: settlementCelebrations } = useSettlementCelebrations(teamId || undefined);
+  const { data: anniversaryTouchpoints } = useAnniversaryTouchpoints();
   const [weeklyAppraisals, setWeeklyAppraisals] = useState(0);
   const [activeTransactions, setActiveTransactions] = useState(0);
   const [expiringListings, setExpiringListings] = useState(0);
@@ -293,8 +301,26 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
   const hasUrgentItems = overdueTaskDetails.length > 0 || dueTodayTaskDetails.length > 0;
   const hasHotLeads = (hotLeads?.length || 0) > 0;
   const hasMissedFollowups = missedFollowups.length > 0;
+  const hasSettlementCelebrations = (settlementCelebrations?.length || 0) > 0;
+  const hasAnniversaryTouchpoints = (anniversaryTouchpoints?.length || 0) > 0;
+  const pendingAnniversaryTouchpoints = anniversaryTouchpoints?.filter(t => !t.completed) || [];
   const todaySettlements = settlementDetails.filter(s => s.isToday);
   const thisWeekSettlements = settlementDetails.filter(s => !s.isToday);
+
+  // Trigger confetti for settlement celebrations
+  useEffect(() => {
+    if (open && hasSettlementCelebrations) {
+      const timer = setTimeout(() => {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.3 },
+          colors: ['#10b981', '#14b8a6', '#22c55e', '#84cc16', '#fbbf24'],
+        });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [open, hasSettlementCelebrations]);
 
   // Group overdue tasks by address
   const groupedOverdueTasks = overdueTaskDetails.reduce((acc, task) => {
@@ -468,6 +494,91 @@ export const DailyDigestModal = ({ open, onDismiss, onSnooze, onOptOut }: DailyD
                 <Card className="p-5 bg-gradient-to-br from-amber-50/80 to-yellow-50/80 dark:from-amber-950/30 dark:to-yellow-950/30 border-amber-200 dark:border-amber-800 backdrop-blur-sm">
                   <TeamAppraisalLeaderboard />
                 </Card>
+
+                {/* Settlement Celebrations - This Week */}
+                {hasSettlementCelebrations && (
+                  <motion.div
+                    initial={{ scale: 0.95, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Card className="p-5 bg-gradient-to-r from-pink-50 via-purple-50 to-indigo-50 dark:from-pink-950/30 dark:via-purple-950/30 dark:to-indigo-950/30 border-purple-200 dark:border-purple-800 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 text-6xl opacity-10">🎉</div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-500 flex items-center justify-center">
+                          <PartyPopper className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold">🎊 Settlement Celebrations!</h3>
+                          <p className="text-sm text-muted-foreground">Who settled this week</p>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        {settlementCelebrations?.slice(0, 5).map(celebration => (
+                          <div key={celebration.id} className="flex items-center justify-between bg-white/60 dark:bg-white/10 rounded-lg p-3 backdrop-blur-sm">
+                            <div className="flex items-center gap-3">
+                              <div className="text-2xl">🏠</div>
+                              <div>
+                                <p className="font-medium">{celebration.address}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {celebration.vendor_name} • {celebration.agent_name || 'Team'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-0">
+                                {celebration.sale_price ? formatCurrencyFull(celebration.sale_price) : 'Settled'}
+                              </Badge>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {format(new Date(celebration.settlement_date), 'EEE, MMM d')}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </Card>
+                  </motion.div>
+                )}
+
+                {/* Anniversary Touchpoints This Week */}
+                {pendingAnniversaryTouchpoints.length > 0 && (
+                  <Card className="p-5 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/30 dark:to-pink-950/30 border-rose-200 dark:border-rose-800">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-rose-500 to-pink-500 flex items-center justify-center">
+                        <Heart className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold">💝 Anniversary Touchpoints</h3>
+                        <p className="text-sm text-muted-foreground">Nurture these relationships this week</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      {pendingAnniversaryTouchpoints.slice(0, 4).map(touchpoint => (
+                        <div key={touchpoint.id} className="flex items-center justify-between bg-white/60 dark:bg-white/10 rounded-lg p-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-sm font-bold text-rose-600">
+                              {touchpoint.aftercare_year || '•'}
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{touchpoint.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {touchpoint.address} • {touchpoint.vendor_name}
+                              </p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {format(new Date(touchpoint.due_date), 'EEE, MMM d')}
+                          </Badge>
+                        </div>
+                      ))}
+                      {pendingAnniversaryTouchpoints.length > 4 && (
+                        <p className="text-xs text-muted-foreground text-center">
+                          +{pendingAnniversaryTouchpoints.length - 4} more touchpoints
+                        </p>
+                      )}
+                    </div>
+                  </Card>
+                )}
 
                 {/* Urgent Attention & Hot Leads Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

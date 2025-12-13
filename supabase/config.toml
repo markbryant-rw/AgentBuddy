@@ -267,3 +267,6 @@ verify_jwt = true
 [functions.search-agentbuddy-properties]
 verify_jwt = false
 
+[functions.send-aftercare-reminders]
+verify_jwt = false
+
