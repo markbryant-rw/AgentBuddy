@@ -100,11 +100,6 @@ export default function Home() {
   const { isReady } = useAppReadiness();
   const { shouldShow, handleDismiss, handleSnooze, handleOptOut } = useDailyDigest();
 
-  // Redirect mobile users to the mobile-optimized dashboard
-  if (isMobile) {
-    return <MobileDashboard />;
-  }
-  
   // Fetch quarterly appraisals
   const { data: quarterlyAppraisals } = useTeamQuarterlyAppraisals(team?.id);
   const { data: quarterlyGoals } = usePlaybookQuarterlyGoals(user?.id || '');
@@ -134,14 +129,19 @@ export default function Home() {
   };
 
   const quarterlyAppraisalsTarget = quarterlyGoals?.appraisal_target || 65;
-
+  
   const handleCardClick = (route: string, id: string) => {
     setClickedCard(id);
     startTransition(() => {
       navigate(route);
     });
   };
-
+  
+  // If on mobile, render the mobile-optimised dashboard after all hooks have run
+  if (isMobile) {
+    return <MobileDashboard />;
+  }
+  
   return (
     <AppReadinessGuard
       fallback={{
