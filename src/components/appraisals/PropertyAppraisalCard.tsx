@@ -36,19 +36,19 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
   // Determine if tasks are overdue
   const hasOverdueTasks = taskCount && taskCount.overdue > 0;
 
-  // Determine row styling based on booking state
+  // Determine row styling based on booking state - bold and obvious
   const getRowStyle = () => {
     if (isOverdue) {
-      return 'border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20';
+      return 'border-l-4 border-l-amber-500 bg-amber-100 dark:bg-amber-900/40';
     }
     if (isBooked) {
-      return 'border-l-4 border-l-sky-500 bg-sky-50/50 dark:bg-sky-950/20';
+      return 'border-l-4 border-l-sky-500 bg-sky-100 dark:bg-sky-900/40';
     }
     if (latestAppraisal.outcome === 'WON') {
-      return 'bg-emerald-50/30 dark:bg-emerald-950/10';
+      return 'border-l-4 border-l-emerald-500 bg-emerald-100 dark:bg-emerald-900/40';
     }
     if (latestAppraisal.outcome === 'LOST') {
-      return 'bg-gray-50/50 dark:bg-gray-800/20';
+      return 'border-l-4 border-l-gray-400 bg-gray-200 dark:bg-gray-700/50 opacity-60';
     }
     return '';
   };
