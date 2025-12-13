@@ -14,7 +14,7 @@ import PastSaleDetailDialog from "@/components/past-sales/PastSaleDetailDialog";
 import PastSalesStatsBar from "@/components/past-sales/PastSalesStatsBar";
 import { PastSalesImportDialog } from "@/components/past-sales/PastSalesImportDialog";
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
-import ReferralNetworkVisualization from "@/components/past-sales/ReferralNetworkVisualization";
+import ReferralNetworkGraph from "@/components/past-sales/ReferralNetworkGraph";
 
 const PastSalesHistory = () => {
   const [selectedPastSaleId, setSelectedPastSaleId] = useState<string | null>(null);
@@ -160,7 +160,7 @@ const PastSalesHistory = () => {
             </TabsContent>
 
             <TabsContent value="referrals" className="mt-6">
-              <ReferralNetworkVisualization pastSales={filteredPastSales} />
+              <ReferralNetworkGraph pastSales={filteredPastSales} onSelectSale={(sale) => handleOpenDetail(sale.id)} />
             </TabsContent>
           </Tabs>
 
