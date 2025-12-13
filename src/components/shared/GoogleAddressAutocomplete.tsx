@@ -133,12 +133,16 @@ export function GoogleAddressAutocomplete({
           const lng = place.geometry.location.lng();
           
           // Extract address components with priority-based suburb selection
+          let subpremise = ''; // Unit/flat number (e.g., "1" in "1/15")
           let streetNumber = '';
           let streetName = '';
           let suburb = '';
           let suburbPriority = 0; // Higher = more specific
           
           place.address_components?.forEach((component) => {
+            if (component.types.includes('subpremise')) {
+              subpremise = component.long_name;
+            }
             if (component.types.includes('street_number')) {
               streetNumber = component.long_name;
             }
@@ -161,7 +165,9 @@ export function GoogleAddressAutocomplete({
             }
           });
           
-          const address = [streetNumber, streetName].filter(Boolean).join(' ');
+          // Build address with unit number support (e.g., "1/15 Swanson Road")
+          const streetAddress = [streetNumber, streetName].filter(Boolean).join(' ');
+          const address = subpremise ? `${subpremise}/${streetAddress}` : streetAddress;
           
           const result: AddressResult = {
             address: address || prediction.structured_formatting.main_text,
