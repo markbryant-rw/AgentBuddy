@@ -1,7 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
-import { sendBeaconMemberChange } from '../_shared/beaconSync.ts';
 
 interface RemovalOptions {
   userId: string;
@@ -265,22 +264,6 @@ serve(async (req) => {
       action: 'smart_team_member_removal',
       target_user_id: options.userId,
       details: auditDetails,
-    });
-
-    // 9. Send incremental Beacon member change (async, non-blocking)
-    // Get team member's access level from audit details
-    const wasTeamLeader = auditDetails.actions.some(
-      (a: any) => a.type === 'team_membership_removed'
-    );
-    sendBeaconMemberChange(supabaseClient, options.teamId, {
-      action: 'remove',
-      member: {
-        user_id: options.userId,
-        email: userProfile?.email || '',
-        full_name: userProfile?.full_name || '',
-        phone: '',
-        is_team_leader: wasTeamLeader,
-      },
     });
 
     const statusMessage = becameSoloAgent

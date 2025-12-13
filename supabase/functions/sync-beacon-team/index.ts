@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
 
     console.log(`Syncing team to Beacon: ${teamId}`);
 
-    // Fetch team data
+    // Fetch team data (just name, no members needed)
     const { data: team, error: teamError } = await supabase
       .from('teams')
       .select('id, name')
@@ -89,46 +89,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Fetch team members with their profiles
-    const { data: members, error: membersError } = await supabase
-      .from('team_members')
-      .select(`
-        id,
-        user_id,
-        access_level,
-        profiles:user_id (
-          id,
-          email,
-          full_name,
-          mobile,
-          avatar_url
-        )
-      `)
-      .eq('team_id', teamId);
-
-    if (membersError) {
-      console.error('Failed to fetch team members:', membersError);
-      return new Response(
-        JSON.stringify({ success: false, error: 'Failed to fetch team members' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Format members for Beacon API
-    const formattedMembers = (members || []).map(member => {
-      const profile = member.profiles as any;
-      return {
-        user_id: member.user_id,
-        member_id: member.id,
-        email: profile?.email || '',
-        full_name: profile?.full_name || '',
-        phone: profile?.mobile || '',
-        avatar_url: profile?.avatar_url || '',
-        is_team_leader: member.access_level === 'admin',
-      };
-    });
-
-    // Call Beacon API to sync team
+    // Call Beacon API to register/sync team (no members array)
     const endpoint = `${beaconApiUrl}/sync-team-from-agentbuddy`;
     console.log('Calling Beacon API:', endpoint);
     
@@ -142,7 +103,7 @@ Deno.serve(async (req) => {
         apiKey: beaconApiKey,
         team_id: teamId,
         team_name: team.name,
-        members: formattedMembers,
+        // No members array - Beacon manages agent profiles internally
       }),
     });
 
@@ -163,7 +124,6 @@ Deno.serve(async (req) => {
         success: true,
         message: 'Team synced with Beacon successfully',
         teamId: teamId,
-        memberCount: formattedMembers.length,
         beaconTeamId: beaconData.beaconTeamId,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { sendBeaconMemberChange } from '@/lib/beaconTeamSync';
 
 export const useAddTeamMember = () => {
   const queryClient = useQueryClient();
@@ -28,13 +27,6 @@ export const useAddTeamMember = () => {
         throw new Error('User is already a member of this team');
       }
 
-      // Get user profile for Beacon webhook
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('email, full_name, mobile')
-        .eq('id', userId)
-        .single();
-
       // Add to team
       const { error } = await supabase
         .from('team_members')
@@ -58,20 +50,6 @@ export const useAddTeamMember = () => {
           .from('profiles')
           .update({ primary_team_id: teamId })
           .eq('id', userId);
-      }
-
-      // Send incremental Beacon member change (async, non-blocking)
-      if (userProfile) {
-        sendBeaconMemberChange(teamId, {
-          action: 'add',
-          member: {
-            user_id: userId,
-            email: userProfile.email || '',
-            full_name: userProfile.full_name || '',
-            phone: userProfile.mobile || '',
-            is_team_leader: accessLevel === 'admin',
-          },
-        });
       }
 
       return { teamId };

@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { sendBeaconMemberChange } from '@/lib/beaconTeamSync';
 
 export const usePlatformTeamManagement = () => {
   const queryClient = useQueryClient();
@@ -61,13 +60,6 @@ export const usePlatformTeamManagement = () => {
         throw new Error('User is already a member of this team');
       }
 
-      // Get user profile for Beacon webhook
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('email, full_name, mobile')
-        .eq('id', userId)
-        .single();
-
       const { error } = await supabase
         .from('team_members')
         .insert({
@@ -76,20 +68,6 @@ export const usePlatformTeamManagement = () => {
         });
 
       if (error) throw error;
-
-      // Send incremental Beacon member change (async, non-blocking)
-      if (userProfile) {
-        sendBeaconMemberChange(teamId, {
-          action: 'add',
-          member: {
-            user_id: userId,
-            email: userProfile.email || '',
-            full_name: userProfile.full_name || '',
-            phone: userProfile.mobile || '',
-            is_team_leader: false,
-          },
-        });
-      }
 
       return { teamId };
     },
@@ -112,21 +90,6 @@ export const usePlatformTeamManagement = () => {
       userId: string;
       teamId: string;
     }) => {
-      // Get user profile for Beacon webhook BEFORE deletion
-      const { data: userProfile } = await supabase
-        .from('profiles')
-        .select('email, full_name, mobile')
-        .eq('id', userId)
-        .single();
-
-      // Check if user is team leader
-      const { data: membership } = await supabase
-        .from('team_members')
-        .select('access_level')
-        .eq('user_id', userId)
-        .eq('team_id', teamId)
-        .single();
-
       const { error } = await supabase
         .from('team_members')
         .delete()
@@ -134,20 +97,6 @@ export const usePlatformTeamManagement = () => {
         .eq('team_id', teamId);
 
       if (error) throw error;
-
-      // Send incremental Beacon member change (async, non-blocking)
-      if (userProfile) {
-        sendBeaconMemberChange(teamId, {
-          action: 'remove',
-          member: {
-            user_id: userId,
-            email: userProfile.email || '',
-            full_name: userProfile.full_name || '',
-            phone: userProfile.mobile || '',
-            is_team_leader: membership?.access_level === 'admin',
-          },
-        });
-      }
 
       return { teamId };
     },
