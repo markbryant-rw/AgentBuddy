@@ -190,9 +190,23 @@ Deno.serve(async (req) => {
     // Extract fields using camelCase (Beacon v2.0 response format)
     const linkedReportId = beaconData.reportId;
     const linkedReportType = beaconData.reportType || 'market_appraisal';
-    const editUrl = beaconData.urls?.edit || beaconData.reportUrl;
-    const personalizedUrl = beaconData.urls?.personalizedLink || beaconData.personalizedUrl;
     const beaconPropertySlug = beaconData.propertySlug; // Property-level cross-reference
+    
+    // Fix edit URL format: ensure /admin/reports/ prefix for correct edit page
+    let editUrl = beaconData.urls?.edit || beaconData.reportUrl;
+    if (editUrl && linkedReportId) {
+      // Normalize: if URL contains /reports/ but not /admin/reports/, fix it
+      if (editUrl.includes('/reports/') && !editUrl.includes('/admin/reports/')) {
+        editUrl = editUrl.replace('/reports/', '/admin/reports/');
+        console.log('Fixed edit URL format:', editUrl);
+      }
+      // If no edit URL but we have reportId, construct it
+      if (!editUrl) {
+        editUrl = `https://beacon.agentbuddy.co/admin/reports/${linkedReportId}/edit`;
+        console.log('Constructed edit URL:', editUrl);
+      }
+    }
+    const personalizedUrl = beaconData.urls?.personalizedLink || beaconData.personalizedUrl;
 
     // Validate we got the required reportId
     if (!linkedReportId) {
