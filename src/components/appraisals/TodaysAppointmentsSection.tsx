@@ -1,11 +1,19 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Calendar, Clock, MapPin, CheckCircle, AlertCircle, MoreHorizontal, CalendarClock, XCircle } from 'lucide-react';
 import { format, isToday, isPast, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { RescheduleAppraisalDialog } from './RescheduleAppraisalDialog';
+import { CancelAppraisalDialog } from './CancelAppraisalDialog';
 
 interface TodaysAppointmentsSectionProps {
   appraisals: LoggedAppraisal[];
@@ -66,6 +74,9 @@ export const TodaysAppointmentsSection = ({
     if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
+  const [rescheduleAppraisal, setRescheduleAppraisal] = useState<LoggedAppraisal | null>(null);
+  const [cancelAppraisal, setCancelAppraisal] = useState<LoggedAppraisal | null>(null);
 
   const AppointmentCard = ({ appointment, isOverdue }: { appointment: LoggedAppraisal; isOverdue: boolean }) => {
     const appointmentTime = (appointment as any).appointment_time;
@@ -143,69 +154,124 @@ export const TodaysAppointmentsSection = ({
           )}
         </div>
 
-        {/* Log button */}
-        <Button
-          size="sm"
-          variant={isOverdue ? "destructive" : "default"}
-          className={cn(
-            "ml-3 shrink-0",
-            !isOverdue && "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            onLogClick?.(appointment);
-          }}
-        >
-          <CheckCircle className="h-4 w-4 mr-1" />
-          Log
-        </Button>
+        {/* Actions */}
+        <div className="flex items-center gap-2 ml-3 shrink-0">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRescheduleAppraisal(appointment);
+                }}
+              >
+                <CalendarClock className="h-4 w-4 mr-2" />
+                Reschedule
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCancelAppraisal(appointment);
+                }}
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Cancel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            size="sm"
+            variant={isOverdue ? "destructive" : "default"}
+            className={cn(
+              !isOverdue && "bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              onLogClick?.(appointment);
+            }}
+          >
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Log
+          </Button>
+        </div>
       </div>
     );
   };
 
   return (
-    <div className="space-y-4">
-      {/* Overdue Section */}
-      {overdueAppointments.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-red-500" />
-            <h3 className="text-sm font-semibold text-red-600">
-              Overdue Appointments ({overdueAppointments.length})
-            </h3>
-          </div>
+    <>
+      <div className="space-y-4">
+        {/* Overdue Section */}
+        {overdueAppointments.length > 0 && (
           <div className="space-y-2">
-            {overdueAppointments.map(appointment => (
-              <AppointmentCard 
-                key={appointment.id} 
-                appointment={appointment} 
-                isOverdue={true} 
-              />
-            ))}
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <h3 className="text-sm font-semibold text-red-600">
+                Overdue Appointments ({overdueAppointments.length})
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {overdueAppointments.map(appointment => (
+                <AppointmentCard 
+                  key={appointment.id} 
+                  appointment={appointment} 
+                  isOverdue={true} 
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Today's Section */}
+        {todaysAppointments.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-amber-500" />
+              <h3 className="text-sm font-semibold text-amber-600">
+                Today's Appointments ({todaysAppointments.length})
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {todaysAppointments.map(appointment => (
+                <AppointmentCard 
+                  key={appointment.id} 
+                  appointment={appointment} 
+                  isOverdue={false} 
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Reschedule Dialog */}
+      {rescheduleAppraisal && (
+        <RescheduleAppraisalDialog
+          open={!!rescheduleAppraisal}
+          onOpenChange={(open) => !open && setRescheduleAppraisal(null)}
+          appraisal={rescheduleAppraisal}
+        />
       )}
 
-      {/* Today's Section */}
-      {todaysAppointments.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-amber-500" />
-            <h3 className="text-sm font-semibold text-amber-600">
-              Today's Appointments ({todaysAppointments.length})
-            </h3>
-          </div>
-          <div className="space-y-2">
-            {todaysAppointments.map(appointment => (
-              <AppointmentCard 
-                key={appointment.id} 
-                appointment={appointment} 
-                isOverdue={false} 
-              />
-            ))}
-          </div>
-        </div>
+      {/* Cancel Dialog */}
+      {cancelAppraisal && (
+        <CancelAppraisalDialog
+          open={!!cancelAppraisal}
+          onOpenChange={(open) => !open && setCancelAppraisal(null)}
+          appraisal={cancelAppraisal}
+        />
       )}
-    </div>
+    </>
   );
 };
