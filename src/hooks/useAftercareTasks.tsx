@@ -154,11 +154,31 @@ export function useAftercareTasks(pastSaleId?: string) {
     },
   });
 
+  // Toggle task completion (complete or uncomplete)
+  const toggleTask = useMutation({
+    mutationFn: async ({ taskId, completed }: { taskId: string; completed: boolean }) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ 
+          completed, 
+          completed_at: completed ? new Date().toISOString() : null 
+        })
+        .eq('id', taskId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, { completed }) => {
+      queryClient.invalidateQueries({ queryKey: ['aftercare-tasks'] });
+      toast({ title: completed ? "Task completed! 💝" : "Task reopened" });
+    },
+  });
+
   return {
     tasks,
     isLoading,
     healthData: calculateHealthScore(),
     generateAftercareTasks,
     completeTask,
+    toggleTask,
   };
 }
