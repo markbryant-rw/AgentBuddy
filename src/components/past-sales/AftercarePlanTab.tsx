@@ -39,7 +39,9 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
   const [refreshComparison, setRefreshComparison] = useState<ReturnType<typeof compareWithTemplate> | null>(null);
 
   const isAftercareActive = pastSale.aftercare_status === 'active';
-  const settlementDate = pastSale.settlement_date;
+  const isWithdrawn = pastSale.status === 'withdrawn';
+  // Use withdrawn_date for withdrawn sales, settlement_date for sold
+  const anchorDate = isWithdrawn ? pastSale.withdrawn_date : pastSale.settlement_date;
   const vendorFirstName = pastSale.vendor_details?.primary?.first_name;
 
   // Set default template when templates load
@@ -53,7 +55,7 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
   });
 
   const handleStartAftercare = async () => {
-    if (!settlementDate || !team?.id || !user?.id) return;
+    if (!anchorDate || !team?.id || !user?.id) return;
     
     const template = selectedTemplate || getEffectiveTemplate(user.id);
     if (!template) return;
@@ -61,7 +63,7 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
     await generateAftercareTasks.mutateAsync({
       pastSaleId: pastSale.id,
       template,
-      settlementDate,
+      settlementDate: anchorDate,
       teamId: team.id,
       assignedTo: pastSale.agent_id || user.id,
     });
@@ -76,7 +78,7 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
   }, {} as Record<number, typeof tasks>);
 
   const getYearLabel = (year: number) => {
-    if (year === 0) return "Settlement Week";
+    if (year === 0) return isWithdrawn ? "Initial Follow-up" : "Settlement Week";
     if (year === 1) return "Year 1";
     if (year === 5) return "Year 5 - Milestone 🎂";
     if (year === 10) return "Year 10 - Grand Anniversary 🏆";
@@ -100,19 +102,19 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
   const originalTemplate = templates.find(t => t.id === pastSale.aftercare_template_id);
 
   const handleOpenRefreshDialog = () => {
-    if (!originalTemplate || !settlementDate) return;
-    const comparison = compareWithTemplate(originalTemplate, settlementDate);
+    if (!originalTemplate || !anchorDate) return;
+    const comparison = compareWithTemplate(originalTemplate, anchorDate);
     setRefreshComparison(comparison);
     setShowRefreshDialog(true);
   };
 
   const handleConfirmRefresh = (taskIdsToRemove: string[]) => {
-    if (!originalTemplate || !settlementDate || !team?.id || !user?.id || !refreshComparison) return;
+    if (!originalTemplate || !anchorDate || !team?.id || !user?.id || !refreshComparison) return;
     
     refreshFromTemplate.mutate({
       pastSaleId: pastSale.id,
       template: originalTemplate,
-      settlementDate,
+      settlementDate: anchorDate,
       teamId: team.id,
       assignedTo: pastSale.agent_id || user.id,
       tasksToAdd: refreshComparison.adding,
@@ -139,7 +141,10 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
         <div className="space-y-2">
           <h3 className="text-xl font-semibold">Start Aftercare Plan</h3>
           <p className="text-muted-foreground max-w-md">
-            Activate a relationship nurturing plan to stay connected with {vendorFirstName || 'your client'} through settlement follow-ups and annual anniversaries.
+            {isWithdrawn 
+              ? `Activate a gentle follow-up sequence to maintain the relationship with ${vendorFirstName || 'your client'} and potentially rescue the deal.`
+              : `Activate a relationship nurturing plan to stay connected with ${vendorFirstName || 'your client'} through settlement follow-ups and annual anniversaries.`
+            }
           </p>
         </div>
 
@@ -156,7 +161,7 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
 
         <Button 
           onClick={handleStartAftercare} 
-          disabled={generateAftercareTasks.isPending || !settlementDate || !selectedTemplate}
+          disabled={generateAftercareTasks.isPending || !anchorDate || !selectedTemplate}
           size="lg"
           className="gap-2 bg-rose-500 hover:bg-rose-600"
         >
@@ -164,10 +169,13 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
           {generateAftercareTasks.isPending ? "Creating Plan..." : "Activate Aftercare Plan"}
         </Button>
 
-        {!settlementDate && (
+        {!anchorDate && (
           <p className="text-sm text-amber-600 flex items-center gap-2">
             <AlertCircle className="h-4 w-4" />
-            Add a settlement date in the Property tab first
+            {isWithdrawn 
+              ? "Add a withdrawn date in the Property tab first"
+              : "Add a settlement date in the Property tab first"
+            }
           </p>
         )}
       </div>

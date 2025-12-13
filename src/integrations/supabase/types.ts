@@ -2974,6 +2974,8 @@ export type Database = {
           unconditional_date: string | null
           updated_at: string | null
           vendor_details: Json | null
+          withdrawal_reason: string | null
+          withdrawn_date: string | null
         }
         Insert: {
           address: string
@@ -3018,6 +3020,8 @@ export type Database = {
           unconditional_date?: string | null
           updated_at?: string | null
           vendor_details?: Json | null
+          withdrawal_reason?: string | null
+          withdrawn_date?: string | null
         }
         Update: {
           address?: string
@@ -3062,6 +3066,8 @@ export type Database = {
           unconditional_date?: string | null
           updated_at?: string | null
           vendor_details?: Json | null
+          withdrawal_reason?: string | null
+          withdrawn_date?: string | null
         }
         Relationships: [
           {
