@@ -112,6 +112,18 @@ export const BookAppraisalDialog = ({
       // Get legacy fields from owners
       const legacy = ownersToLegacy(formData.owners);
       
+      // Ensure owners is properly serialized for Supabase
+      const ownersForDb = formData.owners.length > 0 
+        ? formData.owners.map(owner => ({
+            id: owner.id,
+            name: owner.name,
+            email: owner.email || null,
+            phone: owner.phone || null,
+            is_primary: owner.is_primary || false,
+            beacon_owner_id: owner.beacon_owner_id || null,
+          }))
+        : null;
+      
       const appraisalData: Partial<LoggedAppraisal> = {
         address: formData.address,
         suburb: formData.suburb,
@@ -120,7 +132,7 @@ export const BookAppraisalDialog = ({
         vendor_name: legacy.vendor_name,
         vendor_email: legacy.vendor_email,
         vendor_mobile: legacy.vendor_mobile,
-        owners: formData.owners as AppraisalOwner[],
+        owners: ownersForDb as AppraisalOwner[],
         appraisal_date: formData.appointment_date,
         stage: formData.stage,
         intent: 'medium',
@@ -128,7 +140,7 @@ export const BookAppraisalDialog = ({
         estimated_value: formData.estimated_value,
         lead_source: formData.lead_source,
         agent_id: formData.agent_id,
-        // Booking-specific fields (will be added to the database)
+        // Booking-specific fields
         appointment_status: 'booked',
         appointment_type: formData.appointment_type,
         appointment_time: formData.appointment_time,

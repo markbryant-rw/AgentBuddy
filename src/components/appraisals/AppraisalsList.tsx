@@ -44,6 +44,7 @@ interface AppraisalsListProps {
 
 type DateRange = 'all' | 'week' | 'month' | 'year' | 'currentQuarter' | 'lastQuarter' | 'custom';
 type ViewMode = 'property' | 'visit';
+type StatusFilter = 'all' | 'logged' | 'booked' | 'cancelled';
 
 const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: externalTaskCounts }: AppraisalsListProps) => {
   const { updateAppraisal, deleteAppraisal } = useLoggedAppraisals();
@@ -53,6 +54,7 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
   const [stageFilter, setStageFilter] = useState<string>('all');
   const [outcomeFilter, setOutcomeFilter] = useState<string>('all');
   const [intentFilter, setIntentFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [dateRange, setDateRange] = useState<DateRange>('all');
   const [selectedAgents, setSelectedAgents] = useState<Set<string>>(new Set());
   const [selectedAppraisals, setSelectedAppraisals] = useState<Set<string>>(new Set());
@@ -74,6 +76,13 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
       const matchesOutcome = outcomeFilter === 'all' || appraisal.outcome === outcomeFilter;
       const matchesIntent = intentFilter === 'all' || appraisal.intent === intentFilter;
       const matchesAgent = selectedAgents.size === 0 || (appraisal.agent_id && selectedAgents.has(appraisal.agent_id));
+      
+      // Status filter (booked/logged)
+      let matchesStatus = true;
+      if (statusFilter !== 'all') {
+        const apptStatus = appraisal.appointment_status || 'logged';
+        matchesStatus = apptStatus === statusFilter;
+      }
 
       // Date range filtering
       let matchesDate = true;
@@ -105,9 +114,9 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
         }
       }
 
-      return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate && matchesAgent;
+      return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate && matchesAgent && matchesStatus;
     });
-  }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
+  }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, statusFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
 
   // Create grouped properties from the filtered appraisals prop (respecting parent filter like hot leads)
   const filteredGroupedAppraisals = useMemo(() => {
@@ -157,6 +166,13 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
       const matchesOutcome = outcomeFilter === 'all' || appraisal.outcome === outcomeFilter;
       const matchesIntent = intentFilter === 'all' || appraisal.intent === intentFilter;
       const matchesAgent = selectedAgents.size === 0 || (appraisal.agent_id && selectedAgents.has(appraisal.agent_id));
+      
+      // Status filter (booked/logged)
+      let matchesStatus = true;
+      if (statusFilter !== 'all') {
+        const apptStatus = appraisal.appointment_status || 'logged';
+        matchesStatus = apptStatus === statusFilter;
+      }
 
       // Date range filtering
       let matchesDate = true;
@@ -188,9 +204,9 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
         }
       }
 
-      return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate && matchesAgent;
+      return matchesSearch && matchesStage && matchesOutcome && matchesIntent && matchesDate && matchesAgent && matchesStatus;
     });
-  }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
+  }, [appraisals, searchTerm, stageFilter, outcomeFilter, intentFilter, statusFilter, dateRange, selectedAgents, usesFinancialYear, fyStartMonth]);
 
   const toggleAgent = (agentId: string) => {
     const newSelected = new Set(selectedAgents);
@@ -445,6 +461,17 @@ const AppraisalsList = ({ appraisals, loading, onAppraisalClick, taskCounts: ext
             <SelectItem value="high">High</SelectItem>
             <SelectItem value="medium">Medium</SelectItem>
             <SelectItem value="low">Low</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="logged">Logged Only</SelectItem>
+            <SelectItem value="booked">Not Logged (Booked)</SelectItem>
+            <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
       </div>
