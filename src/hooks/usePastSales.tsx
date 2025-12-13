@@ -93,6 +93,9 @@ export interface PastSale {
   aftercare_template_id?: string;
   aftercare_started_at?: string;
   aftercare_status?: 'pending' | 'active' | 'paused' | 'completed';
+  // Withdrawn fields
+  withdrawn_date?: string;
+  withdrawal_reason?: string;
 }
 
 export const usePastSales = (teamId?: string) => {

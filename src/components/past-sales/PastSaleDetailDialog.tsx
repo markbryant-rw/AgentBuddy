@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PastSale, usePastSales } from "@/hooks/usePastSales";
@@ -14,9 +15,10 @@ import { useTeam } from "@/hooks/useTeam";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadSources } from "@/hooks/useLeadSources";
 import { formatCurrencyFull, parseCurrency } from "@/lib/currencyUtils";
-import { Trash2, Heart } from "lucide-react";
+import { Trash2, Heart, Plus } from "lucide-react";
 import LocationFixSection from "@/components/shared/LocationFixSection";
 import { AftercarePlanTab } from "./AftercarePlanTab";
+import { supabase } from "@/integrations/supabase/client";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,8 +36,21 @@ interface PastSaleDetailDialogProps {
   onClose: () => void;
 }
 
+const WITHDRAWAL_REASONS = [
+  { value: 'decided_not_to_sell', label: 'Decided not to sell' },
+  { value: 'price_expectations', label: 'Price expectations too high' },
+  { value: 'personal_circumstances', label: 'Personal circumstances changed' },
+  { value: 'another_agent', label: 'Going with another agent' },
+  { value: 'market_conditions', label: 'Market conditions' },
+  { value: 'property_not_ready', label: 'Property not ready' },
+  { value: 'finance_issues', label: 'Finance issues' },
+  { value: 'alternative_solution', label: 'Found alternative solution' },
+  { value: 'other', label: 'Other' },
+];
+
 const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialogProps) => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { team } = useTeam();
   const { toast } = useToast();
@@ -45,6 +60,7 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
   const [salePriceDisplay, setSalePriceDisplay] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAddingOpportunity, setIsAddingOpportunity] = useState(false);
 
   const [formData, setFormData] = useState<Partial<PastSale>>({
     address: "",
@@ -143,6 +159,60 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
     queryClient.invalidateQueries({ queryKey: ['past_sales', team?.id] });
   };
 
+  const handleAddAsOpportunity = async () => {
+    if (!pastSale || !team?.id || !user?.id) return;
+    
+    setIsAddingOpportunity(true);
+    try {
+      const vendorName = [
+        formData.vendor_details?.primary?.first_name,
+        formData.vendor_details?.primary?.last_name
+      ].filter(Boolean).join(' ');
+
+      const withdrawalNote = formData.withdrawal_reason 
+        ? `Re-added from withdrawn past sale (${formData.withdrawn_date || 'date unknown'} - ${WITHDRAWAL_REASONS.find(r => r.value === formData.withdrawal_reason)?.label || formData.withdrawal_reason})`
+        : 'Re-added from withdrawn past sale';
+
+      const { error } = await supabase.from('listings_pipeline').insert({
+        address: formData.address || '',
+        suburb: formData.suburb,
+        vendor_name: vendorName || null,
+        team_id: team.id,
+        created_by: user.id,
+        stage: 'call',
+        warmth: 'warm',
+        notes: withdrawalNote,
+        latitude: formData.latitude,
+        longitude: formData.longitude,
+        lead_source: formData.lead_source,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Opportunity Created",
+        description: `${formData.address} has been added to your pipeline`,
+      });
+
+      // Invalidate pipeline queries
+      queryClient.invalidateQueries({ queryKey: ['listings_pipeline'] });
+      
+      onClose();
+      navigate('/opportunities');
+    } catch (error) {
+      console.error('Error creating opportunity:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create opportunity",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingOpportunity(false);
+    }
+  };
+
+  const isWithdrawn = formData.status === 'withdrawn';
+
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -152,10 +222,12 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
         </DialogHeader>
 
         <Tabs defaultValue="property" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${isWithdrawn ? (pastSale ? 'grid-cols-3' : 'grid-cols-2') : (pastSale ? 'grid-cols-4' : 'grid-cols-3')}`}>
             <TabsTrigger value="property">Property</TabsTrigger>
             <TabsTrigger value="vendor">Vendor</TabsTrigger>
-            <TabsTrigger value="buyer">Buyer</TabsTrigger>
+            {!isWithdrawn && (
+              <TabsTrigger value="buyer">Buyer</TabsTrigger>
+            )}
             {pastSale && (
               <TabsTrigger value="aftercare" className="flex items-center gap-1">
                 <Heart className="h-3 w-3" />
@@ -202,65 +274,147 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="sale_price">Sale Price</Label>
-                <Input
-                  id="sale_price"
-                  value={salePriceDisplay}
-                  onChange={(e) => {
-                    setSalePriceDisplay(e.target.value);
-                    const parsed = parseCurrency(e.target.value);
-                    setFormData({ ...formData, sale_price: parsed });
-                  }}
-                  onBlur={() => {
-                    if (formData.sale_price) {
-                      setSalePriceDisplay(formatCurrencyFull(formData.sale_price));
-                    }
-                  }}
-                  placeholder="$1,200,000"
-                />
-              </div>
-              <div>
-                <Label htmlFor="settlement_date">Settlement Date</Label>
-                <Input
-                  id="settlement_date"
-                  type="date"
-                  value={formData.settlement_date || ""}
-                  onChange={(e) => setFormData({ ...formData, settlement_date: e.target.value })}
-                />
-              </div>
-            </div>
+            {/* Conditional fields based on status */}
+            {isWithdrawn ? (
+              <>
+                {/* Withdrawn-specific fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="withdrawn_date">Withdrawn Date</Label>
+                    <Input
+                      id="withdrawn_date"
+                      type="date"
+                      value={formData.withdrawn_date || ""}
+                      onChange={(e) => setFormData({ ...formData, withdrawn_date: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lead_source">Lead Source</Label>
+                    <Select
+                      value={formData.lead_source}
+                      onValueChange={(value) => setFormData({ ...formData, lead_source: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeLeadSources.map((source) => (
+                          <SelectItem key={source.id} value={source.value}>
+                            {source.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="days_on_market">Days on Market</Label>
-                <Input
-                  id="days_on_market"
-                  type="number"
-                  value={formData.days_on_market || ""}
-                  onChange={(e) => setFormData({ ...formData, days_on_market: parseInt(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="lead_source">Lead Source</Label>
-                <Select
-                  value={formData.lead_source}
-                  onValueChange={(value) => setFormData({ ...formData, lead_source: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeLeadSources.map((source) => (
-                      <SelectItem key={source.id} value={source.value}>
-                        {source.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+                <div>
+                  <Label htmlFor="withdrawal_reason">Reason for Withdrawal</Label>
+                  <Select
+                    value={formData.withdrawal_reason || ""}
+                    onValueChange={(value) => setFormData({ ...formData, withdrawal_reason: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select reason..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {WITHDRAWAL_REASONS.map((reason) => (
+                        <SelectItem key={reason.value} value={reason.value}>
+                          {reason.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.withdrawal_reason === 'other' && (
+                  <div>
+                    <Label htmlFor="notes">Withdrawal Notes</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes || ""}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Additional details about why the listing was withdrawn..."
+                      rows={3}
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Label htmlFor="days_on_market">Days Listed</Label>
+                  <Input
+                    id="days_on_market"
+                    type="number"
+                    value={formData.days_on_market || ""}
+                    onChange={(e) => setFormData({ ...formData, days_on_market: parseInt(e.target.value) })}
+                    placeholder="Number of days the property was listed"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Sold-specific fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="sale_price">Sale Price</Label>
+                    <Input
+                      id="sale_price"
+                      value={salePriceDisplay}
+                      onChange={(e) => {
+                        setSalePriceDisplay(e.target.value);
+                        const parsed = parseCurrency(e.target.value);
+                        setFormData({ ...formData, sale_price: parsed });
+                      }}
+                      onBlur={() => {
+                        if (formData.sale_price) {
+                          setSalePriceDisplay(formatCurrencyFull(formData.sale_price));
+                        }
+                      }}
+                      placeholder="$1,200,000"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="settlement_date">Settlement Date</Label>
+                    <Input
+                      id="settlement_date"
+                      type="date"
+                      value={formData.settlement_date || ""}
+                      onChange={(e) => setFormData({ ...formData, settlement_date: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="days_on_market">Days on Market</Label>
+                    <Input
+                      id="days_on_market"
+                      type="number"
+                      value={formData.days_on_market || ""}
+                      onChange={(e) => setFormData({ ...formData, days_on_market: parseInt(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lead_source">Lead Source</Label>
+                    <Select
+                      value={formData.lead_source}
+                      onValueChange={(value) => setFormData({ ...formData, lead_source: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {activeLeadSources.map((source) => (
+                          <SelectItem key={source.id} value={source.value}>
+                            {source.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Fix Location Section - only show for existing past sales */}
             {pastSale && (
@@ -762,23 +916,35 @@ const PastSaleDetailDialog = ({ pastSale, isOpen, onClose }: PastSaleDetailDialo
         </Tabs>
 
         <div className="flex justify-between gap-2 mt-6">
-          <div>
+          <div className="flex gap-2">
             {pastSale?.id && (
               <Button
                 variant="destructive"
                 onClick={() => setShowDeleteConfirm(true)}
-                disabled={isLoading || isDeleting}
+                disabled={isLoading || isDeleting || isAddingOpportunity}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </Button>
             )}
+            {/* Add as Opportunity button - only for withdrawn sales */}
+            {pastSale && isWithdrawn && (
+              <Button
+                variant="outline"
+                onClick={handleAddAsOpportunity}
+                disabled={isLoading || isDeleting || isAddingOpportunity}
+                className="text-teal-600 border-teal-300 hover:bg-teal-50"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {isAddingOpportunity ? "Adding..." : "Add as Opportunity"}
+              </Button>
+            )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} disabled={isLoading || isDeleting}>
+            <Button variant="outline" onClick={onClose} disabled={isLoading || isDeleting || isAddingOpportunity}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isLoading || isDeleting}>
+            <Button onClick={handleSave} disabled={isLoading || isDeleting || isAddingOpportunity}>
               {isLoading ? "Saving..." : pastSale ? "Update" : "Add Past Sale"}
             </Button>
           </div>
