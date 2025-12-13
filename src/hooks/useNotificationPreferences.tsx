@@ -19,6 +19,11 @@ export interface NotificationPreferences {
   email_digest_frequency: 'daily' | 'weekly' | 'none';
   email_digest_hour: number;
   receive_product_updates: boolean;
+  // Aftercare settings
+  aftercare_reminder_days: number;
+  aftercare_email_enabled: boolean;
+  aftercare_calendar_sync: boolean;
+  aftercare_excluded_task_types: string[];
 }
 
 const DEFAULT_PREFERENCES: Omit<NotificationPreferences, 'id' | 'user_id'> = {
@@ -35,6 +40,11 @@ const DEFAULT_PREFERENCES: Omit<NotificationPreferences, 'id' | 'user_id'> = {
   email_digest_frequency: 'daily',
   email_digest_hour: 8,
   receive_product_updates: true,
+  // Aftercare settings defaults
+  aftercare_reminder_days: 3,
+  aftercare_email_enabled: true,
+  aftercare_calendar_sync: true,
+  aftercare_excluded_task_types: [],
 };
 
 export function useNotificationPreferences() {

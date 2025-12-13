@@ -145,6 +145,11 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (type === 'aftercare' && !settings?.sync_aftercare) {
+      return new Response(JSON.stringify({ skipped: true, reason: 'Aftercare sync disabled' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Refresh token if expired
     let accessToken = connection.access_token;
@@ -321,6 +326,19 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true, eventsCreated: results.length }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    } else if (type === 'aftercare') {
+      // Handle aftercare task sync
+      const task = data;
+      const isAnniversary = task.title?.toLowerCase().includes('anniversary');
+      const emoji = isAnniversary ? '🎂' : '💜';
+      
+      event = {
+        summary: `${emoji} ${task.title}`,
+        description: `Aftercare task for ${task.vendor_name || 'Client'}\nProperty: ${task.address || 'N/A'}\n\n${task.description || ''}`,
+        start: task.due_date,
+        location: task.address || '',
+        allDay: true,
+      };
     }
 
     if (event) {

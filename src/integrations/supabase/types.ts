@@ -827,6 +827,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          sync_aftercare: boolean | null
           sync_appraisals: boolean
           sync_daily_planner: boolean
           sync_transactions: boolean
@@ -836,6 +837,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          sync_aftercare?: boolean | null
           sync_appraisals?: boolean
           sync_daily_planner?: boolean
           sync_transactions?: boolean
@@ -845,6 +847,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          sync_aftercare?: boolean | null
           sync_appraisals?: boolean
           sync_daily_planner?: boolean
           sync_transactions?: boolean
@@ -2597,6 +2600,10 @@ export type Database = {
       }
       notification_preferences: {
         Row: {
+          aftercare_calendar_sync: boolean | null
+          aftercare_email_enabled: boolean | null
+          aftercare_excluded_task_types: string[] | null
+          aftercare_reminder_days: number | null
           created_at: string | null
           email_digest_enabled: boolean | null
           email_digest_frequency: string | null
@@ -2616,6 +2623,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          aftercare_calendar_sync?: boolean | null
+          aftercare_email_enabled?: boolean | null
+          aftercare_excluded_task_types?: string[] | null
+          aftercare_reminder_days?: number | null
           created_at?: string | null
           email_digest_enabled?: boolean | null
           email_digest_frequency?: string | null
@@ -2635,6 +2646,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          aftercare_calendar_sync?: boolean | null
+          aftercare_email_enabled?: boolean | null
+          aftercare_excluded_task_types?: string[] | null
+          aftercare_reminder_days?: number | null
           created_at?: string | null
           email_digest_enabled?: boolean | null
           email_digest_frequency?: string | null
