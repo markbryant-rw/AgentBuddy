@@ -40,13 +40,19 @@ export function useAftercareTasks(pastSaleId?: string) {
   // Calculate relationship health score
   const calculateHealthScore = (): RelationshipHealthData => {
     const now = new Date();
+    
+    // Count ALL completed tasks for display
+    const allCompletedTasks = tasks.filter(t => t.completed);
+    
+    // For health score, only consider tasks that are due
     const dueTasks = tasks.filter(t => t.aftercare_due_date && new Date(t.aftercare_due_date) <= now);
-    const completedTasks = dueTasks.filter(t => t.completed);
+    const completedDueTasks = dueTasks.filter(t => t.completed);
     const overdueTasks = dueTasks.filter(t => !t.completed);
     const upcomingTasks = tasks.filter(t => t.aftercare_due_date && new Date(t.aftercare_due_date) > now && !t.completed);
     
     const totalDue = dueTasks.length;
-    const completed = completedTasks.length;
+    const completed = completedDueTasks.length;
+    // Health score is based on due tasks, but if nothing is due yet, show 100%
     const healthScore = totalDue > 0 ? Math.round((completed / totalDue) * 100) : 100;
     
     let status: 'healthy' | 'attention' | 'at-risk' = 'healthy';
@@ -55,7 +61,7 @@ export function useAftercareTasks(pastSaleId?: string) {
 
     return {
       totalTasks: tasks.length,
-      completedTasks: completed,
+      completedTasks: allCompletedTasks.length, // Show ALL completed, not just due
       overdueTasks: overdueTasks.length,
       upcomingTasks: upcomingTasks.length,
       healthScore,
