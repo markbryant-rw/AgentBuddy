@@ -1,11 +1,11 @@
 import { GroupedProperty, LoggedAppraisal } from '@/hooks/useLoggedAppraisals';
 import { format, parseISO, isBefore, isToday, startOfDay } from 'date-fns';
-import { Calendar, RotateCcw, Flame, CheckCircle2, MapPin, AlertTriangle, Clock } from 'lucide-react';
+import { Calendar, RotateCcw, CheckCircle2, MapPin, AlertTriangle, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { AppraisalTaskCount } from '@/hooks/useAppraisalTaskCounts';
+import { BeaconStatusIndicator } from './BeaconStatusIndicator';
 
 interface PropertyAppraisalCardProps {
   property: GroupedProperty;
@@ -14,11 +14,10 @@ interface PropertyAppraisalCardProps {
 }
 
 export const PropertyAppraisalCard = ({ property, onClick, taskCount }: PropertyAppraisalCardProps) => {
-  const { latestAppraisal, visitCount, durationMonths } = property;
+  const { latestAppraisal, visitCount } = property;
   const isBooked = latestAppraisal.appointment_status === 'booked';
   const appointmentDate = parseISO(latestAppraisal.appraisal_date);
   const isOverdue = isBooked && isBefore(appointmentDate, startOfDay(new Date())) && !isToday(appointmentDate);
-  const isTodays = isBooked && isToday(appointmentDate);
 
   const getIntentColor = (intent?: string) => {
     switch (intent) {
@@ -34,12 +33,10 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
-  // Calculate task progress
-  const taskProgress = taskCount && taskCount.total > 0 
-    ? Math.round((taskCount.done / taskCount.total) * 100) 
-    : null;
+  // Determine if tasks are overdue
+  const hasOverdueTasks = taskCount && taskCount.overdue > 0;
 
-  // Determine row styling based on booking state - subtle left border approach
+  // Determine row styling based on booking state
   const getRowStyle = () => {
     if (isOverdue) {
       return 'border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20';
@@ -56,6 +53,19 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
     return '';
   };
 
+  // Determine stage or outcome to show
+  const getStageOrOutcome = () => {
+    if (latestAppraisal.outcome === 'WON') {
+      return { label: 'WON', className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' };
+    }
+    if (latestAppraisal.outcome === 'LOST') {
+      return { label: 'LOST', className: 'bg-gray-500/10 text-gray-600 border-gray-500/20' };
+    }
+    return { label: latestAppraisal.stage || 'VAP', className: '' };
+  };
+
+  const stageOrOutcome = getStageOrOutcome();
+
   return (
     <div 
       className={cn(
@@ -64,7 +74,7 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
       )}
       onClick={() => onClick(latestAppraisal)}
     >
-      {/* Address & Suburb */}
+      {/* 1. Address & Suburb */}
       <div className="flex items-center gap-2 min-w-0 flex-1">
         <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         <span className="font-medium truncate">{latestAppraisal.address}</span>
@@ -75,27 +85,29 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
         )}
       </div>
 
-      {/* Agent name */}
-      {latestAppraisal.agent && (
-        <span className="text-sm text-muted-foreground truncate hidden md:inline max-w-[120px]">
-          {latestAppraisal.agent.full_name}
-        </span>
-      )}
-
-      {/* Task progress - compact */}
-      {taskProgress !== null && (
-        <div className="flex items-center gap-1.5 text-xs shrink-0 hidden lg:flex">
-          <Progress value={taskProgress} className="w-12 h-1" />
-          <span className="text-muted-foreground">{taskCount?.done}/{taskCount?.total}</span>
+      {/* 2. Task counter (red if overdue) */}
+      {taskCount && taskCount.total > 0 && (
+        <div className={cn(
+          "flex items-center gap-1 text-xs shrink-0",
+          hasOverdueTasks ? "text-red-500 font-medium" : "text-muted-foreground"
+        )}>
+          <span>{taskCount.done}/{taskCount.total}</span>
         </div>
       )}
 
-      {/* Beacon hot lead */}
-      {latestAppraisal.beacon_is_hot_lead && (
-        <Flame className="h-3.5 w-3.5 text-orange-500 shrink-0" />
-      )}
+      {/* 3. Beacon Status Indicator (4-step pipeline) */}
+      <BeaconStatusIndicator
+        compact
+        hasReport={!!latestAppraisal.beacon_report_url}
+        isSent={!!latestAppraisal.beacon_report_sent_at}
+        viewCount={latestAppraisal.beacon_total_views || 0}
+        propensityScore={latestAppraisal.beacon_propensity_score || 0}
+        isHotLead={latestAppraisal.beacon_is_hot_lead || false}
+        reportCreatedAt={latestAppraisal.beacon_report_created_at}
+        reportSentAt={latestAppraisal.beacon_report_sent_at}
+      />
 
-      {/* Visit count */}
+      {/* 4. Repeat visit count */}
       {visitCount > 1 && (
         <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs px-1.5 py-0 h-5 shrink-0">
           <RotateCcw className="h-3 w-3 mr-0.5" />
@@ -103,7 +115,23 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
         </Badge>
       )}
 
-      {/* Booking status badge */}
+      {/* 5. Intent */}
+      {latestAppraisal.intent && (
+        <Badge variant="outline" className={cn("text-xs px-1.5 py-0 h-5 shrink-0", getIntentColor(latestAppraisal.intent))}>
+          {latestAppraisal.intent}
+        </Badge>
+      )}
+
+      {/* 6. Stage OR Outcome (not both) */}
+      <Badge 
+        variant={stageOrOutcome.label === 'WON' || stageOrOutcome.label === 'LOST' ? 'outline' : 'secondary'} 
+        className={cn("text-xs px-1.5 py-0 h-5 shrink-0", stageOrOutcome.className)}
+      >
+        {stageOrOutcome.label === 'WON' && <CheckCircle2 className="h-3 w-3 mr-0.5" />}
+        {stageOrOutcome.label}
+      </Badge>
+
+      {/* Booking status badge (if applicable) */}
       {isOverdue && (
         <Badge className="bg-amber-500 text-white border-0 text-xs px-1.5 py-0 h-5 shrink-0">
           <AlertTriangle className="h-3 w-3 mr-0.5" />
@@ -117,34 +145,7 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
         </Badge>
       )}
 
-      {/* Intent */}
-      {latestAppraisal.intent && (
-        <Badge variant="outline" className={cn("text-xs px-1.5 py-0 h-5 shrink-0", getIntentColor(latestAppraisal.intent))}>
-          {latestAppraisal.intent}
-        </Badge>
-      )}
-
-      {/* Stage */}
-      <Badge variant="secondary" className="text-xs px-1.5 py-0 h-5 shrink-0">
-        {latestAppraisal.stage || 'VAP'}
-      </Badge>
-
-      {/* Outcome */}
-      {latestAppraisal.outcome && latestAppraisal.outcome !== 'In Progress' && (
-        <Badge 
-          variant="outline" 
-          className={cn(
-            "text-xs px-1.5 py-0 h-5 shrink-0",
-            latestAppraisal.outcome === 'WON' && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-            latestAppraisal.outcome === 'LOST' && "bg-gray-500/10 text-gray-600 border-gray-500/20"
-          )}
-        >
-          {latestAppraisal.outcome === 'WON' && <CheckCircle2 className="h-3 w-3 mr-0.5" />}
-          {latestAppraisal.outcome}
-        </Badge>
-      )}
-
-      {/* Date */}
+      {/* 7. Date */}
       <span className="flex items-center gap-1 text-sm text-muted-foreground shrink-0">
         <Calendar className="h-3.5 w-3.5" />
         {format(appointmentDate, 'dd MMM')}
@@ -155,7 +156,7 @@ export const PropertyAppraisalCard = ({ property, onClick, taskCount }: Property
         )}
       </span>
 
-      {/* Agent avatar */}
+      {/* 8. Agent avatar */}
       {latestAppraisal.agent && (
         <Avatar className="h-6 w-6 shrink-0">
           <AvatarImage src={latestAppraisal.agent.avatar_url} />
