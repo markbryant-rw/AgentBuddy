@@ -138,6 +138,83 @@ export type Database = {
           },
         ]
       }
+      aftercare_templates: {
+        Row: {
+          agency_id: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean | null
+          is_system_template: boolean | null
+          name: string
+          scope: string
+          tasks: Json | null
+          team_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          name: string
+          scope: string
+          tasks?: Json | null
+          team_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          is_system_template?: boolean | null
+          name?: string
+          scope?: string
+          tasks?: Json | null
+          team_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aftercare_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aftercare_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aftercare_templates_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aftercare_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agencies: {
         Row: {
           account_status:
@@ -2676,6 +2753,9 @@ export type Database = {
       past_sales: {
         Row: {
           address: string
+          aftercare_started_at: string | null
+          aftercare_status: string | null
+          aftercare_template_id: string | null
           agent_id: string | null
           appraisal_date: string | null
           appraisal_high: number | null
@@ -2716,6 +2796,9 @@ export type Database = {
         }
         Insert: {
           address: string
+          aftercare_started_at?: string | null
+          aftercare_status?: string | null
+          aftercare_template_id?: string | null
           agent_id?: string | null
           appraisal_date?: string | null
           appraisal_high?: number | null
@@ -2756,6 +2839,9 @@ export type Database = {
         }
         Update: {
           address?: string
+          aftercare_started_at?: string | null
+          aftercare_status?: string | null
+          aftercare_template_id?: string | null
           agent_id?: string | null
           appraisal_date?: string | null
           appraisal_high?: number | null
@@ -2795,6 +2881,13 @@ export type Database = {
           vendor_details?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "past_sales_aftercare_template_id_fkey"
+            columns: ["aftercare_template_id"]
+            isOneToOne: false
+            referencedRelation: "aftercare_templates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "past_sales_agent_id_fkey"
             columns: ["agent_id"]
@@ -4062,6 +4155,8 @@ export type Database = {
       }
       tasks: {
         Row: {
+          aftercare_due_date: string | null
+          aftercare_year: number | null
           appraisal_id: string | null
           appraisal_stage: string | null
           assigned_to: string | null
@@ -4085,6 +4180,7 @@ export type Database = {
           listing_id: string | null
           order_position: number | null
           parent_task_id: string | null
+          past_sale_id: string | null
           position: number
           priority: string | null
           project_id: string | null
@@ -4099,6 +4195,8 @@ export type Database = {
           weekly_template_id: string | null
         }
         Insert: {
+          aftercare_due_date?: string | null
+          aftercare_year?: number | null
           appraisal_id?: string | null
           appraisal_stage?: string | null
           assigned_to?: string | null
@@ -4122,6 +4220,7 @@ export type Database = {
           listing_id?: string | null
           order_position?: number | null
           parent_task_id?: string | null
+          past_sale_id?: string | null
           position?: number
           priority?: string | null
           project_id?: string | null
@@ -4136,6 +4235,8 @@ export type Database = {
           weekly_template_id?: string | null
         }
         Update: {
+          aftercare_due_date?: string | null
+          aftercare_year?: number | null
           appraisal_id?: string | null
           appraisal_stage?: string | null
           assigned_to?: string | null
@@ -4159,6 +4260,7 @@ export type Database = {
           listing_id?: string | null
           order_position?: number | null
           parent_task_id?: string | null
+          past_sale_id?: string | null
           position?: number
           priority?: string | null
           project_id?: string | null
@@ -4220,6 +4322,13 @@ export type Database = {
             columns: ["parent_task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_past_sale_id_fkey"
+            columns: ["past_sale_id"]
+            isOneToOne: false
+            referencedRelation: "past_sales"
             referencedColumns: ["id"]
           },
           {

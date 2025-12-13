@@ -89,6 +89,10 @@ export interface PastSale {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Aftercare fields
+  aftercare_template_id?: string;
+  aftercare_started_at?: string;
+  aftercare_status?: 'pending' | 'active' | 'paused' | 'completed';
 }
 
 export const usePastSales = (teamId?: string) => {
