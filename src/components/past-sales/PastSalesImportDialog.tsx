@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2, Sheet, Link, HelpCircle, ExternalLink, Download } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Upload, FileText, AlertTriangle, Loader2, Sheet, Link, HelpCircle, ExternalLink, Download, Heart } from 'lucide-react';
 import { usePastSalesImport } from '@/hooks/usePastSalesImport';
 import { useGoogleSheetsImport } from '@/hooks/useGoogleSheetsImport';
 import { FileUploadArea } from '@/components/feedback/FileUploadArea';
@@ -23,6 +23,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { AftercareImportOptions } from './import/AftercareImportOptions';
+import { useBatchAftercareActivation } from '@/hooks/useBatchAftercareActivation';
+import { useAftercareTemplates } from '@/hooks/useAftercareTemplates';
+import { useAuth } from '@/hooks/useAuth';
+import { useTeam } from '@/hooks/useTeam';
+import { AftercareImportOptions as AftercareOptionsType, AftercareImportSummary } from '@/types/aftercare';
 
 interface PastSalesImportDialogProps {
   open: boolean;
@@ -39,15 +45,24 @@ export const PastSalesImportDialog = ({
 }: PastSalesImportDialogProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [validatedRows, setValidatedRows] = useState<any[]>([]);
-  const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'complete'>('upload');
+  const [step, setStep] = useState<'upload' | 'preview' | 'aftercare' | 'importing' | 'complete'>('upload');
   const [summary, setSummary] = useState<any>(null);
+  const [aftercareSummary, setAftercareSummary] = useState<AftercareImportSummary | null>(null);
   const [parsing, setParsing] = useState(false);
   const [googleSheetUrl, setGoogleSheetUrl] = useState('');
   const [importMethod, setImportMethod] = useState<'csv' | 'sheets'>('csv');
+  const [aftercareOptions, setAftercareOptions] = useState<AftercareOptionsType>({
+    activateAftercare: true,
+    historicalMode: 'skip'
+  });
 
   const { parseCSV, parseGoogleSheetData, importPastSales, isImporting, progress } = usePastSalesImport();
   const { fetchGoogleSheet, isFetching } = useGoogleSheetsImport();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { team } = useTeam();
+  const { getEffectiveTemplate, getEvergreenTemplate } = useAftercareTemplates(team?.id);
+  const { activateBatchAftercare } = useBatchAftercareActivation();
 
   const handleFileSelect = async (files: File[]) => {
     if (files.length === 0) return;
@@ -112,10 +127,48 @@ export const PastSalesImportDialog = ({
     }
   };
 
+  const handleProceedToAftercare = () => {
+    setStep('aftercare');
+  };
+
   const handleImport = async () => {
     setStep('importing');
     const importSummary = await importPastSales(validatedRows, teamId);
     setSummary(importSummary);
+    
+    // If aftercare is enabled and we have imported records, activate aftercare plans
+    if (aftercareOptions.activateAftercare && importSummary.successful > 0 && user?.id && team?.id) {
+      const template = getEffectiveTemplate(user.id);
+      const evergreenTemplate = getEvergreenTemplate();
+      
+      if (template) {
+        try {
+          // Fetch the imported past sales to get their IDs and data
+          const { data: importedSales } = await (await import('@/integrations/supabase/client')).supabase
+            .from('past_sales')
+            .select('id, settlement_date, agent_id')
+            .eq('team_id', teamId)
+            .order('created_at', { ascending: false })
+            .limit(importSummary.successful);
+          
+          if (importedSales && importedSales.length > 0) {
+            const acSummary = await activateBatchAftercare.mutateAsync({
+              pastSaleIds: importedSales.map(s => s.id),
+              pastSalesData: importedSales,
+              template,
+              evergreenTemplate,
+              teamId: team.id,
+              userId: user.id,
+              historicalMode: aftercareOptions.historicalMode
+            });
+            setAftercareSummary(acSummary);
+          }
+        } catch (error) {
+          console.error('Aftercare activation error:', error);
+        }
+      }
+    }
+    
     setStep('complete');
   };
 
@@ -124,10 +177,12 @@ export const PastSalesImportDialog = ({
     setValidatedRows([]);
     setStep('upload');
     setSummary(null);
+    setAftercareSummary(null);
     setParsing(false);
     setGoogleSheetUrl('');
     setImportMethod('csv');
     setFilterMode('all');
+    setAftercareOptions({ activateAftercare: true, historicalMode: 'skip' });
     onOpenChange(false);
     if (step === 'complete') {
       onImportComplete();
@@ -480,6 +535,25 @@ export const PastSalesImportDialog = ({
               <Button variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
+              <Button onClick={handleProceedToAftercare} disabled={validCount === 0}>
+                Next: Aftercare Options
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 'aftercare' && (
+          <div className="space-y-4">
+            <AftercareImportOptions
+              options={aftercareOptions}
+              onChange={setAftercareOptions}
+              validatedRows={validatedRows}
+            />
+            
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setStep('preview')}>
+                Back
+              </Button>
               <Button onClick={handleImport} disabled={validCount === 0}>
                 Import {validCount} Valid Records
               </Button>
@@ -528,6 +602,27 @@ export const PastSalesImportDialog = ({
                 </div>
               )}
             </div>
+
+            {/* Aftercare Summary */}
+            {aftercareSummary && aftercareSummary.totalPlansActivated > 0 && (
+              <Alert className="border-rose-200 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/20">
+                <Heart className="h-4 w-4 text-rose-500" />
+                <AlertDescription>
+                  <div className="font-semibold text-rose-900 dark:text-rose-100">
+                    {aftercareSummary.totalPlansActivated} Aftercare Plans Activated
+                  </div>
+                  <div className="text-sm text-rose-700 dark:text-rose-300 mt-1 space-y-0.5">
+                    <div>• {aftercareSummary.tasksCreated} tasks created</div>
+                    {aftercareSummary.tasksMarkedHistorical > 0 && (
+                      <div>• {aftercareSummary.tasksMarkedHistorical} historical tasks (skipped)</div>
+                    )}
+                    {aftercareSummary.evergreenPlansCreated > 0 && (
+                      <div>• {aftercareSummary.evergreenPlansCreated} evergreen plans (10+ years)</div>
+                    )}
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="flex justify-end gap-2">
               <Button onClick={handleClose}>Close</Button>

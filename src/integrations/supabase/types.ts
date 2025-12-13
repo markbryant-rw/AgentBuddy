@@ -146,6 +146,7 @@ export type Database = {
           description: string | null
           id: string
           is_default: boolean | null
+          is_evergreen: boolean | null
           is_system_template: boolean | null
           name: string
           scope: string
@@ -161,6 +162,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_default?: boolean | null
+          is_evergreen?: boolean | null
           is_system_template?: boolean | null
           name: string
           scope: string
@@ -176,6 +178,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_default?: boolean | null
+          is_evergreen?: boolean | null
           is_system_template?: boolean | null
           name?: string
           scope?: string
@@ -4180,6 +4183,7 @@ export type Database = {
           description: string | null
           due_date: string | null
           generated_for_week: string | null
+          historical_skip: boolean | null
           id: string
           is_daily_task: boolean | null
           is_important: boolean | null
@@ -4221,6 +4225,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           generated_for_week?: string | null
+          historical_skip?: boolean | null
           id?: string
           is_daily_task?: boolean | null
           is_important?: boolean | null
@@ -4262,6 +4267,7 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           generated_for_week?: string | null
+          historical_skip?: boolean | null
           id?: string
           is_daily_task?: boolean | null
           is_important?: boolean | null

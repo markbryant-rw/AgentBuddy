@@ -24,9 +24,15 @@ export function useAftercareTemplates(teamId?: string) {
         ...item,
         scope: item.scope as AftercareTemplate['scope'],
         tasks: (item.tasks || []) as unknown as AftercareTask[],
+        is_evergreen: (item as any).is_evergreen || false,
       })) as AftercareTemplate[];
     },
   });
+
+  // Get the evergreen template for 10+ year old sales
+  const getEvergreenTemplate = (): AftercareTemplate | null => {
+    return templates.find(t => t.is_evergreen && t.is_system_template) || null;
+  };
 
   // Get the effective template with 3-tier inheritance
   const getEffectiveTemplate = (userId?: string): AftercareTemplate | null => {
@@ -123,6 +129,7 @@ export function useAftercareTemplates(teamId?: string) {
     templates,
     isLoading,
     getEffectiveTemplate,
+    getEvergreenTemplate,
     createTemplate,
     updateTemplate,
     deleteTemplate,
