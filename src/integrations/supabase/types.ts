@@ -2783,6 +2783,7 @@ export type Database = {
           lost_reason: string | null
           notes: string | null
           property_type: string | null
+          referral_source_id: string | null
           region: string | null
           sale_date: string | null
           sale_price: number | null
@@ -2826,6 +2827,7 @@ export type Database = {
           lost_reason?: string | null
           notes?: string | null
           property_type?: string | null
+          referral_source_id?: string | null
           region?: string | null
           sale_date?: string | null
           sale_price?: number | null
@@ -2869,6 +2871,7 @@ export type Database = {
           lost_reason?: string | null
           notes?: string | null
           property_type?: string | null
+          referral_source_id?: string | null
           region?: string | null
           sale_date?: string | null
           sale_price?: number | null
@@ -2900,6 +2903,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "past_sales_referral_source_id_fkey"
+            columns: ["referral_source_id"]
+            isOneToOne: false
+            referencedRelation: "past_sales"
             referencedColumns: ["id"]
           },
           {
@@ -4185,6 +4195,7 @@ export type Database = {
           priority: string | null
           project_id: string | null
           project_related_id: string | null
+          reminder_sent_at: string | null
           section: string | null
           status: string | null
           team_id: string | null
@@ -4225,6 +4236,7 @@ export type Database = {
           priority?: string | null
           project_id?: string | null
           project_related_id?: string | null
+          reminder_sent_at?: string | null
           section?: string | null
           status?: string | null
           team_id?: string | null
@@ -4265,6 +4277,7 @@ export type Database = {
           priority?: string | null
           project_id?: string | null
           project_related_id?: string | null
+          reminder_sent_at?: string | null
           section?: string | null
           status?: string | null
           team_id?: string | null
