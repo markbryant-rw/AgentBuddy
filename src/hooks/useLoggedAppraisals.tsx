@@ -56,6 +56,14 @@ export interface LoggedAppraisal {
   attachments?: any[];
   created_at: string;
   updated_at: string;
+  // Booking system fields
+  appointment_status?: 'booked' | 'logged' | 'cancelled';
+  appointment_type?: 'appraisal' | 'follow_up' | 'listing_presentation';
+  appointment_time?: string;
+  booked_at?: string;
+  logged_at?: string;
+  cancellation_reason?: string;
+  cancelled_at?: string;
   // Beacon integration fields
   beacon_report_id?: string;
   beacon_report_url?: string;
