@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { format, isPast, isToday } from "date-fns";
-import { Calendar, Check, Clock, Heart, Play, AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
+import { Calendar, Check, Clock, Heart, Play, AlertCircle, ChevronDown, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { useAftercareTemplates } from "@/hooks/useAftercareTemplates";
 import { RelationshipHealthBadge } from "./RelationshipHealthBadge";
 import { AftercareTemplateSelector } from "./AftercareTemplateSelector";
 import { AftercareTaskAssignee } from "@/components/tasks/AftercareTaskAssignee";
+import { AftercareRefreshDialog } from "./AftercareRefreshDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useTeam } from "@/hooks/useTeam";
 import { PastSale } from "@/hooks/usePastSales";
@@ -30,10 +31,12 @@ interface AftercarePlanTabProps {
 export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
   const { user } = useAuth();
   const { team } = useTeam();
-  const { tasks, isLoading, healthData, generateAftercareTasks, completeTask, toggleTask } = useAftercareTasks(pastSale.id);
+  const { tasks, isLoading, healthData, generateAftercareTasks, completeTask, toggleTask, compareWithTemplate, refreshFromTemplate } = useAftercareTasks(pastSale.id);
   const { templates, getEffectiveTemplate } = useAftercareTemplates(team?.id);
   const [expandedYear, setExpandedYear] = useState<number | null>(0);
   const [selectedTemplate, setSelectedTemplate] = useState<AftercareTemplate | null>(null);
+  const [showRefreshDialog, setShowRefreshDialog] = useState(false);
+  const [refreshComparison, setRefreshComparison] = useState<ReturnType<typeof compareWithTemplate> | null>(null);
 
   const isAftercareActive = pastSale.aftercare_status === 'active';
   const settlementDate = pastSale.settlement_date;
@@ -91,6 +94,35 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
     } else if (!currentCompleted) {
       completeTask.mutate(taskId);
     }
+  };
+
+  // Get the original template used for this aftercare plan
+  const originalTemplate = templates.find(t => t.id === pastSale.aftercare_template_id);
+
+  const handleOpenRefreshDialog = () => {
+    if (!originalTemplate || !settlementDate) return;
+    const comparison = compareWithTemplate(originalTemplate, settlementDate);
+    setRefreshComparison(comparison);
+    setShowRefreshDialog(true);
+  };
+
+  const handleConfirmRefresh = (taskIdsToRemove: string[]) => {
+    if (!originalTemplate || !settlementDate || !team?.id || !user?.id || !refreshComparison) return;
+    
+    refreshFromTemplate.mutate({
+      pastSaleId: pastSale.id,
+      template: originalTemplate,
+      settlementDate,
+      teamId: team.id,
+      assignedTo: pastSale.agent_id || user.id,
+      tasksToAdd: refreshComparison.adding,
+      taskIdsToRemove,
+    }, {
+      onSuccess: () => {
+        setShowRefreshDialog(false);
+        setRefreshComparison(null);
+      }
+    });
   };
 
   // Show activation screen if no tasks generated yet
@@ -154,7 +186,27 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
                 {healthData.completedTasks} of {healthData.totalTasks} touchpoints completed
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              {originalTemplate && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenRefreshDialog}
+                        className="gap-1.5"
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                        Refresh
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Update plan from "{originalTemplate.name}" template</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               <RelationshipHealthBadge healthData={healthData} showLabel size="lg" />
             </div>
           </div>
@@ -303,6 +355,21 @@ export function AftercarePlanTab({ pastSale }: AftercarePlanTabProps) {
             );
           })}
       </div>
+
+      {/* Refresh Dialog */}
+      {originalTemplate && refreshComparison && (
+        <AftercareRefreshDialog
+          open={showRefreshDialog}
+          onOpenChange={setShowRefreshDialog}
+          template={originalTemplate}
+          keeping={refreshComparison.keeping}
+          adding={refreshComparison.adding}
+          removing={refreshComparison.removing}
+          completed={refreshComparison.completed}
+          onConfirm={handleConfirmRefresh}
+          isPending={refreshFromTemplate.isPending}
+        />
+      )}
     </div>
   );
 }

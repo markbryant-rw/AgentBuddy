@@ -179,6 +179,121 @@ export function useAftercareTasks(pastSaleId?: string) {
     },
   });
 
+  // Compare existing tasks with a template to generate a diff
+  const compareWithTemplate = (template: AftercareTemplate, settlementDate: string) => {
+    const existingTitles = new Set(tasks.map(t => t.title.toLowerCase()));
+    const templateTitles = new Set(template.tasks.map(t => t.title.toLowerCase()));
+    
+    const settlement = new Date(settlementDate);
+    
+    // Tasks to keep (exist in both)
+    const keeping = tasks.filter(t => templateTitles.has(t.title.toLowerCase()));
+    
+    // New tasks from template (not in existing)
+    const adding = template.tasks.filter(t => !existingTitles.has(t.title.toLowerCase())).map(task => {
+      let dueDate: Date;
+      let aftercareYear: number | null = null;
+
+      if (task.timing_type === 'immediate' && task.days_offset !== null) {
+        dueDate = addDays(settlement, task.days_offset);
+        aftercareYear = 0;
+      } else if (task.timing_type === 'anniversary' && task.anniversary_year !== null) {
+        dueDate = addYears(settlement, task.anniversary_year);
+        aftercareYear = task.anniversary_year;
+      } else {
+        dueDate = settlement;
+      }
+
+      return {
+        ...task,
+        dueDate: format(dueDate, 'yyyy-MM-dd'),
+        aftercareYear,
+      };
+    });
+    
+    // Tasks to remove (exist but not in template, and not completed)
+    const removing = tasks.filter(t => 
+      !templateTitles.has(t.title.toLowerCase()) && !t.completed
+    );
+    
+    // Completed tasks (always preserved)
+    const completed = tasks.filter(t => t.completed);
+    
+    return { keeping, adding, removing, completed };
+  };
+
+  // Refresh aftercare plan from template
+  const refreshFromTemplate = useMutation({
+    mutationFn: async ({ 
+      pastSaleId,
+      template,
+      settlementDate,
+      teamId,
+      assignedTo,
+      tasksToAdd,
+      taskIdsToRemove,
+    }: { 
+      pastSaleId: string;
+      template: AftercareTemplate;
+      settlementDate: string;
+      teamId: string;
+      assignedTo: string;
+      tasksToAdd: Array<AftercareTask & { dueDate: string; aftercareYear: number | null }>;
+      taskIdsToRemove: string[];
+    }) => {
+      // Delete removed tasks
+      if (taskIdsToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('tasks')
+          .delete()
+          .in('id', taskIdsToRemove);
+        
+        if (deleteError) throw deleteError;
+      }
+
+      // Insert new tasks
+      if (tasksToAdd.length > 0) {
+        const newTasks = tasksToAdd.map(task => ({
+          title: task.title,
+          description: task.description,
+          due_date: task.dueDate,
+          past_sale_id: pastSaleId,
+          aftercare_year: task.aftercareYear,
+          aftercare_due_date: task.dueDate,
+          team_id: teamId,
+          assigned_to: assignedTo,
+          completed: false,
+          created_by: assignedTo,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('tasks')
+          .insert(newTasks);
+
+        if (insertError) throw insertError;
+      }
+
+      // Update the template reference on past_sale
+      await supabase
+        .from('past_sales')
+        .update({ aftercare_template_id: template.id })
+        .eq('id', pastSaleId);
+
+      return { added: tasksToAdd.length, removed: taskIdsToRemove.length };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['aftercare-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['past-sales'] });
+      toast({ 
+        title: "Aftercare plan refreshed! ✨", 
+        description: `Added ${data.added} tasks, removed ${data.removed} tasks` 
+      });
+    },
+    onError: (error) => {
+      toast({ title: "Failed to refresh plan", description: error.message, variant: "destructive" });
+    },
+  });
+
   return {
     tasks,
     isLoading,
@@ -186,5 +301,7 @@ export function useAftercareTasks(pastSaleId?: string) {
     generateAftercareTasks,
     completeTask,
     toggleTask,
+    compareWithTemplate,
+    refreshFromTemplate,
   };
 }
