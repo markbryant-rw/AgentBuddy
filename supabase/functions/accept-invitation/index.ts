@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../_shared/cors.ts';
-import { triggerBeaconTeamSync } from '../_shared/beaconSync.ts';
+import { sendBeaconMemberChange } from '../_shared/beaconSync.ts';
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const corsHeaders = getCorsHeaders(origin);
@@ -364,9 +364,18 @@ serve(async (req) => {
       
       console.log('✅ Team membership created and verified:', verifyMembership.id);
       
-      // Trigger Beacon team sync (async, non-blocking)
-      console.log('Triggering Beacon team sync after invitation acceptance...');
-      triggerBeaconTeamSync(supabaseAdmin, assignedTeamId);
+      // Send incremental Beacon member change (async, non-blocking)
+      console.log('Sending Beacon member add webhook after invitation acceptance...');
+      sendBeaconMemberChange(supabaseAdmin, assignedTeamId, {
+        action: 'add',
+        member: {
+          user_id: userId,
+          email: invitation.email,
+          full_name: fullName,
+          phone: mobileNumber || '',
+          is_team_leader: invitation.role === 'team_leader',
+        },
+      });
       
       // Now that team membership exists, update profile with primary_team_id
       console.log('Updating profile with primary_team_id:', assignedTeamId);
