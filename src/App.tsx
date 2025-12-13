@@ -104,6 +104,7 @@ const ListingExpiryReport = lazy(() => import("./pages/ListingExpiryReport"));
 const ReviewRoadmap = lazy(() => import("./pages/ReviewRoadmap"));
 const CoachesCorner = lazy(() => import("./pages/CoachesCorner"));
 const PastSalesHistory = lazy(() => import("./pages/past-sales/PastSalesHistory"));
+const RescuePipeline = lazy(() => import("./pages/RescuePipeline"));
 const RelationshipDashboard = lazy(() => import("./pages/relationships/RelationshipDashboard"));
 const FeedbackCentre = lazy(() => import("./pages/feedback-centre/FeedbackCentre"));
 const ListingDescription = lazy(() => import("./pages/listing-description/ListingDescription"));
@@ -231,6 +232,7 @@ const AppContent = () => {
               <Route path="/stock-board" element={<StockBoard />} />
               <Route path="/listing-expiry-report" element={<ListingExpiryReport />} />
               <Route path="/past-sales-history" element={<PastSalesHistory />} />
+              <Route path="/rescue-pipeline" element={<RescuePipeline />} />
               <Route path="/relationship-dashboard" element={<RelationshipDashboard />} />
                   <Route path="/coaches-corner" element={<CoachesCorner />} />
                   <Route path="/feedback-centre" element={<FeedbackCentre />} />
