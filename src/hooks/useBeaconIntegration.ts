@@ -227,7 +227,13 @@ export const useBeaconIntegration = () => {
       queryClient.invalidateQueries({ queryKey: ['beacon_reports'] });
       
       const typeLabel = REPORT_TYPE_LABELS[reportType || 'appraisal'];
-      toast.success(`${typeLabel} draft created! Publishing will use 1 team credit.`);
+      
+      // Show different toast based on whether we created new or opened existing
+      if (data.existing) {
+        toast.success(`Opening existing ${typeLabel}`);
+      } else {
+        toast.success(`${typeLabel} draft created! Publishing uses 1 team credit.`);
+      }
       
       // Open the Beacon report edit page in a new tab
       if (data.urls?.edit) {
@@ -376,6 +382,30 @@ export const useBeaconIntegration = () => {
     },
   });
 
+  // Unlink a Beacon report (removes local record, does NOT delete from Beacon)
+  const unlinkBeaconReport = useMutation({
+    mutationFn: async (beaconReportId: string) => {
+      console.log('unlinkBeaconReport: Removing local record', { beaconReportId });
+      
+      const { error } = await supabase
+        .from('beacon_reports')
+        .delete()
+        .eq('beacon_report_id', beaconReportId);
+
+      if (error) throw error;
+      return { success: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logged_appraisals'] });
+      queryClient.invalidateQueries({ queryKey: ['beacon_reports'] });
+      toast.success('Report unlinked. You can re-link it anytime.');
+    },
+    onError: (error) => {
+      console.error('Failed to unlink Beacon report:', error);
+      toast.error('Failed to unlink report');
+    },
+  });
+
   // Test Beacon connection - useful for settings page
   const testConnection = async (): Promise<{ success: boolean; message: string; details?: any }> => {
     if (!team?.id) {
@@ -412,6 +442,8 @@ export const useBeaconIntegration = () => {
     isCreatingReport: createBeaconReport.isPending,
     linkBeaconReport,
     isLinkingReport: linkBeaconReport.isPending,
+    unlinkBeaconReport,
+    isUnlinkingReport: unlinkBeaconReport.isPending,
     searchBeaconReports,
     fetchAllTeamReports,
     syncOwnerToBeacon,
