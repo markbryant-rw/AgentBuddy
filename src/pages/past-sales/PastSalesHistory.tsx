@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, MapPin, BarChart3, Table as TableIcon, Upload, Trash2 } from "lucide-react";
+import { Plus, MapPin, BarChart3, Table as TableIcon, Upload, Trash2, Network } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,6 +14,7 @@ import PastSaleDetailDialog from "@/components/past-sales/PastSaleDetailDialog";
 import PastSalesStatsBar from "@/components/past-sales/PastSalesStatsBar";
 import { PastSalesImportDialog } from "@/components/past-sales/PastSalesImportDialog";
 import { WorkspaceHeader } from '@/components/layout/WorkspaceHeader';
+import ReferralNetworkVisualization from "@/components/past-sales/ReferralNetworkVisualization";
 
 const PastSalesHistory = () => {
   const [selectedPastSaleId, setSelectedPastSaleId] = useState<string | null>(null);
@@ -106,6 +107,10 @@ const PastSalesHistory = () => {
                   <BarChart3 className="mr-2 h-4 w-4" />
                   Analytics
                 </TabsTrigger>
+                <TabsTrigger value="referrals">
+                  <Network className="mr-2 h-4 w-4" />
+                  Referral Network
+                </TabsTrigger>
               </TabsList>
 
               {/* Filter Checkboxes - inline with tabs */}
@@ -152,6 +157,10 @@ const PastSalesHistory = () => {
 
             <TabsContent value="analytics" className="mt-6">
               <PastSalesAnalytics analytics={analytics} pastSales={filteredPastSales} />
+            </TabsContent>
+
+            <TabsContent value="referrals" className="mt-6">
+              <ReferralNetworkVisualization pastSales={filteredPastSales} />
             </TabsContent>
           </Tabs>
 
